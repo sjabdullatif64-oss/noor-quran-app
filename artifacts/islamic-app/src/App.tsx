@@ -10,6 +10,7 @@ import { Home } from "@/pages/home";
 import { Quran } from "@/pages/quran";
 import { SurahReader } from "@/pages/surah";
 import { PrayerTimes } from "@/pages/prayer-times";
+import { Bookmarks } from "@/pages/bookmarks";
 
 const queryClient = new QueryClient();
 
@@ -20,6 +21,7 @@ function Router() {
       <Route path="/quran" component={Quran} />
       <Route path="/quran/:number" component={SurahReader} />
       <Route path="/prayer-times" component={PrayerTimes} />
+      <Route path="/bookmarks" component={Bookmarks} />
       <Route component={NotFound} />
     </Switch>
   );

@@ -2,6 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 
 export interface Ayah {
   numberInSurah: number;
+  number: number;
   text: string;
 }
 
@@ -14,6 +15,24 @@ export interface Surah {
   revelationType: string;
 }
 
+export interface AyahData {
+  numberInSurah: number;
+  globalNumber: number;
+  textAr: string;
+  textTranslation: string;
+  audioUrl: string;
+}
+
+export interface SurahDetail {
+  number: number;
+  name: string;
+  englishName: string;
+  englishNameTranslation: string;
+  numberOfAyahs: number;
+  revelationType: string;
+  ayahs: AyahData[];
+}
+
 export interface PrayerTimings {
   Fajr: string;
   Sunrise: string;
@@ -21,6 +40,7 @@ export interface PrayerTimings {
   Asr: string;
   Maghrib: string;
   Isha: string;
+  [key: string]: string;
 }
 
 export interface PrayerData {
@@ -41,6 +61,23 @@ export interface PrayerData {
   };
 }
 
+export type TranslationLanguage = "urdu" | "sindhi" | "english";
+
+export const TRANSLATION_LABELS: Record<TranslationLanguage, string> = {
+  urdu: "اردو",
+  sindhi: "سنڌي",
+  english: "English",
+};
+
+export const TRANSLATION_EDITIONS: Record<TranslationLanguage, string> = {
+  urdu: "ur.sahih",
+  sindhi: "sd.muhammadlockhat",
+  english: "en.sahih",
+};
+
+export const getAudioUrl = (globalAyahNumber: number) =>
+  `https://cdn.islamic.network/quran/audio/128/ar.alafasy/${globalAyahNumber}.mp3`;
+
 export const useSurahList = () => {
   return useQuery({
     queryKey: ["surahs"],
@@ -48,33 +85,45 @@ export const useSurahList = () => {
       const res = await fetch("https://api.alquran.cloud/v1/surah");
       const data = await res.json();
       return data.data as Surah[];
-    }
+    },
+    staleTime: Infinity,
   });
 };
 
-export const useSurah = (number: number) => {
+export const useSurah = (number: number, translation: TranslationLanguage) => {
+  const edition = TRANSLATION_EDITIONS[translation];
   return useQuery({
-    queryKey: ["surah", number],
+    queryKey: ["surah", number, translation],
     queryFn: async () => {
-      const [arRes, urRes] = await Promise.all([
+      const [arRes, trRes] = await Promise.all([
         fetch(`https://api.alquran.cloud/v1/surah/${number}`),
-        fetch(`https://api.alquran.cloud/v1/surah/${number}/ur.sahih`)
+        fetch(`https://api.alquran.cloud/v1/surah/${number}/${edition}`),
       ]);
       const arData = await arRes.json();
-      const urData = await urRes.json();
+      const trData = await trRes.json();
 
-      const ayahs = arData.data.ayahs.map((ayah: Ayah, index: number) => ({
-        numberInSurah: ayah.numberInSurah,
-        textAr: ayah.text,
-        textUr: urData.data.ayahs[index].text
-      }));
+      const ayahs: AyahData[] = arData.data.ayahs.map(
+        (ayah: Ayah, index: number) => ({
+          numberInSurah: ayah.numberInSurah,
+          globalNumber: ayah.number,
+          textAr: ayah.text,
+          textTranslation: trData.data.ayahs[index]?.text ?? "",
+          audioUrl: getAudioUrl(ayah.number),
+        })
+      );
 
       return {
-        ...arData.data,
-        ayahs
-      };
+        number: arData.data.number,
+        name: arData.data.name,
+        englishName: arData.data.englishName,
+        englishNameTranslation: arData.data.englishNameTranslation,
+        numberOfAyahs: arData.data.numberOfAyahs,
+        revelationType: arData.data.revelationType,
+        ayahs,
+      } as SurahDetail;
     },
-    enabled: !!number
+    enabled: !!number,
+    staleTime: 10 * 60 * 1000,
   });
 };
 
@@ -83,13 +132,11 @@ export const usePrayerTimes = (city: string, country: string) => {
     queryKey: ["prayerTimes", city, country],
     queryFn: async () => {
       const res = await fetch(
-        `https://api.aladhan.com/v1/timingsByCity?city=${encodeURIComponent(
-          city
-        )}&country=${encodeURIComponent(country)}`
+        `https://api.aladhan.com/v1/timingsByCity?city=${encodeURIComponent(city)}&country=${encodeURIComponent(country)}`
       );
       const data = await res.json();
       return data.data as PrayerData;
-    }
+    },
   });
 };
 
@@ -102,11 +149,11 @@ export const useRandomAyah = () => {
       const data = await res.json();
       const numAyahs = data.data.numberOfAyahs;
       const randomAyahIdx = Math.floor(Math.random() * numAyahs);
-      const randomAyahNum = data.data.ayahs[randomAyahIdx].number;
+      const randomAyah = data.data.ayahs[randomAyahIdx];
 
       const [arRes, urRes] = await Promise.all([
-        fetch(`https://api.alquran.cloud/v1/ayah/${randomAyahNum}`),
-        fetch(`https://api.alquran.cloud/v1/ayah/${randomAyahNum}/ur.sahih`)
+        fetch(`https://api.alquran.cloud/v1/ayah/${randomAyah.number}`),
+        fetch(`https://api.alquran.cloud/v1/ayah/${randomAyah.number}/ur.sahih`),
       ]);
 
       const arData = await arRes.json();
@@ -115,8 +162,10 @@ export const useRandomAyah = () => {
       return {
         surah: data.data.englishName,
         numberInSurah: arData.data.numberInSurah,
+        globalNumber: randomAyah.number,
         textAr: arData.data.text,
-        textUr: urData.data.text
+        textUr: urData.data.text,
+        audioUrl: getAudioUrl(randomAyah.number),
       };
     },
     staleTime: Infinity,
