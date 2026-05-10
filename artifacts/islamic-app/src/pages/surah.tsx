@@ -3,17 +3,23 @@ import { useSurah } from "@/lib/api";
 import { TRANSLATION_LABELS, TranslationLanguage } from "@/lib/api";
 import { useParams, Link } from "wouter";
 import { Skeleton } from "@/components/ui/skeleton";
-import { ArrowLeft, Bookmark, BookmarkCheck, ChevronLeft, ChevronRight, Heart, Pause, Play, Volume2 } from "lucide-react";
-import { Button } from "@/components/ui/button";
 import {
-  getBookmarks,
-  saveBookmark,
-  removeBookmark,
-} from "@/lib/bookmarks";
+  ArrowLeft, Bookmark, BookmarkCheck, ChevronLeft, ChevronRight,
+  Heart, Pause, Play, Volume2, Mic,
+} from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { getBookmarks, saveBookmark, removeBookmark } from "@/lib/bookmarks";
 import { getFavAyahs, toggleAyahFav } from "@/lib/favorites";
 import { getLang } from "@/lib/settings";
 
+type AudioMode = "arabic" | "tts";
+
 const LANGUAGES: TranslationLanguage[] = ["urdu", "english"];
+
+// ── Helpers ───────────────────────────────────────────────────────────────────
+function isTTSSupported() {
+  return typeof window !== "undefined" && "speechSynthesis" in window;
+}
 
 export function SurahReader() {
   const params = useParams();
@@ -28,49 +34,80 @@ export function SurahReader() {
   const [playingIndex, setPlayingIndex] = useState<number | null>(null);
   const [isPlaying, setIsPlaying] = useState(false);
   const [isAudioLoading, setIsAudioLoading] = useState(false);
+  const [audioMode, setAudioMode] = useState<AudioMode>("arabic");
+
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const ayahRefs = useRef<Map<number, HTMLDivElement>>(new Map());
+  // Keep a stable ref to the current surah for use inside event listeners
+  const surahRef = useRef(surah);
+  useEffect(() => { surahRef.current = surah; }, [surah]);
+  const languageRef = useRef(language);
+  useEffect(() => { languageRef.current = language; }, [language]);
 
+  // ── Bookmarks / Favorites ────────────────────────────────────────────────
   useEffect(() => {
     const stored = getBookmarks();
-    const s = new Set(stored.map((b) => `${b.surahNumber}-${b.ayahNumber}`));
-    setBookmarkedSet(s);
+    setBookmarkedSet(new Set(stored.map((b) => `${b.surahNumber}-${b.ayahNumber}`)));
     const favs = getFavAyahs();
-    const f = new Set(favs.filter((a) => a.surahNumber === number).map((a) => `${a.surahNumber}-${a.ayahNumber}`));
-    setFavSet(f);
+    setFavSet(new Set(favs.filter((a) => a.surahNumber === number).map((a) => `${a.surahNumber}-${a.ayahNumber}`)));
   }, [number]);
 
+  // ── Scroll helper ─────────────────────────────────────────────────────────
   const scrollToAyah = useCallback((index: number) => {
-    const el = ayahRefs.current.get(index);
-    if (el) {
-      el.scrollIntoView({ behavior: "smooth", block: "center" });
-    }
+    ayahRefs.current.get(index)?.scrollIntoView({ behavior: "smooth", block: "center" });
   }, []);
 
-  const playAyah = useCallback(
+  // ── Stop all audio (CDN + TTS) ────────────────────────────────────────────
+  const stopAll = useCallback(() => {
+    if (audioRef.current) {
+      audioRef.current.pause();
+      audioRef.current.src = "";
+      audioRef.current = null;
+    }
+    if (isTTSSupported()) window.speechSynthesis.cancel();
+    setIsPlaying(false);
+    setIsAudioLoading(false);
+  }, []);
+
+  // Cleanup on surah change or unmount
+  useEffect(() => {
+    return () => {
+      if (audioRef.current) {
+        audioRef.current.pause();
+        audioRef.current.src = "";
+      }
+      if (isTTSSupported()) window.speechSynthesis.cancel();
+    };
+  }, [number]);
+
+  // ── Arabic CDN playback ───────────────────────────────────────────────────
+  const playArabic = useCallback(
     (index: number) => {
-      if (!surah) return;
-      const ayah = surah.ayahs[index];
+      const currentSurah = surahRef.current;
+      if (!currentSurah) return;
+      const ayah = currentSurah.ayahs[index];
       if (!ayah) return;
 
       if (audioRef.current) {
         audioRef.current.pause();
         audioRef.current.src = "";
       }
+      if (isTTSSupported()) window.speechSynthesis.cancel();
 
       const audio = new Audio(ayah.audioUrl);
       audioRef.current = audio;
-
       setPlayingIndex(index);
       setIsPlaying(true);
       setIsAudioLoading(true);
 
       audio.addEventListener("canplaythrough", () => setIsAudioLoading(false));
       audio.addEventListener("ended", () => {
+        const s = surahRef.current;
+        if (!s) return;
         const next = index + 1;
-        if (next < surah.ayahs.length) {
+        if (next < s.ayahs.length) {
           scrollToAyah(next);
-          playAyah(next);
+          playArabic(next);
         } else {
           setIsPlaying(false);
           setPlayingIndex(null);
@@ -80,30 +117,90 @@ export function SurahReader() {
         setIsPlaying(false);
         setIsAudioLoading(false);
       });
-
-      audio.play().catch(() => {
-        setIsPlaying(false);
-        setIsAudioLoading(false);
-      });
-
+      audio.play().catch(() => { setIsPlaying(false); setIsAudioLoading(false); });
       scrollToAyah(index);
     },
-    [surah, scrollToAyah]
+    [scrollToAyah]
   );
 
-  const handlePlayPause = useCallback(() => {
-    if (!audioRef.current) {
-      playAyah(0);
-      return;
-    }
-    if (isPlaying) {
-      audioRef.current.pause();
-      setIsPlaying(false);
-    } else {
-      audioRef.current.play().catch(() => {});
+  // ── TTS (translation) playback ────────────────────────────────────────────
+  const speakTranslation = useCallback(
+    (index: number) => {
+      if (!isTTSSupported()) return;
+      const currentSurah = surahRef.current;
+      if (!currentSurah) return;
+      const ayah = currentSurah.ayahs[index];
+      if (!ayah?.textTranslation) return;
+
+      // Stop CDN audio
+      if (audioRef.current) {
+        audioRef.current.pause();
+        audioRef.current.src = "";
+        audioRef.current = null;
+      }
+      window.speechSynthesis.cancel();
+
+      const utter = new SpeechSynthesisUtterance(ayah.textTranslation);
+      utter.lang = languageRef.current === "urdu" ? "ur-PK" : "en-US";
+      utter.rate = 0.88;
+      utter.pitch = 1;
+      utter.volume = 1;
+
+      setPlayingIndex(index);
       setIsPlaying(true);
+      setIsAudioLoading(false);
+
+      utter.onend = () => {
+        const s = surahRef.current;
+        if (!s) return;
+        const next = index + 1;
+        if (next < s.ayahs.length) {
+          scrollToAyah(next);
+          speakTranslation(next);
+        } else {
+          setIsPlaying(false);
+          setPlayingIndex(null);
+        }
+      };
+      utter.onerror = () => { setIsPlaying(false); setPlayingIndex(null); };
+
+      window.speechSynthesis.speak(utter);
+      scrollToAyah(index);
+    },
+    [scrollToAyah]
+  );
+
+  // ── Unified play dispatcher ───────────────────────────────────────────────
+  const playAyah = useCallback(
+    (index: number, modeOverride?: AudioMode) => {
+      const mode = modeOverride ?? audioMode;
+      if (mode === "arabic") playArabic(index);
+      else speakTranslation(index);
+    },
+    [audioMode, playArabic, speakTranslation]
+  );
+
+  // ── Controls ──────────────────────────────────────────────────────────────
+  const handlePlayPause = useCallback(() => {
+    if (audioMode === "arabic") {
+      if (!audioRef.current) { playArabic(0); return; }
+      if (isPlaying) {
+        audioRef.current.pause();
+        setIsPlaying(false);
+      } else {
+        audioRef.current.play().catch(() => {});
+        setIsPlaying(true);
+      }
+    } else {
+      if (!isTTSSupported()) return;
+      if (!isPlaying) {
+        speakTranslation(playingIndex ?? 0);
+      } else {
+        window.speechSynthesis.cancel();
+        setIsPlaying(false);
+      }
     }
-  }, [isPlaying, playAyah]);
+  }, [audioMode, isPlaying, playingIndex, playArabic, speakTranslation]);
 
   const handlePrev = useCallback(() => {
     if (playingIndex === null || playingIndex <= 0) return;
@@ -116,36 +213,32 @@ export function SurahReader() {
     if (next < surah.ayahs.length) playAyah(next);
   }, [playingIndex, surah, playAyah]);
 
-  useEffect(() => {
-    return () => {
-      if (audioRef.current) {
-        audioRef.current.pause();
-        audioRef.current.src = "";
-      }
-    };
-  }, [number]);
+  // ── Audio mode switch ─────────────────────────────────────────────────────
+  const handleModeChange = (mode: AudioMode) => {
+    stopAll();
+    setPlayingIndex(null);
+    setAudioMode(mode);
+  };
 
+  // ── Language switch ───────────────────────────────────────────────────────
+  const handleLanguageChange = (lang: TranslationLanguage) => {
+    if (audioMode === "tts") stopAll();
+    setLanguage(lang);
+  };
+
+  // ── Bookmarks & Favorites ─────────────────────────────────────────────────
   const toggleBookmark = (ayahIndex: number) => {
     if (!surah) return;
     const ayah = surah.ayahs[ayahIndex];
     const key = `${number}-${ayah.numberInSurah}`;
     if (bookmarkedSet.has(key)) {
       removeBookmark(number, ayah.numberInSurah);
-      setBookmarkedSet((prev) => {
-        const next = new Set(prev);
-        next.delete(key);
-        return next;
-      });
+      setBookmarkedSet((prev) => { const n = new Set(prev); n.delete(key); return n; });
     } else {
       saveBookmark({
-        surahNumber: number,
-        surahName: surah.name,
-        surahEnglishName: surah.englishName,
-        ayahNumber: ayah.numberInSurah,
-        globalNumber: ayah.globalNumber,
-        textAr: ayah.textAr,
-        textTranslation: ayah.textTranslation,
-        savedAt: Date.now(),
+        surahNumber: number, surahName: surah.name, surahEnglishName: surah.englishName,
+        ayahNumber: ayah.numberInSurah, globalNumber: ayah.globalNumber,
+        textAr: ayah.textAr, textTranslation: ayah.textTranslation, savedAt: Date.now(),
       });
       setBookmarkedSet((prev) => new Set(prev).add(key));
     }
@@ -156,56 +249,37 @@ export function SurahReader() {
     const ayah = surah.ayahs[ayahIndex];
     const key = `${number}-${ayah.numberInSurah}`;
     const added = toggleAyahFav({
-      surahNumber: number,
-      surahEnglishName: surah.englishName,
-      surahName: surah.name,
-      ayahNumber: ayah.numberInSurah,
-      globalNumber: ayah.globalNumber,
-      textAr: ayah.textAr,
-      textTranslation: ayah.textTranslation,
+      surahNumber: number, surahEnglishName: surah.englishName, surahName: surah.name,
+      ayahNumber: ayah.numberInSurah, globalNumber: ayah.globalNumber,
+      textAr: ayah.textAr, textTranslation: ayah.textTranslation,
     });
-    setFavSet((prev) => {
-      const next = new Set(prev);
-      added ? next.add(key) : next.delete(key);
-      return next;
-    });
-    if (added) {
-      setFavPopped(key);
-      setTimeout(() => setFavPopped(null), 800);
-    }
+    setFavSet((prev) => { const n = new Set(prev); added ? n.add(key) : n.delete(key); return n; });
+    if (added) { setFavPopped(key); setTimeout(() => setFavPopped(null), 800); }
   };
 
   const isRtlTranslation = language === "urdu";
+  const ttsSupported = isTTSSupported();
 
   return (
-    <div className="space-y-0 pb-36 md:pb-8 animate-in fade-in duration-500 max-w-4xl mx-auto">
-      {/* Sticky header */}
+    <div className="space-y-0 pb-40 md:pb-8 animate-in fade-in duration-500 max-w-4xl mx-auto">
+
+      {/* ── Sticky header ── */}
       <div className="sticky top-0 z-20 bg-background/90 backdrop-blur-md -mx-4 px-4 pt-3 pb-4 border-b border-border">
         <div className="flex items-center justify-between gap-4 mb-3">
-          <Button
-            variant="ghost"
-            asChild
-            className="text-muted-foreground hover:text-foreground px-2"
-          >
+          <Button variant="ghost" asChild className="text-muted-foreground hover:text-foreground px-2">
             <Link href="/quran" data-testid="link-back-quran">
-              <ArrowLeft className="w-4 h-4 mr-1" />
-              Back
+              <ArrowLeft className="w-4 h-4 mr-1" />Back
             </Link>
           </Button>
 
-          {/* Language switcher */}
-          <div
-            className="flex items-center gap-1 bg-muted rounded-full p-1"
-            data-testid="language-switcher"
-          >
+          {/* Translation language switcher */}
+          <div className="flex items-center gap-1 bg-muted rounded-full p-1" data-testid="language-switcher">
             {LANGUAGES.map((lang) => (
               <button
                 key={lang}
-                onClick={() => setLanguage(lang)}
+                onClick={() => handleLanguageChange(lang)}
                 className={`px-3 py-1 rounded-full text-sm font-medium transition-all ${
-                  language === lang
-                    ? "bg-primary text-primary-foreground shadow-sm"
-                    : "text-muted-foreground hover:text-foreground"
+                  language === lang ? "bg-primary text-primary-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
                 }`}
                 data-testid={`button-lang-${lang}`}
               >
@@ -224,17 +298,14 @@ export function SurahReader() {
           <div className="text-center space-y-1">
             <h1 className="text-2xl font-bold text-primary">{surah?.englishName}</h1>
             <p className="text-muted-foreground text-sm">
-              {surah?.englishNameTranslation} · {surah?.revelationType} ·{" "}
-              {surah?.numberOfAyahs} Verses
+              {surah?.englishNameTranslation} · {surah?.revelationType} · {surah?.numberOfAyahs} Verses
             </p>
-            <h2 dir="rtl" className="text-3xl font-arabic text-primary mt-1">
-              {surah?.name}
-            </h2>
+            <h2 dir="rtl" className="text-3xl font-arabic text-primary mt-1">{surah?.name}</h2>
           </div>
         )}
       </div>
 
-      {/* Bismillah */}
+      {/* ── Bismillah ── */}
       {number !== 1 && number !== 9 && !isLoading && (
         <div className="text-center py-10 border-b border-border/50">
           <p dir="rtl" className="text-4xl md:text-5xl font-arabic text-primary leading-loose">
@@ -243,7 +314,7 @@ export function SurahReader() {
         </div>
       )}
 
-      {/* Ayahs */}
+      {/* ── Ayah list ── */}
       <div className="space-y-0 mt-6">
         {isLoading
           ? Array.from({ length: 5 }).map((_, i) => (
@@ -260,104 +331,62 @@ export function SurahReader() {
               return (
                 <div
                   key={ayah.numberInSurah}
-                  ref={(el) => {
-                    if (el) ayahRefs.current.set(index, el);
-                    else ayahRefs.current.delete(index);
-                  }}
+                  ref={(el) => { if (el) ayahRefs.current.set(index, el); else ayahRefs.current.delete(index); }}
                   className={`group flex flex-col gap-5 py-8 px-2 border-b border-border/40 last:border-0 transition-all duration-300 rounded-xl ${
-                    isCurrentlyPlaying
-                      ? "bg-primary/5 border-primary/20 -mx-2 px-4"
-                      : "hover:bg-muted/30"
+                    isCurrentlyPlaying ? "bg-primary/5 border-primary/20 -mx-2 px-4" : "hover:bg-muted/30"
                   }`}
                   data-testid={`ayah-${ayah.numberInSurah}`}
                 >
                   {/* Controls row */}
                   <div className="flex items-center justify-between">
-                    <div
-                      className={`w-9 h-9 rounded-full flex items-center justify-center text-sm font-bold transition-colors ${
-                        isCurrentlyPlaying
-                          ? "bg-primary text-primary-foreground"
-                          : "border-2 border-primary/20 text-primary"
-                      }`}
-                    >
+                    <div className={`w-9 h-9 rounded-full flex items-center justify-center text-sm font-bold transition-colors ${
+                      isCurrentlyPlaying ? "bg-primary text-primary-foreground" : "border-2 border-primary/20 text-primary"
+                    }`}>
                       {ayah.numberInSurah}
                     </div>
 
-                    <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 md:opacity-100 transition-opacity">
+                      {/* Play button */}
                       <Button
-                        variant="ghost"
-                        size="icon"
-                        className={`w-8 h-8 ${
-                          isCurrentlyPlaying && isPlaying
-                            ? "text-primary"
-                            : "text-muted-foreground"
-                        }`}
-                        onClick={() => {
-                          if (isCurrentlyPlaying) {
-                            handlePlayPause();
-                          } else {
-                            playAyah(index);
-                          }
-                        }}
+                        variant="ghost" size="icon"
+                        className={`w-8 h-8 ${isCurrentlyPlaying && isPlaying ? "text-primary" : "text-muted-foreground"}`}
+                        onClick={() => { isCurrentlyPlaying ? handlePlayPause() : playAyah(index); }}
                         data-testid={`button-play-ayah-${ayah.numberInSurah}`}
                       >
-                        {isCurrentlyPlaying && isPlaying ? (
-                          <Pause className="w-4 h-4" />
-                        ) : (
-                          <Play className="w-4 h-4" />
-                        )}
+                        {isCurrentlyPlaying && isPlaying ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4" />}
                       </Button>
 
-                      {/* Heart / Favorite */}
+                      {/* Favorite */}
                       <Button
-                        variant="ghost"
-                        size="icon"
-                        className={`w-8 h-8 transition-all ${
-                          favSet.has(key)
-                            ? "text-rose-500"
-                            : "text-muted-foreground hover:text-rose-400"
-                        }`}
+                        variant="ghost" size="icon"
+                        className={`w-8 h-8 transition-all ${favSet.has(key) ? "text-rose-500" : "text-muted-foreground hover:text-rose-400"}`}
                         onClick={() => toggleFavorite(index)}
                         data-testid={`button-fav-ayah-${ayah.numberInSurah}`}
                       >
-                        <Heart
-                          className={`w-4 h-4 transition-transform ${
-                            favPopped === key ? "scale-150" : "scale-100"
-                          } ${favSet.has(key) ? "fill-rose-500" : ""}`}
-                        />
+                        <Heart className={`w-4 h-4 transition-transform ${favPopped === key ? "scale-150" : "scale-100"} ${favSet.has(key) ? "fill-rose-500" : ""}`} />
                       </Button>
 
                       {/* Bookmark */}
                       <Button
-                        variant="ghost"
-                        size="icon"
+                        variant="ghost" size="icon"
                         className={`w-8 h-8 ${bm ? "text-primary" : "text-muted-foreground"}`}
                         onClick={() => toggleBookmark(index)}
                         data-testid={`button-bookmark-ayah-${ayah.numberInSurah}`}
                       >
-                        {bm ? (
-                          <BookmarkCheck className="w-4 h-4" />
-                        ) : (
-                          <Bookmark className="w-4 h-4" />
-                        )}
+                        {bm ? <BookmarkCheck className="w-4 h-4" /> : <Bookmark className="w-4 h-4" />}
                       </Button>
                     </div>
                   </div>
 
                   {/* Arabic text */}
-                  <p
-                    dir="rtl"
-                    className="text-3xl md:text-4xl font-arabic leading-[2.2] text-foreground text-right"
-                  >
+                  <p dir="rtl" className="text-3xl md:text-4xl font-arabic leading-[2.2] text-foreground text-right">
                     {ayah.textAr}
                   </p>
 
                   {/* Translation */}
                   <p
                     dir={isRtlTranslation ? "rtl" : "ltr"}
-                    className={`text-lg md:text-xl leading-relaxed text-muted-foreground font-serif ${
-                      isRtlTranslation ? "text-right" : "text-left"
-                    }`}
+                    className={`text-lg md:text-xl leading-relaxed text-muted-foreground font-serif ${isRtlTranslation ? "text-right" : "text-left"}`}
                   >
                     {ayah.textTranslation}
                   </p>
@@ -366,22 +395,54 @@ export function SurahReader() {
             })}
       </div>
 
-      {/* Sticky audio player at the bottom */}
+      {/* ── Sticky audio player ── */}
       {surah && (
         <div className="fixed bottom-16 md:bottom-0 left-0 right-0 z-30 border-t border-border bg-card/95 backdrop-blur-md shadow-xl">
+          {/* Audio mode selector */}
+          <div className="flex items-center gap-0 border-b border-border/40 px-4 py-2">
+            <span className="text-xs text-muted-foreground mr-3 shrink-0">Audio:</span>
+            <div className="flex items-center gap-1 bg-muted rounded-full p-0.5">
+              <AudioModeBtn
+                active={audioMode === "arabic"}
+                onClick={() => handleModeChange("arabic")}
+                testId="button-audio-mode-arabic"
+                icon={<Volume2 className="w-3 h-3" />}
+                label="Arabic"
+              />
+              <AudioModeBtn
+                active={audioMode === "tts"}
+                onClick={() => handleModeChange("tts")}
+                testId="button-audio-mode-tts"
+                disabled={!ttsSupported}
+                icon={<Mic className="w-3 h-3" />}
+                label={language === "urdu" ? "اردو" : "English"}
+              />
+            </div>
+            {audioMode === "tts" && !ttsSupported && (
+              <span className="text-xs text-destructive ml-2">TTS not supported</span>
+            )}
+            {audioMode === "tts" && ttsSupported && (
+              <span className="text-xs text-muted-foreground ml-2 hidden sm:inline">
+                Reads {language === "urdu" ? "Urdu" : "English"} translation aloud
+              </span>
+            )}
+          </div>
+
+          {/* Playback controls */}
           <div className="max-w-4xl mx-auto px-4 py-3 flex items-center gap-4">
-            <div className="flex items-center gap-1 text-primary">
-              <Volume2 className="w-4 h-4" />
+            <div className="flex items-center gap-1 text-primary shrink-0">
+              {audioMode === "arabic" ? <Volume2 className="w-4 h-4" /> : <Mic className="w-4 h-4" />}
             </div>
 
             <div className="flex-1 min-w-0">
               {playingIndex !== null ? (
                 <p className="text-sm font-medium text-foreground truncate">
                   {surah.englishName} · Verse {surah.ayahs[playingIndex]?.numberInSurah}
+                  {audioMode === "tts" && <span className="text-muted-foreground text-xs ml-1">(TTS)</span>}
                 </p>
               ) : (
                 <p className="text-sm text-muted-foreground">
-                  Tap play or a verse to start audio
+                  {audioMode === "arabic" ? "Arabic recitation by Al-Afasy" : `${language === "urdu" ? "Urdu" : "English"} translation voice`}
                 </p>
               )}
               {isAudioLoading && (
@@ -390,39 +451,20 @@ export function SurahReader() {
             </div>
 
             <div className="flex items-center gap-1">
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={handlePrev}
+              <Button variant="ghost" size="icon" onClick={handlePrev}
                 disabled={playingIndex === null || playingIndex <= 0}
-                data-testid="button-audio-prev"
-                className="w-9 h-9"
-              >
+                data-testid="button-audio-prev" className="w-9 h-9">
                 <ChevronLeft className="w-5 h-5" />
               </Button>
 
-              <Button
-                variant="default"
-                size="icon"
-                onClick={handlePlayPause}
-                data-testid="button-audio-play-pause"
-                className="w-10 h-10 rounded-full"
-              >
-                {isPlaying && !isAudioLoading ? (
-                  <Pause className="w-5 h-5" />
-                ) : (
-                  <Play className="w-5 h-5" />
-                )}
+              <Button variant="default" size="icon" onClick={handlePlayPause}
+                data-testid="button-audio-play-pause" className="w-10 h-10 rounded-full">
+                {isPlaying && !isAudioLoading ? <Pause className="w-5 h-5" /> : <Play className="w-5 h-5" />}
               </Button>
 
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={handleNext}
+              <Button variant="ghost" size="icon" onClick={handleNext}
                 disabled={!surah || playingIndex === surah.ayahs.length - 1}
-                data-testid="button-audio-next"
-                className="w-9 h-9"
-              >
+                data-testid="button-audio-next" className="w-9 h-9">
                 <ChevronRight className="w-5 h-5" />
               </Button>
             </div>
@@ -430,5 +472,27 @@ export function SurahReader() {
         </div>
       )}
     </div>
+  );
+}
+
+// ── AudioModeBtn ──────────────────────────────────────────────────────────────
+function AudioModeBtn({ active, onClick, icon, label, testId, disabled }: {
+  active: boolean; onClick: () => void; icon: React.ReactNode;
+  label: string; testId?: string; disabled?: boolean;
+}) {
+  return (
+    <button
+      onClick={onClick}
+      disabled={disabled}
+      data-testid={testId}
+      className={`flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium transition-all ${
+        disabled ? "opacity-40 cursor-not-allowed text-muted-foreground"
+        : active ? "bg-primary text-primary-foreground shadow-sm"
+        : "text-muted-foreground hover:text-foreground"
+      }`}
+    >
+      {icon}
+      <span>{label}</span>
+    </button>
   );
 }
