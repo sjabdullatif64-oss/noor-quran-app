@@ -1,38 +1,67 @@
 import { useState } from "react";
-import { ChevronLeft, Moon, Globe, MapPin, Bell, Check, Sun } from "lucide-react";
+import { ChevronLeft, Moon, Globe, MapPin, Bell, Check, Sun, ChevronRight } from "lucide-react";
 import { Link } from "wouter";
 import { useTheme } from "@/components/theme-provider";
 import { getCity, setCity as saveCity, getLang, setLang as saveLang, PRESET_CITIES } from "@/lib/settings";
+import { ALL_LANGUAGES, TRANSLATION_LABELS, TRANSLATION_ENGLISH_NAMES, TranslationLanguage } from "@/lib/api";
 import { useToast } from "@/hooks/use-toast";
 
-const LANGUAGES = [
-  { id: "urdu" as const, label: "اردو", sublabel: "Urdu" },
-  { id: "english" as const, label: "English", sublabel: "English" },
-];
+// Flag emoji per language for visual flair
+const LANG_FLAG: Record<TranslationLanguage, string> = {
+  urdu:       "🇵🇰",
+  english:    "🇬🇧",
+  hindi:      "🇮🇳",
+  turkish:    "🇹🇷",
+  bengali:    "🇧🇩",
+  indonesian: "🇮🇩",
+  french:     "🇫🇷",
+  spanish:    "🇪🇸",
+  malay:      "🇲🇾",
+};
+
+// Accent color per language
+const LANG_ACCENT: Record<TranslationLanguage, string> = {
+  urdu:       "border-emerald-600 bg-emerald-900/30",
+  english:    "border-sky-600 bg-sky-900/20",
+  hindi:      "border-orange-600 bg-orange-900/20",
+  turkish:    "border-red-600 bg-red-900/20",
+  bengali:    "border-teal-600 bg-teal-900/20",
+  indonesian: "border-rose-600 bg-rose-900/20",
+  french:     "border-blue-600 bg-blue-900/20",
+  spanish:    "border-yellow-600 bg-yellow-900/20",
+  malay:      "border-lime-600 bg-lime-900/20",
+};
 
 export function Settings() {
   const { theme, setTheme } = useTheme();
-  const [defaultLang, setDefaultLang] = useState<"urdu" | "english">(() => getLang());
+  const [defaultLang, setDefaultLang] = useState<TranslationLanguage>(() => getLang());
   const [defaultCity, setDefaultCity] = useState<string>(() => getCity());
   const [savedLang, setSavedLang] = useState(false);
   const [savedCity, setSavedCity] = useState(false);
+  const [showAllLangs, setShowAllLangs] = useState(false);
   const { toast } = useToast();
 
-  const handleLang = (lang: "urdu" | "english") => {
+  const handleLang = (lang: TranslationLanguage) => {
     setDefaultLang(lang);
     saveLang(lang);
     setSavedLang(true);
-    setTimeout(() => setSavedLang(false), 1500);
-    toast({ title: "Translation saved", description: `Default translation set to ${lang === "urdu" ? "Urdu" : "English"}.` });
+    setTimeout(() => setSavedLang(false), 2000);
+    toast({
+      title: "Translation saved",
+      description: `Default translation set to ${TRANSLATION_ENGLISH_NAMES[lang]}.`,
+    });
   };
 
   const handleCity = (city: string) => {
     setDefaultCity(city);
     saveCity(city);
     setSavedCity(true);
-    setTimeout(() => setSavedCity(false), 1500);
+    setTimeout(() => setSavedCity(false), 2000);
     toast({ title: "City saved", description: `Prayer times will use ${city}.` });
   };
+
+  // Show first 4 languages; expand to all with "Show more"
+  const visibleLangs = showAllLangs ? ALL_LANGUAGES : ALL_LANGUAGES.slice(0, 4);
 
   return (
     <div
@@ -44,68 +73,98 @@ export function Settings() {
         <Link href="/more" className="text-emerald-600 hover:text-emerald-400 transition-colors" data-testid="link-back-more">
           <ChevronLeft className="w-6 h-6" />
         </Link>
-        <h1 className="text-2xl font-serif font-bold text-emerald-300">Settings</h1>
+        <div className="flex-1">
+          <h1 className="text-2xl font-serif font-bold text-emerald-300">Settings</h1>
+          <p className="text-emerald-700 text-xs mt-0.5">App preferences & customisation</p>
+        </div>
       </div>
 
       <div className="px-4 space-y-4">
 
-        {/* Appearance */}
+        {/* ── Appearance ──────────────────────────────────────────────────── */}
         <Section title="Appearance" icon={<Moon className="w-4 h-4" />}>
           <div className="px-4 py-4 flex items-center justify-between">
             <div>
               <p className="text-white text-sm font-medium">Dark Mode</p>
-              <p className="text-emerald-700 text-xs mt-0.5">Currently: {theme === "dark" ? "Dark" : "Light"}</p>
+              <p className="text-emerald-700 text-xs mt-0.5">
+                Currently: {theme === "dark" ? "Dark" : "Light"}
+              </p>
             </div>
             <button
               onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
-              className={`relative w-14 h-7 rounded-full transition-all ${theme === "dark" ? "bg-emerald-600" : "bg-emerald-900/50"}`}
+              className={`relative w-14 h-7 rounded-full transition-all ${
+                theme === "dark" ? "bg-emerald-600" : "bg-emerald-900/50"
+              }`}
               data-testid="toggle-dark-mode"
             >
               <span
                 className="absolute top-1 w-5 h-5 rounded-full shadow-md flex items-center justify-center transition-transform bg-white"
                 style={{ transform: theme === "dark" ? "translateX(32px)" : "translateX(4px)" }}
               >
-                {theme === "dark" ? <Moon className="w-3 h-3 text-emerald-700" /> : <Sun className="w-3 h-3 text-amber-500" />}
+                {theme === "dark"
+                  ? <Moon className="w-3 h-3 text-emerald-700" />
+                  : <Sun  className="w-3 h-3 text-amber-500"   />}
               </span>
             </button>
           </div>
         </Section>
 
-        {/* Translation */}
+        {/* ── Quran Translation ────────────────────────────────────────────── */}
         <Section
           title="Quran Translation"
           icon={<Globe className="w-4 h-4" />}
           badge={savedLang ? "Saved ✓" : undefined}
         >
           <div className="p-4 space-y-2">
-            <p className="text-emerald-600 text-xs mb-3">Choose default translation language</p>
-            {LANGUAGES.map((lang) => (
-              <button
-                key={lang.id}
-                onClick={() => handleLang(lang.id)}
-                className={`w-full flex items-center justify-between p-4 rounded-xl border transition-all ${
-                  defaultLang === lang.id
-                    ? "border-emerald-600 bg-emerald-900/30"
-                    : "border-emerald-900/30 hover:border-emerald-700"
-                }`}
-                style={{ background: defaultLang === lang.id ? undefined : "rgba(255,255,255,0.02)" }}
-                data-testid={`setting-lang-${lang.id}`}
-              >
-                <div className="flex items-center gap-3">
-                  <span className="text-white font-medium">{lang.label}</span>
-                  <span className="text-emerald-600 text-sm">{lang.sublabel}</span>
-                </div>
-                {defaultLang === lang.id && (
-                  <div className="w-5 h-5 rounded-full bg-emerald-500 flex items-center justify-center">
-                    <Check className="w-3 h-3 text-white" />
+            <p className="text-emerald-600 text-xs mb-3">
+              Choose your default translation language. Arabic text is always shown.
+            </p>
+
+            {visibleLangs.map((lang) => {
+              const isActive = defaultLang === lang;
+              return (
+                <button
+                  key={lang}
+                  onClick={() => handleLang(lang)}
+                  className={`w-full flex items-center gap-3 p-4 rounded-xl border transition-all ${
+                    isActive
+                      ? LANG_ACCENT[lang]
+                      : "border-emerald-900/30 hover:border-emerald-700"
+                  }`}
+                  style={isActive ? {} : { background: "rgba(255,255,255,0.02)" }}
+                  data-testid={`setting-lang-${lang}`}
+                >
+                  <span className="text-xl shrink-0">{LANG_FLAG[lang]}</span>
+                  <div className="flex-1 min-w-0 text-left">
+                    <p className="text-white font-semibold text-sm">{TRANSLATION_ENGLISH_NAMES[lang]}</p>
+                    <p className="text-emerald-600 text-xs mt-0.5">{TRANSLATION_LABELS[lang]}</p>
                   </div>
-                )}
-              </button>
-            ))}
+                  {isActive && (
+                    <div className="w-6 h-6 rounded-full bg-emerald-500 flex items-center justify-center shrink-0">
+                      <Check className="w-3.5 h-3.5 text-white" />
+                    </div>
+                  )}
+                </button>
+              );
+            })}
+
+            {/* Show more / less toggle */}
+            <button
+              onClick={() => setShowAllLangs((v) => !v)}
+              className="w-full flex items-center justify-center gap-1.5 py-2.5 text-xs text-emerald-600 hover:text-emerald-400 transition-colors"
+              data-testid="button-toggle-all-langs"
+            >
+              <ChevronRight
+                className={`w-3.5 h-3.5 transition-transform ${showAllLangs ? "rotate-90" : ""}`}
+              />
+              {showAllLangs
+                ? "Show fewer languages"
+                : `Show ${ALL_LANGUAGES.length - 4} more languages`}
+            </button>
           </div>
         </Section>
 
-        {/* Prayer Times City */}
+        {/* ── Prayer Times City ─────────────────────────────────────────────── */}
         <Section
           title="Prayer Times"
           icon={<MapPin className="w-4 h-4" />}
@@ -113,7 +172,8 @@ export function Settings() {
         >
           <div className="p-4 space-y-2">
             <p className="text-emerald-600 text-xs mb-3">
-              Selected: <span className="text-emerald-300 font-medium">{defaultCity}</span>
+              Selected city:{" "}
+              <span className="text-emerald-300 font-semibold">{defaultCity}</span>
             </p>
             <div className="grid grid-cols-2 gap-2">
               {PRESET_CITIES.map((city) => (
@@ -128,7 +188,9 @@ export function Settings() {
                   style={{ background: defaultCity === city ? undefined : "rgba(255,255,255,0.02)" }}
                   data-testid={`setting-city-${city.toLowerCase().replace(/\s+/g, "-")}`}
                 >
-                  {defaultCity === city && <span className="text-emerald-400 mr-1">✓ </span>}
+                  {defaultCity === city && (
+                    <span className="text-emerald-400 mr-1">✓</span>
+                  )}
                   {city}
                 </button>
               ))}
@@ -136,35 +198,47 @@ export function Settings() {
           </div>
         </Section>
 
-        {/* Notifications */}
+        {/* ── Notifications link ────────────────────────────────────────────── */}
         <Section title="Notifications" icon={<Bell className="w-4 h-4" />}>
-          <div className="px-4 py-4 flex items-center justify-between">
-            <div>
-              <p className="text-white text-sm font-medium">Prayer Reminders</p>
-              <p className="text-emerald-700 text-xs mt-0.5">Coming in next update</p>
+          <Link href="/notifications">
+            <div className="px-4 py-4 flex items-center justify-between hover:opacity-80 transition-opacity">
+              <div>
+                <p className="text-white text-sm font-medium">Islamic Reminders</p>
+                <p className="text-emerald-700 text-xs mt-0.5">Prayer times, Quran ayah & more</p>
+              </div>
+              <ChevronRight className="w-5 h-5 text-emerald-700" />
             </div>
-            <span className="text-xs text-emerald-800 border border-emerald-900/50 px-2.5 py-1 rounded-full">Soon</span>
-          </div>
+          </Link>
         </Section>
 
-        <p className="text-emerald-900 text-xs text-center pt-2 pb-6">Noor Quran v1.0 · All settings saved on device</p>
+        <p className="text-emerald-900 text-xs text-center pt-2 pb-6">
+          Noor Quran v1.0 · All settings saved on your device
+        </p>
       </div>
     </div>
   );
 }
 
-function Section({ title, icon, badge, children }: {
+// ── Section wrapper ────────────────────────────────────────────────────────────
+function Section({
+  title, icon, badge, children,
+}: {
   title: string; icon: React.ReactNode; badge?: string; children: React.ReactNode;
 }) {
   return (
-    <div className="rounded-2xl border border-emerald-900/40 overflow-hidden" style={{ background: "rgba(255,255,255,0.03)" }}>
+    <div
+      className="rounded-2xl border border-emerald-900/40 overflow-hidden"
+      style={{ background: "rgba(255,255,255,0.03)" }}
+    >
       <div className="flex items-center justify-between px-4 py-3 border-b border-emerald-900/30">
         <div className="flex items-center gap-2">
           <span className="text-emerald-600">{icon}</span>
           <span className="text-emerald-400 text-sm font-semibold uppercase tracking-wider">{title}</span>
         </div>
         {badge && (
-          <span className="text-xs text-emerald-400 font-medium animate-in fade-in duration-200">{badge}</span>
+          <span className="text-xs text-emerald-400 font-medium animate-in fade-in duration-200">
+            {badge}
+          </span>
         )}
       </div>
       {children}

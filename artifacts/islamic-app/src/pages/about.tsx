@@ -1,7 +1,7 @@
 import { Link } from "wouter";
 import {
   ChevronLeft, Share2, Shield, Mail, BookOpen, Clock, Heart,
-  Bookmark, Download, Hash, Bell, Compass, Star,
+  Bookmark, Download, Hash, Bell, Compass, Sparkles, Globe, Volume2, Gift,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
@@ -9,17 +9,100 @@ const APP_SHARE_URL = "https://play.google.com/store/apps/details?id=com.sj64noo
 const APP_SHARE_MSG =
   "Download Noor Quran - Quran, Prayer Times, Islamic Features & More.\nA beautiful Islamic app for daily Muslim life.";
 
-const FEATURES = [
-  { icon: <BookOpen className="w-4 h-4" />, label: "Quran Reading",         color: "text-emerald-400" },
-  { icon: <Star     className="w-4 h-4" />, label: "Urdu Translation",       color: "text-amber-400"   },
-  { icon: <Star     className="w-4 h-4" />, label: "English Translation",    color: "text-sky-400"     },
-  { icon: <Clock    className="w-4 h-4" />, label: "Prayer Times",           color: "text-rose-400"    },
-  { icon: <Heart    className="w-4 h-4" />, label: "Favorites",              color: "text-pink-400"    },
-  { icon: <Bookmark className="w-4 h-4" />, label: "Bookmarks",              color: "text-blue-400"    },
-  { icon: <Download className="w-4 h-4" />, label: "Offline Downloads",      color: "text-teal-400"    },
-  { icon: <Compass  className="w-4 h-4" />, label: "Qibla Direction",        color: "text-orange-400"  },
-  { icon: <Hash     className="w-4 h-4" />, label: "Tasbeeh Counter",        color: "text-purple-400"  },
-  { icon: <Bell     className="w-4 h-4" />, label: "Islamic Notifications",  color: "text-yellow-400"  },
+// ── Feature cards ─────────────────────────────────────────────────────────────
+interface Feature {
+  icon: React.ReactNode;
+  label: string;
+  description: string;
+  accent: string;
+  bg: string;
+}
+
+const FEATURES: Feature[] = [
+  {
+    icon: <BookOpen className="w-5 h-5" />,
+    label: "Quran Reading",
+    description: "Full Arabic text with beautiful typography",
+    accent: "text-emerald-300",
+    bg: "rgba(52,211,153,0.12)",
+  },
+  {
+    icon: <Volume2 className="w-5 h-5" />,
+    label: "Audio Playback",
+    description: "Al-Afasy recitation + translation voice",
+    accent: "text-sky-300",
+    bg: "rgba(56,189,248,0.12)",
+  },
+  {
+    icon: <Clock className="w-5 h-5" />,
+    label: "Prayer Times",
+    description: "Accurate times for any city worldwide",
+    accent: "text-rose-300",
+    bg: "rgba(244,63,94,0.12)",
+  },
+  {
+    icon: <Bell className="w-5 h-5" />,
+    label: "Notifications",
+    description: "Daily ayah, azkar & prayer reminders",
+    accent: "text-yellow-300",
+    bg: "rgba(234,179,8,0.12)",
+  },
+  {
+    icon: <Heart className="w-5 h-5" />,
+    label: "Favorites",
+    description: "Save your beloved surahs & ayahs",
+    accent: "text-pink-300",
+    bg: "rgba(236,72,153,0.12)",
+  },
+  {
+    icon: <Bookmark className="w-5 h-5" />,
+    label: "Bookmarks",
+    description: "Mark your reading position easily",
+    accent: "text-blue-300",
+    bg: "rgba(96,165,250,0.12)",
+  },
+  {
+    icon: <Download className="w-5 h-5" />,
+    label: "Downloads",
+    description: "Offline Quran text & audio storage",
+    accent: "text-teal-300",
+    bg: "rgba(45,212,191,0.12)",
+  },
+  {
+    icon: <Gift className="w-5 h-5" />,
+    label: "Islamic Gifts",
+    description: "Beautiful greeting cards & duas",
+    accent: "text-purple-300",
+    bg: "rgba(168,85,247,0.12)",
+  },
+  {
+    icon: <Sparkles className="w-5 h-5" />,
+    label: "Updates System",
+    description: "Live news & announcements from sheet",
+    accent: "text-amber-300",
+    bg: "rgba(217,119,6,0.12)",
+  },
+  {
+    icon: <Globe className="w-5 h-5" />,
+    label: "9 Languages",
+    description: "Urdu, English, Hindi, Turkish & more",
+    accent: "text-lime-300",
+    bg: "rgba(132,204,22,0.12)",
+  },
+  {
+    icon: <Compass className="w-5 h-5" />,
+    label: "Qibla Direction",
+    description: "Live compass pointing to Makkah",
+    accent: "text-orange-300",
+    bg: "rgba(249,115,22,0.12)",
+  },
+  {
+    icon: <Hash className="w-5 h-5" />,
+    label: "Tasbeeh Counter",
+    description: "Track your daily dhikr & tasbih",
+    accent: "text-violet-300",
+    bg: "rgba(139,92,246,0.12)",
+  },
 ];
 
 function shareApp(toast: ReturnType<typeof useToast>["toast"]) {
@@ -41,17 +124,16 @@ export function About() {
       className="min-h-screen pb-28 md:pb-10 animate-in fade-in duration-500"
       style={{ background: "linear-gradient(150deg, #071a0e 0%, #0a1f12 50%, #061610 100%)" }}
     >
-      {/* Header */}
+      {/* ── Header ── */}
       <div className="flex items-center gap-3 px-5 pt-6 pb-2">
         <Link href="/more" className="text-emerald-600 hover:text-emerald-400 transition-colors">
           <ChevronLeft className="w-6 h-6" />
         </Link>
-        <h1 className="text-xl font-semibold text-emerald-300">About</h1>
+        <h1 className="text-xl font-semibold text-emerald-300">About Noor Quran</h1>
       </div>
 
-      {/* Hero — Logo + Name */}
+      {/* ── Hero ── */}
       <div className="flex flex-col items-center pt-6 pb-8 px-6">
-        {/* Logo */}
         <div
           className="w-28 h-28 rounded-3xl flex items-center justify-center mb-5 shadow-2xl"
           style={{
@@ -62,7 +144,6 @@ export function About() {
           <span className="text-6xl select-none">☪️</span>
         </div>
 
-        {/* Name */}
         <h2 className="text-4xl font-serif font-bold text-emerald-300 tracking-tight">Noor Quran</h2>
         <span
           className="mt-2 px-3 py-1 rounded-full text-xs font-medium text-emerald-400 border border-emerald-800/60"
@@ -70,48 +151,75 @@ export function About() {
         >
           Version 1.0.0
         </span>
-
-        {/* Arabic tagline */}
-        <p className="text-emerald-700 text-sm mt-2 font-arabic tracking-wide">بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ</p>
-
-        {/* Description */}
+        <p className="text-emerald-700 text-sm mt-2 font-arabic tracking-wide">
+          بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ
+        </p>
         <p className="text-center text-emerald-600 text-sm mt-5 leading-relaxed max-w-xs">
-          Noor Quran is a modern Islamic app designed to help Muslims in their daily spiritual life. The app
-          includes Quran reading, Urdu and English translations, prayer times, bookmarks, favorites, tasbeeh
-          tools, Islamic reminders, and more.
+          A modern Islamic companion app designed to help Muslims in their daily spiritual journey — Quran,
+          prayer times, reminders, and more, all in one beautiful experience.
         </p>
       </div>
 
-      {/* Divider */}
-      <div className="mx-5 border-t border-emerald-900/40 mb-5" />
+      {/* ── Divider ── */}
+      <div className="mx-5 border-t border-emerald-900/40 mb-6" />
 
-      <div className="px-5 space-y-4">
+      <div className="px-5 space-y-5">
 
-        {/* Features */}
-        <Section title="Features">
-          <div className="grid grid-cols-2 gap-2 p-4">
-            {FEATURES.map((f) => (
-              <div key={f.label} className="flex items-center gap-2.5">
-                <span className={`${f.color} shrink-0`}>{f.icon}</span>
-                <span className="text-emerald-300 text-sm">{f.label}</span>
+        {/* ── Features section ── */}
+        <div>
+          <div className="flex items-center gap-2 mb-4">
+            <Sparkles className="w-4 h-4 text-emerald-500" />
+            <p className="text-emerald-400 text-sm font-semibold uppercase tracking-wider">Features</p>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            {FEATURES.map((f, i) => (
+              <div
+                key={f.label}
+                className="flex items-center gap-4 p-4 rounded-2xl border border-emerald-900/40 transition-all hover:border-emerald-700/50"
+                style={{
+                  background: "rgba(255,255,255,0.03)",
+                  animationDelay: `${i * 40}ms`,
+                  animation: "fadeSlideUp 0.4s ease both",
+                }}
+              >
+                {/* Icon */}
+                <div
+                  className={`w-11 h-11 rounded-xl flex items-center justify-center shrink-0 ${f.accent}`}
+                  style={{ background: f.bg }}
+                >
+                  {f.icon}
+                </div>
+
+                {/* Text */}
+                <div className="min-w-0">
+                  <p className="text-white text-sm font-semibold leading-tight">{f.label}</p>
+                  <p className="text-emerald-700 text-xs mt-0.5 leading-snug">{f.description}</p>
+                </div>
               </div>
             ))}
           </div>
-        </Section>
+        </div>
 
-        {/* Developer */}
-        <Section title="Developer">
-          <div className="p-4 space-y-2">
-            <InfoRow label="Developer" value="SJ64 Studios" />
-            <InfoRow label="Package"   value="com.sj64noorquran" />
-            <InfoRow label="Platform"  value="Android · Web" />
-            <InfoRow label="Category"  value="Islamic / Religion" />
+        {/* ── Developer info ── */}
+        <div
+          className="rounded-2xl border border-emerald-900/40 overflow-hidden"
+          style={{ background: "rgba(255,255,255,0.03)" }}
+        >
+          <div className="px-4 py-2.5 border-b border-emerald-900/30">
+            <p className="text-emerald-500 text-xs font-semibold uppercase tracking-wider">Developer</p>
           </div>
-        </Section>
+          <div className="p-4 space-y-2.5">
+            <InfoRow label="Developer" value="SJ64 Studios"         />
+            <InfoRow label="Package"   value="com.sj64noorquran"    />
+            <InfoRow label="Platform"  value="Android · Web"        />
+            <InfoRow label="Category"  value="Islamic / Religion"   />
+            <InfoRow label="Languages" value="9 translations"       />
+          </div>
+        </div>
 
-        {/* Action buttons */}
+        {/* ── Action buttons ── */}
         <div className="space-y-3 pb-4">
-          {/* Share App */}
           <ActionButton
             icon={<Share2 className="w-5 h-5" />}
             label="Share Noor Quran"
@@ -122,8 +230,6 @@ export function About() {
             onClick={() => shareApp(toast)}
             testId="button-about-share"
           />
-
-          {/* Contact */}
           <ActionButton
             icon={<Mail className="w-5 h-5" />}
             label="Contact Us"
@@ -131,11 +237,11 @@ export function About() {
             accent="text-sky-400"
             bg="rgba(56,189,248,0.08)"
             border="border-sky-900/40"
-            onClick={() => window.open("mailto:support@sj64studios.com?subject=Noor Quran Feedback", "_blank")}
+            onClick={() =>
+              window.open("mailto:support@sj64studios.com?subject=Noor Quran Feedback", "_blank")
+            }
             testId="button-about-contact"
           />
-
-          {/* Privacy Policy */}
           <Link href="/privacy-policy" data-testid="button-about-privacy">
             <ActionButton
               icon={<Shield className="w-5 h-5" />}
@@ -148,30 +254,15 @@ export function About() {
           </Link>
         </div>
 
-        {/* Footer */}
         <p className="text-center text-emerald-900 text-xs pb-6">
-          Noor Quran © 2024 · Made with ❤️ for the Ummah
+          Noor Quran © 2025 · Made with ❤️ for the Ummah
         </p>
       </div>
     </div>
   );
 }
 
-// ── Sub-components ─────────────────────────────────────────────────────────────
-
-function Section({ title, children }: { title: string; children: React.ReactNode }) {
-  return (
-    <div
-      className="rounded-2xl border border-emerald-900/40 overflow-hidden"
-      style={{ background: "rgba(255,255,255,0.03)" }}
-    >
-      <div className="px-4 py-2.5 border-b border-emerald-900/30">
-        <p className="text-emerald-500 text-xs font-semibold uppercase tracking-wider">{title}</p>
-      </div>
-      {children}
-    </div>
-  );
-}
+// ── Helpers ───────────────────────────────────────────────────────────────────
 
 function InfoRow({ label, value }: { label: string; value: string }) {
   return (

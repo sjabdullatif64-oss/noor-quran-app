@@ -51,33 +51,103 @@ export interface PrayerData {
       date: string;
       format: string;
       day: string;
-      month: {
-        number: number;
-        en: string;
-        ar: string;
-      };
+      month: { number: number; en: string; ar: string };
       year: string;
     };
   };
 }
 
-export type TranslationLanguage = "urdu" | "english";
+// ── Translation language system ───────────────────────────────────────────────
 
+export type TranslationLanguage =
+  | "urdu"
+  | "english"
+  | "hindi"
+  | "turkish"
+  | "bengali"
+  | "indonesian"
+  | "french"
+  | "spanish"
+  | "malay";
+
+export const ALL_LANGUAGES: TranslationLanguage[] = [
+  "urdu",
+  "english",
+  "hindi",
+  "turkish",
+  "bengali",
+  "indonesian",
+  "french",
+  "spanish",
+  "malay",
+];
+
+/** Native-script display label for each language */
 export const TRANSLATION_LABELS: Record<TranslationLanguage, string> = {
-  urdu: "اردو",
-  english: "English",
+  urdu:       "اردو",
+  english:    "English",
+  hindi:      "हिन्दी",
+  turkish:    "Türkçe",
+  bengali:    "বাংলা",
+  indonesian: "Bahasa",
+  french:     "Français",
+  spanish:    "Español",
+  malay:      "Melayu",
 };
 
-export const TRANSLATION_EDITIONS: Record<TranslationLanguage, string> = {
-  urdu: "ur.jalandhry",
-  english: "en.sahih",
+/** English name for display in settings */
+export const TRANSLATION_ENGLISH_NAMES: Record<TranslationLanguage, string> = {
+  urdu:       "Urdu",
+  english:    "English",
+  hindi:      "Hindi",
+  turkish:    "Turkish",
+  bengali:    "Bengali",
+  indonesian: "Indonesian",
+  french:     "French",
+  spanish:    "Spanish",
+  malay:      "Malay",
 };
+
+/** AlQuran Cloud edition identifiers */
+export const TRANSLATION_EDITIONS: Record<TranslationLanguage, string> = {
+  urdu:       "ur.jalandhry",
+  english:    "en.sahih",
+  hindi:      "hi.hindi",
+  turkish:    "tr.ates",
+  bengali:    "bn.bengali",
+  indonesian: "id.indonesian",
+  french:     "fr.hamidullah",
+  spanish:    "es.asad",
+  malay:      "ms.basmeih",
+};
+
+/**
+ * BCP-47 language tags for Web Speech API TTS.
+ * Urdu & English have the best TTS support. Others will attempt TTS but
+ * may silently fall back to system default — the app always shows text.
+ */
+export const TTS_LANG_CODES: Record<TranslationLanguage, string> = {
+  urdu:       "ur-PK",
+  english:    "en-US",
+  hindi:      "hi-IN",
+  turkish:    "tr-TR",
+  bengali:    "bn-IN",
+  indonesian: "id-ID",
+  french:     "fr-FR",
+  spanish:    "es-ES",
+  malay:      "ms-MY",
+};
+
+/** Languages written right-to-left */
+export const RTL_LANGUAGES = new Set<TranslationLanguage>(["urdu"]);
 
 export const getAudioUrl = (globalAyahNumber: number) =>
   `https://cdn.islamic.network/quran/audio/128/ar.alafasy/${globalAyahNumber}.mp3`;
 
-export const useSurahList = () => {
-  return useQuery({
+// ── Hooks ─────────────────────────────────────────────────────────────────────
+
+export const useSurahList = () =>
+  useQuery({
     queryKey: ["surahs"],
     queryFn: async () => {
       const res = await fetch("https://api.alquran.cloud/v1/surah");
@@ -86,7 +156,6 @@ export const useSurahList = () => {
     },
     staleTime: Infinity,
   });
-};
 
 export const useSurah = (number: number, translation: TranslationLanguage) => {
   const edition = TRANSLATION_EDITIONS[translation];
@@ -100,33 +169,37 @@ export const useSurah = (number: number, translation: TranslationLanguage) => {
       const arData = await arRes.json();
       const trData = await trRes.json();
 
+      // Gracefully handle missing translation editions
+      const trAyahs: { text: string }[] = trData?.data?.ayahs ?? [];
+
       const ayahs: AyahData[] = arData.data.ayahs.map(
         (ayah: Ayah, index: number) => ({
           numberInSurah: ayah.numberInSurah,
-          globalNumber: ayah.number,
-          textAr: ayah.text,
-          textTranslation: trData.data.ayahs[index]?.text ?? "",
-          audioUrl: getAudioUrl(ayah.number),
+          globalNumber:  ayah.number,
+          textAr:            ayah.text,
+          textTranslation:   trAyahs[index]?.text ?? "",
+          audioUrl:          getAudioUrl(ayah.number),
         })
       );
 
       return {
-        number: arData.data.number,
-        name: arData.data.name,
-        englishName: arData.data.englishName,
+        number:               arData.data.number,
+        name:                 arData.data.name,
+        englishName:          arData.data.englishName,
         englishNameTranslation: arData.data.englishNameTranslation,
-        numberOfAyahs: arData.data.numberOfAyahs,
-        revelationType: arData.data.revelationType,
+        numberOfAyahs:        arData.data.numberOfAyahs,
+        revelationType:       arData.data.revelationType,
         ayahs,
       } as SurahDetail;
     },
     enabled: !!number,
     staleTime: 10 * 60 * 1000,
+    retry: 1,
   });
 };
 
-export const usePrayerTimes = (city: string, country: string) => {
-  return useQuery({
+export const usePrayerTimes = (city: string, country: string) =>
+  useQuery({
     queryKey: ["prayerTimes", city, country],
     queryFn: async () => {
       const res = await fetch(
@@ -136,36 +209,33 @@ export const usePrayerTimes = (city: string, country: string) => {
       return data.data as PrayerData;
     },
   });
-};
 
-export const useRandomAyah = () => {
-  return useQuery({
+export const useRandomAyah = () =>
+  useQuery({
     queryKey: ["randomAyah"],
     queryFn: async () => {
       const randomSurah = Math.floor(Math.random() * 114) + 1;
-      const res = await fetch(`https://api.alquran.cloud/v1/surah/${randomSurah}`);
+      const res  = await fetch(`https://api.alquran.cloud/v1/surah/${randomSurah}`);
       const data = await res.json();
-      const numAyahs = data.data.numberOfAyahs;
+      const numAyahs      = data.data.numberOfAyahs;
       const randomAyahIdx = Math.floor(Math.random() * numAyahs);
-      const randomAyah = data.data.ayahs[randomAyahIdx];
+      const randomAyah    = data.data.ayahs[randomAyahIdx];
 
       const [arRes, urRes] = await Promise.all([
         fetch(`https://api.alquran.cloud/v1/ayah/${randomAyah.number}`),
-        fetch(`https://api.alquran.cloud/v1/ayah/${randomAyah.number}/ur.sahih`),
+        fetch(`https://api.alquran.cloud/v1/ayah/${randomAyah.number}/ur.jalandhry`),
       ]);
-
       const arData = await arRes.json();
       const urData = await urRes.json();
 
       return {
-        surah: data.data.englishName,
+        surah:         data.data.englishName,
         numberInSurah: arData.data.numberInSurah,
-        globalNumber: randomAyah.number,
-        textAr: arData.data.text,
-        textUr: urData.data.text,
-        audioUrl: getAudioUrl(randomAyah.number),
+        globalNumber:  randomAyah.number,
+        textAr:        arData.data.text,
+        textUr:        urData.data.text,
+        audioUrl:      getAudioUrl(randomAyah.number),
       };
     },
     staleTime: Infinity,
   });
-};

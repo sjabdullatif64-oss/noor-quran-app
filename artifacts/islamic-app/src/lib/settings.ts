@@ -1,15 +1,17 @@
-const CITY_KEY = "noor-city";
+import type { TranslationLanguage } from "@/lib/api";
+
+const CITY_KEY    = "noor-city";
 const COUNTRY_KEY = "noor-country";
-const LANG_KEY = "noor-lang";
+const LANG_KEY    = "noor-lang";
 
 export const CITY_COUNTRY_MAP: Record<string, string> = {
-  Jeddah: "Saudi Arabia",
-  Makkah: "Saudi Arabia",
-  Madinah: "Saudi Arabia",
-  Karachi: "Pakistan",
-  Lahore: "Pakistan",
-  Dubai: "UAE",
-  London: "UK",
+  Jeddah:     "Saudi Arabia",
+  Makkah:     "Saudi Arabia",
+  Madinah:    "Saudi Arabia",
+  Karachi:    "Pakistan",
+  Lahore:     "Pakistan",
+  Dubai:      "UAE",
+  London:     "UK",
   "New York": "US",
 };
 
@@ -27,15 +29,20 @@ export function getCountry(): string {
 
 export function setCity(city: string): void {
   localStorage.setItem(CITY_KEY, city);
-  const country = CITY_COUNTRY_MAP[city] ?? "Saudi Arabia";
-  localStorage.setItem(COUNTRY_KEY, country);
+  localStorage.setItem(COUNTRY_KEY, CITY_COUNTRY_MAP[city] ?? "Saudi Arabia");
 }
 
-export function getLang(): "urdu" | "english" {
-  const v = localStorage.getItem(LANG_KEY);
-  return v === "english" ? "english" : "urdu";
+const VALID_LANGS: TranslationLanguage[] = [
+  "urdu", "english", "hindi", "turkish",
+  "bengali", "indonesian", "french", "spanish", "malay",
+];
+
+export function getLang(): TranslationLanguage {
+  const v = localStorage.getItem(LANG_KEY) as TranslationLanguage | null;
+  if (v && (VALID_LANGS as string[]).includes(v)) return v;
+  return "urdu";
 }
 
-export function setLang(lang: "urdu" | "english"): void {
+export function setLang(lang: TranslationLanguage): void {
   localStorage.setItem(LANG_KEY, lang);
 }
