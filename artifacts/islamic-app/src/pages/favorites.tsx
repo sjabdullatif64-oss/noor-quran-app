@@ -126,7 +126,7 @@ export function Favorites() {
               </Link>
               <button
                 onClick={() => handleRemoveSurah(surah.number)}
-                className="opacity-0 group-hover:opacity-100 transition-opacity w-8 h-8 rounded-full flex items-center justify-center text-red-500 hover:bg-red-900/20"
+                className="opacity-40 hover:opacity-100 active:opacity-100 transition-opacity w-8 h-8 rounded-full flex items-center justify-center text-red-400 hover:bg-red-900/20 shrink-0"
                 data-testid={`button-remove-fav-surah-${surah.number}`}
               >
                 <Trash2 className="w-4 h-4" />
@@ -159,7 +159,7 @@ export function Favorites() {
               </Link>
               <button
                 onClick={() => handleRemoveAyah(ayah.surahNumber, ayah.ayahNumber)}
-                className="opacity-0 group-hover:opacity-100 transition-opacity w-8 h-8 rounded-full flex items-center justify-center text-red-500 hover:bg-red-900/20 shrink-0 self-start mt-1"
+                className="opacity-40 hover:opacity-100 active:opacity-100 transition-opacity w-8 h-8 rounded-full flex items-center justify-center text-red-400 hover:bg-red-900/20 shrink-0 self-start mt-1"
                 data-testid={`button-remove-fav-ayah-${ayah.surahNumber}-${ayah.ayahNumber}`}
               >
                 <Trash2 className="w-4 h-4" />

@@ -61,17 +61,15 @@ export interface PrayerData {
   };
 }
 
-export type TranslationLanguage = "urdu" | "sindhi" | "english";
+export type TranslationLanguage = "urdu" | "english";
 
 export const TRANSLATION_LABELS: Record<TranslationLanguage, string> = {
   urdu: "اردو",
-  sindhi: "سنڌي",
   english: "English",
 };
 
 export const TRANSLATION_EDITIONS: Record<TranslationLanguage, string> = {
-  urdu: "ur.sahih",
-  sindhi: "sd.muhammadlockhat",
+  urdu: "ur.jalandhry",
   english: "en.sahih",
 };
 

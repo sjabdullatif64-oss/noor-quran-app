@@ -92,12 +92,14 @@ export function Quran() {
                   </div>
                 </Link>
 
-                {/* Heart button */}
+                {/* Heart button — always visible on mobile, hover-dims when inactive on desktop */}
                 <button
                   onClick={(e) => handleFav(e, surah)}
-                  className={`absolute top-3 right-3 w-7 h-7 flex items-center justify-center rounded-full transition-all
-                    ${isFav ? "opacity-100" : "opacity-0 group-hover:opacity-100"}
-                    ${isFav ? "text-rose-500" : "text-muted-foreground hover:text-rose-400"}`}
+                  className={`absolute top-3 right-3 w-8 h-8 flex items-center justify-center rounded-full transition-all
+                    ${isFav
+                      ? "text-rose-500 opacity-100"
+                      : "text-muted-foreground opacity-40 hover:opacity-100 hover:text-rose-400"
+                    }`}
                   data-testid={`button-fav-surah-${surah.number}`}
                 >
                   <Heart

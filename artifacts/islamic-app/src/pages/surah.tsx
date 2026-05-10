@@ -12,7 +12,7 @@ import {
 } from "@/lib/bookmarks";
 import { getFavAyahs, toggleAyahFav } from "@/lib/favorites";
 
-const LANGUAGES: TranslationLanguage[] = ["urdu", "sindhi", "english"];
+const LANGUAGES: TranslationLanguage[] = ["urdu", "english"];
 
 export function SurahReader() {
   const params = useParams();
@@ -174,7 +174,7 @@ export function SurahReader() {
     }
   };
 
-  const isRtlTranslation = language === "urdu" || language === "sindhi";
+  const isRtlTranslation = language === "urdu";
 
   return (
     <div className="space-y-0 pb-36 md:pb-8 animate-in fade-in duration-500 max-w-4xl mx-auto">
