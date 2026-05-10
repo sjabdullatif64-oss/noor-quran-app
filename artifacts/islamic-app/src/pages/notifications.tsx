@@ -1,8 +1,8 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import {
   ChevronLeft, Bell, BellOff, BellRing, Check, Play,
   BookOpen, Sunrise, Sun, Sunset, Moon, Star, BookMarked, Hash,
-  Lock, RefreshCw, ExternalLink, Settings2,
+  Lock, RefreshCw, Settings2, Smartphone, Globe,
 } from "lucide-react";
 import { Link } from "wouter";
 import {
@@ -12,28 +12,31 @@ import {
   getPermissionState,
   sendTestNotification,
   isSupported,
+  getAppEnv,
+  AppEnv,
   AllNotifSettings,
   NotifSetting,
+  PermissionState,
 } from "@/lib/notifications";
 import { useToast } from "@/hooks/use-toast";
 
 // ── Notification definitions ──────────────────────────────────────────────────
 interface NotifDef {
-  key: keyof AllNotifSettings;
-  label: string;
-  sublabel: string;
-  icon: React.ReactNode;
-  accent: string;
-  accentBg: string;
+  key:        keyof AllNotifSettings;
+  label:      string;
+  sublabel:   string;
+  icon:       React.ReactNode;
+  accent:     string;
+  accentBg:   string;
   fridayOnly?: boolean;
 }
 
 const DAILY_REMINDERS: NotifDef[] = [
-  { key: "quranAyah",       label: "Daily Quran Ayah",   sublabel: "A verse from the Holy Quran each day",        icon: <BookOpen className="w-5 h-5" />, accent: "text-emerald-300", accentBg: "rgba(52,211,153,0.12)"  },
-  { key: "islamicQuote",    label: "Islamic Wisdom",     sublabel: "Hadith or Islamic quote of the day",          icon: <Star     className="w-5 h-5" />, accent: "text-amber-300",  accentBg: "rgba(217,119,6,0.12)"   },
-  { key: "morningAzkar",    label: "Morning Azkar",      sublabel: "Morning remembrance and dhikr",               icon: <Sunrise  className="w-5 h-5" />, accent: "text-sky-300",    accentBg: "rgba(56,189,248,0.12)"  },
-  { key: "eveningAzkar",    label: "Evening Azkar",      sublabel: "Evening remembrance before sunset",           icon: <Sunset   className="w-5 h-5" />, accent: "text-orange-300", accentBg: "rgba(249,115,22,0.12)"  },
-  { key: "tasbeehReminder", label: "Tasbeeh Reminder",   sublabel: "SubhanAllah · Alhamdulillah · Allahu Akbar",  icon: <Hash     className="w-5 h-5" />, accent: "text-purple-300", accentBg: "rgba(168,85,247,0.12)"  },
+  { key: "quranAyah",       label: "Daily Quran Ayah",   sublabel: "A verse from the Holy Quran each day",       icon: <BookOpen className="w-5 h-5" />, accent: "text-emerald-300", accentBg: "rgba(52,211,153,0.12)"  },
+  { key: "islamicQuote",    label: "Islamic Wisdom",     sublabel: "Hadith or Islamic quote of the day",         icon: <Star     className="w-5 h-5" />, accent: "text-amber-300",  accentBg: "rgba(217,119,6,0.12)"   },
+  { key: "morningAzkar",    label: "Morning Azkar",      sublabel: "Morning remembrance and dhikr",              icon: <Sunrise  className="w-5 h-5" />, accent: "text-sky-300",    accentBg: "rgba(56,189,248,0.12)"  },
+  { key: "eveningAzkar",    label: "Evening Azkar",      sublabel: "Evening remembrance before sunset",          icon: <Sunset   className="w-5 h-5" />, accent: "text-orange-300", accentBg: "rgba(249,115,22,0.12)"  },
+  { key: "tasbeehReminder", label: "Tasbeeh Reminder",   sublabel: "SubhanAllah · Alhamdulillah · Allahu Akbar", icon: <Hash     className="w-5 h-5" />, accent: "text-purple-300", accentBg: "rgba(168,85,247,0.12)"  },
 ];
 
 const PRAYER_REMINDERS: NotifDef[] = [
@@ -49,55 +52,68 @@ const WEEKLY_REMINDERS: NotifDef[] = [
 ];
 
 // ── Main component ────────────────────────────────────────────────────────────
-
 export function Notifications() {
-  const [settings, setSettings]   = useState<AllNotifSettings>(getNotifSettings);
-  const [permission, setPermission] = useState(() => getPermissionState());
+  const [settings,   setSettings]   = useState<AllNotifSettings>(getNotifSettings);
+  const [permission, setPermission] = useState<PermissionState>(() => getPermissionState());
   const [requesting, setRequesting] = useState(false);
-  const [supported]               = useState(() => isSupported());
-  const [testSent, setTestSent]   = useState(false);
-  const { toast } = useToast();
+  const [supported]                 = useState(() => isSupported());
+  const [env]                       = useState<AppEnv>(() => getAppEnv());
+  const [testSent,   setTestSent]   = useState(false);
+  const { toast }                   = useToast();
 
   const granted = permission === "granted";
   const denied  = permission === "denied";
 
-  // Auto-request on first open when permission hasn't been decided yet
+  // Re-read permission whenever window regains focus — covers the case where
+  // the user went to Android Settings to enable notifications and comes back.
   useEffect(() => {
-    let t: ReturnType<typeof setTimeout> | undefined;
-    if (permission === "default" && supported) {
-      t = setTimeout(() => { doRequestPermission(true); }, 600);
-    }
-    return () => { if (t !== undefined) clearTimeout(t); };
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    const onFocus = () => {
+      const current = getPermissionState();
+      setPermission(current);
+    };
+    window.addEventListener("focus", onFocus);
+    document.addEventListener("visibilitychange", () => {
+      if (document.visibilityState === "visible") onFocus();
+    });
+    return () => {
+      window.removeEventListener("focus", onFocus);
+    };
   }, []);
 
-  // Poll permission state in case user changes it in device settings
+  // Slow background poll (only as a safety net — focus event is the primary trigger)
   useEffect(() => {
     const id = setInterval(() => {
       const current = getPermissionState();
       if (current !== permission) setPermission(current);
-    }, 2000);
+    }, 3000);
     return () => clearInterval(id);
   }, [permission]);
 
   // ── Permission request ──────────────────────────────────────────────────────
-  const doRequestPermission = useCallback(async (silent = false) => {
-    if (!supported || denied) return false; // can't retry after hard denial
+  // MUST be called directly from a button onClick — never from setTimeout/useEffect.
+  // Android Chrome auto-denies Notification.requestPermission() outside user gestures.
+  const doRequestPermission = useCallback(async () => {
+    if (!supported) return false;
+    if (denied) return false; // hard denial — must go to Settings
     setRequesting(true);
     const result = await requestPermission();
     setPermission(result);
     setRequesting(false);
-    if (result === "granted" && !silent) {
+    if (result === "granted") {
       toast({ title: "🌙 Notifications enabled!", description: "You'll receive Islamic reminders at your chosen times." });
-    } else if (result === "denied" && !silent) {
-      toast({ title: "Permission denied", description: "Please enable notifications in your device settings.", variant: "destructive" });
+    } else if (result === "denied") {
+      toast({ title: "Permission denied", description: "Please enable notifications in your device or browser settings.", variant: "destructive" });
     }
     return result === "granted";
   }, [supported, denied, toast]);
 
+  const checkPermissionNow = useCallback(() => {
+    setPermission(getPermissionState());
+  }, []);
+
   // ── Settings update ─────────────────────────────────────────────────────────
   const updateSetting = (key: keyof AllNotifSettings, update: Partial<NotifSetting>) => {
-    if (!granted) return; // guard — should not be reachable since toggles are disabled
+    if (!granted) return;
     const next = { ...settings, [key]: { ...settings[key], ...update } };
     setSettings(next);
     saveNotifSettings(next);
@@ -138,7 +154,6 @@ export function Notifications() {
           <h1 className="text-2xl font-serif font-bold text-emerald-300">Notifications</h1>
           <p className="text-emerald-700 text-xs mt-0.5">Islamic reminders &amp; prayer alerts</p>
         </div>
-        {/* Test button — only shown when granted */}
         {granted && (
           <button
             onClick={handleTest}
@@ -155,27 +170,27 @@ export function Notifications() {
       <div className="px-4 space-y-4">
 
         {/* ── Permission area ── */}
-        {!supported && <UnsupportedBanner />}
+        {!supported && <UnsupportedBanner env={env} />}
 
         {supported && granted && <GrantedBanner />}
 
         {supported && !granted && !denied && (
-          <EnableCard onEnable={() => doRequestPermission()} loading={requesting} />
+          <EnableCard env={env} onEnable={doRequestPermission} loading={requesting} />
         )}
 
-        {supported && denied && <BlockedCard />}
+        {supported && denied && (
+          <BlockedCard env={env} onCheckAgain={checkPermissionNow} />
+        )}
 
-        {/* ── Notification sections ── */}
-        {/* Show sections always so user can see what's available, but lock them if not granted */}
-
+        {/* ── Notification sections — always visible, locked when not granted ── */}
         <NotifSection
           title="Daily Reminders"
           items={DAILY_REMINDERS}
           settings={settings}
           locked={!granted}
           onToggle={(key, val) => updateSetting(key, { enabled: val })}
-          onTime={(key, val) => updateSetting(key, { time: val })}
-          onToggleAll={(en) => toggleAll(DAILY_REMINDERS.map(d => d.key), en)}
+          onTime={(key, val)   => updateSetting(key, { time: val })}
+          onToggleAll={(en)    => toggleAll(DAILY_REMINDERS.map(d => d.key), en)}
         />
 
         <NotifSection
@@ -185,8 +200,8 @@ export function Notifications() {
           settings={settings}
           locked={!granted}
           onToggle={(key, val) => updateSetting(key, { enabled: val })}
-          onTime={(key, val) => updateSetting(key, { time: val })}
-          onToggleAll={(en) => toggleAll(PRAYER_REMINDERS.map(d => d.key), en)}
+          onTime={(key, val)   => updateSetting(key, { time: val })}
+          onToggleAll={(en)    => toggleAll(PRAYER_REMINDERS.map(d => d.key), en)}
         />
 
         <NotifSection
@@ -195,8 +210,8 @@ export function Notifications() {
           settings={settings}
           locked={!granted}
           onToggle={(key, val) => updateSetting(key, { enabled: val })}
-          onTime={(key, val) => updateSetting(key, { time: val })}
-          onToggleAll={(en) => toggleAll(WEEKLY_REMINDERS.map(d => d.key), en)}
+          onTime={(key, val)   => updateSetting(key, { time: val })}
+          onToggleAll={(en)    => toggleAll(WEEKLY_REMINDERS.map(d => d.key), en)}
         />
 
         <p className="text-emerald-900 text-xs text-center pt-2 pb-6 leading-relaxed">
@@ -209,17 +224,16 @@ export function Notifications() {
 
 // ── Permission cards ──────────────────────────────────────────────────────────
 
-function EnableCard({ onEnable, loading }: { onEnable: () => void; loading: boolean }) {
+function EnableCard({ env, onEnable, loading }: { env: AppEnv; onEnable: () => void; loading: boolean }) {
+  const isNative = env === "capacitor" || env === "twa";
   return (
     <div
       className="rounded-3xl overflow-hidden border border-emerald-700/40 animate-in fade-in duration-400"
       style={{ background: "linear-gradient(135deg, rgba(26,92,56,0.4) 0%, rgba(13,61,36,0.5) 100%)" }}
     >
-      {/* Top glow stripe */}
       <div className="h-1 w-full" style={{ background: "linear-gradient(90deg, #1a5c38, #34d399, #1a5c38)" }} />
 
       <div className="p-6 text-center space-y-4">
-        {/* Bell icon with pulse */}
         <div className="relative mx-auto w-fit">
           <div className="w-16 h-16 rounded-2xl flex items-center justify-center mx-auto"
             style={{ background: "rgba(52,211,153,0.12)", boxShadow: "0 0 24px rgba(52,211,153,0.15)" }}>
@@ -232,17 +246,27 @@ function EnableCard({ onEnable, loading }: { onEnable: () => void; loading: bool
         <div>
           <p className="text-emerald-200 font-bold text-lg">Enable Notifications</p>
           <p className="text-emerald-600 text-sm mt-1 max-w-xs mx-auto leading-relaxed">
-            Receive daily Quranic reminders, prayer alerts, and Islamic wisdom — right on your device.
+            {isNative
+              ? "Grant notification permission to receive daily Quranic reminders and prayer alerts."
+              : "Receive daily Quranic reminders, prayer alerts, and Islamic wisdom — right on your device."}
           </p>
         </div>
 
-        {/* Arabic dua */}
-        <p className="text-emerald-800 text-sm font-arabic">
-          وَاذْكُرُوا اللَّهَ كَثِيرًا
-        </p>
+        {/* Environment badge */}
+        <div className="flex items-center justify-center gap-1.5 text-emerald-700 text-xs">
+          {isNative ? <Smartphone className="w-3.5 h-3.5" /> : <Globe className="w-3.5 h-3.5" />}
+          <span>
+            {env === "capacitor" ? "Native app — uses system notifications"
+            : env === "twa"      ? "Installed app — uses system notifications"
+            : env === "android"  ? "Android browser"
+            : "Browser notifications"}
+          </span>
+        </div>
+
+        <p className="text-emerald-800 text-sm font-arabic">وَاذْكُرُوا اللَّهَ كَثِيرًا</p>
         <p className="text-emerald-900 text-xs -mt-2">"Remember Allah abundantly." [Quran 8:45]</p>
 
-        {/* CTA button */}
+        {/* CTA — directly bound to onClick, always a user gesture */}
         <button
           onClick={onEnable}
           disabled={loading}
@@ -250,11 +274,7 @@ function EnableCard({ onEnable, loading }: { onEnable: () => void; loading: bool
           style={{ background: "linear-gradient(135deg, #1a5c38 0%, #16a34a 100%)", boxShadow: "0 4px 20px rgba(52,211,153,0.2)" }}
           data-testid="button-enable-notifications"
         >
-          {loading ? (
-            <RefreshCw className="w-5 h-5 animate-spin" />
-          ) : (
-            <Bell className="w-5 h-5" />
-          )}
+          {loading ? <RefreshCw className="w-5 h-5 animate-spin" /> : <Bell className="w-5 h-5" />}
           {loading ? "Requesting permission…" : "Enable Notifications"}
         </button>
       </div>
@@ -281,9 +301,38 @@ function GrantedBanner() {
   );
 }
 
-function BlockedCard() {
-  // Try to detect if running in an Android WebView (APK build)
-  const isAndroid = typeof navigator !== "undefined" && /android/i.test(navigator.userAgent);
+function BlockedCard({ env, onCheckAgain }: { env: AppEnv; onCheckAgain: () => void }) {
+  const [checking, setChecking] = useState(false);
+
+  const handleCheckAgain = () => {
+    setChecking(true);
+    // Brief delay to let the user see feedback, then re-read permission
+    setTimeout(() => {
+      onCheckAgain();
+      setChecking(false);
+    }, 600);
+  };
+
+  const openNativeSettings = () => {
+    // Capacitor: try native bridge
+    const cap = (window as Window & {
+      Capacitor?: { Plugins?: { NativeSettings?: { openAndroid?: (o: object) => void } } };
+      Android?:   { openNotificationSettings?: () => void };
+    });
+
+    if (cap.Android?.openNotificationSettings) {
+      cap.Android.openNotificationSettings();
+      return;
+    }
+    if (cap.Capacitor?.Plugins?.NativeSettings?.openAndroid) {
+      cap.Capacitor.Plugins.NativeSettings.openAndroid({ option: "application_details" });
+      return;
+    }
+    // Fallback — no native bridge, guide the user
+    handleCheckAgain();
+  };
+
+  const isAndroidEnv = env === "capacitor" || env === "twa" || env === "android";
 
   return (
     <div
@@ -294,7 +343,6 @@ function BlockedCard() {
       <div className="h-0.5 w-full" style={{ background: "linear-gradient(90deg, #991b1b, #ef4444, #991b1b)" }} />
 
       <div className="p-5 space-y-4">
-        {/* Title */}
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0"
             style={{ background: "rgba(239,68,68,0.12)" }}>
@@ -302,75 +350,76 @@ function BlockedCard() {
           </div>
           <div>
             <p className="text-red-300 font-bold text-base">Notifications are blocked</p>
-            <p className="text-red-700 text-xs mt-0.5">You previously denied permission.</p>
+            <p className="text-red-700 text-xs mt-0.5">
+              {env === "capacitor" ? "Blocked in system settings."
+              : env === "twa"      ? "Blocked — open Android Settings to re-enable."
+              : "You previously denied permission."}
+            </p>
           </div>
         </div>
 
-        {/* Steps */}
+        {/* Step-by-step instructions */}
         <div className="rounded-2xl border border-red-900/30 p-4 space-y-3"
           style={{ background: "rgba(239,68,68,0.04)" }}>
           <p className="text-red-400 text-xs font-semibold uppercase tracking-wider">
-            {isAndroid ? "How to enable on Android" : "How to enable notifications"}
+            How to enable {isAndroidEnv ? "on Android" : "in your browser"}
           </p>
 
-          {isAndroid ? (
+          {env === "capacitor" ? (
             <ol className="space-y-2 text-sm text-red-300/80">
-              <Step n={1} text='Open your phone Settings' />
-              <Step n={2} text='Go to Apps → Noor Quran (or your browser)' />
-              <Step n={3} text='Tap Notifications' />
+              <Step n={1} text="Open your phone Settings" />
+              <Step n={2} text="Go to Apps → Noor Quran" />
+              <Step n={3} text='Tap "Notifications"' />
               <Step n={4} text='Turn on "Allow notifications"' />
-              <Step n={5} text='Return here and refresh the page' />
+              <Step n={5} text='Tap "Check Again" below' />
+            </ol>
+          ) : env === "twa" ? (
+            <ol className="space-y-2 text-sm text-red-300/80">
+              <Step n={1} text="Open your phone Settings" />
+              <Step n={2} text="Go to Apps → Noor Quran" />
+              <Step n={3} text='Tap "Notifications" → Turn on' />
+              <Step n={4} text="Return here and tap Check Again" />
+            </ol>
+          ) : env === "android" ? (
+            <ol className="space-y-2 text-sm text-red-300/80">
+              <Step n={1} text="Open Chrome Settings (⋮ menu)" />
+              <Step n={2} text="Site Settings → Notifications" />
+              <Step n={3} text="Find this site and change to Allow" />
+              <Step n={4} text="Return here and tap Check Again" />
             </ol>
           ) : (
             <ol className="space-y-2 text-sm text-red-300/80">
-              <Step n={1} text='Click the 🔒 lock icon in your browser address bar' />
+              <Step n={1} text="Click the 🔒 lock icon in your browser address bar" />
               <Step n={2} text='Find "Notifications" in Site Settings' />
-              <Step n={3} text='Change it from "Block" to "Allow"' />
-              <Step n={4} text='Refresh this page' />
+              <Step n={3} text='Change from "Block" to "Allow"' />
+              <Step n={4} text="Refresh the page or tap Check Again" />
             </ol>
           )}
         </div>
 
         {/* Action buttons */}
         <div className="flex gap-3">
+          {/* Primary: Check Again — re-reads permission immediately */}
           <button
-            onClick={() => window.location.reload()}
-            className="flex-1 flex items-center justify-center gap-2 py-3 rounded-2xl text-sm font-semibold text-red-300 border border-red-800/40 transition-all hover:border-red-600 active:scale-[0.97]"
-            style={{ background: "rgba(239,68,68,0.08)" }}
+            onClick={handleCheckAgain}
+            disabled={checking}
+            className="flex-1 flex items-center justify-center gap-2 py-3 rounded-2xl text-sm font-semibold text-emerald-300 border border-emerald-800/40 transition-all hover:border-emerald-600 active:scale-[0.97] disabled:opacity-60"
+            style={{ background: "rgba(52,211,153,0.07)" }}
             data-testid="button-retry-permission"
           >
-            <RefreshCw className="w-4 h-4" />
-            Retry after enabling
+            <RefreshCw className={`w-4 h-4 ${checking ? "animate-spin" : ""}`} />
+            {checking ? "Checking…" : "Check Again"}
           </button>
 
-          {isAndroid && (
+          {/* Secondary: Open Settings — native bridge on Capacitor/Android, guide on browser */}
+          {isAndroidEnv && (
             <button
-              onClick={() => {
-                // Try native bridge if available (Capacitor / custom WebView)
-                if (typeof (window as Window & { Android?: { openNotificationSettings?: () => void } }).Android?.openNotificationSettings === "function") {
-                  (window as Window & { Android?: { openNotificationSettings?: () => void } }).Android!.openNotificationSettings!();
-                } else {
-                  // Fallback — can't open settings from browser
-                  window.location.reload();
-                }
-              }}
+              onClick={openNativeSettings}
               className="flex items-center justify-center gap-2 px-4 py-3 rounded-2xl text-sm font-semibold text-amber-300 border border-amber-800/40 transition-all hover:border-amber-600 active:scale-[0.97]"
               style={{ background: "rgba(217,119,6,0.08)" }}
               data-testid="button-open-settings"
             >
               <Settings2 className="w-4 h-4" />
-              Settings
-            </button>
-          )}
-
-          {!isAndroid && (
-            <button
-              onClick={() => window.open("chrome://settings/content/notifications", "_blank")}
-              className="flex items-center justify-center gap-2 px-4 py-3 rounded-2xl text-sm font-semibold text-sky-300 border border-sky-800/40 transition-all hover:border-sky-600 active:scale-[0.97]"
-              style={{ background: "rgba(56,189,248,0.08)" }}
-              data-testid="button-open-browser-settings"
-            >
-              <ExternalLink className="w-4 h-4" />
               Settings
             </button>
           )}
@@ -380,14 +429,18 @@ function BlockedCard() {
   );
 }
 
-function UnsupportedBanner() {
+function UnsupportedBanner({ env }: { env: AppEnv }) {
   return (
     <div className="rounded-2xl p-4 border border-red-700/40 flex gap-3 items-start"
       style={{ background: "rgba(239,68,68,0.08)" }}>
       <BellOff className="w-5 h-5 text-red-400 shrink-0 mt-0.5" />
       <div>
-        <p className="text-red-300 font-semibold text-sm">Not supported</p>
-        <p className="text-red-700 text-xs mt-0.5">Your browser doesn't support notifications. Try Chrome on Android.</p>
+        <p className="text-red-300 font-semibold text-sm">Notifications not supported</p>
+        <p className="text-red-700 text-xs mt-0.5">
+          {env === "android"
+            ? "Try opening the app in Chrome on Android for notification support."
+            : "Your browser doesn't support notifications. Try Chrome or install the app."}
+        </p>
       </div>
     </div>
   );
@@ -403,12 +456,14 @@ function Step({ n, text }: { n: number; text: string }) {
 }
 
 // ── Notification section ──────────────────────────────────────────────────────
-
 function NotifSection({ title, subtitle, items, settings, locked, onToggle, onTime, onToggleAll }: {
-  title: string; subtitle?: string;
-  items: NotifDef[]; settings: AllNotifSettings; locked: boolean;
-  onToggle: (key: keyof AllNotifSettings, val: boolean) => void;
-  onTime:   (key: keyof AllNotifSettings, val: string)  => void;
+  title:    string;
+  subtitle?: string;
+  items:     NotifDef[];
+  settings:  AllNotifSettings;
+  locked:    boolean;
+  onToggle:    (key: keyof AllNotifSettings, val: boolean) => void;
+  onTime:      (key: keyof AllNotifSettings, val: string)  => void;
   onToggleAll: (enabled: boolean) => void;
 }) {
   const allEnabled = items.every(i => settings[i.key].enabled);
@@ -419,7 +474,6 @@ function NotifSection({ title, subtitle, items, settings, locked, onToggle, onTi
       className={`rounded-2xl border border-emerald-900/40 overflow-hidden transition-opacity duration-300 ${locked ? "opacity-50 select-none" : ""}`}
       style={{ background: "rgba(255,255,255,0.03)" }}
     >
-      {/* Section header */}
       <div className="flex items-center justify-between px-4 py-3 border-b border-emerald-900/30">
         <div>
           <div className="flex items-center gap-1.5">
@@ -442,13 +496,11 @@ function NotifSection({ title, subtitle, items, settings, locked, onToggle, onTi
         )}
       </div>
 
-      {/* Items */}
       <div className="divide-y divide-emerald-900/20">
         {items.map((item) => {
           const s = settings[item.key];
           return (
             <div key={item.key} className="px-4 py-4 space-y-3">
-              {/* Row 1: icon + label + toggle */}
               <div className="flex items-center gap-3">
                 <div
                   className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${item.accent}`}
@@ -471,7 +523,6 @@ function NotifSection({ title, subtitle, items, settings, locked, onToggle, onTi
                 />
               </div>
 
-              {/* Row 2: time picker — only when enabled and unlocked */}
               {s.enabled && !locked && (
                 <div className="flex items-center gap-3 pl-14 animate-in slide-in-from-top-1 duration-200">
                   <p className="text-emerald-600 text-xs flex-1">Remind me at</p>
@@ -493,7 +544,6 @@ function NotifSection({ title, subtitle, items, settings, locked, onToggle, onTi
 }
 
 // ── Toggle ─────────────────────────────────────────────────────────────────────
-
 function Toggle({ checked, disabled, onChange, testId }: {
   checked: boolean; disabled: boolean; onChange: (v: boolean) => void; testId?: string;
 }) {
@@ -503,19 +553,19 @@ function Toggle({ checked, disabled, onChange, testId }: {
       aria-checked={checked}
       disabled={disabled}
       onClick={() => !disabled && onChange(!checked)}
-      className={`relative w-13 h-7 rounded-full transition-all duration-300 shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 ${
+      data-testid={testId}
+      className={`relative w-12 h-6 rounded-full transition-all duration-300 shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 ${
         disabled
           ? "cursor-not-allowed"
-          : "cursor-pointer"
-      } ${checked && !disabled ? "bg-emerald-600" : "bg-emerald-950 border border-emerald-800/50"}`}
-      style={{ width: "3.25rem", height: "1.75rem" }}
-      data-testid={testId}
+          : checked
+          ? "bg-emerald-500"
+          : "bg-emerald-900/50"
+      }`}
     >
       <span
-        className={`absolute top-1 w-5 h-5 rounded-full shadow-md transition-all duration-300 ${
-          checked && !disabled ? "bg-white" : "bg-emerald-700"
+        className={`absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white shadow transition-transform duration-300 ${
+          checked ? "translate-x-6" : "translate-x-0"
         }`}
-        style={{ transform: checked && !disabled ? "translateX(1.5rem)" : "translateX(0.2rem)" }}
       />
     </button>
   );
