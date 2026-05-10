@@ -113,3 +113,16 @@ export function getLang(): TranslationLanguage {
 export function setLang(lang: TranslationLanguage): void {
   localStorage.setItem(LANG_KEY, lang);
 }
+
+// ── One-time defaults initialiser ─────────────────────────────────────────────
+// Called once on app start to guarantee clean first-launch state.
+const INIT_KEY = "noor-defaults-v1";
+
+export function initDefaults(): void {
+  if (localStorage.getItem(INIT_KEY)) return; // already initialized
+  // Guarantee Urdu is default language on first launch
+  if (!localStorage.getItem(LANG_KEY)) {
+    localStorage.setItem(LANG_KEY, "urdu");
+  }
+  localStorage.setItem(INIT_KEY, "1");
+}

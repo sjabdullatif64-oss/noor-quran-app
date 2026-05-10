@@ -1,9 +1,20 @@
-import { useState } from "react";
-import { ChevronLeft, Moon, Globe, MapPin, Bell, Check, Sun, ChevronRight } from "lucide-react";
+import { useState, useCallback } from "react";
+import {
+  ChevronLeft, Moon, Globe, MapPin, Bell, Check, Sun, ChevronRight,
+  LocateFixed, Loader2, WifiOff, RefreshCw,
+} from "lucide-react";
 import { Link } from "wouter";
 import { useTheme } from "@/components/theme-provider";
-import { getCity, setCity as saveCity, getLang, setLang as saveLang, PRESET_CITIES } from "@/lib/settings";
-import { ALL_LANGUAGES, TRANSLATION_LABELS, TRANSLATION_ENGLISH_NAMES, TranslationLanguage } from "@/lib/api";
+import {
+  getCity, getCountry, setCity as saveCity,
+  getGpsCoords, saveGpsCoords, clearGpsCoords,
+  getLocationSource, getLang, setLang as saveLang,
+  PRESET_CITIES, CITY_COUNTRY_MAP,
+} from "@/lib/settings";
+import {
+  ALL_LANGUAGES, TRANSLATION_LABELS, TRANSLATION_ENGLISH_NAMES,
+  TranslationLanguage, reverseGeocode,
+} from "@/lib/api";
 import { useToast } from "@/hooks/use-toast";
 
 // Badge label for languages that need a note
@@ -11,7 +22,6 @@ const LANG_BADGE: Partial<Record<TranslationLanguage, string>> = {
   sindhi: "Fixed ✓",
 };
 
-// Flag emoji per language
 const LANG_FLAG: Record<TranslationLanguage, string> = {
   urdu:       "🇵🇰",
   english:    "🇬🇧",
@@ -25,7 +35,6 @@ const LANG_FLAG: Record<TranslationLanguage, string> = {
   malay:      "🇲🇾",
 };
 
-// Accent color per language (active state)
 const LANG_ACCENT: Record<TranslationLanguage, string> = {
   urdu:       "border-emerald-600 bg-emerald-900/30",
   english:    "border-sky-600 bg-sky-900/20",
@@ -39,17 +48,25 @@ const LANG_ACCENT: Record<TranslationLanguage, string> = {
   malay:      "border-lime-600 bg-lime-900/20",
 };
 
-// Initial visible languages (shown without expanding)
 const INITIAL_COUNT = 4;
+
+// ── Location state for the settings GPS widget ─────────────────────────────────
+type GpsStatus = "idle" | "detecting" | "granted" | "denied" | "error";
+
+function readInitialGpsStatus(): GpsStatus {
+  const src = getLocationSource();
+  if (src === "gps" && getGpsCoords()) return "granted";
+  return "idle";
+}
 
 export function Settings() {
   const { theme, setTheme } = useTheme();
-  const [defaultLang, setDefaultLang] = useState<TranslationLanguage>(() => getLang());
-  const [defaultCity, setDefaultCity] = useState<string>(() => getCity());
-  const [savedLang, setSavedLang]     = useState(false);
-  const [savedCity, setSavedCity]     = useState(false);
-  const [showAllLangs, setShowAllLangs] = useState(false);
   const { toast } = useToast();
+
+  // ── Language ────────────────────────────────────────────────────────────────
+  const [defaultLang, setDefaultLang] = useState<TranslationLanguage>(() => getLang());
+  const [savedLang, setSavedLang]     = useState(false);
+  const [showAllLangs, setShowAllLangs] = useState(false);
 
   const handleLang = (lang: TranslationLanguage) => {
     setDefaultLang(lang);
@@ -62,9 +79,64 @@ export function Settings() {
     });
   };
 
-  const handleCity = (city: string) => {
-    setDefaultCity(city);
-    saveCity(city);
+  // ── Location / GPS ──────────────────────────────────────────────────────────
+  const [gpsStatus,   setGpsStatus]   = useState<GpsStatus>(readInitialGpsStatus);
+  const [gpsCity,     setGpsCity]     = useState(() =>
+    getLocationSource() === "gps" ? getCity() : ""
+  );
+  const [gpsCountry,  setGpsCountry]  = useState(() =>
+    getLocationSource() === "gps" ? getCountry() : ""
+  );
+  const [manualCity,  setManualCity]  = useState(() =>
+    getLocationSource() === "manual" ? getCity() : ""
+  );
+  const [savedCity,   setSavedCity]   = useState(false);
+
+  const detectGPS = useCallback(() => {
+    if (!navigator.geolocation) {
+      setGpsStatus("error");
+      return;
+    }
+    setGpsStatus("detecting");
+
+    navigator.geolocation.getCurrentPosition(
+      async (pos) => {
+        const lat = pos.coords.latitude;
+        const lng = pos.coords.longitude;
+        const place = await reverseGeocode(lat, lng);
+        const city    = place?.city    ?? "";
+        const country = place?.country ?? "";
+        saveGpsCoords(lat, lng, city, country);
+        setGpsCity(city);
+        setGpsCountry(country);
+        setManualCity("");
+        setGpsStatus("granted");
+        toast({
+          title: "Location detected",
+          description: city
+            ? `Using ${city}${country ? `, ${country}` : ""} for prayer times.`
+            : "GPS location saved successfully.",
+        });
+      },
+      (err) => {
+        if (err.code === err.PERMISSION_DENIED) {
+          setGpsStatus("denied");
+        } else {
+          setGpsStatus("error");
+        }
+      },
+      { timeout: 12000, maximumAge: 5 * 60 * 1000, enableHighAccuracy: false }
+    );
+  }, [toast]);
+
+  const handlePresetCity = (city: string) => {
+    const country = CITY_COUNTRY_MAP[city] ?? "";
+    setManualCity(city);
+    setGpsCity("");
+    setGpsCountry("");
+    clearGpsCoords();
+    saveCity(city, country);
+    setGpsStatus("idle");
     setSavedCity(true);
     setTimeout(() => setSavedCity(false), 2000);
     toast({ title: "City saved", description: `Prayer times will use ${city}.` });
@@ -72,6 +144,12 @@ export function Settings() {
 
   const visibleLangs = showAllLangs ? ALL_LANGUAGES : ALL_LANGUAGES.slice(0, INITIAL_COUNT);
   const hiddenCount  = ALL_LANGUAGES.length - INITIAL_COUNT;
+
+  // Active city label for display
+  const activeCity =
+    gpsStatus === "granted" && gpsCity
+      ? `${gpsCity}${gpsCountry ? `, ${gpsCountry}` : ""}`
+      : manualCity || null;
 
   return (
     <div
@@ -91,7 +169,7 @@ export function Settings() {
 
       <div className="px-4 space-y-4">
 
-        {/* ── Appearance ──────────────────────────────────────────────────── */}
+        {/* ── Appearance ───────────────────────────────────────────────────── */}
         <Section title="Appearance" icon={<Moon className="w-4 h-4" />}>
           <div className="px-4 py-4 flex items-center justify-between">
             <div>
@@ -119,7 +197,7 @@ export function Settings() {
           </div>
         </Section>
 
-        {/* ── Quran Translation ────────────────────────────────────────────── */}
+        {/* ── Quran Translation ─────────────────────────────────────────────── */}
         <Section
           title="Quran Translation"
           icon={<Globe className="w-4 h-4" />}
@@ -149,7 +227,10 @@ export function Settings() {
                     <div className="flex items-center gap-2">
                       <p className="text-white font-semibold text-sm">{TRANSLATION_ENGLISH_NAMES[lang]}</p>
                       {LANG_BADGE[lang] && (
-                        <span className="text-[10px] font-semibold text-teal-400 border border-teal-800/50 px-1.5 py-0.5 rounded-full" style={{ background: "rgba(45,212,191,0.08)" }}>
+                        <span
+                          className="text-[10px] font-semibold text-teal-400 border border-teal-800/50 px-1.5 py-0.5 rounded-full"
+                          style={{ background: "rgba(45,212,191,0.08)" }}
+                        >
                           {LANG_BADGE[lang]}
                         </span>
                       )}
@@ -165,7 +246,6 @@ export function Settings() {
               );
             })}
 
-            {/* Show more / less toggle */}
             <button
               onClick={() => setShowAllLangs((v) => !v)}
               className="w-full flex items-center justify-center gap-1.5 py-2.5 text-xs text-emerald-600 hover:text-emerald-400 transition-colors"
@@ -181,35 +261,112 @@ export function Settings() {
           </div>
         </Section>
 
-        {/* ── Prayer Times City ─────────────────────────────────────────────── */}
+        {/* ── Prayer Times / Location ───────────────────────────────────────── */}
         <Section
-          title="Prayer Times"
+          title="Prayer Times Location"
           icon={<MapPin className="w-4 h-4" />}
           badge={savedCity ? "Saved ✓" : undefined}
         >
-          <div className="p-4 space-y-2">
-            <p className="text-emerald-600 text-xs mb-3">
-              Selected city:{" "}
-              <span className="text-emerald-300 font-semibold">{defaultCity}</span>
-            </p>
-            <div className="grid grid-cols-2 gap-2">
-              {PRESET_CITIES.map((city) => (
-                <button
-                  key={city}
-                  onClick={() => handleCity(city)}
-                  className={`p-3.5 rounded-xl border text-sm font-medium transition-all ${
-                    defaultCity === city
-                      ? "border-emerald-600 bg-emerald-900/30 text-white"
-                      : "border-emerald-900/30 text-emerald-600 hover:border-emerald-700 hover:text-emerald-400"
-                  }`}
-                  style={{ background: defaultCity === city ? undefined : "rgba(255,255,255,0.02)" }}
-                  data-testid={`setting-city-${city.toLowerCase().replace(/\s+/g, "-")}`}
-                >
-                  {defaultCity === city && <span className="text-emerald-400 mr-1">✓</span>}
-                  {city}
-                </button>
-              ))}
+          <div className="p-4 space-y-3">
+
+            {/* Current location display */}
+            <div
+              className="rounded-xl px-4 py-3 border border-emerald-800/30"
+              style={{ background: "rgba(26,92,56,0.18)" }}
+            >
+              {gpsStatus === "detecting" ? (
+                <div className="flex items-center gap-2.5">
+                  <Loader2 className="w-4 h-4 text-emerald-500 animate-spin shrink-0" />
+                  <p className="text-emerald-400 text-sm">Detecting your location…</p>
+                </div>
+              ) : gpsStatus === "denied" ? (
+                <div className="flex items-center gap-2.5">
+                  <WifiOff className="w-4 h-4 text-amber-500 shrink-0" />
+                  <p className="text-amber-400 text-sm">Location permission denied</p>
+                </div>
+              ) : gpsStatus === "error" ? (
+                <div className="flex items-center gap-2.5">
+                  <WifiOff className="w-4 h-4 text-amber-500 shrink-0" />
+                  <div className="flex-1">
+                    <p className="text-amber-400 text-sm">GPS unavailable</p>
+                  </div>
+                  <button onClick={detectGPS} className="text-amber-400 hover:text-amber-200">
+                    <RefreshCw className="w-4 h-4" />
+                  </button>
+                </div>
+              ) : activeCity ? (
+                <div className="flex items-center gap-2.5">
+                  {gpsStatus === "granted"
+                    ? <LocateFixed className="w-4 h-4 text-emerald-400 shrink-0" />
+                    : <MapPin className="w-4 h-4 text-emerald-600 shrink-0" />}
+                  <div className="flex-1 min-w-0">
+                    <p className="text-emerald-200 text-sm font-semibold truncate">{activeCity}</p>
+                    <p className="text-emerald-700 text-xs">
+                      {gpsStatus === "granted" ? "GPS detected · auto updating" : "Manual selection"}
+                    </p>
+                  </div>
+                </div>
+              ) : (
+                <div className="flex items-center gap-2.5">
+                  <MapPin className="w-4 h-4 text-emerald-800 shrink-0" />
+                  <p className="text-emerald-700 text-sm">No location set yet</p>
+                </div>
+              )}
             </div>
+
+            {/* Use Current Location button — primary CTA */}
+            <button
+              onClick={detectGPS}
+              disabled={gpsStatus === "detecting"}
+              className="w-full flex items-center gap-3 p-4 rounded-xl border border-emerald-700/50 transition-all active:scale-[0.98] hover:border-emerald-500/70 disabled:opacity-60"
+              style={{ background: "linear-gradient(135deg, rgba(26,92,56,0.4) 0%, rgba(5,46,22,0.4) 100%)" }}
+              data-testid="button-use-gps-location"
+            >
+              <div
+                className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0 text-emerald-300"
+                style={{ background: "rgba(52,211,153,0.15)" }}
+              >
+                {gpsStatus === "detecting"
+                  ? <Loader2 className="w-5 h-5 animate-spin" />
+                  : <LocateFixed className="w-5 h-5" />}
+              </div>
+              <div className="text-left flex-1">
+                <p className="text-white text-sm font-semibold">Use Current Location</p>
+                <p className="text-emerald-600 text-xs mt-0.5">Detect your real city via GPS</p>
+              </div>
+              <ChevronRight className="w-4 h-4 text-emerald-700 shrink-0" />
+            </button>
+
+            {/* Divider */}
+            <div className="flex items-center gap-3 py-1">
+              <div className="flex-1 border-t border-emerald-900/40" />
+              <p className="text-emerald-800 text-xs">or choose a city manually</p>
+              <div className="flex-1 border-t border-emerald-900/40" />
+            </div>
+
+            {/* Preset cities — backup/manual selection */}
+            <div className="grid grid-cols-2 gap-2">
+              {PRESET_CITIES.map((city) => {
+                const isActive = gpsStatus !== "granted" && manualCity === city;
+                return (
+                  <button
+                    key={city}
+                    onClick={() => handlePresetCity(city)}
+                    className={`p-3.5 rounded-xl border text-sm font-medium transition-all ${
+                      isActive
+                        ? "border-emerald-600 bg-emerald-900/30 text-white"
+                        : "border-emerald-900/30 text-emerald-600 hover:border-emerald-700 hover:text-emerald-400"
+                    }`}
+                    style={{ background: isActive ? undefined : "rgba(255,255,255,0.02)" }}
+                    data-testid={`setting-city-${city.toLowerCase().replace(/\s+/g, "-")}`}
+                  >
+                    {isActive && <span className="text-emerald-400 mr-1">✓</span>}
+                    {city}
+                  </button>
+                );
+              })}
+            </div>
+
           </div>
         </Section>
 
@@ -234,7 +391,7 @@ export function Settings() {
   );
 }
 
-// ── Section wrapper ────────────────────────────────────────────────────────────
+// ── Section wrapper ─────────────────────────────────────────────────────────────
 function Section({
   title, icon, badge, children,
 }: {
