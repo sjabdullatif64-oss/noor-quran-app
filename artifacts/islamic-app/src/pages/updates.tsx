@@ -25,27 +25,35 @@ interface UpdateItem {
 }
 
 // ── Sheet parser ──────────────────────────────────────────────────────────────
+// GViz format: column names live in table.cols[].label (already consumed by
+// parsedNumHeaders:1). table.rows[] contains ONLY data rows — never a header row.
 function parseGViz(text: string): UpdateItem[] {
   try {
     const match = text.match(/google\.visualization\.Query\.setResponse\(([\s\S]*)\);?\s*$/);
     if (!match) return [];
     const data = JSON.parse(match[1]) as {
       status: string;
-      table: { rows: Array<{ c: Array<{ v: string | null } | null> }> };
+      table: {
+        cols: Array<{ id: string; label: string; type: string }>;
+        rows: Array<{ c: Array<{ v: string | number | null } | null> }>;
+      };
     };
     if (data.status !== "ok") return [];
-    const rows = data.table.rows;
-    if (rows.length < 2) return [];
 
-    // First row contains column headers
-    const headers = rows[0].c.map((cell) => cell?.v?.toString().trim() ?? "");
+    const cols = data.table.cols ?? [];
+    const rows = data.table.rows ?? [];
+    if (!cols.length || !rows.length) return [];
+
+    // Headers come from cols[].label — NOT from rows[0]
+    const headers = cols.map((col) => col.label?.toString().trim() ?? "");
     const items: UpdateItem[] = [];
 
-    for (let i = 1; i < rows.length; i++) {
-      const row = rows[i].c;
+    for (const row of rows) {
       const obj: Record<string, string> = {};
       headers.forEach((h, idx) => {
-        obj[h] = row[idx]?.v?.toString().trim() ?? "";
+        const cell = row.c?.[idx];
+        const val  = cell?.v;
+        obj[h] = val != null ? val.toString().trim() : "";
       });
       // Only keep rows that have a title and status = active
       if (obj.title && obj.status?.toLowerCase() === "active") {
