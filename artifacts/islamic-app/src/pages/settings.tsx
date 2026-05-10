@@ -147,7 +147,7 @@ export function Settings() {
           </div>
         </Section>
 
-        <p className="text-emerald-900 text-xs text-center pt-2 pb-6">Noor v1.0 · All settings saved on device</p>
+        <p className="text-emerald-900 text-xs text-center pt-2 pb-6">Noor Quran v1.0 · All settings saved on device</p>
       </div>
     </div>
   );

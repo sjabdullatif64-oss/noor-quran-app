@@ -134,7 +134,7 @@ export function More() {
 
       {/* Footer */}
       <p className="text-center text-emerald-900 text-xs mt-10 pb-4">
-        Noor · More features coming soon
+        Noor Quran · More features coming soon
       </p>
     </div>
   );

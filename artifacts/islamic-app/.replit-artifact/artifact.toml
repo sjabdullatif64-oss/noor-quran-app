@@ -1,6 +1,6 @@
 kind = "web"
 previewPath = "/"
-title = "Islamic App"
+title = "Noor Quran"
 version = "1.0.0"
 id = "artifacts/islamic-app"
 router = "path"

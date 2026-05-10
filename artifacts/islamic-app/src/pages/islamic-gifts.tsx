@@ -187,7 +187,7 @@ export function IslamicGifts() {
     ctx.fillStyle = card.hexAccent;
     ctx.globalAlpha = 0.3;
     ctx.font = "24px serif";
-    ctx.fillText("Noor · Islamic App", 540, 960);
+    ctx.fillText("Noor Quran", 540, 960);
     ctx.restore();
 
     return canvas;
@@ -202,7 +202,7 @@ export function IslamicGifts() {
         const url = URL.createObjectURL(blob);
         const a = document.createElement("a");
         a.href = url;
-        a.download = `${card.title.replace(/\s+/g, "-")}-Noor.png`;
+        a.download = `${card.title.replace(/\s+/g, "-")}-NoorQuran.png`;
         a.click();
         URL.revokeObjectURL(url);
         toast({ title: "Downloaded!", description: `${card.title} card saved to your device.` });
@@ -215,7 +215,7 @@ export function IslamicGifts() {
   };
 
   const handleShare = async (card: GiftCard) => {
-    const text = `${card.arabic}\n${card.title}\n${card.subtitle}\n\n— Shared via Noor Islamic App`;
+    const text = `${card.arabic}\n${card.title}\n${card.subtitle}\n\n— Shared via Noor Quran`;
     if (navigator.share) {
       try {
         await navigator.share({ title: card.title, text });
@@ -303,7 +303,7 @@ export function IslamicGifts() {
               <p className="text-sm opacity-60" style={{ color: selected.hexAccent }}>{selected.subtitle}</p>
             </div>
 
-            <p className="text-xs opacity-20" style={{ color: selected.hexAccent }}>Noor · Islamic App</p>
+            <p className="text-xs opacity-20" style={{ color: selected.hexAccent }}>Noor Quran</p>
 
             {/* Action buttons */}
             <div className="flex gap-3 w-full">
