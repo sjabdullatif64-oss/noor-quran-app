@@ -19,12 +19,7 @@ run = "pnpm --filter @workspace/islamic-app run dev"
 
 [services.production]
 build = [ "pnpm", "--filter", "@workspace/islamic-app", "run", "build" ]
-publicDir = "artifacts/islamic-app/dist/public"
-serve = "static"
-
-[[services.production.rewrites]]
-from = "/*"
-to = "/index.html"
+run = "node artifacts/islamic-app/server.js"
 
 [services.env]
 PORT = "22446"

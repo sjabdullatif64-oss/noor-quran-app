@@ -50,12 +50,101 @@ let tickInterval = null;
 
 // ── Lifecycle ──────────────────────────────────────────────────────────────
 
-self.addEventListener("install", () => {
+// ── Cache config ───────────────────────────────────────────────────────────
+const CACHE_NAME = "noor-quran-shell-v1";
+
+// App-shell assets to pre-cache on install
+const PRECACHE_URLS = [
+  "/",
+  "/index.html",
+  "/site.webmanifest",
+  "/icon-192.png",
+  "/icon-512.png",
+  "/favicon-32.png",
+];
+
+// External hostnames that should NEVER be intercepted (live data APIs)
+const PASSTHROUGH_HOSTS = [
+  "api.alquran.cloud",
+  "cdn.islamic.network",
+  "api.aladhan.com",
+  "nominatim.openstreetmap.org",
+  "fonts.googleapis.com",
+  "fonts.gstatic.com",
+];
+
+self.addEventListener("install", (event) => {
   self.skipWaiting();
+  event.waitUntil(
+    caches.open(CACHE_NAME).then((cache) =>
+      cache.addAll(PRECACHE_URLS).catch(() => {
+        // Non-fatal: if pre-cache fails the SW still installs
+      })
+    )
+  );
 });
 
 self.addEventListener("activate", (event) => {
-  event.waitUntil(clients.claim().then(startTicking));
+  // Remove stale caches from older SW versions
+  event.waitUntil(
+    caches
+      .keys()
+      .then((keys) =>
+        Promise.all(
+          keys
+            .filter((k) => k !== CACHE_NAME)
+            .map((k) => caches.delete(k))
+        )
+      )
+      .then(() => clients.claim())
+      .then(startTicking)
+  );
+});
+
+// ── Fetch handler (required for PWA installability) ────────────────────────
+self.addEventListener("fetch", (event) => {
+  const req = event.request;
+
+  // Only handle GET requests
+  if (req.method !== "GET") return;
+
+  let url;
+  try {
+    url = new URL(req.url);
+  } catch {
+    return;
+  }
+
+  // Let external API calls go straight to the network
+  if (PASSTHROUGH_HOSTS.some((h) => url.hostname === h || url.hostname.endsWith("." + h))) {
+    return;
+  }
+
+  // Only intercept same-origin requests
+  if (url.origin !== self.location.origin) return;
+
+  event.respondWith(
+    caches.match(req).then((cached) => {
+      // Cache-first for same-origin assets
+      if (cached) return cached;
+
+      return fetch(req)
+        .then((response) => {
+          // Only cache successful same-origin responses
+          if (response && response.status === 200 && response.type === "basic") {
+            const clone = response.clone();
+            caches.open(CACHE_NAME).then((cache) => cache.put(req, clone));
+          }
+          return response;
+        })
+        .catch(() => {
+          // Offline fallback: serve index.html for navigation requests
+          if (req.mode === "navigate") {
+            return caches.match("/index.html") || caches.match("/");
+          }
+        });
+    })
+  );
 });
 
 self.addEventListener("message", (event) => {
