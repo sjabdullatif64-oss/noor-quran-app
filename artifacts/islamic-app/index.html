@@ -8,11 +8,8 @@
     <meta name="application-name" content="Noor Quran" />
     <meta name="robots" content="index, follow" />
 
-    <!-- PWA / Install -->
-    <!-- manifest.json is the primary link (universal application/json MIME type, CORS-safe) -->
-    <link rel="manifest" href="/manifest.json" />
-    <!-- site.webmanifest kept as fallback for Apple / older tools -->
-    <link rel="manifest" href="/site.webmanifest" />
+    <!-- PWA manifest — single canonical link, served as application/manifest+json -->
+    <link rel="manifest" href="/site.webmanifest" crossorigin="use-credentials" />
     <meta name="mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-title" content="Noor Quran" />

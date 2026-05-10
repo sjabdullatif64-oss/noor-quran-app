@@ -1,36 +1,63 @@
 {
-  "id": "com.sj64noorquran",
   "name": "Noor Quran",
   "short_name": "Noor Quran",
   "description": "Noor Quran - Quran, Prayer Times, Islamic Features & More",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",
-  "display_override": ["standalone", "minimal-ui", "browser"],
+  "background_color": "#022c22",
+  "theme_color": "#065f46",
   "orientation": "portrait",
-  "background_color": "#1a5c38",
-  "theme_color": "#1a5c38",
   "lang": "en",
-  "dir": "ltr",
-  "categories": ["education", "lifestyle", "religion"],
-  "iarc_rating_id": "",
-  "prefer_related_applications": false,
   "icons": [
-    { "src": "/icon-48.png",   "sizes": "48x48",     "type": "image/png", "purpose": "any" },
-    { "src": "/icon-72.png",   "sizes": "72x72",     "type": "image/png", "purpose": "any" },
-    { "src": "/icon-96.png",   "sizes": "96x96",     "type": "image/png", "purpose": "any" },
-    { "src": "/icon-120.png",  "sizes": "120x120",   "type": "image/png", "purpose": "any" },
-    { "src": "/icon-144.png",  "sizes": "144x144",   "type": "image/png", "purpose": "any" },
-    { "src": "/icon-152.png",  "sizes": "152x152",   "type": "image/png", "purpose": "any" },
-    { "src": "/icon-167.png",  "sizes": "167x167",   "type": "image/png", "purpose": "any" },
-    { "src": "/icon-180.png",  "sizes": "180x180",   "type": "image/png", "purpose": "any" },
-    { "src": "/icon-192.png",  "sizes": "192x192",   "type": "image/png", "purpose": "any" },
-    { "src": "/icon-256.png",  "sizes": "256x256",   "type": "image/png", "purpose": "any" },
-    { "src": "/icon-384.png",  "sizes": "384x384",   "type": "image/png", "purpose": "any" },
-    { "src": "/icon-512.png",  "sizes": "512x512",   "type": "image/png", "purpose": "any" },
-    { "src": "/icon-192.png",  "sizes": "192x192",   "type": "image/png", "purpose": "maskable" },
-    { "src": "/icon-512.png",  "sizes": "512x512",   "type": "image/png", "purpose": "maskable" },
-    { "src": "/icon-1024.png", "sizes": "1024x1024", "type": "image/png", "purpose": "any" }
+    {
+      "src": "/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icon-384.png",
+      "sizes": "384x384",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icon-256.png",
+      "sizes": "256x256",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icon-144.png",
+      "sizes": "144x144",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icon-96.png",
+      "sizes": "96x96",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icon-72.png",
+      "sizes": "72x72",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icon-48.png",
+      "sizes": "48x48",
+      "type": "image/png",
+      "purpose": "any"
+    }
   ],
   "shortcuts": [
     {
@@ -46,23 +73,6 @@
       "description": "View today's prayer times",
       "url": "/prayer-times",
       "icons": [{ "src": "/icon-96.png", "sizes": "96x96", "type": "image/png" }]
-    },
-    {
-      "name": "Tasbeeh Counter",
-      "short_name": "Tasbeeh",
-      "description": "Open the Tasbeeh dhikr counter",
-      "url": "/tasbeeh",
-      "icons": [{ "src": "/icon-96.png", "sizes": "96x96", "type": "image/png" }]
     }
-  ],
-  "screenshots": [
-    {
-      "src": "/opengraph.jpg",
-      "type": "image/jpeg",
-      "sizes": "1200x630",
-      "form_factor": "wide",
-      "label": "Noor Quran home screen"
-    }
-  ],
-  "related_applications": []
+  ]
 }
