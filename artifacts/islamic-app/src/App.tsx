@@ -21,6 +21,7 @@ import { Downloads } from "@/pages/downloads";
 import { Notifications } from "@/pages/notifications";
 import { About } from "@/pages/about";
 import { PrivacyPolicy } from "@/pages/privacy-policy";
+import { Updates } from "@/pages/updates";
 
 const queryClient = new QueryClient();
 
@@ -42,6 +43,7 @@ function Router() {
       <Route path="/notifications" component={Notifications} />
       <Route path="/about" component={About} />
       <Route path="/privacy-policy" component={PrivacyPolicy} />
+      <Route path="/updates" component={Updates} />
       <Route component={NotFound} />
     </Switch>
   );

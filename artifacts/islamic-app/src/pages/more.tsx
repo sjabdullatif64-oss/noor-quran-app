@@ -11,6 +11,7 @@ import {
   Bell,
   Info,
   Share2,
+  Sparkles,
 } from "lucide-react";
 import { BannerAd } from "@/components/banner-ad";
 import { useToast } from "@/hooks/use-toast";
@@ -30,6 +31,15 @@ interface MoreItem {
 }
 
 const ITEMS: MoreItem[] = [
+  {
+    id: "updates",
+    label: "Updates",
+    description: "Latest news, features & announcements",
+    icon: <Sparkles className="w-6 h-6" />,
+    href: "/updates",
+    accent: "text-amber-300",
+    iconBg: "rgba(217,119,6,0.18)",
+  },
   {
     id: "qibla",
     label: "Qibla Direction",
