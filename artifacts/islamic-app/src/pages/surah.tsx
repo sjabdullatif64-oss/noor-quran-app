@@ -19,10 +19,14 @@ import { getLang } from "@/lib/settings";
 type AudioMode  = "arabic" | "translation" | "both";
 type PlayState  = "idle" | "loading" | "playing" | "paused" | "error";
 type TTSPhase   = "tts" | "arabic";
+/** manual = stop after each ayah · continuous = auto-advance · repeat = loop same ayah */
+type PlayMode   = "manual" | "continuous" | "repeat";
 
 // ── Constants ──────────────────────────────────────────────────────────────────
-const AUTOPLAY_KEY    = "noor-autoplay";
-const AUDIO_MODE_KEY  = "noor-audio-mode";
+const AUTOPLAY_KEY      = "noor-autoplay";   // kept for migration only
+const PLAY_MODE_KEY     = "noor-play-mode";
+const AUDIO_MODE_KEY    = "noor-audio-mode";
+const BETWEEN_AYAH_MS   = 400;               // smooth silence gap between auto-advance
 const MAX_RETRIES     = 3;
 const RETRY_BASE_MS   = 1200;
 const PRELOAD_AHEAD   = 2;
@@ -119,19 +123,19 @@ export function SurahReader() {
     const s = localStorage.getItem(AUDIO_MODE_KEY);
     return s === "arabic" || s === "translation" || s === "both" ? s : "arabic";
   });
-  const [autoPlay, _setAutoPlay] = useState<boolean>(
-    () => localStorage.getItem(AUTOPLAY_KEY) !== "false",
-  );
+  const [playMode, _setPlayMode] = useState<PlayMode>(() => {
+    const s = localStorage.getItem(PLAY_MODE_KEY);
+    if (s === "manual" || s === "continuous" || s === "repeat") return s;
+    // Migrate from old boolean autoplay key
+    return localStorage.getItem(AUTOPLAY_KEY) === "false" ? "manual" : "continuous";
+  });
   const [progress, setProgress]   = useState(0);
   const [retrying, setRetrying]   = useState(false);
   const [ttsPhase, setTtsPhase]   = useState<TTSPhase>("arabic"); // for "both" label
 
-  const setAutoPlay = useCallback((v: boolean | ((p: boolean) => boolean)) => {
-    _setAutoPlay((prev) => {
-      const next = typeof v === "function" ? v(prev) : v;
-      localStorage.setItem(AUTOPLAY_KEY, String(next));
-      return next;
-    });
+  const setPlayMode = useCallback((m: PlayMode) => {
+    _setPlayMode(m);
+    localStorage.setItem(PLAY_MODE_KEY, m);
   }, []);
 
   // ── Refs (read in event callbacks — never stale) ───────────────────────────
@@ -141,7 +145,7 @@ export function SurahReader() {
   const retryCountRef    = useRef(0);
   const retryTimerRef    = useRef<ReturnType<typeof setTimeout> | null>(null);
   const playingIndexRef  = useRef<number | null>(null);
-  const autoPlayRef      = useRef(autoPlay);
+  const playModeRef      = useRef(playMode);
   const surahRef         = useRef(surah);
   const languageRef      = useRef(language);
   const audioModeRef     = useRef(audioMode);
@@ -150,7 +154,7 @@ export function SurahReader() {
 
   // Sync all refs
   useEffect(() => { playingIndexRef.current = playingIndex; }, [playingIndex]);
-  useEffect(() => { autoPlayRef.current     = autoPlay;     }, [autoPlay]);
+  useEffect(() => { playModeRef.current     = playMode;     }, [playMode]);
   useEffect(() => { surahRef.current        = surah;        }, [surah]);
   useEffect(() => { languageRef.current     = language;     }, [language]);
   useEffect(() => { audioModeRef.current    = audioMode;    }, [audioMode]);
@@ -212,12 +216,28 @@ export function SurahReader() {
 
   const advanceOrStop = useCallback((completedIndex: number) => {
     if (cancelledRef.current) return;
+    const mode = playModeRef.current;
+
+    // Repeat one — replay same ayah after brief breathing gap
+    if (mode === "repeat") {
+      setTimeout(() => {
+        if (!cancelledRef.current) playAyahRef.current(completedIndex);
+      }, BETWEEN_AYAH_MS);
+      return;
+    }
+
     const snap = surahRef.current;
     if (!snap) { setPlayState("idle"); return; }
     const next = completedIndex + 1;
-    if (autoPlayRef.current && next < snap.ayahs.length) {
-      scrollToAyah(next);
-      playAyahRef.current(next);
+
+    if (mode === "continuous" && next < snap.ayahs.length) {
+      // Smooth 400 ms silence between ayahs — natural breathing room
+      setTimeout(() => {
+        if (!cancelledRef.current) {
+          scrollToAyah(next);
+          playAyahRef.current(next);
+        }
+      }, BETWEEN_AYAH_MS);
     } else {
       setPlayState("idle");
       setPlayingIndex(null);
@@ -617,11 +637,19 @@ export function SurahReader() {
                     if (el) ayahRefs.current.set(index, el);
                     else    ayahRefs.current.delete(index);
                   }}
-                  className={`group flex flex-col gap-5 py-8 px-2 border-b border-border/40 last:border-0 transition-all duration-300 rounded-xl ${
-                    isCurrent ? "bg-primary/5 border-primary/20 -mx-2 px-4" : "hover:bg-muted/30"
+                  className={`group relative flex flex-col gap-5 py-8 border-b border-border/40 last:border-0 transition-all duration-500 ${
+                    isCurrent
+                      ? "bg-primary/[0.07] dark:bg-primary/10 pl-5 pr-2 -mx-2"
+                      : "px-2 hover:bg-muted/30"
                   }`}
                   data-testid={`ayah-${ayah.numberInSurah}`}
                 >
+                  {/* Left accent bar — only when this ayah is active */}
+                  {isCurrent && (
+                    <div className={`absolute left-0 top-6 bottom-6 w-[3px] rounded-r-full transition-all duration-500 ${
+                      isActive ? "bg-primary" : "bg-primary/40"
+                    }`} />
+                  )}
                   {/* Controls row */}
                   <div className="flex items-center justify-between">
                     {/* Ayah number badge */}
@@ -656,8 +684,8 @@ export function SurahReader() {
                       </div>
                     )}
 
-                    {/* Per-ayah action buttons */}
-                    <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 md:opacity-100 transition-opacity ml-auto">
+                    {/* Per-ayah action buttons — always visible (mobile + desktop) */}
+                    <div className="flex items-center gap-1 ml-auto">
                       <Button
                         variant="ghost" size="icon"
                         className={`w-8 h-8 ${isCurrent && isActive ? "text-primary" : "text-muted-foreground"}`}
@@ -728,7 +756,7 @@ export function SurahReader() {
           surahName={surah.englishName}
           totalAyahs={surah.ayahs.length}
           progress={progress}
-          autoPlay={autoPlay}
+          playMode={playMode}
           language={language}
           langShort={langShort}
           ttsEnabled={ttsEnabled}
@@ -738,7 +766,7 @@ export function SurahReader() {
           onPrev={handlePrev}
           onNext={handleNext}
           onModeChange={handleModeChange}
-          onAutoPlayToggle={() => setAutoPlay((p) => !p)}
+          onPlayModeChange={(m) => setPlayMode(m)}
           onRetry={handleRetry}
         />
       )}
@@ -748,31 +776,31 @@ export function SurahReader() {
 
 // ── AudioPlayer ────────────────────────────────────────────────────────────────
 interface AudioPlayerProps {
-  playState:        PlayState;
-  audioMode:        AudioMode;
-  ttsPhase:         TTSPhase;
-  playingIndex:     number | null;
-  surahName:        string;
-  totalAyahs:       number;
-  progress:         number;
-  autoPlay:         boolean;
-  language:         TranslationLanguage;
-  langShort:        string;
-  ttsEnabled:       boolean;
-  isSindhi:         boolean;
-  retrying:         boolean;
-  onPlayPause:      () => void;
-  onPrev:           () => void;
-  onNext:           () => void;
-  onModeChange:     (m: AudioMode) => void;
-  onAutoPlayToggle: () => void;
-  onRetry:          () => void;
+  playState:         PlayState;
+  audioMode:         AudioMode;
+  ttsPhase:          TTSPhase;
+  playingIndex:      number | null;
+  surahName:         string;
+  totalAyahs:        number;
+  progress:          number;
+  playMode:          PlayMode;
+  language:          TranslationLanguage;
+  langShort:         string;
+  ttsEnabled:        boolean;
+  isSindhi:          boolean;
+  retrying:          boolean;
+  onPlayPause:       () => void;
+  onPrev:            () => void;
+  onNext:            () => void;
+  onModeChange:      (m: AudioMode) => void;
+  onPlayModeChange:  (m: PlayMode) => void;
+  onRetry:           () => void;
 }
 
 function AudioPlayer({
   playState, audioMode, ttsPhase, playingIndex, surahName, totalAyahs,
-  progress, autoPlay, langShort, ttsEnabled, isSindhi, retrying,
-  onPlayPause, onPrev, onNext, onModeChange, onAutoPlayToggle, onRetry,
+  progress, playMode, langShort, ttsEnabled, isSindhi, retrying,
+  onPlayPause, onPrev, onNext, onModeChange, onPlayModeChange, onRetry,
 }: AudioPlayerProps) {
   const isPlaying   = playState === "playing";
   const isLoading   = playState === "loading";
@@ -865,19 +893,33 @@ function AudioPlayer({
           />
         </div>
 
-        {/* AutoPlay toggle */}
+        {/* Play-mode cycle button — Manual → Auto → Repeat One → Manual */}
         <button
-          onClick={onAutoPlayToggle}
-          data-testid="button-audio-autoplay"
-          title={autoPlay ? "Auto-play ON" : "Auto-play OFF"}
+          onClick={() => {
+            const next: PlayMode = playMode === "manual" ? "continuous"
+              : playMode === "continuous" ? "repeat" : "manual";
+            onPlayModeChange(next);
+          }}
+          data-testid="button-audio-playmode"
+          title={
+            playMode === "manual"     ? "Manual — tap to enable Auto-play"
+            : playMode === "continuous" ? "Auto — tap to enable Repeat One"
+            : "Repeat One — tap to disable"
+          }
           className={`ml-auto flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium transition-all border ${
-            autoPlay
+            playMode === "manual"
+              ? "text-muted-foreground border-border/40 hover:text-foreground"
+              : playMode === "continuous"
               ? "bg-primary/10 text-primary border-primary/25"
-              : "text-muted-foreground border-border/40 hover:text-foreground"
+              : "bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/25"
           }`}
         >
-          {autoPlay ? <Repeat1 className="w-3 h-3" /> : <Repeat className="w-3 h-3" />}
-          <span className="hidden sm:inline">{autoPlay ? "Auto" : "Manual"}</span>
+          {playMode === "repeat"
+            ? <Repeat1 className="w-3 h-3" />
+            : <Repeat  className="w-3 h-3" />}
+          <span className="hidden sm:inline">
+            {playMode === "manual" ? "Manual" : playMode === "continuous" ? "Auto" : "Repeat"}
+          </span>
         </button>
       </div>
 
