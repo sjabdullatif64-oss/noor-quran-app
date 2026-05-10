@@ -9,6 +9,7 @@ import {
   Bookmark,
   ChevronRight,
 } from "lucide-react";
+import { BannerAd } from "@/components/banner-ad";
 
 interface MoreItem {
   id: string;
@@ -132,8 +133,11 @@ export function More() {
         ))}
       </div>
 
+      {/* AdMob banner — shown only when running inside a native Android WebView */}
+      <BannerAd placement="inline" className="mx-4 mt-6 rounded-xl overflow-hidden" />
+
       {/* Footer */}
-      <p className="text-center text-emerald-900 text-xs mt-10 pb-4">
+      <p className="text-center text-emerald-900 text-xs mt-6 pb-4">
         Noor Quran · More features coming soon
       </p>
     </div>
