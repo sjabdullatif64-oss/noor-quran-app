@@ -228,3 +228,14 @@
   .border.hover-elevate-2:not(.no-hover-interaction-elevate)::after,
   .border.active-elevate-2:not(.no-active-interaction-elevate)::after { inset: -1px; }
 }
+
+/* ── Audio engine animations ─────────────────────────────────────── */
+@keyframes wave {
+  0%   { transform: scaleY(0.4); opacity: 0.6; }
+  100% { transform: scaleY(1.2); opacity: 1;   }
+}
+
+@keyframes shimmer {
+  0%   { left: -34%; }
+  100% { left: 100%;  }
+}
