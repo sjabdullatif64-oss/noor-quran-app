@@ -203,17 +203,72 @@ export const useSurah = (number: number, translation: TranslationLanguage) => {
   });
 };
 
-export const usePrayerTimes = (city: string, country: string) =>
+export const usePrayerTimes = (city: string, country: string, enabled = true) =>
   useQuery({
     queryKey: ["prayerTimes", city, country],
     queryFn: async () => {
       const res = await fetch(
-        `https://api.aladhan.com/v1/timingsByCity?city=${encodeURIComponent(city)}&country=${encodeURIComponent(country)}`
+        `https://api.aladhan.com/v1/timingsByCity?city=${encodeURIComponent(city)}&country=${encodeURIComponent(country)}&method=2`
       );
+      if (!res.ok) throw new Error("City not found");
       const data = await res.json();
+      if (data.code !== 200) throw new Error(data.data ?? "City not found");
       return data.data as PrayerData;
     },
+    enabled: enabled && !!city && !!country,
+    retry: 1,
   });
+
+/** Fetch prayer times by GPS coordinates using Aladhan's coordinates endpoint. */
+export const usePrayerTimesByCoords = (lat: number | null, lng: number | null, enabled = true) => {
+  const today = new Date();
+  const dateStr = `${String(today.getDate()).padStart(2,"0")}-${String(today.getMonth()+1).padStart(2,"0")}-${today.getFullYear()}`;
+  return useQuery({
+    queryKey: ["prayerTimesByCoords", lat, lng, dateStr],
+    queryFn: async () => {
+      const res = await fetch(
+        `https://api.aladhan.com/v1/timings/${dateStr}?latitude=${lat}&longitude=${lng}&method=2`
+      );
+      if (!res.ok) throw new Error("Prayer times fetch failed");
+      const data = await res.json();
+      if (data.code !== 200) throw new Error(data.data ?? "Fetch failed");
+      return data.data as PrayerData;
+    },
+    enabled: enabled && lat !== null && lng !== null,
+    staleTime: 5 * 60 * 1000,
+    retry: 1,
+  });
+};
+
+/**
+ * Reverse geocode GPS coordinates → { city, country } using free Nominatim API.
+ * Returns null on failure.
+ */
+export async function reverseGeocode(lat: number, lng: number): Promise<{ city: string; country: string } | null> {
+  try {
+    const res = await fetch(
+      `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json&accept-language=en`,
+      { headers: { "User-Agent": "NoorQuranApp/1.0" } }
+    );
+    if (!res.ok) return null;
+    const data = await res.json();
+    const addr = data.address ?? {};
+    const city =
+      addr.city ||
+      addr.town ||
+      addr.village ||
+      addr.municipality ||
+      addr.county ||
+      addr.state_district ||
+      addr.state ||
+      "";
+    const country = addr.country || "";
+    if (!city && !country) return null;
+    return { city, country };
+  } catch {
+    return null;
+  }
+}
 
 export const useRandomAyah = () =>
   useQuery({

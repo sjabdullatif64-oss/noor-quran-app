@@ -13,7 +13,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
   const [location] = useLocation();
   const { theme, setTheme } = useTheme();
 
-  const isDarkPage = ["/qibla", "/more", "/favorites", "/tasbeeh", "/settings", "/islamic-gifts", "/downloads", "/notifications", "/about", "/privacy-policy", "/updates", "/writing", "/islamic-calendar"].includes(location);
+  const isDarkPage = ["/qibla", "/more", "/favorites", "/tasbeeh", "/settings", "/islamic-gifts", "/downloads", "/notifications", "/about", "/privacy-policy", "/updates", "/writing", "/islamic-calendar", "/prayer-times"].includes(location);
   const isMoreActive = MORE_PATHS.some((p) => location.startsWith(p));
 
   return (
