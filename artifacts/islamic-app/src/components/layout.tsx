@@ -21,7 +21,10 @@ export function Layout({ children }: { children: React.ReactNode }) {
       {/* Mobile top bar — hidden on dark-themed pages */}
       {!isDarkPage && (
         <div className="md:hidden flex items-center justify-between px-5 py-3 border-b border-border bg-card">
-          <h1 className="text-xl font-bold font-serif text-primary">Noor Quran</h1>
+          <div className="flex items-center gap-2">
+            <img src="/icon-48.png" alt="Noor Quran" className="w-8 h-8 rounded-lg object-cover" />
+            <h1 className="text-xl font-bold font-serif text-primary">Noor Quran</h1>
+          </div>
           <Button
             variant="ghost"
             size="icon"
@@ -36,7 +39,10 @@ export function Layout({ children }: { children: React.ReactNode }) {
       {/* Desktop Sidebar */}
       <div className="hidden md:flex w-64 flex-col border-r border-border bg-card p-6 shrink-0">
         <div className="flex items-center justify-between mb-8">
-          <h1 className="text-2xl font-bold font-serif text-primary">Noor Quran</h1>
+          <div className="flex items-center gap-2.5">
+            <img src="/icon-48.png" alt="Noor Quran" className="w-9 h-9 rounded-xl object-cover shadow-sm" />
+            <h1 className="text-2xl font-bold font-serif text-primary">Noor Quran</h1>
+          </div>
           <Button
             variant="ghost"
             size="icon"
