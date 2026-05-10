@@ -11,6 +11,7 @@ import {
   removeBookmark,
 } from "@/lib/bookmarks";
 import { getFavAyahs, toggleAyahFav } from "@/lib/favorites";
+import { getLang } from "@/lib/settings";
 
 const LANGUAGES: TranslationLanguage[] = ["urdu", "english"];
 
@@ -18,7 +19,7 @@ export function SurahReader() {
   const params = useParams();
   const number = Number(params.number);
 
-  const [language, setLanguage] = useState<TranslationLanguage>("urdu");
+  const [language, setLanguage] = useState<TranslationLanguage>(() => getLang());
   const { data: surah, isLoading } = useSurah(number, language);
 
   const [bookmarkedSet, setBookmarkedSet] = useState<Set<string>>(new Set());
