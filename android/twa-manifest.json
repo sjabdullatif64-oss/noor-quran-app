@@ -1,0 +1,66 @@
+{
+  "packageId": "com.sj64noorquran",
+  "host": "REPLACE_WITH_YOUR_REPLIT_APP_DOMAIN",
+  "startUrl": "/",
+  "name": "Noor Quran",
+  "launcherName": "Noor Quran",
+  "display": "standalone",
+  "orientation": "portrait",
+  "themeColor": "#1a5c38",
+  "navigationColor": "#1a5c38",
+  "navigationColorDark": "#0a2e1c",
+  "navigationDividerColor": "#1a5c38",
+  "navigationDividerColorDark": "#0a2e1c",
+  "backgroundColor": "#1a5c38",
+  "enableNotifications": true,
+  "iconUrl": "https://REPLACE_WITH_YOUR_REPLIT_APP_DOMAIN/icon-512.png",
+  "maskableIconUrl": "https://REPLACE_WITH_YOUR_REPLIT_APP_DOMAIN/icon-512.png",
+  "monochromeIconUrl": "https://REPLACE_WITH_YOUR_REPLIT_APP_DOMAIN/icon-192.png",
+  "manifestUrl": "https://REPLACE_WITH_YOUR_REPLIT_APP_DOMAIN/site.webmanifest",
+  "webManifestUrl": "https://REPLACE_WITH_YOUR_REPLIT_APP_DOMAIN/site.webmanifest",
+  "fullScopeUrl": "https://REPLACE_WITH_YOUR_REPLIT_APP_DOMAIN/",
+  "isChromeOSOnly": false,
+  "isMetaQuest": false,
+  "minSdkVersion": 24,
+  "appVersionName": "1.0.0",
+  "appVersionCode": 1,
+  "signingKey": {
+    "path": "noor-quran-release.keystore",
+    "alias": "noor-quran-key"
+  },
+  "signingKeyLegacy": {
+    "path": "noor-quran-release.keystore",
+    "alias": "noor-quran-key"
+  },
+  "features": {
+    "locationDelegation": {
+      "enabled": true
+    },
+    "playBilling": {
+      "enabled": false
+    }
+  },
+  "enableSiteSettingsShortcut": true,
+  "fallbackType": "customtabs",
+  "additionalTrustedOrigins": [],
+  "shortcuts": [
+    {
+      "name": "Read Quran",
+      "short_name": "Quran",
+      "url": "/quran",
+      "icons": [{ "src": "https://REPLACE_WITH_YOUR_REPLIT_APP_DOMAIN/icon-96.png", "sizes": "96x96" }]
+    },
+    {
+      "name": "Prayer Times",
+      "short_name": "Prayers",
+      "url": "/prayer-times",
+      "icons": [{ "src": "https://REPLACE_WITH_YOUR_REPLIT_APP_DOMAIN/icon-96.png", "sizes": "96x96" }]
+    },
+    {
+      "name": "Tasbeeh",
+      "short_name": "Tasbeeh",
+      "url": "/tasbeeh",
+      "icons": [{ "src": "https://REPLACE_WITH_YOUR_REPLIT_APP_DOMAIN/icon-96.png", "sizes": "96x96" }]
+    }
+  ]
+}

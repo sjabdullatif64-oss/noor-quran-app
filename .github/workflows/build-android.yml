@@ -1,0 +1,132 @@
+name: Build Android AAB
+
+on:
+  push:
+    branches: [main]
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      version_name:
+        description: 'Version name (e.g. 1.0.1)'
+        required: false
+        default: '1.0.0'
+      version_code:
+        description: 'Version code (integer, increment each release)'
+        required: false
+        default: '1'
+
+jobs:
+  build-aab:
+    name: Build & Sign AAB
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Set up Java 17 (required by Gradle / Bubblewrap)
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v3
+        with:
+          version: 9
+
+      - name: Install workspace dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build web app (production)
+        run: pnpm --filter @workspace/islamic-app run build
+        env:
+          PORT: 3000
+          BASE_PATH: /
+          NODE_ENV: production
+
+      - name: Install Bubblewrap CLI
+        run: npm install -g @bubblewrap/cli
+
+      - name: Accept Android SDK licenses
+        run: yes | bubblewrap doctor --accept-licenses 2>/dev/null || true
+
+      - name: Initialise TWA Android project
+        run: |
+          mkdir -p android-build
+          cd android-build
+          bubblewrap init \
+            --manifest "https://${{ secrets.REPLIT_APP_DOMAIN }}/site.webmanifest" \
+            --directory .
+        env:
+          BUBBLEWRAP_HOST: ${{ secrets.REPLIT_APP_DOMAIN }}
+
+      - name: Decode & write keystore
+        run: |
+          echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 --decode > android-build/noor-quran-release.keystore
+
+      - name: Update version in twa-manifest
+        run: |
+          cd android-build
+          node -e "
+            const fs = require('fs');
+            const m = JSON.parse(fs.readFileSync('twa-manifest.json', 'utf8'));
+            m.appVersionName = '${{ github.event.inputs.version_name || '1.0.0' }}';
+            m.appVersionCode = parseInt('${{ github.event.inputs.version_code || '1' }}');
+            m.signingKey = { path: 'noor-quran-release.keystore', alias: '${{ secrets.KEY_ALIAS }}' };
+            m.signingKeyLegacy = { path: 'noor-quran-release.keystore', alias: '${{ secrets.KEY_ALIAS }}' };
+            fs.writeFileSync('twa-manifest.json', JSON.stringify(m, null, 2));
+          "
+
+      - name: Build AAB
+        run: |
+          cd android-build
+          bubblewrap build --skipPwaValidation
+        env:
+          KEYSTORE_PATH: noor-quran-release.keystore
+          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+
+      - name: Find & rename AAB
+        run: |
+          AAB_PATH=$(find android-build -name "*.aab" | head -1)
+          echo "Found AAB: $AAB_PATH"
+          cp "$AAB_PATH" noor-quran-${{ github.event.inputs.version_name || '1.0.0' }}.aab
+
+      - name: Upload AAB artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: noor-quran-aab-${{ github.event.inputs.version_name || '1.0.0' }}
+          path: noor-quran-*.aab
+          retention-days: 30
+
+      - name: Create GitHub Release (on tag push)
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: noor-quran-*.aab
+          name: "Noor Quran ${{ github.ref_name }}"
+          body: |
+            ## Noor Quran ${{ github.ref_name }}
+
+            ### Play Store
+            Upload `noor-quran-*.aab` to Google Play Console → Internal Testing.
+
+            ### What's included
+            - Quran reader with 10 translation languages
+            - Audio recitation (Al-Afasy 128kbps)
+            - GPS prayer times
+            - Qibla compass
+            - Tasbeeh counter
+            - Offline downloads
+            - Islamic calendar
+            - Islamic Gifts
+            - Push notifications
