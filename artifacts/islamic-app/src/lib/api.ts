@@ -116,7 +116,7 @@ export const TRANSLATION_ENGLISH_NAMES: Record<TranslationLanguage, string> = {
 export const TRANSLATION_EDITIONS: Record<TranslationLanguage, string> = {
   urdu:       "ur.jalandhry",
   english:    "en.sahih",
-  sindhi:     "sd.mewati",
+  sindhi:     "sd.amroti",
   hindi:      "hi.hindi",
   turkish:    "tr.ates",
   bengali:    "bn.bengali",

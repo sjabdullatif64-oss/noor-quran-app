@@ -1,7 +1,7 @@
 import { Link } from "wouter";
 import {
   ChevronLeft, Share2, Shield, Mail, BookOpen, Clock, Heart,
-  Bookmark, Download, Hash, Bell, Compass, Sparkles, Globe, Volume2, Gift, PenLine,
+  Bookmark, Download, Hash, Bell, Compass, Sparkles, Globe, Volume2, Gift, PenLine, Star,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
@@ -302,6 +302,18 @@ export function About() {
             border="border-emerald-800/50"
             onClick={() => shareApp(toast)}
             testId="button-about-share"
+          />
+          <ActionButton
+            icon={<Star className="w-5 h-5 fill-amber-400" />}
+            label="Rate Noor Quran"
+            sublabel="Support us with your review on Play Store ⭐⭐⭐⭐⭐"
+            accent="text-amber-400"
+            bg="rgba(251,191,36,0.08)"
+            border="border-amber-900/40"
+            onClick={() =>
+              window.open("https://play.google.com/store/apps/details?id=com.sj64noorquran&reviewId=0", "_blank", "noopener,noreferrer")
+            }
+            testId="button-about-rate"
           />
           <ActionButton
             icon={<Mail className="w-5 h-5" />}

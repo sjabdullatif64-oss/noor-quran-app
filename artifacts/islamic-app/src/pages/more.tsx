@@ -13,6 +13,7 @@ import {
   Share2,
   Sparkles,
   PenLine,
+  Star,
 } from "lucide-react";
 import { BannerAd } from "@/components/banner-ad";
 import { useToast } from "@/hooks/use-toast";
@@ -159,8 +160,8 @@ export function More() {
         <p className="text-emerald-600 text-sm mt-1">All features & tools</p>
       </div>
 
-      {/* Share App — prominent card */}
-      <div className="px-4 mb-4">
+      {/* Share App + Rate App — side by side prominent cards */}
+      <div className="px-4 mb-4 flex flex-col gap-3">
         <button
           onClick={handleShare}
           className="w-full flex items-center gap-4 p-5 rounded-2xl border border-emerald-700/40 text-left transition-all active:scale-[0.98]"
@@ -183,6 +184,34 @@ export function More() {
           <span className="text-emerald-600 text-xs px-2 py-1 rounded-full border border-emerald-800/40 shrink-0">
             Share
           </span>
+        </button>
+
+        {/* Rate App */}
+        <button
+          onClick={() => window.open("https://play.google.com/store/apps/details?id=com.sj64noorquran&reviewId=0", "_blank", "noopener,noreferrer")}
+          className="w-full flex items-center gap-4 p-5 rounded-2xl border border-amber-700/40 text-left transition-all active:scale-[0.98] hover:border-amber-600/60"
+          style={{
+            background: "linear-gradient(135deg, rgba(120,80,0,0.35) 0%, rgba(80,50,0,0.28) 100%)",
+            boxShadow: "0 0 20px rgba(251,191,36,0.06)",
+          }}
+          data-testid="more-rate-app"
+        >
+          <div
+            className="w-12 h-12 rounded-xl flex items-center justify-center shrink-0 text-amber-300"
+            style={{ background: "rgba(251,191,36,0.18)" }}
+          >
+            <Star className="w-6 h-6 fill-amber-300" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="text-white font-bold text-base">Rate Noor Quran</p>
+            <p className="text-amber-600 text-sm mt-0.5">Support us with your review on Play Store</p>
+          </div>
+          {/* 5 mini stars */}
+          <div className="flex gap-0.5 shrink-0">
+            {[1,2,3,4,5].map((s) => (
+              <Star key={s} className="w-3 h-3 fill-amber-400 text-amber-400" />
+            ))}
+          </div>
         </button>
       </div>
 

@@ -51,13 +51,13 @@ A full-featured Islamic mobile web app for reading the Holy Quran with Urdu & En
 - App name: **Noor Quran** — use this everywhere, no abbreviation to just "Noor"
 - Package name: `com.sj64noorquran`
 - Islamic green theme (`#1a5c38` primary) — keep throughout
-- Sindhi translation removed permanently — only Urdu and English
+- 10 translation languages supported: Urdu, English, Sindhi, Hindi, Turkish, Bengali, Indonesian, French, Spanish, Malay
 - Remove buttons must always be visible on mobile (no hover-only opacity)
 
 ## Gotchas
 
 - Do not run `pnpm dev` at workspace root — use `restart_workflow` or the workflow system
-- Sindhi (`ur.sahih`?) was removed — do not re-add it
+- Sindhi edition is `sd.amroti` — do NOT use `sd.mewati` (that returns raw Arabic Quran text)
 - Audio downloads use IndexedDB; text uses localStorage keys prefixed `noor-dl-text-{packId}`
 - The `getLang()` / `getCity()` functions in `src/lib/settings.ts` are the single source of truth for user preferences
 

@@ -6,6 +6,11 @@ import { getCity, setCity as saveCity, getLang, setLang as saveLang, PRESET_CITI
 import { ALL_LANGUAGES, TRANSLATION_LABELS, TRANSLATION_ENGLISH_NAMES, TranslationLanguage } from "@/lib/api";
 import { useToast } from "@/hooks/use-toast";
 
+// Badge label for languages that need a note
+const LANG_BADGE: Partial<Record<TranslationLanguage, string>> = {
+  sindhi: "Fixed ✓",
+};
+
 // Flag emoji per language
 const LANG_FLAG: Record<TranslationLanguage, string> = {
   urdu:       "🇵🇰",
@@ -141,7 +146,14 @@ export function Settings() {
                 >
                   <span className="text-xl shrink-0">{LANG_FLAG[lang]}</span>
                   <div className="flex-1 min-w-0 text-left">
-                    <p className="text-white font-semibold text-sm">{TRANSLATION_ENGLISH_NAMES[lang]}</p>
+                    <div className="flex items-center gap-2">
+                      <p className="text-white font-semibold text-sm">{TRANSLATION_ENGLISH_NAMES[lang]}</p>
+                      {LANG_BADGE[lang] && (
+                        <span className="text-[10px] font-semibold text-teal-400 border border-teal-800/50 px-1.5 py-0.5 rounded-full" style={{ background: "rgba(45,212,191,0.08)" }}>
+                          {LANG_BADGE[lang]}
+                        </span>
+                      )}
+                    </div>
                     <p className="text-emerald-600 text-xs mt-0.5">{TRANSLATION_LABELS[lang]}</p>
                   </div>
                   {isActive && (
