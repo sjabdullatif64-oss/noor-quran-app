@@ -461,16 +461,18 @@ export function SurahReader() {
       }
 
     } else {
-      // "both" — TTS translation first, then Arabic CDN
-      if (ttsOk) {
-        playTTSPhase(index, gen, () => {
-          // Re-check gen before chaining to Arabic phase
-          if (!cancelledRef.current && playGenRef.current === gen)
-            playArabicPhase(index, gen, onComplete);
-        });
-      } else {
-        playArabicPhase(index, gen, onComplete);
-      }
+      // "both" — Arabic CDN first, THEN translation TTS
+      // Islamic order: recite the ayah in Arabic, then explain in translation.
+      playArabicPhase(index, gen, () => {
+        // Arabic finished — chain TTS only if still valid and TTS is available
+        if (!cancelledRef.current && playGenRef.current === gen) {
+          if (ttsOk) {
+            playTTSPhase(index, gen, onComplete);
+          } else {
+            onComplete(); // TTS unavailable — treat Arabic-only as complete
+          }
+        }
+      });
     }
   }, [advanceOrStop, playArabicPhase, playTTSPhase, teardownAudio, clearRetryTimer]);
 
@@ -857,7 +859,7 @@ function AudioPlayer({
     ? "Al-Afasy recitation"
     : audioMode === "translation"
     ? `${langShort} translation`
-    : "Translation + Recitation";
+    : "Recitation + Translation";
 
   const statusLine = retrying
     ? "Reconnecting…"
@@ -872,7 +874,7 @@ function AudioPlayer({
     : isPlaying && audioMode === "translation"
     ? `${langShort} TTS`
     : isPlaying && audioMode === "both"
-    ? ttsPhase === "tts" ? `${langShort} TTS → Arabic next` : "Arabic CDN"
+    ? ttsPhase === "arabic" ? `Arabic CDN · ${langShort} next` : `${langShort} TTS`
     : "";
 
   return (
