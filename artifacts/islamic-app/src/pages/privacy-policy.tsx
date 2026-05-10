@@ -278,10 +278,11 @@ export function PrivacyPolicy() {
             <Mail className="w-4 h-4 text-emerald-500" />
             <p className="text-emerald-400 text-sm font-semibold">Contact Us</p>
           </div>
-          <p className="text-emerald-600 text-sm leading-relaxed mb-3">
+          <p className="text-emerald-600 text-sm leading-relaxed mb-1">
             If you have any questions, concerns, or requests regarding this Privacy Policy or
-            your data, please reach out to us:
+            your data, please contact the Noor Quran Team:
           </p>
+          <p className="text-emerald-700 text-xs mb-3 font-medium">The Noor Quran Team</p>
           <button
             onClick={() => window.open("mailto:easygroupjoin@gmail.com", "_blank")}
             className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium text-emerald-300 border border-emerald-700/50 hover:border-emerald-500 transition-colors"
@@ -307,7 +308,7 @@ export function PrivacyPolicy() {
         </button>
 
         <p className="text-center text-emerald-900 text-xs pb-4">
-          Noor Quran © 2025 · Made with ❤️ for the Ummah
+          Noor Quran © 2025 · The Noor Quran Team
         </p>
       </div>
     </div>

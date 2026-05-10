@@ -284,7 +284,7 @@ export function About() {
             <p className="text-emerald-500 text-xs font-semibold uppercase tracking-wider">Developer</p>
           </div>
           <div className="p-4 space-y-2.5">
-            <InfoRow label="Developer" value="SJ64 Studios"      />
+            <InfoRow label="Developer" value="The Noor Quran Team" />
             <InfoRow label="Package"   value="com.sj64noorquran" />
             <InfoRow label="Platform"  value="Android · Web"     />
             <InfoRow label="Category"  value="Islamic / Religion" />
