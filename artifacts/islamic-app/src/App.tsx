@@ -18,6 +18,7 @@ import { Tasbeeh } from "@/pages/tasbeeh";
 import { Settings } from "@/pages/settings";
 import { IslamicGifts } from "@/pages/islamic-gifts";
 import { Downloads } from "@/pages/downloads";
+import { Notifications } from "@/pages/notifications";
 
 const queryClient = new QueryClient();
 
@@ -36,6 +37,7 @@ function Router() {
       <Route path="/settings" component={Settings} />
       <Route path="/islamic-gifts" component={IslamicGifts} />
       <Route path="/downloads" component={Downloads} />
+      <Route path="/notifications" component={Notifications} />
       <Route component={NotFound} />
     </Switch>
   );

@@ -8,6 +8,7 @@ import {
   Download,
   Bookmark,
   ChevronRight,
+  Bell,
 } from "lucide-react";
 import { BannerAd } from "@/components/banner-ad";
 
@@ -75,6 +76,15 @@ const ITEMS: MoreItem[] = [
     href: "/downloads",
     accent: "text-teal-300",
     iconBg: "rgba(45,212,191,0.15)",
+  },
+  {
+    id: "notifications",
+    label: "Notifications",
+    description: "Prayer & Quran reminders",
+    icon: <Bell className="w-6 h-6" />,
+    href: "/notifications",
+    accent: "text-amber-300",
+    iconBg: "rgba(217,119,6,0.15)",
   },
   {
     id: "settings",

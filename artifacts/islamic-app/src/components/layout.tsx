@@ -2,18 +2,18 @@ import React from "react";
 import { Link, useLocation } from "wouter";
 import {
   Book, Bookmark, Compass, Home as HomeIcon,
-  Moon, Navigation, Sun, MoreHorizontal, Heart, Hash, Gift, Download, Settings,
+  Moon, Navigation, Sun, MoreHorizontal, Heart, Hash, Gift, Download, Settings, Bell,
 } from "lucide-react";
 import { useTheme } from "./theme-provider";
 import { Button } from "./ui/button";
 
-const MORE_PATHS = ["/more", "/qibla", "/favorites", "/tasbeeh", "/settings", "/islamic-gifts", "/downloads"];
+const MORE_PATHS = ["/more", "/qibla", "/favorites", "/tasbeeh", "/settings", "/islamic-gifts", "/downloads", "/notifications"];
 
 export function Layout({ children }: { children: React.ReactNode }) {
   const [location] = useLocation();
   const { theme, setTheme } = useTheme();
 
-  const isDarkPage = ["/qibla", "/more", "/favorites", "/tasbeeh", "/settings", "/islamic-gifts", "/downloads"].includes(location);
+  const isDarkPage = ["/qibla", "/more", "/favorites", "/tasbeeh", "/settings", "/islamic-gifts", "/downloads", "/notifications"].includes(location);
   const isMoreActive = MORE_PATHS.some((p) => location.startsWith(p));
 
   return (
@@ -61,6 +61,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
           <NavItem href="/bookmarks" icon={<Bookmark className="w-5 h-5" />} label="Bookmarks" active={location === "/bookmarks"} />
           <NavItem href="/islamic-gifts" icon={<Gift className="w-5 h-5" />} label="Islamic Gifts" active={location === "/islamic-gifts"} />
           <NavItem href="/downloads" icon={<Download className="w-5 h-5" />} label="Downloads" active={location === "/downloads"} />
+          <NavItem href="/notifications" icon={<Bell className="w-5 h-5" />} label="Notifications" active={location === "/notifications"} />
           <NavItem href="/settings" icon={<Settings className="w-5 h-5" />} label="Settings" active={location === "/settings"} />
         </nav>
 
