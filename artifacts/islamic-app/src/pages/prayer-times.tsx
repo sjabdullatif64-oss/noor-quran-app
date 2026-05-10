@@ -168,9 +168,12 @@ export function PrayerTimes() {
     );
   }, []);
 
-  // ── Auto-detect on first visit ──────────────────────────────────────────────
+  // ── Auto-detect GPS on every mount ──────────────────────────────────────────
+  // GPS is always the preferred source. If the user had a manual city saved from
+  // a previous session, it shows immediately as a fallback while GPS resolves.
+  // Only skip auto-detection if GPS coords are already fresh in storage.
   useEffect(() => {
-    if (locState === "no-location") {
+    if (locState !== "gps-active") {
       detectGPS();
     }
   }, []); // eslint-disable-line react-hooks/exhaustive-deps

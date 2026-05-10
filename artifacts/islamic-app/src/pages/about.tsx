@@ -2,6 +2,7 @@ import { Link } from "wouter";
 import {
   ChevronLeft, Share2, Shield, Mail, BookOpen, Clock, Heart,
   Bookmark, Download, Hash, Bell, Compass, Sparkles, Globe, Volume2, Gift, PenLine, Star,
+  Calculator, ExternalLink,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
@@ -291,6 +292,52 @@ export function About() {
           </div>
         </div>
 
+        {/* ── Try Our Other App ── */}
+        <div>
+          <div className="flex items-center gap-2 mb-4">
+            <Sparkles className="w-4 h-4 text-emerald-500" />
+            <p className="text-emerald-400 text-sm font-semibold uppercase tracking-wider">Try Our Other App</p>
+          </div>
+          <button
+            onClick={() =>
+              window.open(
+                "https://play.google.com/store/apps/details?id=com.sj64.smartcalculator",
+                "_blank",
+                "noopener,noreferrer",
+              )
+            }
+            className="w-full flex items-center gap-4 p-5 rounded-2xl border border-emerald-800/40 text-left transition-all active:scale-[0.98] hover:border-emerald-600/50"
+            style={{
+              background:
+                "linear-gradient(135deg, rgba(26,92,56,0.35) 0%, rgba(5,46,22,0.35) 100%)",
+            }}
+            data-testid="button-about-smart-calculator"
+          >
+            <div
+              className="w-14 h-14 rounded-2xl flex items-center justify-center shrink-0 text-emerald-300"
+              style={{
+                background: "linear-gradient(135deg, #1a5c38 0%, #0d3d24 100%)",
+                boxShadow: "0 4px 16px rgba(52,211,153,0.2)",
+              }}
+            >
+              <Calculator className="w-7 h-7" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-white font-bold text-base leading-tight">Smart Calculator</p>
+              <p className="text-emerald-600 text-xs mt-1 leading-snug">
+                A fast, elegant calculator app — free on Google Play Store
+              </p>
+              <div
+                className="inline-flex items-center gap-1.5 mt-2 px-2.5 py-1 rounded-full text-[11px] font-semibold text-emerald-300 border border-emerald-800/60"
+                style={{ background: "rgba(52,211,153,0.08)" }}
+              >
+                <ExternalLink className="w-3 h-3" />
+                Google Play Store
+              </div>
+            </div>
+          </button>
+        </div>
+
         {/* ── Action buttons ── */}
         <div className="space-y-3 pb-4">
           <ActionButton
@@ -323,7 +370,7 @@ export function About() {
             bg="rgba(56,189,248,0.08)"
             border="border-sky-900/40"
             onClick={() =>
-              window.open("mailto:support@sj64studios.com?subject=Noor Quran Feedback", "_blank")
+              window.open("mailto:easygroupjoin@gmail.com?subject=Noor Quran Feedback", "_blank")
             }
             testId="button-about-contact"
           />
