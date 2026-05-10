@@ -19,6 +19,8 @@ import { Settings } from "@/pages/settings";
 import { IslamicGifts } from "@/pages/islamic-gifts";
 import { Downloads } from "@/pages/downloads";
 import { Notifications } from "@/pages/notifications";
+import { About } from "@/pages/about";
+import { PrivacyPolicy } from "@/pages/privacy-policy";
 
 const queryClient = new QueryClient();
 
@@ -38,6 +40,8 @@ function Router() {
       <Route path="/islamic-gifts" component={IslamicGifts} />
       <Route path="/downloads" component={Downloads} />
       <Route path="/notifications" component={Notifications} />
+      <Route path="/about" component={About} />
+      <Route path="/privacy-policy" component={PrivacyPolicy} />
       <Route component={NotFound} />
     </Switch>
   );
