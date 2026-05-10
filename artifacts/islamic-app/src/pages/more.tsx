@@ -14,6 +14,7 @@ import {
   Sparkles,
   PenLine,
   Star,
+  CalendarDays,
 } from "lucide-react";
 import { BannerAd } from "@/components/banner-ad";
 import { useToast } from "@/hooks/use-toast";
@@ -33,6 +34,15 @@ interface MoreItem {
 }
 
 const ITEMS: MoreItem[] = [
+  {
+    id: "islamic-calendar",
+    label: "Islamic Calendar",
+    description: "Hijri dates, Ramadan, Eid & Islamic events",
+    icon: <CalendarDays className="w-6 h-6" />,
+    href: "/islamic-calendar",
+    accent: "text-teal-300",
+    iconBg: "rgba(45,212,191,0.18)",
+  },
   {
     id: "updates",
     label: "Updates",

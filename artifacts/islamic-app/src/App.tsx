@@ -23,6 +23,7 @@ import { About } from "@/pages/about";
 import { PrivacyPolicy } from "@/pages/privacy-policy";
 import { Updates } from "@/pages/updates";
 import { Writing } from "@/pages/writing";
+import { IslamicCalendar } from "@/pages/islamic-calendar";
 
 const queryClient = new QueryClient();
 
@@ -46,6 +47,7 @@ function Router() {
       <Route path="/privacy-policy" component={PrivacyPolicy} />
       <Route path="/updates" component={Updates} />
       <Route path="/writing" component={Writing} />
+      <Route path="/islamic-calendar" component={IslamicCalendar} />
       <Route component={NotFound} />
     </Switch>
   );

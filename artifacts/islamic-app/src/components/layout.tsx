@@ -7,13 +7,13 @@ import {
 import { useTheme } from "./theme-provider";
 import { Button } from "./ui/button";
 
-const MORE_PATHS = ["/more", "/qibla", "/favorites", "/tasbeeh", "/settings", "/islamic-gifts", "/downloads", "/notifications", "/about", "/privacy-policy", "/updates", "/writing"];
+const MORE_PATHS = ["/more", "/qibla", "/favorites", "/tasbeeh", "/settings", "/islamic-gifts", "/downloads", "/notifications", "/about", "/privacy-policy", "/updates", "/writing", "/islamic-calendar"];
 
 export function Layout({ children }: { children: React.ReactNode }) {
   const [location] = useLocation();
   const { theme, setTheme } = useTheme();
 
-  const isDarkPage = ["/qibla", "/more", "/favorites", "/tasbeeh", "/settings", "/islamic-gifts", "/downloads", "/notifications", "/about", "/privacy-policy", "/updates", "/writing"].includes(location);
+  const isDarkPage = ["/qibla", "/more", "/favorites", "/tasbeeh", "/settings", "/islamic-gifts", "/downloads", "/notifications", "/about", "/privacy-policy", "/updates", "/writing", "/islamic-calendar"].includes(location);
   const isMoreActive = MORE_PATHS.some((p) => location.startsWith(p));
 
   return (
