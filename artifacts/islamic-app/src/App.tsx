@@ -12,6 +12,12 @@ import { SurahReader } from "@/pages/surah";
 import { PrayerTimes } from "@/pages/prayer-times";
 import { Bookmarks } from "@/pages/bookmarks";
 import { Qibla } from "@/pages/qibla";
+import { More } from "@/pages/more";
+import { Favorites } from "@/pages/favorites";
+import { Tasbeeh } from "@/pages/tasbeeh";
+import { Settings } from "@/pages/settings";
+import { IslamicGifts } from "@/pages/islamic-gifts";
+import { Downloads } from "@/pages/downloads";
 
 const queryClient = new QueryClient();
 
@@ -24,6 +30,12 @@ function Router() {
       <Route path="/prayer-times" component={PrayerTimes} />
       <Route path="/bookmarks" component={Bookmarks} />
       <Route path="/qibla" component={Qibla} />
+      <Route path="/more" component={More} />
+      <Route path="/favorites" component={Favorites} />
+      <Route path="/tasbeeh" component={Tasbeeh} />
+      <Route path="/settings" component={Settings} />
+      <Route path="/islamic-gifts" component={IslamicGifts} />
+      <Route path="/downloads" component={Downloads} />
       <Route component={NotFound} />
     </Switch>
   );

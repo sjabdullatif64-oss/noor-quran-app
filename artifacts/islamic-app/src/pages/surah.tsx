@@ -3,14 +3,14 @@ import { useSurah } from "@/lib/api";
 import { TRANSLATION_LABELS, TranslationLanguage } from "@/lib/api";
 import { useParams, Link } from "wouter";
 import { Skeleton } from "@/components/ui/skeleton";
-import { ArrowLeft, Bookmark, BookmarkCheck, ChevronLeft, ChevronRight, Pause, Play, Volume2 } from "lucide-react";
+import { ArrowLeft, Bookmark, BookmarkCheck, ChevronLeft, ChevronRight, Heart, Pause, Play, Volume2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   getBookmarks,
   saveBookmark,
   removeBookmark,
-  isBookmarked,
 } from "@/lib/bookmarks";
+import { getFavAyahs, toggleAyahFav } from "@/lib/favorites";
 
 const LANGUAGES: TranslationLanguage[] = ["urdu", "sindhi", "english"];
 
@@ -22,6 +22,8 @@ export function SurahReader() {
   const { data: surah, isLoading } = useSurah(number, language);
 
   const [bookmarkedSet, setBookmarkedSet] = useState<Set<string>>(new Set());
+  const [favSet, setFavSet] = useState<Set<string>>(new Set());
+  const [favPopped, setFavPopped] = useState<string | null>(null);
   const [playingIndex, setPlayingIndex] = useState<number | null>(null);
   const [isPlaying, setIsPlaying] = useState(false);
   const [isAudioLoading, setIsAudioLoading] = useState(false);
@@ -32,7 +34,10 @@ export function SurahReader() {
     const stored = getBookmarks();
     const s = new Set(stored.map((b) => `${b.surahNumber}-${b.ayahNumber}`));
     setBookmarkedSet(s);
-  }, []);
+    const favs = getFavAyahs();
+    const f = new Set(favs.filter((a) => a.surahNumber === number).map((a) => `${a.surahNumber}-${a.ayahNumber}`));
+    setFavSet(f);
+  }, [number]);
 
   const scrollToAyah = useCallback((index: number) => {
     const el = ayahRefs.current.get(index);
@@ -142,6 +147,30 @@ export function SurahReader() {
         savedAt: Date.now(),
       });
       setBookmarkedSet((prev) => new Set(prev).add(key));
+    }
+  };
+
+  const toggleFavorite = (ayahIndex: number) => {
+    if (!surah) return;
+    const ayah = surah.ayahs[ayahIndex];
+    const key = `${number}-${ayah.numberInSurah}`;
+    const added = toggleAyahFav({
+      surahNumber: number,
+      surahEnglishName: surah.englishName,
+      surahName: surah.name,
+      ayahNumber: ayah.numberInSurah,
+      globalNumber: ayah.globalNumber,
+      textAr: ayah.textAr,
+      textTranslation: ayah.textTranslation,
+    });
+    setFavSet((prev) => {
+      const next = new Set(prev);
+      added ? next.add(key) : next.delete(key);
+      return next;
+    });
+    if (added) {
+      setFavPopped(key);
+      setTimeout(() => setFavPopped(null), 800);
     }
   };
 
@@ -278,6 +307,26 @@ export function SurahReader() {
                         )}
                       </Button>
 
+                      {/* Heart / Favorite */}
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className={`w-8 h-8 transition-all ${
+                          favSet.has(key)
+                            ? "text-rose-500"
+                            : "text-muted-foreground hover:text-rose-400"
+                        }`}
+                        onClick={() => toggleFavorite(index)}
+                        data-testid={`button-fav-ayah-${ayah.numberInSurah}`}
+                      >
+                        <Heart
+                          className={`w-4 h-4 transition-transform ${
+                            favPopped === key ? "scale-150" : "scale-100"
+                          } ${favSet.has(key) ? "fill-rose-500" : ""}`}
+                        />
+                      </Button>
+
+                      {/* Bookmark */}
                       <Button
                         variant="ghost"
                         size="icon"
