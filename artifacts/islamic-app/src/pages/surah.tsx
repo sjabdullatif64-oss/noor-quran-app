@@ -141,6 +141,10 @@ export function SurahReader() {
   // ── Refs (read in event callbacks — never stale) ───────────────────────────
   const audioRef         = useRef<HTMLAudioElement | null>(null);
   const cancelledRef     = useRef(false);      // set true on stop — guards all callbacks
+  /** Incremented on every new playAyah call. Every async callback captures its own
+   *  gen and bails immediately if playGenRef.current !== gen — this is the PRIMARY
+   *  guard against overlapping audio from stale retries / error events. */
+  const playGenRef       = useRef(0);
   const currentPhaseRef  = useRef<TTSPhase>("arabic");
   const retryCountRef    = useRef(0);
   const retryTimerRef    = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -184,21 +188,30 @@ export function SurahReader() {
     }
   }, []);
 
+  // ── teardownAudio — W3C-correct audio element destruction ─────────────────
+  // Do NOT use `src = ""` — that fires an error event which triggers stale retries.
+  // removeAttribute("src") + load() aborts the network request silently.
+  const teardownAudio = useCallback(() => {
+    const el = audioRef.current;
+    if (!el) return;
+    el.pause();
+    el.removeAttribute("src");
+    el.load();               // abort any pending network request
+    audioRef.current = null;
+  }, []);
+
   // ── stopAll — guaranteed-safe complete halt ────────────────────────────────
   const stopAll = useCallback(() => {
-    cancelledRef.current = true;  // guards all pending callbacks
-    if (audioRef.current) {
-      audioRef.current.pause();
-      audioRef.current.src = "";
-      audioRef.current     = null;
-    }
+    playGenRef.current++;        // invalidate ALL pending callbacks immediately
+    cancelledRef.current = true;
+    teardownAudio();
     clearRetryTimer();
     retryCountRef.current = 0;
     if (isTTSSupported()) window.speechSynthesis.cancel();
     setPlayState("idle");
     setProgress(0);
     setRetrying(false);
-  }, [clearRetryTimer]);
+  }, [teardownAudio, clearRetryTimer]);
 
   // Cleanup when surah changes or component unmounts
   useEffect(() => {
@@ -214,14 +227,16 @@ export function SurahReader() {
   // Forward ref so recursive callers always get latest version
   const playAyahRef = useRef<(index: number) => void>(() => {});
 
-  const advanceOrStop = useCallback((completedIndex: number) => {
-    if (cancelledRef.current) return;
+  const advanceOrStop = useCallback((completedIndex: number, gen: number) => {
+    // Stale generation → a newer playAyah is already running, do nothing
+    if (cancelledRef.current || playGenRef.current !== gen) return;
     const mode = playModeRef.current;
 
     // Repeat one — replay same ayah after brief breathing gap
     if (mode === "repeat") {
       setTimeout(() => {
-        if (!cancelledRef.current) playAyahRef.current(completedIndex);
+        if (!cancelledRef.current && playGenRef.current === gen)
+          playAyahRef.current(completedIndex);
       }, BETWEEN_AYAH_MS);
       return;
     }
@@ -233,7 +248,7 @@ export function SurahReader() {
     if (mode === "continuous" && next < snap.ayahs.length) {
       // Smooth 400 ms silence between ayahs — natural breathing room
       setTimeout(() => {
-        if (!cancelledRef.current) {
+        if (!cancelledRef.current && playGenRef.current === gen) {
           scrollToAyah(next);
           playAyahRef.current(next);
         }
@@ -247,10 +262,12 @@ export function SurahReader() {
   }, [scrollToAyah]);
 
   // ── Arabic CDN phase ───────────────────────────────────────────────────────
-  const playArabicPhaseRef = useRef<(idx: number, onDone: () => void) => void>(() => {});
+  const playArabicPhaseRef = useRef<(idx: number, gen: number, onDone: () => void) => void>(() => {});
 
-  const playArabicPhase = useCallback((index: number, onDone: () => void) => {
-    if (cancelledRef.current) return;
+  const playArabicPhase = useCallback((index: number, gen: number, onDone: () => void) => {
+    // Stale gen → another playAyah has taken over, abort silently
+    if (cancelledRef.current || playGenRef.current !== gen) return;
+
     const cur  = surahRef.current;
     const ayah = cur?.ayahs[index];
     if (!ayah) { onDone(); return; }
@@ -258,42 +275,47 @@ export function SurahReader() {
     currentPhaseRef.current = "arabic";
     setTtsPhase("arabic");
 
-    // Tear down any existing audio element
-    if (audioRef.current) { audioRef.current.pause(); audioRef.current.src = ""; }
+    // Destroy previous audio — use removeAttribute("src")+load(), NOT src=""
+    // src="" fires an error event that triggers stale retries (the overlap bug)
+    teardownAudio();
 
-    const audio  = new Audio();
+    const audio   = new Audio();
     audio.preload = "auto";
-    audio.src    = ayah.audioUrl;
+    audio.src     = ayah.audioUrl;
     audioRef.current = audio;
 
     setPlayState("loading");
     setProgress(0);
 
     audio.addEventListener("playing", () => {
-      if (cancelledRef.current) return;
+      if (cancelledRef.current || playGenRef.current !== gen) return;
       setPlayState("playing");
       setRetrying(false);
     });
 
     audio.addEventListener("timeupdate", () => {
+      // Guard gen so stale audio doesn't clobber progress bar of new ayah
+      if (playGenRef.current !== gen) return;
       if (audio.duration > 0) setProgress(audio.currentTime / audio.duration);
     });
 
     audio.addEventListener("ended", () => {
-      if (cancelledRef.current) return;
+      if (cancelledRef.current || playGenRef.current !== gen) return;
       setProgress(1);
       retryCountRef.current = 0;
       onDone();
     });
 
     audio.addEventListener("error", () => {
-      if (cancelledRef.current) return;
+      // CRITICAL: without gen guard, src teardown fires error → retry of OLD ayah → overlap
+      if (cancelledRef.current || playGenRef.current !== gen) return;
       if (retryCountRef.current < MAX_RETRIES) {
         retryCountRef.current++;
         setRetrying(true);
         setPlayState("loading");
         retryTimerRef.current = setTimeout(() => {
-          if (!cancelledRef.current) playArabicPhaseRef.current(index, onDone);
+          if (!cancelledRef.current && playGenRef.current === gen)
+            playArabicPhaseRef.current(index, gen, onDone);
         }, RETRY_BASE_MS * retryCountRef.current);
       } else {
         retryCountRef.current = 0;
@@ -303,7 +325,9 @@ export function SurahReader() {
     });
 
     audio.load();
-    audio.play().catch(() => { if (!cancelledRef.current) setPlayState("paused"); });
+    audio.play().catch(() => {
+      if (!cancelledRef.current && playGenRef.current === gen) setPlayState("paused");
+    });
     scrollToAyah(index);
 
     // Silently preload upcoming ayahs
@@ -313,33 +337,33 @@ export function SurahReader() {
         if (next) preloadAudioUrl(next.audioUrl);
       }
     }
-  }, [scrollToAyah]);
+  }, [scrollToAyah, teardownAudio]);
 
   useEffect(() => { playArabicPhaseRef.current = playArabicPhase; }, [playArabicPhase]);
 
   // ── TTS phase — chunked, zero watchdog ────────────────────────────────────
   /**
-   * Critical fixes applied here:
-   * 1. cancel() + 100ms delay before speak() — Chrome ignores speak() called immediately after cancel()
-   * 2. Text split into ≤90-char chunks — Chrome mobile silently drops long utterances
-   * 3. 50ms gap between chunks — prevents overlap / browser queuing bugs
-   * 4. cancelledRef checked in every callback — no zombie utterances after stopAll()
-   * 5. No watchdog timer — pause()+resume() on Chrome mobile restarts utterance from beginning
+   * gen parameter: every callback checks playGenRef.current === gen before
+   * acting — prevents zombie utterances from a previous ayah continuing after
+   * the user moves to a new one.
    */
-  const playTTSPhase = useCallback((index: number, onDone: () => void) => {
-    if (cancelledRef.current || !isTTSSupported()) { onDone(); return; }
+  const playTTSPhase = useCallback((index: number, gen: number, onDone: () => void) => {
+    if (cancelledRef.current || playGenRef.current !== gen || !isTTSSupported()) {
+      onDone();
+      return;
+    }
 
     const cur  = surahRef.current;
     const ayah = cur?.ayahs[index];
     const text = ayah?.textTranslation ?? "";
 
-    if (!text) { onDone(); return; } // no translation text → skip phase
+    if (!text) { onDone(); return; }
 
     currentPhaseRef.current = "tts";
     setTtsPhase("tts");
 
-    // Stop any HTML audio
-    if (audioRef.current) { audioRef.current.pause(); audioRef.current.src = ""; audioRef.current = null; }
+    // Tear down any HTML audio cleanly
+    teardownAudio();
 
     const lang    = languageRef.current;
     const voices  = ttsVoicesRef.current;
@@ -352,7 +376,8 @@ export function SurahReader() {
     let chunkIdx = 0;
 
     function speakNext() {
-      if (cancelledRef.current) return;
+      // Guard gen on every chunk — if user tapped a new ayah, stop here
+      if (cancelledRef.current || playGenRef.current !== gen) return;
       if (chunkIdx >= chunks.length) { onDone(); return; }
 
       const chunk = chunks[chunkIdx++];
@@ -363,13 +388,17 @@ export function SurahReader() {
       utt.pitch  = 1;
       utt.volume = 1;
 
-      utt.onstart = () => { if (!cancelledRef.current) setPlayState("playing"); };
+      utt.onstart = () => {
+        if (!cancelledRef.current && playGenRef.current === gen) setPlayState("playing");
+      };
 
       // 50ms gap between chunks — crucial for Chrome stability
-      utt.onend = () => { if (!cancelledRef.current) setTimeout(speakNext, 50); };
+      utt.onend = () => {
+        if (!cancelledRef.current && playGenRef.current === gen) setTimeout(speakNext, 50);
+      };
 
       utt.onerror = (e) => {
-        if (cancelledRef.current) return;
+        if (cancelledRef.current || playGenRef.current !== gen) return;
         if (e.error === "interrupted" || e.error === "canceled") return;
         setTimeout(speakNext, 100); // skip bad chunk, continue
       };
@@ -382,15 +411,22 @@ export function SurahReader() {
     scrollToAyah(index);
 
     // Cancel any lingering speech, then wait TTS_CANCEL_DELAY_MS before speaking.
-    // This is the PRIMARY fix for the "1-2 words then silence" Chrome bug:
     // Chrome doesn't reliably speak() if called < ~80ms after cancel().
     window.speechSynthesis.cancel();
-    setTimeout(speakNext, TTS_CANCEL_DELAY_MS);
-  }, [scrollToAyah]);
+    setTimeout(() => {
+      // Re-check gen after the delay — user may have moved on during the 100ms
+      if (!cancelledRef.current && playGenRef.current === gen) speakNext();
+    }, TTS_CANCEL_DELAY_MS);
+  }, [scrollToAyah, teardownAudio]);
 
   // ── Unified dispatcher ─────────────────────────────────────────────────────
   const playAyah = useCallback((index: number) => {
-    // Reset cancellation guard FIRST — must happen before anything else
+    // 1. Bump the generation counter FIRST — this instantly invalidates every
+    //    pending callback (error handlers, retries, advance timers) from the
+    //    previous ayah. This is the single source of truth for "is this playback
+    //    still wanted?". All async paths check gen before acting.
+    const gen = ++playGenRef.current;
+
     cancelledRef.current = false;
     clearRetryTimer();
     retryCountRef.current = 0;
@@ -401,8 +437,8 @@ export function SurahReader() {
     const mode = audioModeRef.current;
     const lang = languageRef.current;
 
-    // Tear down everything currently running
-    if (audioRef.current) { audioRef.current.pause(); audioRef.current.src = ""; audioRef.current = null; }
+    // 2. Tear down existing audio and TTS cleanly
+    teardownAudio();
     if (isTTSSupported()) window.speechSynthesis.cancel();
 
     setPlayingIndex(index);
@@ -410,32 +446,33 @@ export function SurahReader() {
     setRetrying(false);
     setProgress(0);
 
-    const onComplete = () => advanceOrStop(index);
+    // onComplete passes gen so advanceOrStop can verify the chain is still valid
+    const onComplete = () => advanceOrStop(index, gen);
     const ttsOk      = isTTSEnabled(lang, ttsVoicesRef.current);
 
     if (mode === "arabic") {
-      playArabicPhase(index, onComplete);
+      playArabicPhase(index, gen, onComplete);
 
     } else if (mode === "translation") {
       if (ttsOk) {
-        playTTSPhase(index, onComplete);
+        playTTSPhase(index, gen, onComplete);
       } else {
-        // No TTS voice → play Arabic as fallback (don't show error)
-        playArabicPhase(index, onComplete);
+        playArabicPhase(index, gen, onComplete);
       }
 
     } else {
       // "both" — TTS translation first, then Arabic CDN
       if (ttsOk) {
-        playTTSPhase(index, () => {
-          if (!cancelledRef.current) playArabicPhase(index, onComplete);
+        playTTSPhase(index, gen, () => {
+          // Re-check gen before chaining to Arabic phase
+          if (!cancelledRef.current && playGenRef.current === gen)
+            playArabicPhase(index, gen, onComplete);
         });
       } else {
-        // Skip TTS, just play Arabic
-        playArabicPhase(index, onComplete);
+        playArabicPhase(index, gen, onComplete);
       }
     }
-  }, [advanceOrStop, playArabicPhase, playTTSPhase, clearRetryTimer]);
+  }, [advanceOrStop, playArabicPhase, playTTSPhase, teardownAudio, clearRetryTimer]);
 
   useEffect(() => { playAyahRef.current = playAyah; }, [playAyah]);
 
