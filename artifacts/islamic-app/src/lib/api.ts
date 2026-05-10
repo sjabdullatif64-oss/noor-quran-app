@@ -62,6 +62,7 @@ export interface PrayerData {
 export type TranslationLanguage =
   | "urdu"
   | "english"
+  | "sindhi"
   | "hindi"
   | "turkish"
   | "bengali"
@@ -73,6 +74,7 @@ export type TranslationLanguage =
 export const ALL_LANGUAGES: TranslationLanguage[] = [
   "urdu",
   "english",
+  "sindhi",
   "hindi",
   "turkish",
   "bengali",
@@ -86,6 +88,7 @@ export const ALL_LANGUAGES: TranslationLanguage[] = [
 export const TRANSLATION_LABELS: Record<TranslationLanguage, string> = {
   urdu:       "اردو",
   english:    "English",
+  sindhi:     "سنڌي",
   hindi:      "हिन्दी",
   turkish:    "Türkçe",
   bengali:    "বাংলা",
@@ -99,6 +102,7 @@ export const TRANSLATION_LABELS: Record<TranslationLanguage, string> = {
 export const TRANSLATION_ENGLISH_NAMES: Record<TranslationLanguage, string> = {
   urdu:       "Urdu",
   english:    "English",
+  sindhi:     "Sindhi",
   hindi:      "Hindi",
   turkish:    "Turkish",
   bengali:    "Bengali",
@@ -112,6 +116,7 @@ export const TRANSLATION_ENGLISH_NAMES: Record<TranslationLanguage, string> = {
 export const TRANSLATION_EDITIONS: Record<TranslationLanguage, string> = {
   urdu:       "ur.jalandhry",
   english:    "en.sahih",
+  sindhi:     "sd.mewati",
   hindi:      "hi.hindi",
   turkish:    "tr.ates",
   bengali:    "bn.bengali",
@@ -123,12 +128,13 @@ export const TRANSLATION_EDITIONS: Record<TranslationLanguage, string> = {
 
 /**
  * BCP-47 language tags for Web Speech API TTS.
- * Urdu & English have the best TTS support. Others will attempt TTS but
- * may silently fall back to system default — the app always shows text.
+ * Urdu & English have the best TTS support. Sindhi (sd-PK) has limited
+ * device support — the app always shows text regardless.
  */
 export const TTS_LANG_CODES: Record<TranslationLanguage, string> = {
   urdu:       "ur-PK",
   english:    "en-US",
+  sindhi:     "sd-PK",
   hindi:      "hi-IN",
   turkish:    "tr-TR",
   bengali:    "bn-IN",
@@ -139,7 +145,7 @@ export const TTS_LANG_CODES: Record<TranslationLanguage, string> = {
 };
 
 /** Languages written right-to-left */
-export const RTL_LANGUAGES = new Set<TranslationLanguage>(["urdu"]);
+export const RTL_LANGUAGES = new Set<TranslationLanguage>(["urdu", "sindhi"]);
 
 export const getAudioUrl = (globalAyahNumber: number) =>
   `https://cdn.islamic.network/quran/audio/128/ar.alafasy/${globalAyahNumber}.mp3`;
@@ -169,26 +175,25 @@ export const useSurah = (number: number, translation: TranslationLanguage) => {
       const arData = await arRes.json();
       const trData = await trRes.json();
 
-      // Gracefully handle missing translation editions
       const trAyahs: { text: string }[] = trData?.data?.ayahs ?? [];
 
       const ayahs: AyahData[] = arData.data.ayahs.map(
         (ayah: Ayah, index: number) => ({
-          numberInSurah: ayah.numberInSurah,
-          globalNumber:  ayah.number,
-          textAr:            ayah.text,
-          textTranslation:   trAyahs[index]?.text ?? "",
-          audioUrl:          getAudioUrl(ayah.number),
+          numberInSurah:   ayah.numberInSurah,
+          globalNumber:    ayah.number,
+          textAr:          ayah.text,
+          textTranslation: trAyahs[index]?.text ?? "",
+          audioUrl:        getAudioUrl(ayah.number),
         })
       );
 
       return {
-        number:               arData.data.number,
-        name:                 arData.data.name,
-        englishName:          arData.data.englishName,
-        englishNameTranslation: arData.data.englishNameTranslation,
-        numberOfAyahs:        arData.data.numberOfAyahs,
-        revelationType:       arData.data.revelationType,
+        number:                  arData.data.number,
+        name:                    arData.data.name,
+        englishName:             arData.data.englishName,
+        englishNameTranslation:  arData.data.englishNameTranslation,
+        numberOfAyahs:           arData.data.numberOfAyahs,
+        revelationType:          arData.data.revelationType,
         ayahs,
       } as SurahDetail;
     },
@@ -214,9 +219,9 @@ export const useRandomAyah = () =>
   useQuery({
     queryKey: ["randomAyah"],
     queryFn: async () => {
-      const randomSurah = Math.floor(Math.random() * 114) + 1;
-      const res  = await fetch(`https://api.alquran.cloud/v1/surah/${randomSurah}`);
-      const data = await res.json();
+      const randomSurah   = Math.floor(Math.random() * 114) + 1;
+      const res           = await fetch(`https://api.alquran.cloud/v1/surah/${randomSurah}`);
+      const data          = await res.json();
       const numAyahs      = data.data.numberOfAyahs;
       const randomAyahIdx = Math.floor(Math.random() * numAyahs);
       const randomAyah    = data.data.ayahs[randomAyahIdx];

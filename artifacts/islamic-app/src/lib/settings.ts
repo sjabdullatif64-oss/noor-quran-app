@@ -33,7 +33,7 @@ export function setCity(city: string): void {
 }
 
 const VALID_LANGS: TranslationLanguage[] = [
-  "urdu", "english", "hindi", "turkish",
+  "urdu", "english", "sindhi", "hindi", "turkish",
   "bengali", "indonesian", "french", "spanish", "malay",
 ];
 

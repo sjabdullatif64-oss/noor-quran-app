@@ -6,10 +6,11 @@ import { getCity, setCity as saveCity, getLang, setLang as saveLang, PRESET_CITI
 import { ALL_LANGUAGES, TRANSLATION_LABELS, TRANSLATION_ENGLISH_NAMES, TranslationLanguage } from "@/lib/api";
 import { useToast } from "@/hooks/use-toast";
 
-// Flag emoji per language for visual flair
+// Flag emoji per language
 const LANG_FLAG: Record<TranslationLanguage, string> = {
   urdu:       "🇵🇰",
   english:    "🇬🇧",
+  sindhi:     "🇵🇰",
   hindi:      "🇮🇳",
   turkish:    "🇹🇷",
   bengali:    "🇧🇩",
@@ -19,25 +20,29 @@ const LANG_FLAG: Record<TranslationLanguage, string> = {
   malay:      "🇲🇾",
 };
 
-// Accent color per language
+// Accent color per language (active state)
 const LANG_ACCENT: Record<TranslationLanguage, string> = {
   urdu:       "border-emerald-600 bg-emerald-900/30",
   english:    "border-sky-600 bg-sky-900/20",
+  sindhi:     "border-teal-600 bg-teal-900/20",
   hindi:      "border-orange-600 bg-orange-900/20",
   turkish:    "border-red-600 bg-red-900/20",
-  bengali:    "border-teal-600 bg-teal-900/20",
+  bengali:    "border-violet-600 bg-violet-900/20",
   indonesian: "border-rose-600 bg-rose-900/20",
   french:     "border-blue-600 bg-blue-900/20",
   spanish:    "border-yellow-600 bg-yellow-900/20",
   malay:      "border-lime-600 bg-lime-900/20",
 };
 
+// Initial visible languages (shown without expanding)
+const INITIAL_COUNT = 4;
+
 export function Settings() {
   const { theme, setTheme } = useTheme();
   const [defaultLang, setDefaultLang] = useState<TranslationLanguage>(() => getLang());
   const [defaultCity, setDefaultCity] = useState<string>(() => getCity());
-  const [savedLang, setSavedLang] = useState(false);
-  const [savedCity, setSavedCity] = useState(false);
+  const [savedLang, setSavedLang]     = useState(false);
+  const [savedCity, setSavedCity]     = useState(false);
   const [showAllLangs, setShowAllLangs] = useState(false);
   const { toast } = useToast();
 
@@ -60,8 +65,8 @@ export function Settings() {
     toast({ title: "City saved", description: `Prayer times will use ${city}.` });
   };
 
-  // Show first 4 languages; expand to all with "Show more"
-  const visibleLangs = showAllLangs ? ALL_LANGUAGES : ALL_LANGUAGES.slice(0, 4);
+  const visibleLangs = showAllLangs ? ALL_LANGUAGES : ALL_LANGUAGES.slice(0, INITIAL_COUNT);
+  const hiddenCount  = ALL_LANGUAGES.length - INITIAL_COUNT;
 
   return (
     <div
@@ -159,7 +164,7 @@ export function Settings() {
               />
               {showAllLangs
                 ? "Show fewer languages"
-                : `Show ${ALL_LANGUAGES.length - 4} more languages`}
+                : `Show ${hiddenCount} more languages`}
             </button>
           </div>
         </Section>
@@ -188,9 +193,7 @@ export function Settings() {
                   style={{ background: defaultCity === city ? undefined : "rgba(255,255,255,0.02)" }}
                   data-testid={`setting-city-${city.toLowerCase().replace(/\s+/g, "-")}`}
                 >
-                  {defaultCity === city && (
-                    <span className="text-emerald-400 mr-1">✓</span>
-                  )}
+                  {defaultCity === city && <span className="text-emerald-400 mr-1">✓</span>}
                   {city}
                 </button>
               ))}

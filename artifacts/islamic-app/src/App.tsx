@@ -22,6 +22,7 @@ import { Notifications } from "@/pages/notifications";
 import { About } from "@/pages/about";
 import { PrivacyPolicy } from "@/pages/privacy-policy";
 import { Updates } from "@/pages/updates";
+import { Writing } from "@/pages/writing";
 
 const queryClient = new QueryClient();
 
@@ -44,6 +45,7 @@ function Router() {
       <Route path="/about" component={About} />
       <Route path="/privacy-policy" component={PrivacyPolicy} />
       <Route path="/updates" component={Updates} />
+      <Route path="/writing" component={Writing} />
       <Route component={NotFound} />
     </Switch>
   );

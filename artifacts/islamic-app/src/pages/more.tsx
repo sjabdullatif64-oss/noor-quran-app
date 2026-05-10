@@ -12,6 +12,7 @@ import {
   Info,
   Share2,
   Sparkles,
+  PenLine,
 } from "lucide-react";
 import { BannerAd } from "@/components/banner-ad";
 import { useToast } from "@/hooks/use-toast";
@@ -39,6 +40,15 @@ const ITEMS: MoreItem[] = [
     href: "/updates",
     accent: "text-amber-300",
     iconBg: "rgba(217,119,6,0.18)",
+  },
+  {
+    id: "writing",
+    label: "Islamic Writing",
+    description: "Personal notes, duas & Quran reflections",
+    icon: <PenLine className="w-6 h-6" />,
+    href: "/writing",
+    accent: "text-lime-300",
+    iconBg: "rgba(132,204,22,0.18)",
   },
   {
     id: "qibla",
@@ -182,7 +192,7 @@ export function More() {
           <button
             key={item.id}
             onClick={() => navigate(item.href)}
-            className="w-full flex items-center gap-4 p-4 rounded-2xl border border-emerald-900/40 text-left transition-all active:scale-[0.98]"
+            className="w-full flex items-center gap-4 p-4 rounded-2xl border border-emerald-900/40 text-left transition-all active:scale-[0.98] hover:border-emerald-700/40"
             style={{
               background: "rgba(255,255,255,0.04)",
               animationDelay: `${i * 40}ms`,
