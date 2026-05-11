@@ -28,3 +28,7 @@ project(':capacitor-haptics').projectDir = new File('../node_modules/@capacitor/
 
 include ':capacitor-network'
 project(':capacitor-network').projectDir = new File('../node_modules/@capacitor/network/android')
+
+// AdMob
+include ':capacitor-admob'
+project(':capacitor-admob').projectDir = new File('../node_modules/@capacitor-community/admob/android')

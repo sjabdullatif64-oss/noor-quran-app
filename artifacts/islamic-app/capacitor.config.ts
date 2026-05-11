@@ -47,6 +47,11 @@ const config: CapacitorConfig = {
       resize: "body",
       style: "dark",
     },
+    AdMob: {
+      // App ID is declared in AndroidManifest.xml (required)
+      // Initialization is done in native-init.ts via AdMob.initialize()
+      initializeForTesting: false,
+    },
   },
 };
 
