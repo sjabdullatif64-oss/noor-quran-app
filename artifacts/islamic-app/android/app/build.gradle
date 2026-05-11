@@ -3,12 +3,12 @@ apply plugin: 'kotlin-android'
 
 android {
     namespace "com.sj64noorquran"
-    compileSdk rootProject.ext.compileSdkVersion
+    compileSdk 36
 
     defaultConfig {
         applicationId "com.sj64noorquran"
         minSdk rootProject.ext.minSdkVersion
-        targetSdk rootProject.ext.targetSdkVersion
+        targetSdk 36
         versionCode 1
         versionName "1.0.0"
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
