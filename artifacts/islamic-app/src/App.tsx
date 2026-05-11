@@ -5,6 +5,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { ThemeProvider } from "@/components/theme-provider";
 import NotFound from "@/pages/not-found";
 import { Layout } from "@/components/layout";
+import { useAndroidBack } from "@/hooks/useAndroidBack";
 
 import { Home } from "@/pages/home";
 import { Quran } from "@/pages/quran";
@@ -25,9 +26,20 @@ import { Updates } from "@/pages/updates";
 import { Writing } from "@/pages/writing";
 import { IslamicCalendar } from "@/pages/islamic-calendar";
 
-const queryClient = new QueryClient();
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      staleTime: 5 * 60 * 1000,
+      gcTime: 30 * 60 * 1000,
+      retry: 2,
+    },
+  },
+});
 
 function Router() {
+  // Android hardware back-button — no-ops in browser
+  useAndroidBack();
+
   return (
     <Switch>
       <Route path="/" component={Home} />

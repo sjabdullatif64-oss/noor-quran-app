@@ -1,0 +1,143 @@
+name: Build Android APK & AAB
+
+on:
+  push:
+    branches: [main, master]
+    tags: ['v*']
+  workflow_dispatch:
+    inputs:
+      build_type:
+        description: 'Build type'
+        required: true
+        default: 'release'
+        type: choice
+        options: [release, debug]
+
+env:
+  NODE_VERSION: '20'
+  JAVA_VERSION: '17'
+
+jobs:
+  build:
+    name: Build Android (${{ github.event.inputs.build_type || 'release' }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      # ── Checkout ─────────────────────────────────────────────────────────────
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # ── Node.js + pnpm ────────────────────────────────────────────────────────
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      # ── Java & Android SDK ────────────────────────────────────────────────────
+      - name: Setup Java ${{ env.JAVA_VERSION }}
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: ${{ env.JAVA_VERSION }}
+
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Cache Gradle packages
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: gradle-${{ runner.os }}-${{ hashFiles('artifacts/islamic-app/android/**/*.gradle*', 'artifacts/islamic-app/android/gradle/wrapper/gradle-wrapper.properties') }}
+          restore-keys: |
+            gradle-${{ runner.os }}-
+
+      # ── Build web assets ──────────────────────────────────────────────────────
+      - name: Build Vite web assets
+        run: pnpm --filter @workspace/islamic-app run build
+        env:
+          PORT: 3000
+          BASE_PATH: /
+
+      # ── Capacitor sync ────────────────────────────────────────────────────────
+      - name: Sync Capacitor Android
+        working-directory: artifacts/islamic-app
+        run: npx cap sync android
+
+      # ── Keystore (release only) ───────────────────────────────────────────────
+      - name: Decode keystore
+        if: ${{ (github.event.inputs.build_type || 'release') == 'release' }}
+        working-directory: artifacts/islamic-app/android
+        run: |
+          echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 --decode > noor-quran-release.keystore
+          echo "KEYSTORE_PATH=$PWD/noor-quran-release.keystore" >> $GITHUB_ENV
+
+      # ── Gradle build ──────────────────────────────────────────────────────────
+      - name: Grant execute permission for gradlew
+        working-directory: artifacts/islamic-app/android
+        run: chmod +x gradlew
+
+      - name: Build Debug APK
+        if: ${{ (github.event.inputs.build_type || 'release') == 'debug' }}
+        working-directory: artifacts/islamic-app/android
+        run: ./gradlew assembleDebug --no-daemon --stacktrace
+
+      - name: Build Release APK + AAB
+        if: ${{ (github.event.inputs.build_type || 'release') == 'release' }}
+        working-directory: artifacts/islamic-app/android
+        run: |
+          ./gradlew assembleRelease bundleRelease --no-daemon --stacktrace
+        env:
+          KEYSTORE_PATH: ${{ env.KEYSTORE_PATH }}
+          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+
+      # ── Upload artifacts ──────────────────────────────────────────────────────
+      - name: Upload Debug APK
+        if: ${{ (github.event.inputs.build_type || 'release') == 'debug' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: noor-quran-debug-${{ github.sha }}
+          path: artifacts/islamic-app/android/app/build/outputs/apk/debug/app-debug.apk
+          retention-days: 7
+
+      - name: Upload Release APK
+        if: ${{ (github.event.inputs.build_type || 'release') == 'release' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: noor-quran-release-apk-${{ github.sha }}
+          path: artifacts/islamic-app/android/app/build/outputs/apk/release/app-release.apk
+          retention-days: 30
+
+      - name: Upload Release AAB (Play Store)
+        if: ${{ (github.event.inputs.build_type || 'release') == 'release' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: noor-quran-release-aab-${{ github.sha }}
+          path: artifacts/islamic-app/android/app/build/outputs/bundle/release/app-release.aab
+          retention-days: 30
+
+      # ── Tag releases ──────────────────────────────────────────────────────────
+      - name: Create GitHub Release
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            artifacts/islamic-app/android/app/build/outputs/apk/release/app-release.apk
+            artifacts/islamic-app/android/app/build/outputs/bundle/release/app-release.aab
+          generate_release_notes: true
+          name: "Noor Quran ${{ github.ref_name }}"
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Full-screen splash background: dark green with centered app icon -->
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- Background fill -->
+    <item android:drawable="@color/splash_background" />
+
+    <!-- Centered icon -->
+    <item
+        android:width="180dp"
+        android:height="180dp"
+        android:gravity="center">
+        <bitmap
+            android:src="@mipmap/ic_launcher"
+            android:gravity="center"
+            android:tileMode="disabled" />
+    </item>
+</layer-list>

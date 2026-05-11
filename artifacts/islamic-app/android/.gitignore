@@ -1,0 +1,22 @@
+# Android build output
+*.iml
+.gradle
+/local.properties
+/.idea
+.DS_Store
+/build
+/captures
+.externalNativeBuild
+.cxx
+local.properties
+
+# Keystore — NEVER commit these
+*.keystore
+*.jks
+keystore.properties
+keystore.base64.txt
+
+# Capacitor generated (regenerated via cap sync)
+app/src/main/assets/public/
+app/src/main/assets/capacitor.config.json
+app/src/main/assets/capacitor.plugins.json
