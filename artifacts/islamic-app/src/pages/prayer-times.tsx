@@ -12,8 +12,8 @@ import {
 import {
   getCity, getCountry, setCity as saveCity,
   getGpsCoords, saveGpsCoords, clearGpsCoords,
-  getLocationSource, hasSavedLocation,
-  CITY_COUNTRY_MAP, PRESET_CITIES,
+  getLocationSource,
+  CITY_COUNTRY_MAP,
 } from "@/lib/settings";
 
 // ── Prayer definitions ────────────────────────────────────────────────────────
@@ -219,18 +219,6 @@ export function PrayerTimes() {
     setSearchInput("");
   };
 
-  const handlePreset = (city: string) => {
-    const country = CITY_COUNTRY_MAP[city] ?? "";
-    setManualCity(city);
-    setManualCountry(country);
-    saveCity(city, country);
-    clearGpsCoords();
-    setLocState("manual");
-    setSearchOpen(false);
-    setSearchInput("");
-    setSearchError("");
-  };
-
   const handleUseLocation = () => {
     setSearchOpen(false);
     detectGPS();
@@ -331,23 +319,6 @@ export function PrayerTimes() {
               <p className="px-4 pb-2 text-red-400 text-xs">{searchError}</p>
             )}
 
-            {/* Preset cities */}
-            <div className="px-3 pb-3 flex flex-wrap gap-2">
-              {PRESET_CITIES.map((c) => (
-                <button
-                  key={c}
-                  onClick={() => handlePreset(c)}
-                  className={`px-3 py-1.5 rounded-full text-xs font-medium border transition-all ${
-                    displayCity === c
-                      ? "bg-emerald-700/40 border-emerald-600 text-emerald-200"
-                      : "border-emerald-900/40 text-emerald-700 hover:border-emerald-700 hover:text-emerald-400"
-                  }`}
-                  data-testid={`preset-city-${c.toLowerCase().replace(/\s+/g, "-")}`}
-                >
-                  {c}
-                </button>
-              ))}
-            </div>
           </div>
         )}
 

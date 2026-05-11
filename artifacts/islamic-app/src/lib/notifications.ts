@@ -1,7 +1,8 @@
 // Noor Quran — Notification permissions, settings, and Service Worker bridge
 
-const STORAGE_KEY = "noor-notif-settings";
-const SW_PATH     = "/service-worker.js";
+const STORAGE_KEY        = "noor-notif-settings";
+const SW_PATH            = "/service-worker.js";
+const DENIAL_STORED_KEY  = "noor-notif-explicit-denied"; // set only after we actually request & get denied
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -51,6 +52,7 @@ export function isInstalledPWA(): boolean {
   if (typeof window === "undefined") return false;
   return (
     window.matchMedia?.("(display-mode: standalone)").matches ||
+    window.matchMedia?.("(display-mode: fullscreen)").matches ||
     // @ts-ignore — navigator.standalone exists on iOS Safari
     (navigator as Navigator & { standalone?: boolean }).standalone === true
   );
@@ -75,35 +77,22 @@ export function isCapacitorApp(): boolean {
 export type AppEnv = "capacitor" | "twa" | "android" | "browser";
 
 export function getAppEnv(): AppEnv {
-  if (isCapacitorApp())          return "capacitor";
+  if (isCapacitorApp())                return "capacitor";
   if (isAndroid() && isInstalledPWA()) return "twa";
-  if (isAndroid())               return "android";
+  if (isAndroid())                     return "android";
   return "browser";
 }
 
 // ── Notification API support ──────────────────────────────────────────────────
 
-/**
- * Whether the browser's Notification API is available.
- * Deliberately does NOT require serviceWorker — that is only needed for
- * push/test notifications, not for permission requests.
- */
 export function isNotificationAPISupported(): boolean {
   return typeof window !== "undefined" && "Notification" in window;
 }
 
-/**
- * Whether the Service Worker + Notification combo is fully supported
- * (needed for test notifications and future push support).
- */
 export function isSWSupported(): boolean {
   return isNotificationAPISupported() && "serviceWorker" in navigator;
 }
 
-/**
- * Whether the notifications feature is usable enough to show the UI.
- * On Capacitor, we show it and direct the user to native settings.
- */
 export function isSupported(): boolean {
   if (isCapacitorApp()) return true; // always show — native path
   return isNotificationAPISupported();
@@ -113,18 +102,24 @@ export function isSupported(): boolean {
 
 export type PermissionState = "granted" | "denied" | "default" | "unsupported";
 
+/**
+ * Read the current notification permission.
+ *
+ * Android 13+ TWA/PWA edge case:
+ *   `Notification.permission` can report "denied" even when the user has NOT yet
+ *   been shown the system prompt, because Android treats the web permission as
+ *   "denied" until the app explicitly requests it via requestPermission().
+ *   Additionally, after the user grants permission in Android Settings,
+ *   `Notification.permission` may not update until the next page load.
+ *
+ * Strategy: If we're in a TWA/Android environment AND we have NOT stored an
+ * explicit denial record (set only when requestPermission() actually returns
+ * "denied"), we treat a raw "denied" as "default" — keeping the Enable button
+ * visible so the user can trigger the system permission prompt.
+ */
 export function getPermissionState(): PermissionState {
-  // Capacitor: check if the Capacitor LocalNotifications plugin granted permission
+  // Capacitor: use localStorage flag set by requestPermission()
   if (isCapacitorApp()) {
-    const cap = (window as Window & {
-      Capacitor?: {
-        Plugins?: {
-          LocalNotifications?: { checkPermissions?: () => Promise<{ display: string }> };
-        };
-      };
-    }).Capacitor;
-    // We can't read this synchronously via the plugin, so fall through to
-    // Notification API if available, else optimistically say "default"
     if (!isNotificationAPISupported()) {
       const stored = localStorage.getItem("noor-cap-notif-perm");
       if (stored === "granted") return "granted";
@@ -134,18 +129,61 @@ export function getPermissionState(): PermissionState {
   }
 
   if (!isNotificationAPISupported()) return "unsupported";
-  return Notification.permission as PermissionState;
+
+  const raw = Notification.permission as PermissionState;
+
+  // Android TWA/PWA: don't treat "denied" as hard-blocked unless we explicitly
+  // recorded a denial after calling requestPermission().
+  if (raw === "denied" && (isAndroid() || isInstalledPWA())) {
+    const explicitlyDenied = localStorage.getItem(DENIAL_STORED_KEY) === "1";
+    if (!explicitlyDenied) return "default";
+  }
+
+  return raw;
+}
+
+/**
+ * Async version that uses the Permissions API (more accurate on Android).
+ * Falls back to getPermissionState() if the Permissions API is unavailable.
+ */
+export async function getPermissionStateAsync(): Promise<PermissionState> {
+  if (!isNotificationAPISupported()) return "unsupported";
+
+  // Use the Permissions API when available — it reflects system-level changes
+  // (e.g. user granting in Android Settings) more reliably than Notification.permission.
+  if ("permissions" in navigator) {
+    try {
+      const status = await navigator.permissions.query({
+        name: "notifications" as PermissionName,
+      });
+
+      // Subscribe to future changes so the UI updates without a reload
+      status.onchange = null; // caller can subscribe if needed
+
+      if (status.state === "granted") return "granted";
+      if (status.state === "denied") {
+        // Same Android TWA guard as above
+        if (isAndroid() || isInstalledPWA()) {
+          const explicitlyDenied = localStorage.getItem(DENIAL_STORED_KEY) === "1";
+          if (!explicitlyDenied) return "default";
+        }
+        return "denied";
+      }
+      return "default";
+    } catch {
+      // Permissions API blocked (e.g. some browsers throw on "notifications")
+    }
+  }
+
+  return getPermissionState();
 }
 
 // ── Permission request ────────────────────────────────────────────────────────
 
 /**
- * Request notification permission using the best available API for the
- * current environment.
- *
- * IMPORTANT: This MUST be called from a user-gesture handler (button click).
- * Never call it from a setTimeout or useEffect — Android Chrome will silently
- * ignore or auto-deny the request outside of a user gesture.
+ * Request notification permission using the best available API.
+ * MUST be called from a user-gesture handler (button click), never from
+ * setTimeout / useEffect — Android Chrome auto-denies outside user gestures.
  */
 export async function requestPermission(): Promise<PermissionState> {
   // ── Capacitor path ──────────────────────────────────────────────────────────
@@ -166,21 +204,37 @@ export async function requestPermission(): Promise<PermissionState> {
         const result = await plugin.requestPermissions();
         const state  = result.display === "granted" ? "granted" : "denied";
         localStorage.setItem("noor-cap-notif-perm", state);
+        if (state === "denied") localStorage.setItem(DENIAL_STORED_KEY, "1");
         return state;
       } catch {
         // Plugin failed — fall through to web Notification API
       }
     }
-    // If Capacitor plugin unavailable, fall through to web API below
   }
 
   // ── Web Notification API path ───────────────────────────────────────────────
   if (!isNotificationAPISupported()) return "unsupported";
   if (Notification.permission === "granted") return "granted";
-  if (Notification.permission === "denied")  return "denied";
+
+  // If the browser says "denied" but we're in Android/TWA mode and haven't
+  // explicitly denied before, try requesting anyway — the system prompt may
+  // still appear (Android 13+ runtime permission).
+  const isAndroidLike = isAndroid() || isInstalledPWA();
+  const hardDenied =
+    Notification.permission === "denied" &&
+    (!isAndroidLike || localStorage.getItem(DENIAL_STORED_KEY) === "1");
+
+  if (hardDenied) return "denied";
 
   try {
     const result = await Notification.requestPermission();
+    if (result === "denied") {
+      // Record the explicit denial so we don't keep prompting
+      localStorage.setItem(DENIAL_STORED_KEY, "1");
+    } else if (result === "granted") {
+      // Clear any stale denial record
+      localStorage.removeItem(DENIAL_STORED_KEY);
+    }
     return result as PermissionState;
   } catch {
     return "denied";
@@ -191,7 +245,7 @@ export async function requestPermission(): Promise<PermissionState> {
 
 export function getNotifSettings(): AllNotifSettings {
   try {
-    const raw = localStorage.getItem(STORAGE_KEY);
+    const raw    = localStorage.getItem(STORAGE_KEY);
     if (!raw) return { ...DEFAULT_SETTINGS };
     const parsed = JSON.parse(raw) as Partial<AllNotifSettings>;
     const merged: AllNotifSettings = { ...DEFAULT_SETTINGS };

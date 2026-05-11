@@ -10,6 +10,7 @@ import {
   saveNotifSettings,
   requestPermission,
   getPermissionState,
+  getPermissionStateAsync,
   sendTestNotification,
   isSupported,
   getAppEnv,
@@ -64,28 +65,38 @@ export function Notifications() {
   const granted = permission === "granted";
   const denied  = permission === "denied";
 
-  // Re-read permission whenever window regains focus — covers the case where
-  // the user went to Android Settings to enable notifications and comes back.
+  // Re-read permission (async — uses Permissions API for accuracy on Android)
+  // whenever the window regains focus, covering the case where the user went
+  // to Android Settings to enable notifications and then returned.
   useEffect(() => {
-    const onFocus = () => {
-      const current = getPermissionState();
+    const refresh = async () => {
+      const current = await getPermissionStateAsync();
       setPermission(current);
     };
+
+    const onFocus = () => { refresh(); };
+    const onVisibility = () => {
+      if (document.visibilityState === "visible") refresh();
+    };
+
+    // Initial async check on mount (catches stale synchronous initial state)
+    refresh();
+
     window.addEventListener("focus", onFocus);
-    document.addEventListener("visibilitychange", () => {
-      if (document.visibilityState === "visible") onFocus();
-    });
+    document.addEventListener("visibilitychange", onVisibility);
     return () => {
       window.removeEventListener("focus", onFocus);
+      document.removeEventListener("visibilitychange", onVisibility);
     };
   }, []);
 
-  // Slow background poll (only as a safety net — focus event is the primary trigger)
+  // Background poll — safety net for environments where focus/visibility events
+  // may not fire reliably (some Android WebViews).
   useEffect(() => {
-    const id = setInterval(() => {
-      const current = getPermissionState();
+    const id = setInterval(async () => {
+      const current = await getPermissionStateAsync();
       if (current !== permission) setPermission(current);
-    }, 3000);
+    }, 4000);
     return () => clearInterval(id);
   }, [permission]);
 
@@ -107,8 +118,9 @@ export function Notifications() {
     return result === "granted";
   }, [supported, denied, toast]);
 
-  const checkPermissionNow = useCallback(() => {
-    setPermission(getPermissionState());
+  const checkPermissionNow = useCallback(async () => {
+    const current = await getPermissionStateAsync();
+    setPermission(current);
   }, []);
 
   // ── Settings update ─────────────────────────────────────────────────────────
