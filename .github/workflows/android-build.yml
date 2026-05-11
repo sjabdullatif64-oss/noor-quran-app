@@ -1,4 +1,20 @@
-name: Build Android APK & AAB
+##############################################################################
+# Noor Quran — Android Build Pipeline (Capacitor)
+# Package: com.sj64noorquran
+#
+# Triggers:
+#   • Every push to main/master  → release build
+#   • Every git tag  v*          → release build + GitHub Release
+#   • Manual dispatch            → choose debug or release, set version
+#
+# Secrets required (Settings → Secrets and variables → Actions):
+#   KEYSTORE_BASE64      base64-encoded .keystore file  (existing Play Store key)
+#   KEYSTORE_PASSWORD    keystore store password
+#   KEY_ALIAS            key alias inside the keystore
+#   KEY_PASSWORD         key password
+##############################################################################
+
+name: Noor Quran — Android Build
 
 on:
   push:
@@ -12,132 +28,290 @@ on:
         default: 'release'
         type: choice
         options: [release, debug]
+      version_name:
+        description: 'Version name  e.g. 1.2.0  (leave blank to use tag or 1.0.0)'
+        required: false
+        default: ''
+      version_code:
+        description: 'Version code  integer — MUST be higher than last Play Store upload'
+        required: false
+        default: ''
 
 env:
-  NODE_VERSION: '20'
-  JAVA_VERSION: '17'
+  NODE_VERSION:  '20'
+  JAVA_VERSION:  '17'
+  GRADLE_VERSION: '8.9'
+  PNPM_VERSION:  '10'
+  APP_DIR:       artifacts/islamic-app
+  ANDROID_DIR:   artifacts/islamic-app/android
 
 jobs:
   build:
-    name: Build Android (${{ github.event.inputs.build_type || 'release' }})
+    name: >
+      Build ${{ github.event.inputs.build_type || 'release' }}
+      v${{ github.event.inputs.version_name || '1.0.0' }}
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 60        # first build ~20 min; cached ~8 min
 
     steps:
-      # ── Checkout ─────────────────────────────────────────────────────────────
+      # ── 1. Source code ────────────────────────────────────────────────────────
       - name: Checkout repository
         uses: actions/checkout@v4
-
-      # ── Node.js + pnpm ────────────────────────────────────────────────────────
-      - name: Setup pnpm
-        uses: pnpm/action-setup@v4
         with:
-          version: 10
+          fetch-depth: 0        # full history so git describe works for version
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: ${{ env.NODE_VERSION }}
-          cache: 'pnpm'
-
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile
-
-      # ── Java & Android SDK ────────────────────────────────────────────────────
+      # ── 2. Java (required by Gradle AND Capacitor CLI) ────────────────────────
       - name: Setup Java ${{ env.JAVA_VERSION }}
         uses: actions/setup-java@v4
         with:
-          distribution: 'temurin'
+          distribution: temurin
           java-version: ${{ env.JAVA_VERSION }}
 
+      # ── 3. Android SDK (platforms + build-tools) ──────────────────────────────
       - name: Setup Android SDK
         uses: android-actions/setup-android@v3
 
-      - name: Cache Gradle packages
-        uses: actions/cache@v4
-        with:
-          path: |
-            ~/.gradle/caches
-            ~/.gradle/wrapper
-          key: gradle-${{ runner.os }}-${{ hashFiles('artifacts/islamic-app/android/**/*.gradle*', 'artifacts/islamic-app/android/gradle/wrapper/gradle-wrapper.properties') }}
-          restore-keys: |
-            gradle-${{ runner.os }}-
+      - name: Install Android SDK platform + build-tools
+        run: |
+          sdkmanager --install \
+            "platforms;android-35" \
+            "build-tools;35.0.0" \
+            "platform-tools" \
+            2>&1 | tail -5
+          yes | sdkmanager --licenses > /dev/null 2>&1 || true
 
-      # ── Build web assets ──────────────────────────────────────────────────────
-      - name: Build Vite web assets
+      # ── 4. Gradle (provides `gradle` binary to generate gradlew) ─────────────
+      - name: Setup Gradle ${{ env.GRADLE_VERSION }}
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: ${{ env.GRADLE_VERSION }}
+          # Read-only Gradle cache on non-main branches to save space
+          cache-read-only: ${{ github.ref != 'refs/heads/main' && github.ref != 'refs/heads/master' }}
+
+      # ── 5. Node.js + pnpm ────────────────────────────────────────────────────
+      - name: Setup pnpm ${{ env.PNPM_VERSION }}
+        uses: pnpm/action-setup@v4
+        with:
+          version: ${{ env.PNPM_VERSION }}
+
+      - name: Setup Node.js ${{ env.NODE_VERSION }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: pnpm
+
+      - name: Install workspace dependencies
+        run: pnpm install --frozen-lockfile
+
+      # ── 6. Vite production build ──────────────────────────────────────────────
+      - name: Build web assets (Vite)
         run: pnpm --filter @workspace/islamic-app run build
         env:
           PORT: 3000
           BASE_PATH: /
+          NODE_ENV: production
 
-      # ── Capacitor sync ────────────────────────────────────────────────────────
+      # ── 7. Capacitor sync — copies assets + plugin config into android/ ───────
       - name: Sync Capacitor Android
-        working-directory: artifacts/islamic-app
-        run: npx cap sync android
+        working-directory: ${{ env.APP_DIR }}
+        run: |
+          npx cap sync android --no-deps 2>&1
+          echo "✅ Capacitor sync complete"
+        env:
+          ANDROID_SDK_ROOT: ${{ env.ANDROID_HOME }}
+          ANDROID_HOME: ${{ env.ANDROID_HOME }}
 
-      # ── Keystore (release only) ───────────────────────────────────────────────
+      # ── 8. Gradle wrapper — generates gradlew + gradle-wrapper.jar ────────────
+      #    We generate this in CI rather than committing the binary jar.
+      - name: Generate Gradle wrapper
+        working-directory: ${{ env.ANDROID_DIR }}
+        run: |
+          gradle wrapper \
+            --gradle-version ${{ env.GRADLE_VERSION }} \
+            --distribution-type bin \
+            --no-daemon
+          chmod +x gradlew
+          echo "✅ gradlew generated (Gradle ${{ env.GRADLE_VERSION }})"
+
+      # ── 9. Resolve version name + code ────────────────────────────────────────
+      - name: Resolve version
+        id: version
+        run: |
+          # Priority: tag → workflow input → fallback 1.0.0
+          if [[ "$GITHUB_REF" == refs/tags/v* ]]; then
+            VER_NAME="${GITHUB_REF#refs/tags/v}"
+          elif [[ -n "${{ github.event.inputs.version_name }}" ]]; then
+            VER_NAME="${{ github.event.inputs.version_name }}"
+          else
+            VER_NAME="1.0.0"
+          fi
+
+          # Version code: workflow input → seconds since 2024-01-01 (always increasing)
+          if [[ -n "${{ github.event.inputs.version_code }}" ]]; then
+            VER_CODE="${{ github.event.inputs.version_code }}"
+          else
+            VER_CODE=$(( $(date +%s) - 1704067200 ))
+          fi
+
+          echo "name=$VER_NAME" >> $GITHUB_OUTPUT
+          echo "code=$VER_CODE" >> $GITHUB_OUTPUT
+          echo "✅ Version $VER_NAME ($VER_CODE)"
+
+      # ── 10. Stamp version into build.gradle ───────────────────────────────────
+      - name: Stamp version in build.gradle
+        working-directory: ${{ env.ANDROID_DIR }}
+        run: |
+          sed -i \
+            "s/versionCode [0-9]*/versionCode ${{ steps.version.outputs.code }}/" \
+            app/build.gradle
+          sed -i \
+            "s/versionName \"[^\"]*\"/versionName \"${{ steps.version.outputs.name }}\"/" \
+            app/build.gradle
+          grep -E "versionCode|versionName" app/build.gradle
+
+      # ── 11. Keystore (release builds only) ───────────────────────────────────
+      #
+      #    ⚠️  IMPORTANT — EXISTING PLAY STORE APP:
+      #    Use the SAME keystore you used for your first Play Store upload.
+      #    Changing the keystore will break updates for existing users.
+      #    See ANDROID_BUILD.md → "Existing Play Store app" section.
+      #
       - name: Decode keystore
         if: ${{ (github.event.inputs.build_type || 'release') == 'release' }}
-        working-directory: artifacts/islamic-app/android
+        working-directory: ${{ env.ANDROID_DIR }}
         run: |
+          if [[ -z "${{ secrets.KEYSTORE_BASE64 }}" ]]; then
+            echo "❌ Secret KEYSTORE_BASE64 is not set. See ANDROID_BUILD.md."
+            exit 1
+          fi
           echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 --decode > noor-quran-release.keystore
+          # Verify the keystore is valid
+          keytool -list -v \
+            -keystore noor-quran-release.keystore \
+            -storepass "${{ secrets.KEYSTORE_PASSWORD }}" \
+            -alias "${{ secrets.KEY_ALIAS }}" 2>&1 | grep -E "Alias|Valid|SHA" || true
           echo "KEYSTORE_PATH=$PWD/noor-quran-release.keystore" >> $GITHUB_ENV
+          echo "✅ Keystore decoded and verified"
 
-      # ── Gradle build ──────────────────────────────────────────────────────────
-      - name: Grant execute permission for gradlew
-        working-directory: artifacts/islamic-app/android
-        run: chmod +x gradlew
-
+      # ── 12a. Debug build ──────────────────────────────────────────────────────
       - name: Build Debug APK
         if: ${{ (github.event.inputs.build_type || 'release') == 'debug' }}
-        working-directory: artifacts/islamic-app/android
-        run: ./gradlew assembleDebug --no-daemon --stacktrace
+        working-directory: ${{ env.ANDROID_DIR }}
+        run: |
+          ./gradlew assembleDebug \
+            --no-daemon \
+            --stacktrace \
+            --warning-mode all
+          echo "✅ Debug APK built"
 
+      # ── 12b. Release build ────────────────────────────────────────────────────
       - name: Build Release APK + AAB
         if: ${{ (github.event.inputs.build_type || 'release') == 'release' }}
-        working-directory: artifacts/islamic-app/android
+        working-directory: ${{ env.ANDROID_DIR }}
         run: |
-          ./gradlew assembleRelease bundleRelease --no-daemon --stacktrace
+          ./gradlew assembleRelease bundleRelease \
+            --no-daemon \
+            --stacktrace \
+            --warning-mode all
+          echo "✅ Release APK + AAB built"
         env:
-          KEYSTORE_PATH: ${{ env.KEYSTORE_PATH }}
+          KEYSTORE_PATH:     ${{ env.KEYSTORE_PATH }}
           KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
-          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
-          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+          KEY_ALIAS:         ${{ secrets.KEY_ALIAS }}
+          KEY_PASSWORD:      ${{ secrets.KEY_PASSWORD }}
 
-      # ── Upload artifacts ──────────────────────────────────────────────────────
+      # ── 13. Rename outputs with version ───────────────────────────────────────
+      - name: Rename build outputs
+        working-directory: ${{ env.ANDROID_DIR }}
+        run: |
+          V="${{ steps.version.outputs.name }}"
+          BUILD="${{ github.event.inputs.build_type || 'release' }}"
+          if [[ "$BUILD" == "release" ]]; then
+            cp app/build/outputs/apk/release/app-release.apk \
+               app/build/outputs/apk/release/noor-quran-${V}.apk
+            cp app/build/outputs/bundle/release/app-release.aab \
+               app/build/outputs/bundle/release/noor-quran-${V}.aab
+          else
+            cp app/build/outputs/apk/debug/app-debug.apk \
+               app/build/outputs/apk/debug/noor-quran-${V}-debug.apk
+          fi
+          echo "✅ Outputs renamed to noor-quran-${V}"
+
+      # ── 14. Upload artifacts ──────────────────────────────────────────────────
       - name: Upload Debug APK
         if: ${{ (github.event.inputs.build_type || 'release') == 'debug' }}
         uses: actions/upload-artifact@v4
         with:
-          name: noor-quran-debug-${{ github.sha }}
-          path: artifacts/islamic-app/android/app/build/outputs/apk/debug/app-debug.apk
-          retention-days: 7
+          name: noor-quran-debug-${{ steps.version.outputs.name }}-${{ github.run_number }}
+          path: ${{ env.ANDROID_DIR }}/app/build/outputs/apk/debug/noor-quran-*.apk
+          if-no-files-found: error
+          retention-days: 14
 
       - name: Upload Release APK
         if: ${{ (github.event.inputs.build_type || 'release') == 'release' }}
         uses: actions/upload-artifact@v4
         with:
-          name: noor-quran-release-apk-${{ github.sha }}
-          path: artifacts/islamic-app/android/app/build/outputs/apk/release/app-release.apk
-          retention-days: 30
+          name: noor-quran-apk-${{ steps.version.outputs.name }}-${{ github.run_number }}
+          path: ${{ env.ANDROID_DIR }}/app/build/outputs/apk/release/noor-quran-*.apk
+          if-no-files-found: error
+          retention-days: 90
 
-      - name: Upload Release AAB (Play Store)
+      - name: Upload Release AAB  (Play Store)
         if: ${{ (github.event.inputs.build_type || 'release') == 'release' }}
         uses: actions/upload-artifact@v4
         with:
-          name: noor-quran-release-aab-${{ github.sha }}
-          path: artifacts/islamic-app/android/app/build/outputs/bundle/release/app-release.aab
-          retention-days: 30
+          name: noor-quran-aab-${{ steps.version.outputs.name }}-${{ github.run_number }}
+          path: ${{ env.ANDROID_DIR }}/app/build/outputs/bundle/release/noor-quran-*.aab
+          if-no-files-found: error
+          retention-days: 90
 
-      # ── Tag releases ──────────────────────────────────────────────────────────
+      # ── 15. GitHub Release (tag pushes only) ─────────────────────────────────
       - name: Create GitHub Release
         if: startsWith(github.ref, 'refs/tags/v')
         uses: softprops/action-gh-release@v2
         with:
-          files: |
-            artifacts/islamic-app/android/app/build/outputs/apk/release/app-release.apk
-            artifacts/islamic-app/android/app/build/outputs/bundle/release/app-release.aab
+          name: "Noor Quran ${{ steps.version.outputs.name }}"
           generate_release_notes: true
-          name: "Noor Quran ${{ github.ref_name }}"
+          files: |
+            ${{ env.ANDROID_DIR }}/app/build/outputs/apk/release/noor-quran-*.apk
+            ${{ env.ANDROID_DIR }}/app/build/outputs/bundle/release/noor-quran-*.aab
+          body: |
+            ## Noor Quran ${{ steps.version.outputs.name }}
+
+            | File | Use |
+            |------|-----|
+            | `noor-quran-${{ steps.version.outputs.name }}.apk` | Sideload directly on Android |
+            | `noor-quran-${{ steps.version.outputs.name }}.aab` | Upload to Google Play Console |
+
+            **Package:** `com.sj64noorquran`
+            **Version code:** ${{ steps.version.outputs.code }}
+
+            ### What's inside
+            - Native Capacitor Android shell — no browser UI, no URL bar
+            - Dark status bar (`#071a0e`) + full-screen edge-to-edge
+            - Native splash screen, hardware back-button support
+            - AdMob native banner ads (`ca-app-pub-5050437827917011`)
+            - Native push notifications (prayer alarms via LocalNotifications)
+            - Quran reader · 10 translation languages · Al-Afasy audio
+            - GPS prayer times · Qibla compass
+            - Offline audio downloads (IndexedDB + Filesystem)
+            - Tasbeeh counter with haptic feedback
+            - Islamic calendar · Islamic Gifts · Bookmarks · Favorites
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      # ── 16. Build summary ─────────────────────────────────────────────────────
+      - name: Print build summary
+        if: always()
+        run: |
+          echo "### Noor Quran Android Build Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Field | Value |" >> $GITHUB_STEP_SUMMARY
+          echo "|-------|-------|" >> $GITHUB_STEP_SUMMARY
+          echo "| Package | \`com.sj64noorquran\` |" >> $GITHUB_STEP_SUMMARY
+          echo "| Version | ${{ steps.version.outputs.name }} (${{ steps.version.outputs.code }}) |" >> $GITHUB_STEP_SUMMARY
+          echo "| Build type | ${{ github.event.inputs.build_type || 'release' }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Commit | ${{ github.sha }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Runner | ubuntu-latest |" >> $GITHUB_STEP_SUMMARY
+          echo "| Gradle | ${{ env.GRADLE_VERSION }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Java | ${{ env.JAVA_VERSION }} |" >> $GITHUB_STEP_SUMMARY
