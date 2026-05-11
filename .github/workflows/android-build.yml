@@ -115,7 +115,7 @@ jobs:
       - name: Sync Capacitor Android
         working-directory: ${{ env.APP_DIR }}
         run: |
-          npx cap sync android --no-deps 2>&1
+          npx cap sync android 2>&1
           echo "✅ Capacitor sync complete"
         env:
           ANDROID_SDK_ROOT: ${{ env.ANDROID_HOME }}
