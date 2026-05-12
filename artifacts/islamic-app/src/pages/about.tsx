@@ -5,6 +5,7 @@ import {
   Calculator, ExternalLink,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { RewardedAdButton } from "@/components/rewarded-ad-button";
 
 const APP_SHARE_URL = "https://play.google.com/store/apps/details?id=com.sj64noorquran";
 const APP_SHARE_MSG =
@@ -340,6 +341,9 @@ export function About() {
 
         {/* ── Action buttons ── */}
         <div className="space-y-3 pb-4">
+          {/* Support Noor Quran — Rewarded Ad */}
+          <RewardedAdButton />
+
           <ActionButton
             icon={<Share2 className="w-5 h-5" />}
             label="Share Noor Quran"
