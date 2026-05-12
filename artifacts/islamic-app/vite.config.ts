@@ -4,27 +4,14 @@ import tailwindcss from "@tailwindcss/vite";
 import path from "path";
 import runtimeErrorOverlay from "@replit/vite-plugin-runtime-error-modal";
 
-const rawPort = process.env.PORT;
+// PORT / BASE_PATH default gracefully so plain `vite build` never throws.
+const rawPort  = process.env.PORT      ?? "3000";
+const basePath = process.env.BASE_PATH ?? "/";
+const port     = Number(rawPort);
 
-if (!rawPort) {
-  throw new Error(
-    "PORT environment variable is required but was not provided.",
-  );
-}
-
-const port = Number(rawPort);
-
-if (Number.isNaN(port) || port <= 0) {
-  throw new Error(`Invalid PORT value: "${rawPort}"`);
-}
-
-const basePath = process.env.BASE_PATH;
-
-if (!basePath) {
-  throw new Error(
-    "BASE_PATH environment variable is required but was not provided.",
-  );
-}
+// Replit dev domain — used to route HMR WebSocket through the proxy correctly.
+// REPLIT_DOMAINS is comma-separated; take the first entry.
+const replitDomain = process.env.REPLIT_DOMAINS?.split(",")[0]?.trim() ?? "";
 
 export default defineConfig({
   base: basePath,
@@ -63,8 +50,15 @@ export default defineConfig({
     strictPort: true,
     host: "0.0.0.0",
     allowedHosts: true,
-    fs: {
-      strict: true,
+    // Route HMR WebSocket through the Replit reverse proxy (WSS on port 443)
+    // so browsers inside the preview iframe can actually receive hot updates.
+    hmr: replitDomain
+      ? { host: replitDomain, clientPort: 443, protocol: "wss" }
+      : true,
+    fs: { strict: true },
+    // Disable caching in dev so the browser always loads the latest modules.
+    headers: {
+      "Cache-Control": "no-store",
     },
   },
   preview: {
