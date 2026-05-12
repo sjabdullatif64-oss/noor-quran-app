@@ -114,42 +114,56 @@ dependencies {
 // ── AD_ID permission: post-merge safety net ────────────────────────────────────
 //
 // LAYER 1: app/src/main/AndroidManifest.xml declares the permission with
-//          tools:node="replace" so the app's declaration beats any library AAR.
+//          tools:node="replace" so the app declaration beats any library AAR.
 //
-// LAYER 2 (this block): runs immediately AFTER AGP's processReleaseManifest task
-//          writes the merged AndroidManifest.xml to disk.  It reads the merged
-//          file, checks for the AD_ID permission, and force-injects it if absent.
-//          This is the nuclear option — it is immune to AAR manifest suppression,
-//          Gradle caching quirks, and SDK version changes.
+// LAYER 2 (this block): runs immediately AFTER the manifest-merge task writes
+//          its output.  It locates the merged file by scanning the predictable
+//          AGP 8.x intermediate directories — no task-property API is used, so
+//          this is compatible with AGP 7.x through 8.x (manifestOutputDirectory
+//          was removed in AGP 8 and must NOT be referenced).
 //
-// After the build completes, verify with:
+// Verify after building:
 //   grep "AD_ID" app/build/intermediates/merged_manifests/release/AndroidManifest.xml
 //
 afterEvaluate {
-    tasks.matching { it.name ==~ /process.*ReleaseManifest/ }.configureEach { task ->
+    tasks.matching { it.name ==~ /process.*ReleaseManifest.*/ }.configureEach { task ->
         task.doLast {
-            // AGP 7+ exposes the merged manifest directory via this provider.
-            def outDir   = task.manifestOutputDirectory.get().asFile
-            def manifest = new File(outDir, 'AndroidManifest.xml')
-            if (!manifest.exists()) {
-                println "⚠️  [AD_ID check] Merged manifest not found at: ${manifest.absolutePath}"
+            // AGP 8.x writes merged manifests to one of these directories depending
+            // on the exact AGP patch version and whether it's an APK or AAB build.
+            // We probe all candidates and use whichever file exists.
+            def candidates = [
+                // AGP 8.9.x — processReleaseManifest output (APK + AAB base)
+                "intermediates/merged_manifests/release/AndroidManifest.xml",
+                // AGP 8.x variant with task-name sub-directory
+                "intermediates/merged_manifests/release/processReleaseManifest/AndroidManifest.xml",
+                // AGP 8.x — main-manifest intermediate (some sub-releases)
+                "intermediates/merged_manifests/release/processReleaseMainManifest/AndroidManifest.xml",
+                // AGP 8.x — bundle-specific manifest path
+                "intermediates/bundle_manifest/release/AndroidManifest.xml",
+                "intermediates/bundle_manifest/release/processReleaseManifest/AndroidManifest.xml",
+            ].collect { new File(buildDir, it) }
+
+            def manifest = candidates.find { it.exists() }
+
+            if (manifest == null) {
+                println "⚠️  [AD_ID check] Could not locate merged manifest — skipping injection."
+                println "    Searched:"
+                candidates.each { println "      ${it.absolutePath}" }
                 return
             }
 
+            println "ℹ️  [AD_ID check] Inspecting: ${manifest.absolutePath}"
             def content = manifest.text
             def adId    = 'com.google.android.gms.permission.AD_ID'
 
             if (content.contains(adId)) {
-                println "✅ [AD_ID check] Permission present in merged release manifest — no action needed."
+                println "✅ [AD_ID check] Permission present — no injection needed."
             } else {
-                println "⚠️  [AD_ID check] Permission MISSING from merged manifest — force-injecting now."
-                // Insert immediately before the first existing <uses-permission> tag so
-                // it groups naturally with the other permissions.
+                println "⚠️  [AD_ID check] Permission MISSING — force-injecting."
                 def injection = '    <uses-permission android:name="com.google.android.gms.permission.AD_ID"/>\n'
-                def patched   = content.replaceFirst('(?s)(<uses-permission)', injection + '$1')
-                manifest.text = patched
-                println "✅ [AD_ID check] Injection complete. Verify:"
-                println "     grep AD_ID app/build/intermediates/merged_manifests/release/AndroidManifest.xml"
+                manifest.text = content.replaceFirst('(?s)(<uses-permission)', injection + '$1')
+                println "✅ [AD_ID check] Injected. Verify:"
+                println "    grep AD_ID ${manifest.absolutePath}"
             }
         }
     }
