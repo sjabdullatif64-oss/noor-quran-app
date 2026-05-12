@@ -4,6 +4,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { ThemeProvider } from "@/components/theme-provider";
 import { I18nProvider } from "@/lib/i18n-context";
+import { NotificationPrompt } from "@/components/notification-prompt";
 import NotFound from "@/pages/not-found";
 import { Layout } from "@/components/layout";
 import { useAndroidBack } from "@/hooks/useAndroidBack";
@@ -26,6 +27,15 @@ import { PrivacyPolicy } from "@/pages/privacy-policy";
 import { Updates } from "@/pages/updates";
 import { Writing } from "@/pages/writing";
 import { IslamicCalendar } from "@/pages/islamic-calendar";
+
+import { MakkahLive } from "@/pages/makkah-live";
+import { HadithPage } from "@/pages/hadith";
+import { EmergencyDuas } from "@/pages/emergency-duas";
+import { HabitTracker } from "@/pages/habit-tracker";
+import { QuranGoals } from "@/pages/quran-goals";
+import { KidsMode } from "@/pages/kids-mode";
+import { QuranRadio } from "@/pages/quran-radio";
+import { Discover } from "@/pages/discover";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -61,6 +71,16 @@ function Router() {
       <Route path="/updates" component={Updates} />
       <Route path="/writing" component={Writing} />
       <Route path="/islamic-calendar" component={IslamicCalendar} />
+
+      <Route path="/makkah-live" component={MakkahLive} />
+      <Route path="/hadith" component={HadithPage} />
+      <Route path="/emergency-duas" component={EmergencyDuas} />
+      <Route path="/habit-tracker" component={HabitTracker} />
+      <Route path="/quran-goals" component={QuranGoals} />
+      <Route path="/kids-mode" component={KidsMode} />
+      <Route path="/quran-radio" component={QuranRadio} />
+      <Route path="/discover" component={Discover} />
+
       <Route component={NotFound} />
     </Switch>
   );
@@ -76,6 +96,7 @@ function App() {
               <Layout>
                 <Router />
               </Layout>
+              <NotificationPrompt />
             </WouterRouter>
             <Toaster />
           </TooltipProvider>
