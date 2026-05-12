@@ -3,6 +3,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { ThemeProvider } from "@/components/theme-provider";
+import { I18nProvider } from "@/lib/i18n-context";
 import NotFound from "@/pages/not-found";
 import { Layout } from "@/components/layout";
 import { useAndroidBack } from "@/hooks/useAndroidBack";
@@ -67,18 +68,20 @@ function Router() {
 
 function App() {
   return (
-    <ThemeProvider defaultTheme="light">
-      <QueryClientProvider client={queryClient}>
-        <TooltipProvider>
-          <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, "")}>
-            <Layout>
-              <Router />
-            </Layout>
-          </WouterRouter>
-          <Toaster />
-        </TooltipProvider>
-      </QueryClientProvider>
-    </ThemeProvider>
+    <I18nProvider>
+      <ThemeProvider defaultTheme="light">
+        <QueryClientProvider client={queryClient}>
+          <TooltipProvider>
+            <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, "")}>
+              <Layout>
+                <Router />
+              </Layout>
+            </WouterRouter>
+            <Toaster />
+          </TooltipProvider>
+        </QueryClientProvider>
+      </ThemeProvider>
+    </I18nProvider>
   );
 }
 

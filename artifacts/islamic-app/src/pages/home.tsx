@@ -6,12 +6,14 @@ import { MapPin, Clock, BookOpen } from "lucide-react";
 import { Link } from "wouter";
 import { getCity, getCountry } from "@/lib/settings";
 import { BannerAd } from "@/components/banner-ad";
+import { useI18n } from "@/lib/i18n-context";
 
 export function Home() {
   const [city] = useState(() => getCity());
   const [country] = useState(() => getCountry());
   const { data: prayerData, isLoading: prayerLoading } = usePrayerTimes(city, country);
   const { data: ayahData, isLoading: ayahLoading } = useRandomAyah();
+  const { t } = useI18n();
 
   const [nextPrayer, setNextPrayer] = useState<{ name: string; time: string; diffStr: string } | null>(null);
 
@@ -64,8 +66,8 @@ export function Home() {
   return (
     <div className="space-y-8 animate-in fade-in duration-500">
       <header className="space-y-2">
-        <h1 className="text-3xl md:text-4xl font-serif font-bold text-primary">As-salamu alaykum</h1>
-        <p className="text-muted-foreground text-lg">Here is your daily overview.</p>
+        <h1 className="text-3xl md:text-4xl font-serif font-bold text-primary">{t("home_greeting")}</h1>
+        <p className="text-muted-foreground text-lg">{t("home_subtitle")}</p>
       </header>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -75,7 +77,7 @@ export function Home() {
           <CardContent className="p-8 relative z-10 space-y-6">
             <div className="flex justify-between items-start">
               <div className="space-y-1">
-                <p className="text-primary-foreground/80 font-medium">Date</p>
+                <p className="text-primary-foreground/80 font-medium">{t("home_date")}</p>
                 {prayerLoading ? (
                   <Skeleton className="h-6 w-32 bg-primary-foreground/20" />
                 ) : (
@@ -97,7 +99,7 @@ export function Home() {
             </div>
 
             <div className="pt-4 border-t border-primary-foreground/20">
-              <p className="text-primary-foreground/80 font-medium mb-2">Next Prayer</p>
+              <p className="text-primary-foreground/80 font-medium mb-2">{t("home_next_prayer")}</p>
               {prayerLoading || !nextPrayer ? (
                 <div className="space-y-2">
                   <Skeleton className="h-10 w-48 bg-primary-foreground/20" />
@@ -111,7 +113,7 @@ export function Home() {
                   </div>
                   <div className="flex items-center gap-2 text-primary-foreground/80">
                     <Clock className="w-4 h-4" />
-                    <span className="font-mono">{nextPrayer.diffStr} remaining</span>
+                    <span className="font-mono">{nextPrayer.diffStr} {t("home_remaining")}</span>
                   </div>
                 </div>
               )}
@@ -122,7 +124,7 @@ export function Home() {
         {/* Ayah of the Day */}
         <Card className="shadow-sm border-border bg-card">
           <CardContent className="p-8 h-full flex flex-col justify-between space-y-6">
-            <p className="text-sm font-bold tracking-wider text-muted-foreground uppercase">Ayah of the Day</p>
+            <p className="text-sm font-bold tracking-wider text-muted-foreground uppercase">{t("home_ayah_of_day")}</p>
 
             {ayahLoading ? (
               <div className="space-y-4 flex-1 flex flex-col justify-center">
@@ -139,7 +141,7 @@ export function Home() {
                 </p>
                 <div className="flex items-center justify-between border-t border-border pt-4">
                   <p className="text-sm text-muted-foreground">
-                    Surah {ayahData?.surah}, Verse {ayahData?.numberInSurah}
+                    {t("home_surah")} {ayahData?.surah}, {t("home_verse")} {ayahData?.numberInSurah}
                   </p>
                   {ayahData && (
                     <Link
@@ -147,7 +149,7 @@ export function Home() {
                       className="flex items-center gap-1.5 text-sm text-primary hover:underline"
                     >
                       <BookOpen className="w-4 h-4" />
-                      Read
+                      {t("home_read")}
                     </Link>
                   )}
                 </div>
@@ -160,10 +162,10 @@ export function Home() {
       {/* Quick links */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         {[
-          { href: "/quran", label: "Read Quran", icon: "📖" },
-          { href: "/prayer-times", label: "Prayer Times", icon: "🕌" },
-          { href: "/qibla", label: "Qibla", icon: "🧭" },
-          { href: "/tasbeeh", label: "Tasbeeh", icon: "📿" },
+          { href: "/quran",        label: t("home_read_quran"),   icon: "📖" },
+          { href: "/prayer-times", label: t("home_prayer_times"), icon: "🕌" },
+          { href: "/qibla",        label: t("home_qibla"),        icon: "🧭" },
+          { href: "/tasbeeh",      label: t("home_tasbeeh"),      icon: "📿" },
         ].map((item) => (
           <Link
             key={item.href}

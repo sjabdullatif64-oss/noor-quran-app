@@ -1,7 +1,7 @@
 import { useState, useCallback } from "react";
 import {
   ChevronLeft, Moon, Globe, MapPin, Bell, Check, Sun, ChevronRight,
-  LocateFixed, Loader2, WifiOff, RefreshCw,
+  LocateFixed, Loader2, WifiOff, RefreshCw, Languages,
 } from "lucide-react";
 import { Link } from "wouter";
 import { useTheme } from "@/components/theme-provider";
@@ -15,14 +15,19 @@ import {
   ALL_LANGUAGES, TRANSLATION_LABELS, TRANSLATION_ENGLISH_NAMES,
   TranslationLanguage, reverseGeocode,
 } from "@/lib/api";
+import {
+  UI_LANGUAGES, UI_LANG_NATIVE, UI_LANG_ENGLISH, UI_LANG_FLAG,
+  type UiLanguage,
+} from "@/lib/i18n";
+import { useI18n } from "@/lib/i18n-context";
 import { useToast } from "@/hooks/use-toast";
 
-// Badge label for languages that need a note
-const LANG_BADGE: Partial<Record<TranslationLanguage, string>> = {
+// Badge label for Quran translation languages that need a note
+const QURAN_LANG_BADGE: Partial<Record<TranslationLanguage, string>> = {
   sindhi: "Fixed ✓",
 };
 
-const LANG_FLAG: Record<TranslationLanguage, string> = {
+const QURAN_LANG_FLAG: Record<TranslationLanguage, string> = {
   urdu:       "🇵🇰",
   english:    "🇬🇧",
   sindhi:     "🇵🇰",
@@ -35,7 +40,7 @@ const LANG_FLAG: Record<TranslationLanguage, string> = {
   malay:      "🇲🇾",
 };
 
-const LANG_ACCENT: Record<TranslationLanguage, string> = {
+const QURAN_LANG_ACCENT: Record<TranslationLanguage, string> = {
   urdu:       "border-emerald-600 bg-emerald-900/30",
   english:    "border-sky-600 bg-sky-900/20",
   sindhi:     "border-teal-600 bg-teal-900/20",
@@ -48,9 +53,22 @@ const LANG_ACCENT: Record<TranslationLanguage, string> = {
   malay:      "border-lime-600 bg-lime-900/20",
 };
 
-const INITIAL_COUNT = 4;
+const UI_LANG_ACCENT: Record<UiLanguage, string> = {
+  english:    "border-sky-600 bg-sky-900/20",
+  arabic:     "border-emerald-600 bg-emerald-900/30",
+  urdu:       "border-emerald-600 bg-emerald-900/30",
+  hindi:      "border-orange-600 bg-orange-900/20",
+  bengali:    "border-violet-600 bg-violet-900/20",
+  turkish:    "border-red-600 bg-red-900/20",
+  indonesian: "border-rose-600 bg-rose-900/20",
+  french:     "border-blue-600 bg-blue-900/20",
+  spanish:    "border-yellow-600 bg-yellow-900/20",
+  malay:      "border-lime-600 bg-lime-900/20",
+};
 
-// ── Location state for the settings GPS widget ─────────────────────────────────
+const QURAN_INITIAL_COUNT = 4;
+const UI_INITIAL_COUNT = 5;
+
 type GpsStatus = "idle" | "detecting" | "granted" | "denied" | "error";
 
 function readInitialGpsStatus(): GpsStatus {
@@ -62,8 +80,26 @@ function readInitialGpsStatus(): GpsStatus {
 export function Settings() {
   const { theme, setTheme } = useTheme();
   const { toast } = useToast();
+  const { t, lang: uiLang, setLang: setUiLang } = useI18n();
 
-  // ── Language ────────────────────────────────────────────────────────────────
+  // ── App Language ────────────────────────────────────────────────────────────
+  const [showAllUiLangs, setShowAllUiLangs] = useState(false);
+  const [savedUiLang, setSavedUiLang]       = useState(false);
+
+  const handleUiLang = (lang: UiLanguage) => {
+    setUiLang(lang);
+    setSavedUiLang(true);
+    setTimeout(() => setSavedUiLang(false), 2000);
+    toast({
+      title: t("settings_lang_saved_title"),
+      description: `${t("settings_lang_saved_desc")} ${UI_LANG_ENGLISH[lang]}.`,
+    });
+  };
+
+  const visibleUiLangs   = showAllUiLangs ? UI_LANGUAGES : UI_LANGUAGES.slice(0, UI_INITIAL_COUNT);
+  const hiddenUiCount    = UI_LANGUAGES.length - UI_INITIAL_COUNT;
+
+  // ── Quran Translation Language ──────────────────────────────────────────────
   const [defaultLang, setDefaultLang] = useState<TranslationLanguage>(() => getLang());
   const [savedLang, setSavedLang]     = useState(false);
   const [showAllLangs, setShowAllLangs] = useState(false);
@@ -78,6 +114,9 @@ export function Settings() {
       description: `Default translation set to ${TRANSLATION_ENGLISH_NAMES[lang]}.`,
     });
   };
+
+  const visibleLangs = showAllLangs ? ALL_LANGUAGES : ALL_LANGUAGES.slice(0, QURAN_INITIAL_COUNT);
+  const hiddenCount  = ALL_LANGUAGES.length - QURAN_INITIAL_COUNT;
 
   // ── Location / GPS ──────────────────────────────────────────────────────────
   const [gpsStatus,   setGpsStatus]   = useState<GpsStatus>(readInitialGpsStatus);
@@ -142,10 +181,6 @@ export function Settings() {
     toast({ title: "City saved", description: `Prayer times will use ${city}.` });
   };
 
-  const visibleLangs = showAllLangs ? ALL_LANGUAGES : ALL_LANGUAGES.slice(0, INITIAL_COUNT);
-  const hiddenCount  = ALL_LANGUAGES.length - INITIAL_COUNT;
-
-  // Active city label for display
   const activeCity =
     gpsStatus === "granted" && gpsCity
       ? `${gpsCity}${gpsCountry ? `, ${gpsCountry}` : ""}`
@@ -162,20 +197,72 @@ export function Settings() {
           <ChevronLeft className="w-6 h-6" />
         </Link>
         <div className="flex-1">
-          <h1 className="text-2xl font-serif font-bold text-emerald-300">Settings</h1>
-          <p className="text-emerald-700 text-xs mt-0.5">App preferences & customisation</p>
+          <h1 className="text-2xl font-serif font-bold text-emerald-300">{t("settings_title")}</h1>
+          <p className="text-emerald-700 text-xs mt-0.5">{t("settings_subtitle")}</p>
         </div>
       </div>
 
       <div className="px-4 space-y-4">
 
+        {/* ── App Language ──────────────────────────────────────────────────── */}
+        <Section
+          title={t("settings_app_language")}
+          icon={<Languages className="w-4 h-4" />}
+          badge={savedUiLang ? t("settings_saved_badge") : undefined}
+        >
+          <div className="p-4 space-y-2">
+            <p className="text-emerald-600 text-xs mb-3">{t("settings_app_language_sub")}</p>
+
+            {visibleUiLangs.map((lang) => {
+              const isActive = uiLang === lang;
+              return (
+                <button
+                  key={lang}
+                  onClick={() => handleUiLang(lang)}
+                  className={`w-full flex items-center gap-3 p-4 rounded-xl border transition-all ${
+                    isActive
+                      ? UI_LANG_ACCENT[lang]
+                      : "border-emerald-900/30 hover:border-emerald-700"
+                  }`}
+                  style={isActive ? {} : { background: "rgba(255,255,255,0.02)" }}
+                  data-testid={`setting-ui-lang-${lang}`}
+                >
+                  <span className="text-xl shrink-0">{UI_LANG_FLAG[lang]}</span>
+                  <div className="flex-1 min-w-0 text-left">
+                    <p className="text-white font-semibold text-sm">{UI_LANG_ENGLISH[lang]}</p>
+                    <p className="text-emerald-600 text-xs mt-0.5">{UI_LANG_NATIVE[lang]}</p>
+                  </div>
+                  {isActive && (
+                    <div className="w-6 h-6 rounded-full bg-emerald-500 flex items-center justify-center shrink-0">
+                      <Check className="w-3.5 h-3.5 text-white" />
+                    </div>
+                  )}
+                </button>
+              );
+            })}
+
+            <button
+              onClick={() => setShowAllUiLangs((v) => !v)}
+              className="w-full flex items-center justify-center gap-1.5 py-2.5 text-xs text-emerald-600 hover:text-emerald-400 transition-colors"
+              data-testid="button-toggle-all-ui-langs"
+            >
+              <ChevronRight
+                className={`w-3.5 h-3.5 transition-transform ${showAllUiLangs ? "rotate-90" : ""}`}
+              />
+              {showAllUiLangs
+                ? t("settings_show_fewer_langs")
+                : `${hiddenUiCount} ${t("settings_show_more_langs")}`}
+            </button>
+          </div>
+        </Section>
+
         {/* ── Appearance ───────────────────────────────────────────────────── */}
-        <Section title="Appearance" icon={<Moon className="w-4 h-4" />}>
+        <Section title={t("settings_appearance")} icon={<Moon className="w-4 h-4" />}>
           <div className="px-4 py-4 flex items-center justify-between">
             <div>
-              <p className="text-white text-sm font-medium">Dark Mode</p>
+              <p className="text-white text-sm font-medium">{t("settings_dark_mode")}</p>
               <p className="text-emerald-700 text-xs mt-0.5">
-                Currently: {theme === "dark" ? "Dark" : "Light"}
+                {t("settings_dark_mode_curr")} {theme === "dark" ? t("settings_dark") : t("settings_light")}
               </p>
             </div>
             <button
@@ -199,14 +286,12 @@ export function Settings() {
 
         {/* ── Quran Translation ─────────────────────────────────────────────── */}
         <Section
-          title="Quran Translation"
+          title={t("settings_quran_trans")}
           icon={<Globe className="w-4 h-4" />}
-          badge={savedLang ? "Saved ✓" : undefined}
+          badge={savedLang ? t("settings_saved_badge") : undefined}
         >
           <div className="p-4 space-y-2">
-            <p className="text-emerald-600 text-xs mb-3">
-              Choose your default translation language. Arabic text is always shown.
-            </p>
+            <p className="text-emerald-600 text-xs mb-3">{t("settings_quran_trans_sub")}</p>
 
             {visibleLangs.map((lang) => {
               const isActive = defaultLang === lang;
@@ -216,22 +301,22 @@ export function Settings() {
                   onClick={() => handleLang(lang)}
                   className={`w-full flex items-center gap-3 p-4 rounded-xl border transition-all ${
                     isActive
-                      ? LANG_ACCENT[lang]
+                      ? QURAN_LANG_ACCENT[lang]
                       : "border-emerald-900/30 hover:border-emerald-700"
                   }`}
                   style={isActive ? {} : { background: "rgba(255,255,255,0.02)" }}
                   data-testid={`setting-lang-${lang}`}
                 >
-                  <span className="text-xl shrink-0">{LANG_FLAG[lang]}</span>
+                  <span className="text-xl shrink-0">{QURAN_LANG_FLAG[lang]}</span>
                   <div className="flex-1 min-w-0 text-left">
                     <div className="flex items-center gap-2">
                       <p className="text-white font-semibold text-sm">{TRANSLATION_ENGLISH_NAMES[lang]}</p>
-                      {LANG_BADGE[lang] && (
+                      {QURAN_LANG_BADGE[lang] && (
                         <span
                           className="text-[10px] font-semibold text-teal-400 border border-teal-800/50 px-1.5 py-0.5 rounded-full"
                           style={{ background: "rgba(45,212,191,0.08)" }}
                         >
-                          {LANG_BADGE[lang]}
+                          {QURAN_LANG_BADGE[lang]}
                         </span>
                       )}
                     </div>
@@ -255,17 +340,17 @@ export function Settings() {
                 className={`w-3.5 h-3.5 transition-transform ${showAllLangs ? "rotate-90" : ""}`}
               />
               {showAllLangs
-                ? "Show fewer languages"
-                : `Show ${hiddenCount} more languages`}
+                ? t("settings_show_fewer_langs")
+                : `${hiddenCount} ${t("settings_show_more_langs")}`}
             </button>
           </div>
         </Section>
 
         {/* ── Prayer Times / Location ───────────────────────────────────────── */}
         <Section
-          title="Prayer Times Location"
+          title={t("settings_location")}
           icon={<MapPin className="w-4 h-4" />}
-          badge={savedCity ? "Saved ✓" : undefined}
+          badge={savedCity ? t("settings_saved_badge") : undefined}
         >
           <div className="p-4 space-y-3">
 
@@ -277,18 +362,18 @@ export function Settings() {
               {gpsStatus === "detecting" ? (
                 <div className="flex items-center gap-2.5">
                   <Loader2 className="w-4 h-4 text-emerald-500 animate-spin shrink-0" />
-                  <p className="text-emerald-400 text-sm">Detecting your location…</p>
+                  <p className="text-emerald-400 text-sm">{t("settings_gps_detecting")}</p>
                 </div>
               ) : gpsStatus === "denied" ? (
                 <div className="flex items-center gap-2.5">
                   <WifiOff className="w-4 h-4 text-amber-500 shrink-0" />
-                  <p className="text-amber-400 text-sm">Location permission denied</p>
+                  <p className="text-amber-400 text-sm">{t("settings_gps_denied")}</p>
                 </div>
               ) : gpsStatus === "error" ? (
                 <div className="flex items-center gap-2.5">
                   <WifiOff className="w-4 h-4 text-amber-500 shrink-0" />
                   <div className="flex-1">
-                    <p className="text-amber-400 text-sm">GPS unavailable</p>
+                    <p className="text-amber-400 text-sm">{t("settings_gps_unavailable")}</p>
                   </div>
                   <button onClick={detectGPS} className="text-amber-400 hover:text-amber-200">
                     <RefreshCw className="w-4 h-4" />
@@ -302,19 +387,19 @@ export function Settings() {
                   <div className="flex-1 min-w-0">
                     <p className="text-emerald-200 text-sm font-semibold truncate">{activeCity}</p>
                     <p className="text-emerald-700 text-xs">
-                      {gpsStatus === "granted" ? "GPS detected · auto updating" : "Manual selection"}
+                      {gpsStatus === "granted" ? t("settings_gps_auto") : t("settings_gps_manual")}
                     </p>
                   </div>
                 </div>
               ) : (
                 <div className="flex items-center gap-2.5">
                   <MapPin className="w-4 h-4 text-emerald-800 shrink-0" />
-                  <p className="text-emerald-700 text-sm">No location set yet</p>
+                  <p className="text-emerald-700 text-sm">{t("settings_no_location")}</p>
                 </div>
               )}
             </div>
 
-            {/* Use Current Location button — primary CTA */}
+            {/* Use Current Location button */}
             <button
               onClick={detectGPS}
               disabled={gpsStatus === "detecting"}
@@ -331,8 +416,8 @@ export function Settings() {
                   : <LocateFixed className="w-5 h-5" />}
               </div>
               <div className="text-left flex-1">
-                <p className="text-white text-sm font-semibold">Use Current Location</p>
-                <p className="text-emerald-600 text-xs mt-0.5">Detect your real city via GPS</p>
+                <p className="text-white text-sm font-semibold">{t("settings_use_location")}</p>
+                <p className="text-emerald-600 text-xs mt-0.5">{t("settings_use_location_sub")}</p>
               </div>
               <ChevronRight className="w-4 h-4 text-emerald-700 shrink-0" />
             </button>
@@ -340,11 +425,11 @@ export function Settings() {
             {/* Divider */}
             <div className="flex items-center gap-3 py-1">
               <div className="flex-1 border-t border-emerald-900/40" />
-              <p className="text-emerald-800 text-xs">or choose a city manually</p>
+              <p className="text-emerald-800 text-xs">{t("settings_or_choose")}</p>
               <div className="flex-1 border-t border-emerald-900/40" />
             </div>
 
-            {/* Preset cities — backup/manual selection */}
+            {/* Preset cities */}
             <div className="grid grid-cols-2 gap-2">
               {PRESET_CITIES.map((city) => {
                 const isActive = gpsStatus !== "granted" && manualCity === city;
@@ -371,12 +456,12 @@ export function Settings() {
         </Section>
 
         {/* ── Notifications link ────────────────────────────────────────────── */}
-        <Section title="Notifications" icon={<Bell className="w-4 h-4" />}>
+        <Section title={t("settings_notif_section")} icon={<Bell className="w-4 h-4" />}>
           <Link href="/notifications">
             <div className="px-4 py-4 flex items-center justify-between hover:opacity-80 transition-opacity">
               <div>
-                <p className="text-white text-sm font-medium">Islamic Reminders</p>
-                <p className="text-emerald-700 text-xs mt-0.5">Prayer times, Quran ayah & more</p>
+                <p className="text-white text-sm font-medium">{t("settings_reminders")}</p>
+                <p className="text-emerald-700 text-xs mt-0.5">{t("settings_reminders_sub")}</p>
               </div>
               <ChevronRight className="w-5 h-5 text-emerald-700" />
             </div>
@@ -384,7 +469,7 @@ export function Settings() {
         </Section>
 
         <p className="text-emerald-900 text-xs text-center pt-2 pb-6">
-          Noor Quran v1.0 · All settings saved on your device
+          {t("settings_footer")}
         </p>
       </div>
     </div>

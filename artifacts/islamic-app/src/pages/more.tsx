@@ -18,135 +18,16 @@ import {
 } from "lucide-react";
 import { BannerAd } from "@/components/banner-ad";
 import { useToast } from "@/hooks/use-toast";
+import { useI18n } from "@/lib/i18n-context";
 
 const APP_SHARE_URL = "https://play.google.com/store/apps/details?id=com.sj64noorquran";
 const APP_SHARE_MSG =
   "Download Noor Quran - Quran, Prayer Times, Islamic Features & More.\nA beautiful Islamic app for daily Muslim life.";
 
-interface MoreItem {
-  id: string;
-  label: string;
-  description: string;
-  icon: React.ReactNode;
-  href: string;
-  accent: string;
-  iconBg: string;
-}
-
-const ITEMS: MoreItem[] = [
-  {
-    id: "islamic-calendar",
-    label: "Islamic Calendar",
-    description: "Hijri dates, Ramadan, Eid & Islamic events",
-    icon: <CalendarDays className="w-6 h-6" />,
-    href: "/islamic-calendar",
-    accent: "text-teal-300",
-    iconBg: "rgba(45,212,191,0.18)",
-  },
-  {
-    id: "updates",
-    label: "Updates",
-    description: "Latest news, features & announcements",
-    icon: <Sparkles className="w-6 h-6" />,
-    href: "/updates",
-    accent: "text-amber-300",
-    iconBg: "rgba(217,119,6,0.18)",
-  },
-  {
-    id: "writing",
-    label: "Islamic Writing",
-    description: "Personal notes, duas & Quran reflections",
-    icon: <PenLine className="w-6 h-6" />,
-    href: "/writing",
-    accent: "text-lime-300",
-    iconBg: "rgba(132,204,22,0.18)",
-  },
-  {
-    id: "qibla",
-    label: "Qibla Direction",
-    description: "Find direction to Makkah",
-    icon: <Navigation className="w-6 h-6" />,
-    href: "/qibla",
-    accent: "text-amber-300",
-    iconBg: "rgba(217,119,6,0.18)",
-  },
-  {
-    id: "favorites",
-    label: "Favorites",
-    description: "Saved Surahs & Ayahs",
-    icon: <Heart className="w-6 h-6" />,
-    href: "/favorites",
-    accent: "text-rose-300",
-    iconBg: "rgba(244,63,94,0.18)",
-  },
-  {
-    id: "tasbeeh",
-    label: "Tasbeeh Counter",
-    description: "Dhikr & tasbih tracker",
-    icon: <Hash className="w-6 h-6" />,
-    href: "/tasbeeh",
-    accent: "text-emerald-300",
-    iconBg: "rgba(52,211,153,0.15)",
-  },
-  {
-    id: "bookmarks",
-    label: "Bookmarks",
-    description: "Reading bookmarks",
-    icon: <Bookmark className="w-6 h-6" />,
-    href: "/bookmarks",
-    accent: "text-sky-300",
-    iconBg: "rgba(56,189,248,0.15)",
-  },
-  {
-    id: "gifts",
-    label: "Islamic Gifts",
-    description: "Greeting cards & duas",
-    icon: <Gift className="w-6 h-6" />,
-    href: "/islamic-gifts",
-    accent: "text-purple-300",
-    iconBg: "rgba(168,85,247,0.15)",
-  },
-  {
-    id: "downloads",
-    label: "Downloads",
-    description: "Offline content",
-    icon: <Download className="w-6 h-6" />,
-    href: "/downloads",
-    accent: "text-teal-300",
-    iconBg: "rgba(45,212,191,0.15)",
-  },
-  {
-    id: "notifications",
-    label: "Notifications",
-    description: "Prayer & Quran reminders",
-    icon: <Bell className="w-6 h-6" />,
-    href: "/notifications",
-    accent: "text-yellow-300",
-    iconBg: "rgba(234,179,8,0.15)",
-  },
-  {
-    id: "settings",
-    label: "Settings",
-    description: "App preferences",
-    icon: <Settings className="w-6 h-6" />,
-    href: "/settings",
-    accent: "text-slate-300",
-    iconBg: "rgba(148,163,184,0.15)",
-  },
-  {
-    id: "about",
-    label: "About Noor Quran",
-    description: "App info, version & privacy",
-    icon: <Info className="w-6 h-6" />,
-    href: "/about",
-    accent: "text-emerald-300",
-    iconBg: "rgba(52,211,153,0.12)",
-  },
-];
-
 export function More() {
   const [, navigate] = useLocation();
   const { toast } = useToast();
+  const { t } = useI18n();
 
   function handleShare() {
     const fullText = `${APP_SHARE_MSG}\n\n${APP_SHARE_URL}`;
@@ -159,6 +40,117 @@ export function More() {
     }
   }
 
+  const ITEMS = [
+    {
+      id: "islamic-calendar",
+      label: t("more_islamic_calendar"),
+      description: t("more_islamic_calendar_sub"),
+      icon: <CalendarDays className="w-6 h-6" />,
+      href: "/islamic-calendar",
+      accent: "text-teal-300",
+      iconBg: "rgba(45,212,191,0.18)",
+    },
+    {
+      id: "updates",
+      label: t("more_updates"),
+      description: t("more_updates_sub"),
+      icon: <Sparkles className="w-6 h-6" />,
+      href: "/updates",
+      accent: "text-amber-300",
+      iconBg: "rgba(217,119,6,0.18)",
+    },
+    {
+      id: "writing",
+      label: t("more_writing"),
+      description: t("more_writing_sub"),
+      icon: <PenLine className="w-6 h-6" />,
+      href: "/writing",
+      accent: "text-lime-300",
+      iconBg: "rgba(132,204,22,0.18)",
+    },
+    {
+      id: "qibla",
+      label: t("more_qibla"),
+      description: t("more_qibla_sub"),
+      icon: <Navigation className="w-6 h-6" />,
+      href: "/qibla",
+      accent: "text-amber-300",
+      iconBg: "rgba(217,119,6,0.18)",
+    },
+    {
+      id: "favorites",
+      label: t("more_favorites"),
+      description: t("more_favorites_sub"),
+      icon: <Heart className="w-6 h-6" />,
+      href: "/favorites",
+      accent: "text-rose-300",
+      iconBg: "rgba(244,63,94,0.18)",
+    },
+    {
+      id: "tasbeeh",
+      label: t("more_tasbeeh"),
+      description: t("more_tasbeeh_sub"),
+      icon: <Hash className="w-6 h-6" />,
+      href: "/tasbeeh",
+      accent: "text-emerald-300",
+      iconBg: "rgba(52,211,153,0.15)",
+    },
+    {
+      id: "bookmarks",
+      label: t("more_bookmarks"),
+      description: t("more_bookmarks_sub"),
+      icon: <Bookmark className="w-6 h-6" />,
+      href: "/bookmarks",
+      accent: "text-sky-300",
+      iconBg: "rgba(56,189,248,0.15)",
+    },
+    {
+      id: "gifts",
+      label: t("more_gifts"),
+      description: t("more_gifts_sub"),
+      icon: <Gift className="w-6 h-6" />,
+      href: "/islamic-gifts",
+      accent: "text-purple-300",
+      iconBg: "rgba(168,85,247,0.15)",
+    },
+    {
+      id: "downloads",
+      label: t("more_downloads"),
+      description: t("more_downloads_sub"),
+      icon: <Download className="w-6 h-6" />,
+      href: "/downloads",
+      accent: "text-teal-300",
+      iconBg: "rgba(45,212,191,0.15)",
+    },
+    {
+      id: "notifications",
+      label: t("more_notif_item"),
+      description: t("more_notif_sub"),
+      icon: <Bell className="w-6 h-6" />,
+      href: "/notifications",
+      accent: "text-yellow-300",
+      iconBg: "rgba(234,179,8,0.15)",
+    },
+    {
+      id: "settings",
+      label: t("more_settings"),
+      description: t("more_settings_sub"),
+      icon: <Settings className="w-6 h-6" />,
+      href: "/settings",
+      accent: "text-slate-300",
+      iconBg: "rgba(148,163,184,0.15)",
+    },
+    {
+      id: "about",
+      label: t("more_about"),
+      description: t("more_about_sub"),
+      icon: <Info className="w-6 h-6" />,
+      href: "/about",
+      accent: "text-emerald-300",
+      iconBg: "rgba(52,211,153,0.12)",
+    },
+  ];
+
   return (
     <div
       className="min-h-screen pb-28 md:pb-10 animate-in fade-in duration-500"
@@ -166,8 +158,8 @@ export function More() {
     >
       {/* Header */}
       <div className="px-6 pt-8 pb-5">
-        <h1 className="text-3xl font-serif font-bold text-emerald-300">More</h1>
-        <p className="text-emerald-600 text-sm mt-1">All features & tools</p>
+        <h1 className="text-3xl font-serif font-bold text-emerald-300">{t("more_title")}</h1>
+        <p className="text-emerald-600 text-sm mt-1">{t("more_subtitle")}</p>
       </div>
 
       {/* Share App + Rate App — side by side prominent cards */}
@@ -188,11 +180,11 @@ export function More() {
             <Share2 className="w-6 h-6" />
           </div>
           <div className="flex-1 min-w-0">
-            <p className="text-white font-bold text-base">Share Noor Quran</p>
-            <p className="text-emerald-500 text-sm mt-0.5">Invite friends via WhatsApp, Telegram & more</p>
+            <p className="text-white font-bold text-base">{t("more_share")}</p>
+            <p className="text-emerald-500 text-sm mt-0.5">{t("more_share_sub")}</p>
           </div>
           <span className="text-emerald-600 text-xs px-2 py-1 rounded-full border border-emerald-800/40 shrink-0">
-            Share
+            {t("more_share_badge")}
           </span>
         </button>
 
@@ -213,10 +205,9 @@ export function More() {
             <Star className="w-6 h-6 fill-amber-300" />
           </div>
           <div className="flex-1 min-w-0">
-            <p className="text-white font-bold text-base">Rate Noor Quran</p>
-            <p className="text-amber-600 text-sm mt-0.5">Support us with your review on Play Store</p>
+            <p className="text-white font-bold text-base">{t("more_rate")}</p>
+            <p className="text-amber-600 text-sm mt-0.5">{t("more_rate_sub")}</p>
           </div>
-          {/* 5 mini stars */}
           <div className="flex gap-0.5 shrink-0">
             {[1,2,3,4,5].map((s) => (
               <Star key={s} className="w-3 h-3 fill-amber-400 text-amber-400" />
@@ -258,7 +249,7 @@ export function More() {
 
       {/* Footer */}
       <p className="text-center text-emerald-900 text-xs mt-6 pb-4">
-        Noor Quran · Made with ❤️ for the Ummah
+        {t("more_footer")}
       </p>
     </div>
   );

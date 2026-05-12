@@ -114,15 +114,25 @@ export function setLang(lang: TranslationLanguage): void {
   localStorage.setItem(LANG_KEY, lang);
 }
 
+// ── UI Language (app interface language) ──────────────────────────────────────
+// Separate from the Quran translation language above.
+// Managed by src/lib/i18n-context.tsx — stored under "noor-ui-lang".
+// Default: "english".  This file only provides the storage key constant.
+export const UI_LANG_KEY = "noor-ui-lang";
+
 // ── One-time defaults initialiser ─────────────────────────────────────────────
 // Called once on app start to guarantee clean first-launch state.
 const INIT_KEY = "noor-defaults-v1";
 
 export function initDefaults(): void {
   if (localStorage.getItem(INIT_KEY)) return; // already initialized
-  // Guarantee Urdu is default language on first launch
+  // Guarantee Urdu is default Quran translation language on first launch
   if (!localStorage.getItem(LANG_KEY)) {
     localStorage.setItem(LANG_KEY, "urdu");
+  }
+  // Guarantee English is default UI language on first launch
+  if (!localStorage.getItem(UI_LANG_KEY)) {
+    localStorage.setItem(UI_LANG_KEY, "english");
   }
   localStorage.setItem(INIT_KEY, "1");
 }

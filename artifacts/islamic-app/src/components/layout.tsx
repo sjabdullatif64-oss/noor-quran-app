@@ -6,12 +6,14 @@ import {
 } from "lucide-react";
 import { useTheme } from "./theme-provider";
 import { Button } from "./ui/button";
+import { useI18n } from "@/lib/i18n-context";
 
 const MORE_PATHS = ["/more", "/qibla", "/favorites", "/tasbeeh", "/settings", "/islamic-gifts", "/downloads", "/notifications", "/about", "/privacy-policy", "/updates", "/writing", "/islamic-calendar"];
 
 export function Layout({ children }: { children: React.ReactNode }) {
   const [location] = useLocation();
   const { theme, setTheme } = useTheme();
+  const { t } = useI18n();
 
   const isDarkPage = ["/qibla", "/more", "/favorites", "/tasbeeh", "/settings", "/islamic-gifts", "/downloads", "/notifications", "/about", "/privacy-policy", "/updates", "/writing", "/islamic-calendar", "/prayer-times"].includes(location);
   const isMoreActive = MORE_PATHS.some((p) => location.startsWith(p));
@@ -54,24 +56,24 @@ export function Layout({ children }: { children: React.ReactNode }) {
         </div>
 
         <nav className="flex flex-col gap-1 flex-1">
-          <NavItem href="/" icon={<HomeIcon className="w-5 h-5" />} label="Home" active={location === "/"} />
-          <NavItem href="/quran" icon={<Book className="w-5 h-5" />} label="Quran" active={location === "/quran" || location.startsWith("/quran/")} />
-          <NavItem href="/prayer-times" icon={<Compass className="w-5 h-5" />} label="Prayer Times" active={location === "/prayer-times"} />
+          <NavItem href="/" icon={<HomeIcon className="w-5 h-5" />} label={t("nav_home")} active={location === "/"} />
+          <NavItem href="/quran" icon={<Book className="w-5 h-5" />} label={t("nav_quran")} active={location === "/quran" || location.startsWith("/quran/")} />
+          <NavItem href="/prayer-times" icon={<Compass className="w-5 h-5" />} label={t("nav_prayers")} active={location === "/prayer-times"} />
 
           <div className="mt-2 mb-1 px-2">
-            <p className="text-xs text-muted-foreground/60 uppercase tracking-wider font-medium">More</p>
+            <p className="text-xs text-muted-foreground/60 uppercase tracking-wider font-medium">{t("nav_more_section")}</p>
           </div>
-          <NavItem href="/qibla" icon={<Navigation className="w-5 h-5" />} label="Al Haram" active={location === "/qibla"} />
-          <NavItem href="/favorites" icon={<Heart className="w-5 h-5" />} label="Favorites" active={location === "/favorites"} />
-          <NavItem href="/tasbeeh" icon={<Hash className="w-5 h-5" />} label="Tasbeeh" active={location === "/tasbeeh"} />
-          <NavItem href="/bookmarks" icon={<Bookmark className="w-5 h-5" />} label="Bookmarks" active={location === "/bookmarks"} />
-          <NavItem href="/islamic-gifts" icon={<Gift className="w-5 h-5" />} label="Islamic Gifts" active={location === "/islamic-gifts"} />
-          <NavItem href="/downloads" icon={<Download className="w-5 h-5" />} label="Downloads" active={location === "/downloads"} />
-          <NavItem href="/notifications" icon={<Bell className="w-5 h-5" />} label="Notifications" active={location === "/notifications"} />
-          <NavItem href="/settings" icon={<Settings className="w-5 h-5" />} label="Settings" active={location === "/settings"} />
+          <NavItem href="/qibla" icon={<Navigation className="w-5 h-5" />} label={t("nav_al_haram")} active={location === "/qibla"} />
+          <NavItem href="/favorites" icon={<Heart className="w-5 h-5" />} label={t("nav_favorites")} active={location === "/favorites"} />
+          <NavItem href="/tasbeeh" icon={<Hash className="w-5 h-5" />} label={t("nav_tasbeeh")} active={location === "/tasbeeh"} />
+          <NavItem href="/bookmarks" icon={<Bookmark className="w-5 h-5" />} label={t("nav_bookmarks")} active={location === "/bookmarks"} />
+          <NavItem href="/islamic-gifts" icon={<Gift className="w-5 h-5" />} label={t("nav_islamic_gifts")} active={location === "/islamic-gifts"} />
+          <NavItem href="/downloads" icon={<Download className="w-5 h-5" />} label={t("nav_downloads")} active={location === "/downloads"} />
+          <NavItem href="/notifications" icon={<Bell className="w-5 h-5" />} label={t("nav_notifications")} active={location === "/notifications"} />
+          <NavItem href="/settings" icon={<Settings className="w-5 h-5" />} label={t("nav_settings")} active={location === "/settings"} />
         </nav>
 
-        <div className="mt-auto text-xs text-muted-foreground">May peace be upon you.</div>
+        <div className="mt-auto text-xs text-muted-foreground">{t("nav_peace")}</div>
       </div>
 
       {/* Main content */}
@@ -89,14 +91,14 @@ export function Layout({ children }: { children: React.ReactNode }) {
             : "border-border bg-card"
         }`}
       >
-        <MobileNavItem href="/" icon={<HomeIcon className="w-5 h-5" />} label="Home"
-          active={location === "/"} dark={isDarkPage} />
-        <MobileNavItem href="/quran" icon={<Book className="w-5 h-5" />} label="Quran"
-          active={location === "/quran" || location.startsWith("/quran/")} dark={isDarkPage} />
-        <MobileNavItem href="/prayer-times" icon={<Compass className="w-5 h-5" />} label="Prayers"
-          active={location === "/prayer-times"} dark={isDarkPage} />
-        <MobileNavItem href="/more" icon={<MoreHorizontal className="w-5 h-5" />} label="More"
-          active={isMoreActive} dark={isDarkPage} />
+        <MobileNavItem href="/" icon={<HomeIcon className="w-5 h-5" />} label={t("nav_home")}
+          active={location === "/"} dark={isDarkPage} testId="home" />
+        <MobileNavItem href="/quran" icon={<Book className="w-5 h-5" />} label={t("nav_quran")}
+          active={location === "/quran" || location.startsWith("/quran/")} dark={isDarkPage} testId="quran" />
+        <MobileNavItem href="/prayer-times" icon={<Compass className="w-5 h-5" />} label={t("nav_prayers")}
+          active={location === "/prayer-times"} dark={isDarkPage} testId="prayers" />
+        <MobileNavItem href="/more" icon={<MoreHorizontal className="w-5 h-5" />} label={t("nav_more")}
+          active={isMoreActive} dark={isDarkPage} testId="more" />
       </div>
     </div>
   );
@@ -117,8 +119,8 @@ function NavItem({ href, icon, label, active }: { href: string; icon: React.Reac
   );
 }
 
-function MobileNavItem({ href, icon, label, active, dark }: {
-  href: string; icon: React.ReactNode; label: string; active: boolean; dark: boolean;
+function MobileNavItem({ href, icon, label, active, dark, testId }: {
+  href: string; icon: React.ReactNode; label: string; active: boolean; dark: boolean; testId: string;
 }) {
   const activeClass = dark ? "text-emerald-400" : "text-primary";
   const inactiveClass = dark ? "text-emerald-900 hover:text-emerald-700" : "text-muted-foreground hover:text-foreground";
@@ -127,7 +129,7 @@ function MobileNavItem({ href, icon, label, active, dark }: {
     <Link
       href={href}
       className={`flex flex-col items-center gap-0.5 px-3 py-1.5 rounded-xl transition-all ${active ? activeClass : inactiveClass}`}
-      data-testid={`link-mobilenav-${label.toLowerCase()}`}
+      data-testid={`link-mobilenav-${testId}`}
     >
       {icon}
       <span className="text-[10px] font-medium">{label}</span>
