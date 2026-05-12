@@ -1,9 +1,11 @@
 // Noor Quran — Native app initialization
 // Called once at startup (from main.tsx) before React renders.
-// Sets up Status Bar, Notification Channel, AdMob SDK, then hides the Splash Screen.
+// Sets up Status Bar, Notification Channel, AdMob SDK, reschedules
+// any active notifications, then hides the Splash Screen.
 // All calls are gated behind isNative() — zero effect in the browser.
 
 import { setupStatusBar, hideSplash, createNotifChannel, isNative } from "./capacitor";
+import { getNotifSettings, getPermissionState } from "./notifications";
 
 let initialized = false;
 
@@ -15,15 +17,23 @@ export async function initNative(): Promise<void> {
     // 1. Status bar: dark style, #071a0e — must happen before WebView paints
     await setupStatusBar();
 
-    // 2. Notification channel (Android 8+): created at boot so scheduled
-    //    notifications can fire even before the user opens notifications settings
+    // 2. Notification channel (Android 8+): create before scheduling anything.
+    //    Android ignores notifications sent to a non-existent channel.
     await createNotifChannel();
 
     // 3. AdMob SDK initialization — must happen before any ad is requested.
-    //    We call this here (startup) so the first banner on Home loads instantly.
+    //    We call this here (startup) so the first banner loads without delay.
     await initAdMob();
 
-    // 4. Hide splash after a short delay so the app has fully painted
+    // 4. Reschedule active notifications.
+    //    On Android, local notifications are cleared after:
+    //      - Device reboot (RECEIVE_BOOT_COMPLETED handles it via Capacitor's
+    //        LocalNotificationRestoreReceiver, but we re-arm here as extra safety)
+    //      - App update / re-install
+    //    Re-scheduling is idempotent (cancel-all then reschedule enabled only).
+    await restoreNotifications();
+
+    // 5. Hide splash after the app has fully painted
     setTimeout(() => hideSplash(), 800);
   } catch {
     // Never block app startup on native init failures —
@@ -35,21 +45,34 @@ export async function initNative(): Promise<void> {
 
 async function initAdMob(): Promise<void> {
   try {
-    const { AdMob, MaxAdContentRating } = await import(
-      "@capacitor-community/admob"
-    );
+    const { AdMob, MaxAdContentRating } = await import("@capacitor-community/admob");
 
     await AdMob.initialize({
-      // Production mode — real ads for real users
       initializeForTesting: false,
-      // Content rating: General (suitable for all ages — Islamic content)
       maxAdContentRating: MaxAdContentRating.General,
-      // Not a children's app but content is family-safe
       tagForChildDirectedTreatment: false,
       tagForUnderAgeOfConsent: false,
     });
   } catch (err) {
-    // Log but don't throw — ads failing must never crash the app
     console.warn("[AdMob] initialize error:", err);
+  }
+}
+
+// ── Notification restore ──────────────────────────────────────────────────────
+
+async function restoreNotifications(): Promise<void> {
+  try {
+    // Only reschedule if the user has already granted permission
+    const perm = getPermissionState();
+    if (perm !== "granted") return;
+
+    const settings = getNotifSettings();
+    const hasEnabled = Object.values(settings).some((s) => s.enabled);
+    if (!hasEnabled) return;
+
+    const { scheduleNativeNotifications } = await import("./native-scheduler");
+    await scheduleNativeNotifications(settings);
+  } catch {
+    // Scheduling errors must never block startup
   }
 }

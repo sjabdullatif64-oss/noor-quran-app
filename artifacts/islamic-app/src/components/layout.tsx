@@ -107,13 +107,16 @@ export function Layout({ children }: { children: React.ReactNode }) {
         {showBanner && <BannerAd placement="fixed-bottom" />}
       </main>
 
-      {/* Mobile bottom navigation — 4 tabs */}
+      {/* Mobile bottom navigation — 4 tabs
+          padding-bottom uses env(safe-area-inset-bottom) so the nav sits
+          above the Android gesture bar / home indicator on edge-to-edge builds */}
       <div
-        className={`md:hidden flex items-center justify-around px-1 py-2 border-t sticky bottom-0 z-20 ${
+        className={`md:hidden flex items-center justify-around px-1 border-t sticky bottom-0 z-20 ${
           isDarkPage
             ? "border-emerald-950 bg-[#071a0e]"
             : "border-border bg-card"
         }`}
+        style={{ paddingTop: "8px", paddingBottom: "calc(8px + env(safe-area-inset-bottom, 0px))" }}
       >
         <MobileNavItem href="/" icon={<HomeIcon className="w-5 h-5" />} label={t("nav_home")}
           active={location === "/"} dark={isDarkPage} testId="home" />
