@@ -190,6 +190,7 @@ jobs:
             -keystore noor-quran-release.keystore \
             -storepass "${{ secrets.KEYSTORE_PASSWORD }}" \
             -alias "${{ secrets.KEY_ALIAS }}" 2>&1 | grep -E "Alias|Valid|SHA" || true
+          # KEY_ALIAS for this app is: my-key-alias
           echo "KEYSTORE_PATH=$PWD/noor-quran-release.keystore" >> $GITHUB_ENV
           echo "✅ Keystore decoded and verified"
 

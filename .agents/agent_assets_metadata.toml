@@ -1,0 +1,8 @@
+uploads = []
+generated = []
+
+[[outputs]]
+id = "b-Wx88Et6pQ7deKjg8Dwp"
+uri = "file://keystore-base64-for-github.txt"
+type = "text"
+title = "KEYSTORE_BASE64 — paste this into GitHub Secrets"
