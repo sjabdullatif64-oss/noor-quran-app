@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from "react";
+import { useWakeLock } from "@/hooks/useWakeLock";
 import {
   useSurah, ALL_LANGUAGES, TRANSLATION_LABELS, TTS_LANG_CODES,
   RTL_LANGUAGES, TranslationLanguage,
@@ -137,6 +138,9 @@ export function SurahReader() {
     _setPlayMode(m);
     localStorage.setItem(PLAY_MODE_KEY, m);
   }, []);
+
+  // Keep screen awake while reading or playing audio
+  useWakeLock(playState === "playing" || playState === "loading" || playState === "idle");
 
   // ── Refs (read in event callbacks — never stale) ───────────────────────────
   const audioRef         = useRef<HTMLAudioElement | null>(null);

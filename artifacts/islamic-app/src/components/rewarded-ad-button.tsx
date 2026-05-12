@@ -116,20 +116,28 @@ function FallbackScreen({ onClose }: { onClose: () => void }) {
             <div className="h-px flex-1" style={{ background: "rgba(26,92,56,0.4)" }} />
           </div>
 
+          {/* Subtitle */}
+          <p
+            className="text-base font-semibold mb-1"
+            style={{ color: "rgba(134,239,172,0.7)" }}
+          >
+            New rewards coming soon
+          </p>
+
           {/* Message */}
           <p
             className="text-sm leading-relaxed"
-            style={{ color: "rgba(200,230,215,0.85)" }}
+            style={{ color: "rgba(200,230,215,0.75)" }}
           >
             Thank you for supporting Noor Quran.
             <br />
-            Your kindness helps this Islamic app continue to grow for everyone.
+            Your kindness helps this Islamic app grow for everyone.
           </p>
 
           {/* Quranic touch */}
           <p
             className="mt-4 text-xs"
-            style={{ color: "rgba(26,92,56,0.9)", fontStyle: "italic" }}
+            style={{ color: "rgba(52,211,153,0.55)", fontStyle: "italic" }}
           >
             "And whoever does good — Allah is appreciative and Knowing." — Quran 2:158
           </p>
@@ -193,6 +201,9 @@ export function RewardedAdButton() {
         AdMob,
         RewardAdPluginEvents,
       } = await import("@capacitor-community/admob");
+
+      // Initialize AdMob before any ad call (safe to call multiple times)
+      await AdMob.initialize({}).catch(() => { /* already initialized */ });
 
       // Rewarded — user watched enough to earn reward
       const onRewarded = await AdMob.addListener(
