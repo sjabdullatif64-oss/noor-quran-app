@@ -769,6 +769,13 @@ export function SurahReader() {
                     {ayah.textAr}
                   </p>
 
+                  {/* Transliteration (Roman script) — shown when available */}
+                  {ayah.textTranslit && (
+                    <p className="text-sm text-muted-foreground/70 italic leading-relaxed tracking-wide">
+                      {ayah.textTranslit}
+                    </p>
+                  )}
+
                   {/* Translation text */}
                   {ayah.textTranslation ? (
                     <p

@@ -116,18 +116,19 @@ export async function scheduleNativeNotifications(
       const { title, body } = CONTENT[key];
 
       toSchedule.push({
-        id:        NOTIF_IDS[key],
+        id:    NOTIF_IDS[key],
         title,
         body,
         schedule: {
           at,
+          repeats: true,                          // REQUIRED: without this, every: 'day' fires only once
           every: fridayOnly ? "week" : "day",
           allowWhileIdle: true,
         },
-        channelId:  "noor-islamic",
-        smallIcon:  "ic_stat_noor",
-        iconColor:  "#1a5c38",
-        sound:      "default",
+        channelId:    "noor-islamic",
+        smallIcon:    "ic_stat_noor",
+        iconColor:    "#1a5c38",
+        // No `sound` field — let the channel's configured sound play
         actionTypeId: "",
         extra: null,
       });
@@ -188,7 +189,7 @@ export async function sendNativeTestNotification(): Promise<boolean> {
         channelId:    "noor-islamic",
         smallIcon:    "ic_stat_noor",
         iconColor:    "#1a5c38",
-        sound:        "default",
+        // No `sound` field — let the channel's configured sound play
         actionTypeId: "",
         extra: null,
       }],

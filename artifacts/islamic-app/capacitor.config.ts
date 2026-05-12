@@ -38,7 +38,7 @@ const config: CapacitorConfig = {
     LocalNotifications: {
       smallIcon: "ic_stat_noor",
       iconColor: "#1a5c38",
-      sound: "default",
+      // No sound: "default" — Android resolves named sounds from res/raw/ which doesn't have "default.ogg"
     },
     App: {
       backgroundColor: "#071a0e",

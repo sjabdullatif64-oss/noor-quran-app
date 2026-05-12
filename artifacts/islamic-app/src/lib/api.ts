@@ -16,11 +16,12 @@ export interface Surah {
 }
 
 export interface AyahData {
-  numberInSurah: number;
-  globalNumber: number;
-  textAr: string;
+  numberInSurah:   number;
+  globalNumber:    number;
+  textAr:          string;
   textTranslation: string;
-  audioUrl: string;
+  textTranslit:    string;
+  audioUrl:        string;
 }
 
 export interface SurahDetail {
@@ -163,43 +164,59 @@ export const useSurahList = () =>
     staleTime: Infinity,
   });
 
+/** Safely fetch a URL and parse JSON.  Returns null on any error. */
+async function safeFetch(url: string): Promise<unknown> {
+  try {
+    const res = await fetch(url);
+    if (!res.ok) return null;
+    return await res.json();
+  } catch {
+    return null;
+  }
+}
+
 export const useSurah = (number: number, translation: TranslationLanguage) => {
   const edition = TRANSLATION_EDITIONS[translation];
   return useQuery({
     queryKey: ["surah", number, translation],
     queryFn: async () => {
-      const [arRes, trRes] = await Promise.all([
-        fetch(`https://api.alquran.cloud/v1/surah/${number}`),
-        fetch(`https://api.alquran.cloud/v1/surah/${number}/${edition}`),
+      // Fetch Arabic text, selected translation, and transliteration in parallel.
+      // Translation/transliteration failures are isolated — Arabic always loads.
+      const [arData, trData, transitData] = await Promise.all([
+        safeFetch(`https://api.alquran.cloud/v1/surah/${number}`),
+        safeFetch(`https://api.alquran.cloud/v1/surah/${number}/${edition}`),
+        safeFetch(`https://api.alquran.cloud/v1/surah/${number}/en.transliteration`),
       ]);
-      const arData = await arRes.json();
-      const trData = await trRes.json();
 
-      const trAyahs: { text: string }[] = trData?.data?.ayahs ?? [];
+      // Arabic is required — throw so TanStack Query retries
+      const ar = arData as { data: { number: number; name: string; englishName: string; englishNameTranslation: string; numberOfAyahs: number; revelationType: string; ayahs: Ayah[] } } | null;
+      if (!ar?.data?.ayahs) throw new Error("Arabic surah fetch failed");
 
-      const ayahs: AyahData[] = arData.data.ayahs.map(
-        (ayah: Ayah, index: number) => ({
-          numberInSurah:   ayah.numberInSurah,
-          globalNumber:    ayah.number,
-          textAr:          ayah.text,
-          textTranslation: trAyahs[index]?.text ?? "",
-          audioUrl:        getAudioUrl(ayah.number),
-        })
-      );
+      const trAyahs: { text: string }[]     = (trData     as { data?: { ayahs?: { text: string }[] } } | null)?.data?.ayahs ?? [];
+      const transitAyahs: { text: string }[] = (transitData as { data?: { ayahs?: { text: string }[] } } | null)?.data?.ayahs ?? [];
+
+      const ayahs: AyahData[] = ar.data.ayahs.map((ayah, index) => ({
+        numberInSurah:   ayah.numberInSurah,
+        globalNumber:    ayah.number,
+        textAr:          ayah.text,
+        textTranslation: trAyahs[index]?.text     ?? "",
+        textTranslit:    transitAyahs[index]?.text ?? "",
+        audioUrl:        getAudioUrl(ayah.number),
+      }));
 
       return {
-        number:                  arData.data.number,
-        name:                    arData.data.name,
-        englishName:             arData.data.englishName,
-        englishNameTranslation:  arData.data.englishNameTranslation,
-        numberOfAyahs:           arData.data.numberOfAyahs,
-        revelationType:          arData.data.revelationType,
+        number:                 ar.data.number,
+        name:                   ar.data.name,
+        englishName:            ar.data.englishName,
+        englishNameTranslation: ar.data.englishNameTranslation,
+        numberOfAyahs:          ar.data.numberOfAyahs,
+        revelationType:         ar.data.revelationType,
         ayahs,
       } as SurahDetail;
     },
     enabled: !!number,
     staleTime: 10 * 60 * 1000,
-    retry: 1,
+    retry: 2,
   });
 };
 

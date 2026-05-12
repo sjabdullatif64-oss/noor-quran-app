@@ -124,7 +124,8 @@ export async function createNotifChannel(): Promise<void> {
       vibration: true,
       lights: true,
       lightColor: "#1a5c38",
-      sound: "default",
+      // No `sound` field: "default" is not a valid Android sound resource name.
+      // Android will use the device's default notification sound automatically.
     });
   } catch { /* ignore */ }
 }
