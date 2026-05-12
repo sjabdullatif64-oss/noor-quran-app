@@ -1,41 +1,42 @@
 /**
- * BannerAd — Native AdMob banner for Capacitor Android builds.
- *
- * Uses @capacitor-community/admob for a real native Android AdView that
- * overlays on top of the WebView — no browser/iframe ad, no PWA limitation.
+ * BannerAd — Native AdMob adaptive banner for Capacitor Android builds.
  *
  * AdMob App ID  : ca-app-pub-5050437827917011~3831002202  (AndroidManifest.xml)
- * Banner Ad Unit: ca-app-pub-5050437827917011/3064265739
+ * Banner Ad Unit: ca-app-pub-5050437827917011/8806398221
  *
  * Flow:
- *  1. AdMob.initialize() called once at app startup (native-init.ts)
- *  2. On mount: AdMob.showBanner() → native Android AdView renders at BOTTOM_CENTER
- *  3. Plugin fires BannerAdPluginEvents.Loaded → component reserves 50dp height
+ *  1. AdMob.initialize() called once (safe to call multiple times — ignores repeat calls)
+ *  2. On mount: AdMob.showBanner() → native Android AdView at BOTTOM_CENTER
+ *  3. BannerAdPluginEvents.Loaded → reserve BANNER_HEIGHT_PX so content clears the native view
  *  4. On unmount: AdMob.removeBanner() removes the native View cleanly
  *
- * In browser / non-Capacitor env: renders nothing, zero layout impact.
+ * In browser / non-Capacitor: renders nothing, zero layout impact.
+ *
+ * ADAPTIVE_BANNER automatically sizes itself based on device width (typically 50–90 dp).
+ * We reserve 60 dp as a safe default — tall enough for most phones, avoids layout jumps.
  */
 
 import { useEffect, useRef, useState } from "react";
 import { isNative } from "@/lib/capacitor";
 import type { PluginListenerHandle } from "@capacitor/core";
-
-// BannerAdOptions type — only used in the dynamic import path
 import type { BannerAdOptions } from "@capacitor-community/admob";
 
 // ── Constants ─────────────────────────────────────────────────────────────────
-const BANNER_AD_UNIT = "ca-app-pub-5050437827917011/3064265739";
+const BANNER_AD_UNIT   = "ca-app-pub-5050437827917011/8806398221";
 
-/** Standard AdMob banner height in dp (matches BANNER size = 320×50) */
-const BANNER_HEIGHT_PX = 50;
+/**
+ * Spacer height reserved when an ADAPTIVE_BANNER is active.
+ * ADAPTIVE_BANNER on a 360 dp wide phone is ~60 dp; 60 px is a safe reserve.
+ */
+const BANNER_HEIGHT_PX = 60;
 
 // ── Props ─────────────────────────────────────────────────────────────────────
 export interface BannerAdProps {
   /**
-   * "fixed-bottom" — the native banner is anchored at the bottom of the screen.
-   *   A 50dp spacer is injected so content never scrolls under the ad.
-   * "inline" — also shows at bottom (Capacitor native ads are always full-width
-   *   overlays; inline positions are not supported natively). Space is reserved.
+   * "fixed-bottom" — native banner anchored at screen bottom.
+   *   A spacer div is injected so scrollable content never scrolls under the ad.
+   * "inline"       — same native overlay (Capacitor doesn't support mid-page banners),
+   *   but space is reserved inline in the document flow.
    */
   placement?: "fixed-bottom" | "inline";
   className?: string;
@@ -45,15 +46,14 @@ export interface BannerAdProps {
 export function BannerAd({ placement = "fixed-bottom", className = "" }: BannerAdProps) {
   const [adReady, setAdReady] = useState(false);
   const listeners = useRef<PluginListenerHandle[]>([]);
-  const mounted = useRef(true);
+  const mounted   = useRef(true);
+  const adShown   = useRef(false);
 
   useEffect(() => {
-    mounted.current = true;
+    mounted.current  = true;
+    adShown.current  = false;
 
-    // Only run inside the native Capacitor APK shell
     if (!isNative()) return;
-
-    let adShown = false;
 
     async function initBanner() {
       try {
@@ -64,38 +64,35 @@ export function BannerAd({ placement = "fixed-bottom", className = "" }: BannerA
           BannerAdPluginEvents,
         } = await import("@capacitor-community/admob");
 
-        // ── Subscribe to events before calling showBanner ────────────────────
-        const loadedHandle = await AdMob.addListener(
+        // Initialize AdMob SDK — safe to call multiple times (subsequent calls are no-ops)
+        await AdMob.initialize({}).catch(() => { /* already initialized */ });
+
+        // Subscribe to banner events BEFORE calling showBanner to avoid race conditions
+        const onLoaded = await AdMob.addListener(
           BannerAdPluginEvents.Loaded,
-          () => {
-            if (mounted.current) setAdReady(true);
-          }
+          () => { if (mounted.current) setAdReady(true); }
         );
 
-        const failedHandle = await AdMob.addListener(
+        const onFailed = await AdMob.addListener(
           BannerAdPluginEvents.FailedToLoad,
-          (info) => {
-            console.warn("[AdMob] Banner failed to load:", info);
-            if (mounted.current) setAdReady(false);
-          }
+          () => { if (mounted.current) setAdReady(false); }
         );
 
-        listeners.current = [loadedHandle, failedHandle];
+        listeners.current = [onLoaded, onFailed];
 
-        // ── Show native banner ────────────────────────────────────────────────
+        // ADAPTIVE_BANNER adjusts its height based on device screen width
         const options: BannerAdOptions = {
-          adId: BANNER_AD_UNIT,
-          adSize: BannerAdSize.BANNER,
+          adId:     BANNER_AD_UNIT,
+          adSize:   BannerAdSize.ADAPTIVE_BANNER,
           position: BannerAdPosition.BOTTOM_CENTER,
-          margin: 0,
+          margin:   0,
           isTesting: false,
         };
 
         await AdMob.showBanner(options);
-        adShown = true;
-      } catch (err) {
-        // AdMob not available or ad request failed — no layout impact
-        console.warn("[AdMob] showBanner error:", err);
+        adShown.current = true;
+      } catch {
+        // AdMob unavailable or request failed — no layout impact
         if (mounted.current) setAdReady(false);
       }
     }
@@ -105,29 +102,27 @@ export function BannerAd({ placement = "fixed-bottom", className = "" }: BannerA
     return () => {
       mounted.current = false;
 
-      // Remove event listeners
       listeners.current.forEach((h) => h.remove().catch(() => {}));
       listeners.current = [];
 
-      // Remove the native AdView from the screen
-      if (adShown) {
+      if (adShown.current) {
         import("@capacitor-community/admob")
           .then(({ AdMob }) => AdMob.removeBanner())
           .catch(() => {});
+        adShown.current = false;
       }
     };
   }, []);
 
-  // Not in native app, or ad hasn't loaded yet — no space reserved
+  // Nothing to render in browser, or while waiting for the ad to load
   if (!isNative() || !adReady) return null;
 
-  // Ad is live — reserve 50dp so page content doesn't hide under the native overlay
   if (placement === "fixed-bottom") {
     return (
       <>
-        {/* Pushes bottom content above the native AdView */}
+        {/* Spacer — pushes scrollable content above the native AdView */}
         <div style={{ height: BANNER_HEIGHT_PX }} aria-hidden="true" />
-        {/* Marker div — useful for future positioning debugging */}
+        {/* Invisible marker useful for layout debugging */}
         <div
           id="admob-banner-bottom"
           className={`fixed bottom-0 left-0 right-0 z-40 pointer-events-none ${className}`}
@@ -139,7 +134,7 @@ export function BannerAd({ placement = "fixed-bottom", className = "" }: BannerA
     );
   }
 
-  // "inline" — bottom-center native banner, space reserved inline
+  // "inline" — space reserved in document flow; native overlay still appears at bottom
   return (
     <div
       id="admob-banner-inline"

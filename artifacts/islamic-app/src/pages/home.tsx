@@ -5,7 +5,6 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { MapPin, Clock, BookOpen } from "lucide-react";
 import { Link } from "wouter";
 import { getCity, getCountry } from "@/lib/settings";
-import { BannerAd } from "@/components/banner-ad";
 import { useI18n } from "@/lib/i18n-context";
 
 export function Home() {
@@ -178,8 +177,6 @@ export function Home() {
         ))}
       </div>
 
-      {/* AdMob banner — shown only when running inside a native Android WebView */}
-      <BannerAd placement="fixed-bottom" />
     </div>
   );
 }

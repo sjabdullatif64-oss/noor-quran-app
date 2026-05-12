@@ -4,7 +4,6 @@ import {
   ChevronRight, Bell, Info, Share2, Sparkles, PenLine, Star,
   CalendarDays,
 } from "lucide-react";
-import { BannerAd } from "@/components/banner-ad";
 import { useToast } from "@/hooks/use-toast";
 import { useI18n } from "@/lib/i18n-context";
 
@@ -231,9 +230,6 @@ export function More() {
           </button>
         ))}
       </div>
-
-      {/* AdMob banner */}
-      <BannerAd placement="inline" className="mx-4 mt-6 rounded-xl overflow-hidden" />
 
       {/* Footer */}
       <p className="text-center text-emerald-900 text-xs mt-6 pb-4">

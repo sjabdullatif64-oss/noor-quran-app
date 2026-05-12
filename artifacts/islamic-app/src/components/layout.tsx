@@ -7,16 +7,32 @@ import {
 import { useTheme } from "./theme-provider";
 import { Button } from "./ui/button";
 import { useI18n } from "@/lib/i18n-context";
+import { BannerAd } from "@/components/banner-ad";
 
-const MORE_PATHS = ["/more", "/qibla", "/favorites", "/tasbeeh", "/settings", "/islamic-gifts", "/downloads", "/notifications", "/about", "/privacy-policy", "/updates", "/writing", "/islamic-calendar"];
+const MORE_PATHS = [
+  "/more", "/qibla", "/favorites", "/tasbeeh", "/settings", "/islamic-gifts",
+  "/downloads", "/notifications", "/about", "/privacy-policy", "/updates",
+  "/writing", "/islamic-calendar",
+];
+
+// Routes where banners must NEVER appear (Quran reading & fullscreen recitation)
+const NO_AD_ROUTES = ["/quran/"];
 
 export function Layout({ children }: { children: React.ReactNode }) {
   const [location] = useLocation();
   const { theme, setTheme } = useTheme();
   const { t } = useI18n();
 
-  const isDarkPage = ["/qibla", "/more", "/favorites", "/tasbeeh", "/settings", "/islamic-gifts", "/downloads", "/notifications", "/about", "/privacy-policy", "/updates", "/writing", "/islamic-calendar", "/prayer-times"].includes(location);
+  const isDarkPage = [
+    "/qibla", "/more", "/favorites", "/tasbeeh", "/settings", "/islamic-gifts",
+    "/downloads", "/notifications", "/about", "/privacy-policy", "/updates",
+    "/writing", "/islamic-calendar", "/prayer-times",
+  ].includes(location);
+
   const isMoreActive = MORE_PATHS.some((p) => location.startsWith(p));
+
+  // Show banner on every route EXCEPT the Quran reading screen (/quran/:number)
+  const showBanner = !NO_AD_ROUTES.some((r) => location.startsWith(r));
 
   return (
     <div className="min-h-[100dvh] flex flex-col md:flex-row bg-background">
@@ -76,11 +92,19 @@ export function Layout({ children }: { children: React.ReactNode }) {
         <div className="mt-auto text-xs text-muted-foreground">{t("nav_peace")}</div>
       </div>
 
-      {/* Main content */}
-      <main className={`flex-1 flex flex-col min-h-0 overflow-y-auto ${isDarkPage ? "" : ""}`}>
+      {/* Main content + centralized banner spacer */}
+      <main className="flex-1 flex flex-col min-h-0 overflow-y-auto">
         <div className={isDarkPage ? "w-full" : "flex-1 w-full max-w-5xl mx-auto p-4 md:p-8"}>
           {children}
         </div>
+
+        {/*
+          Single centralized banner ad — rendered once for the whole app.
+          Excluded on Quran reading screens (/quran/:number) per AdMob policy guidance
+          (don't show ads on content-consumption pages that require full attention).
+          The spacer div ensures the last page content is never hidden under the native overlay.
+        */}
+        {showBanner && <BannerAd placement="fixed-bottom" />}
       </main>
 
       {/* Mobile bottom navigation — 4 tabs */}
@@ -122,7 +146,7 @@ function NavItem({ href, icon, label, active }: { href: string; icon: React.Reac
 function MobileNavItem({ href, icon, label, active, dark, testId }: {
   href: string; icon: React.ReactNode; label: string; active: boolean; dark: boolean; testId: string;
 }) {
-  const activeClass = dark ? "text-emerald-400" : "text-primary";
+  const activeClass   = dark ? "text-emerald-400" : "text-primary";
   const inactiveClass = dark ? "text-emerald-900 hover:text-emerald-700" : "text-muted-foreground hover:text-foreground";
 
   return (
