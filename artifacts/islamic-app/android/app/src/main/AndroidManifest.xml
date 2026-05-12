@@ -32,6 +32,12 @@
     <!-- Vibration -->
     <uses-permission android:name="android.permission.VIBRATE" />
 
+    <!-- AdMob / Google Mobile Ads — required on Android 12+ (API 31+).
+         Grants access to the Advertising ID so AdMob can serve personalised ads
+         and attribute conversions correctly. Without this declaration Google Play
+         may reject the AAB with a "Missing AD_ID permission" policy violation. -->
+    <uses-permission android:name="com.google.android.gms.permission.AD_ID" />
+
     <application
         android:name=".MainApplication"
         android:allowBackup="false"
