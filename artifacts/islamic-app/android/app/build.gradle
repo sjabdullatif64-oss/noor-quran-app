@@ -91,14 +91,10 @@ dependencies {
     implementation project(':capacitor-haptics')
     implementation project(':capacitor-network')
 
-    // AdMob — Capacitor community plugin (pulls in play-services-ads 24.9+ & UMP 4.0)
-    // The plugin module MUST be included here so its AndroidManifest and the
-    // Google Mobile Ads SDK AAR manifest are both fed into the manifest merger.
-    // Without this line, play-services-ads is never compiled in and Google Play
-    // cannot detect a valid AdMob integration → AD_ID check fails.
+    // AdMob — Capacitor community plugin (pulls in play-services-ads + UMP)
     implementation project(':capacitor-community-admob')
 
-    // UMP (User Messaging Platform / consent) — kept in sync with plugin default
+    // UMP (User Messaging Platform / consent) — synced with plugin default
     implementation 'com.google.android.ump:user-messaging-platform:4.0.0'
 
     // AndroidX
@@ -113,4 +109,48 @@ dependencies {
 
     // Kotlin stdlib
     implementation "org.jetbrains.kotlin:kotlin-stdlib:$kotlin_version"
+}
+
+// ── AD_ID permission: post-merge safety net ────────────────────────────────────
+//
+// LAYER 1: app/src/main/AndroidManifest.xml declares the permission with
+//          tools:node="replace" so the app's declaration beats any library AAR.
+//
+// LAYER 2 (this block): runs immediately AFTER AGP's processReleaseManifest task
+//          writes the merged AndroidManifest.xml to disk.  It reads the merged
+//          file, checks for the AD_ID permission, and force-injects it if absent.
+//          This is the nuclear option — it is immune to AAR manifest suppression,
+//          Gradle caching quirks, and SDK version changes.
+//
+// After the build completes, verify with:
+//   grep "AD_ID" app/build/intermediates/merged_manifests/release/AndroidManifest.xml
+//
+afterEvaluate {
+    tasks.matching { it.name ==~ /process.*ReleaseManifest/ }.configureEach { task ->
+        task.doLast {
+            // AGP 7+ exposes the merged manifest directory via this provider.
+            def outDir   = task.manifestOutputDirectory.get().asFile
+            def manifest = new File(outDir, 'AndroidManifest.xml')
+            if (!manifest.exists()) {
+                println "⚠️  [AD_ID check] Merged manifest not found at: ${manifest.absolutePath}"
+                return
+            }
+
+            def content = manifest.text
+            def adId    = 'com.google.android.gms.permission.AD_ID'
+
+            if (content.contains(adId)) {
+                println "✅ [AD_ID check] Permission present in merged release manifest — no action needed."
+            } else {
+                println "⚠️  [AD_ID check] Permission MISSING from merged manifest — force-injecting now."
+                // Insert immediately before the first existing <uses-permission> tag so
+                // it groups naturally with the other permissions.
+                def injection = '    <uses-permission android:name="com.google.android.gms.permission.AD_ID"/>\n'
+                def patched   = content.replaceFirst('(?s)(<uses-permission)', injection + '$1')
+                manifest.text = patched
+                println "✅ [AD_ID check] Injection complete. Verify:"
+                println "     grep AD_ID app/build/intermediates/merged_manifests/release/AndroidManifest.xml"
+            }
+        }
+    }
 }
