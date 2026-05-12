@@ -6,11 +6,20 @@
  *
  * Flow (native APK):
  *  1. User taps button → prepareRewardVideoAd() starts loading
- *  2. Ad loads successfully → showRewardVideoAd() presents the full-screen ad
- *  3. On Rewarded or Dismissed → show JazakAllah toast
- *  4. On any error / no inventory → beautiful fallback screen (never a blank or crash)
+ *  2. Ad loads (Loaded event) → showRewardVideoAd() presents full-screen ad
+ *  3. User earns reward (Rewarded event) → wasRewarded = true, thank-you toast
+ *  4. Ad closes (Dismissed event) → reset to idle (toast already shown if rewarded)
+ *                                   OR show fallback if user skipped without reward
+ *  5. Any load/show failure → beautiful fallback screen (never a blank or crash)
  *
  * In browser / non-Capacitor: shows the thank-you toast directly (no-op ad).
+ *
+ * Bug fixes in this version vs previous:
+ *  - wasRewarded ref prevents double toast (Rewarded + Dismissed both fired)
+ *  - clearListeners() never called INSIDE an event handler (causes handle to
+ *    remove itself while executing, which is unsafe in some native bridges)
+ *  - mountedRef correctly initialised once and cleared only on unmount
+ *  - 30-second load timeout → fallback if ad never responds
  *
  * Google Play policy compliance:
  *  - Fully voluntary — user must tap to start
@@ -24,9 +33,10 @@ import { useToast } from "@/hooks/use-toast";
 import type { PluginListenerHandle } from "@capacitor/core";
 
 // ── Constants ─────────────────────────────────────────────────────────────────
-const REWARDED_AD_UNIT = "ca-app-pub-5050437827917011/8806398221";
-const JAZAK_TITLE      = "JazakAllah Khair 🌙";
-const JAZAK_MSG        = "JazakAllah for supporting Noor Quran 🌙";
+const REWARDED_AD_UNIT  = "ca-app-pub-5050437827917011/8806398221";
+const JAZAK_TITLE       = "JazakAllah Khair 🌙";
+const JAZAK_MSG         = "JazakAllah for supporting Noor Quran 🌙";
+const LOAD_TIMEOUT_MS   = 30_000; // give the ad network 30 s to respond
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 type AdState = "idle" | "loading" | "showing" | "done" | "fallback";
@@ -36,7 +46,6 @@ function FallbackScreen({ onClose }: { onClose: () => void }) {
   const [visible, setVisible] = useState(false);
 
   useEffect(() => {
-    // Trigger fade-in after mount
     const t = setTimeout(() => setVisible(true), 10);
     return () => clearTimeout(t);
   }, []);
@@ -161,24 +170,48 @@ function FallbackScreen({ onClose }: { onClose: () => void }) {
 
 // ── Component ─────────────────────────────────────────────────────────────────
 export function RewardedAdButton() {
-  const [adState, setAdState]   = useState<AdState>("idle");
-  const { toast }               = useToast();
-  const listeners               = useRef<PluginListenerHandle[]>([]);
-  const mountedRef              = useRef(true);
+  const [adState, setAdState] = useState<AdState>("idle");
+  const { toast }             = useToast();
 
-  // Cleanup listeners helper
-  function clearListeners() {
+  // Lifecycle refs — never trigger re-renders
+  const mountedRef    = useRef(true);
+  const wasRewarded   = useRef(false);        // true once Rewarded event fires
+  const listeners     = useRef<PluginListenerHandle[]>([]);
+  const loadTimer     = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Mark unmounted on cleanup — prevents setState after unmount
+  useEffect(() => {
+    mountedRef.current = true;
+    return () => {
+      mountedRef.current = false;
+      clearLoadTimer();
+      cleanupListeners();
+    };
+  }, []);
+
+  function clearLoadTimer() {
+    if (loadTimer.current) {
+      clearTimeout(loadTimer.current);
+      loadTimer.current = null;
+    }
+  }
+
+  function cleanupListeners() {
     listeners.current.forEach((h) => h.remove().catch(() => {}));
     listeners.current = [];
   }
 
+  function safeSetState(s: AdState) {
+    if (mountedRef.current) setAdState(s);
+  }
+
   function showFallback() {
-    clearListeners();
-    if (mountedRef.current) setAdState("fallback");
+    clearLoadTimer();
+    safeSetState("fallback");
   }
 
   function closeFallback() {
-    if (mountedRef.current) setAdState("idle");
+    safeSetState("idle");
   }
 
   async function handleSupport() {
@@ -187,60 +220,29 @@ export function RewardedAdButton() {
     // ── Browser / web fallback — show thank-you toast directly ──────────────
     if (!isNative()) {
       toast({ title: JAZAK_TITLE, description: JAZAK_MSG });
-      setAdState("done");
-      setTimeout(() => { if (mountedRef.current) setAdState("idle"); }, 4000);
+      safeSetState("done");
+      setTimeout(() => safeSetState("idle"), 4000);
       return;
     }
 
     // ── Native APK — load and show rewarded ad ───────────────────────────────
-    setAdState("loading");
-    mountedRef.current = true;
+    wasRewarded.current = false;
+    safeSetState("loading");
 
     try {
-      const {
-        AdMob,
-        RewardAdPluginEvents,
-      } = await import("@capacitor-community/admob");
+      const { AdMob, RewardAdPluginEvents } = await import("@capacitor-community/admob");
 
-      // Initialize AdMob before any ad call (safe to call multiple times)
-      await AdMob.initialize({}).catch(() => { /* already initialized */ });
+      // Safe re-init guard — no-ops if AdMob is already initialised
+      await AdMob.initialize({}).catch(() => {});
 
-      // Rewarded — user watched enough to earn reward
-      const onRewarded = await AdMob.addListener(
-        RewardAdPluginEvents.Rewarded,
-        () => {
-          if (mountedRef.current) {
-            toast({ title: JAZAK_TITLE, description: JAZAK_MSG });
-            setAdState("done");
-          }
-        }
-      );
-
-      // Dismissed — ad closed (say thank you regardless of completion)
-      const onDismissed = await AdMob.addListener(
-        RewardAdPluginEvents.Dismissed,
-        () => {
-          clearListeners();
-          if (mountedRef.current) {
-            toast({ title: JAZAK_TITLE, description: JAZAK_MSG });
-            setAdState("done");
-            setTimeout(() => { if (mountedRef.current) setAdState("idle"); }, 4000);
-          }
-        }
-      );
-
-      // Failed to show — ad loaded but couldn't display
-      const onFailedToShow = await AdMob.addListener(
-        RewardAdPluginEvents.FailedToShow,
-        () => showFallback()
-      );
-
-      // Loaded — ready to show
+      // Register ALL listeners BEFORE calling prepareRewardVideoAd so we
+      // never miss an event that fires immediately after load starts.
       const onLoaded = await AdMob.addListener(
         RewardAdPluginEvents.Loaded,
         async () => {
+          clearLoadTimer();
           if (!mountedRef.current) return;
-          setAdState("showing");
+          safeSetState("showing");
           try {
             await AdMob.showRewardVideoAd();
           } catch {
@@ -249,21 +251,67 @@ export function RewardedAdButton() {
         }
       );
 
-      // Failed to load — no inventory or network issue
+      // Rewarded: user watched enough to earn the reward
+      const onRewarded = await AdMob.addListener(
+        RewardAdPluginEvents.Rewarded,
+        () => {
+          wasRewarded.current = true;
+          if (!mountedRef.current) return;
+          toast({ title: JAZAK_TITLE, description: JAZAK_MSG });
+          safeSetState("done");
+        }
+      );
+
+      // Dismissed: ad closed (fires after Rewarded on success, or alone on skip)
+      // NOTE: never call cleanupListeners() inside a listener callback — removing
+      // a handle while its own event is still propagating is unsafe in some native
+      // bridges. Let the useEffect cleanup handle it on unmount.
+      const onDismissed = await AdMob.addListener(
+        RewardAdPluginEvents.Dismissed,
+        () => {
+          if (!mountedRef.current) return;
+          if (wasRewarded.current) {
+            // Toast already shown by onRewarded — just reset after a delay
+            setTimeout(() => safeSetState("idle"), 4000);
+          } else {
+            // User skipped the ad — show a brief thank-you anyway
+            toast({ title: "JazakAllah 🌙", description: "Thanks for trying! Your support means the world." });
+            safeSetState("done");
+            setTimeout(() => safeSetState("idle"), 3000);
+          }
+        }
+      );
+
+      // FailedToShow: ad loaded but could not be presented (e.g., already showing)
+      const onFailedToShow = await AdMob.addListener(
+        RewardAdPluginEvents.FailedToShow,
+        () => showFallback()
+      );
+
+      // FailedToLoad: no inventory or network issue
       const onFailedToLoad = await AdMob.addListener(
         RewardAdPluginEvents.FailedToLoad,
         () => showFallback()
       );
 
-      listeners.current = [onLoaded, onRewarded, onDismissed, onFailedToLoad, onFailedToShow];
+      listeners.current = [onLoaded, onRewarded, onDismissed, onFailedToShow, onFailedToLoad];
+
+      // Safety net: if neither Loaded nor FailedToLoad fires within 30 s,
+      // show fallback so the button doesn't stay "loading" indefinitely.
+      // The timer is cleared in onLoaded (before showRewardVideoAd), so this
+      // only fires when the ad network truly fails to respond.
+      loadTimer.current = setTimeout(() => {
+        if (mountedRef.current) showFallback();
+      }, LOAD_TIMEOUT_MS);
 
       // Start loading the ad
       await AdMob.prepareRewardVideoAd({
-        adId: REWARDED_AD_UNIT,
+        adId:      REWARDED_AD_UNIT,
         isTesting: false,
       });
 
     } catch {
+      // Plugin unavailable or unexpected error
       showFallback();
     }
   }

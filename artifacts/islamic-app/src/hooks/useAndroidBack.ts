@@ -1,98 +1,95 @@
-// Noor Quran — Android hardware back-button handling via @capacitor/app.
+// Noor Quran — Android hardware back-button handling.
 //
-// Behaviour:
-//  • On any non-root page  → navigate to parent route (Wouter location-based, not history)
-//  • On root "/" first press → show "Press back again to exit" toast, start 2 s timer
-//  • On root "/" second press within 2 s → exit the app
-//  • Timer resets if user waits longer than 2 s before pressing again
+// Strategy:
+//  • Non-root page → window.history.back() (WebView handles it; Wouter
+//    reacts to the popstate event naturally — no fragile setLocation calls)
+//  • Root "/" first press  → "Press back again to exit" toast + 2 s timer
+//  • Root "/" second press within 2 s → App.exitApp()
 //
-// Why we ignore canGoBack:
-//   In a Wouter SPA Capacitor app, the WebView's browser history always has at
-//   least one entry (the initial load), so canGoBack is virtually always true.
-//   Relying on it causes window.history.back() to fire even at the logical app
-//   root, which skips our exit logic entirely. We use Wouter location instead.
+// Why window.history.back() instead of Wouter setLocation():
+//   setLocation() pushes a new history entry; back() pops the existing one.
+//   Popping is exactly what the Android back button should do.
 //
-// No-ops entirely in the browser (non-native build).
+// Why we ignore canGoBack from the Capacitor event:
+//   In a Wouter SPA the WebView always has history entries after any navigation,
+//   so canGoBack is virtually always true and cannot reliably signal "at root".
+//   We use window.history.length and the Wouter location instead.
+//
+// No-ops in the browser — App.addListener resolves but the event never fires
+// because there is no hardware back button.
 
 import { useEffect, useRef } from "react";
 import { useLocation } from "wouter";
 import { App } from "@capacitor/app";
-import { isNative } from "../lib/capacitor";
 
-// ── Lightweight DOM toast (no React state, no hooks) ──────────────────────────
+// ── DOM toast — no React state, no hooks ─────────────────────────────────────
 function showExitToast() {
-  const existing = document.getElementById("noor-exit-toast");
-  if (existing) existing.remove();
+  const TOAST_ID = "noor-exit-toast";
+  const existing = document.getElementById(TOAST_ID);
+  if (existing) { existing.remove(); }
 
   const el = document.createElement("div");
-  el.id = "noor-exit-toast";
+  el.id = TOAST_ID;
   el.textContent = "Press back again to exit Noor Quran";
   el.setAttribute("role", "status");
   el.setAttribute("aria-live", "polite");
 
   Object.assign(el.style, {
-    position:      "fixed",
-    bottom:        "96px",
-    left:          "50%",
-    transform:     "translateX(-50%)",
-    background:    "rgba(10,31,18,0.92)",
-    color:         "#86efac",
-    padding:       "12px 22px",
-    borderRadius:  "999px",
-    fontSize:      "14px",
-    fontFamily:    "system-ui, sans-serif",
-    fontWeight:    "600",
-    zIndex:        "99999",
-    pointerEvents: "none",
-    whiteSpace:    "nowrap",
-    border:        "1px solid rgba(26,92,56,0.6)",
-    boxShadow:     "0 4px 20px rgba(0,0,0,0.5)",
-    opacity:       "0",
-    transition:    "opacity 0.18s ease",
+    position:        "fixed",
+    bottom:          "100px",
+    left:            "50%",
+    transform:       "translateX(-50%)",
+    background:      "rgba(7,26,14,0.96)",
+    color:           "#86efac",
+    padding:         "13px 24px",
+    borderRadius:    "999px",
+    fontSize:        "14px",
+    fontFamily:      "system-ui, -apple-system, sans-serif",
+    fontWeight:      "600",
+    zIndex:          "2147483647",
+    pointerEvents:   "none",
+    whiteSpace:      "nowrap",
+    border:          "1px solid rgba(26,92,56,0.7)",
+    boxShadow:       "0 6px 32px rgba(0,0,0,0.7), 0 0 0 1px rgba(52,211,153,0.12)",
+    opacity:         "0",
+    transition:      "opacity 0.18s ease",
+    letterSpacing:   "0.01em",
   });
 
   document.body.appendChild(el);
-  requestAnimationFrame(() => { el.style.opacity = "1"; });
+  requestAnimationFrame(() => {
+    requestAnimationFrame(() => { el.style.opacity = "1"; });
+  });
 
   setTimeout(() => {
     el.style.opacity = "0";
-    setTimeout(() => el.remove(), 200);
-  }, 2000);
+    el.addEventListener("transitionend", () => el.remove(), { once: true });
+  }, 2200);
 }
 
+// ── Hook ──────────────────────────────────────────────────────────────────────
 export function useAndroidBack() {
-  const [location, setLocation] = useLocation();
+  const [location] = useLocation();
+  const locationRef    = useRef(location);
+  const backPressCount = useRef(0);
+  const backTimer      = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // useRef so the closure inside addListener always sees the latest values
-  const locationRef      = useRef(location);
-  const setLocationRef   = useRef(setLocation);
-  const backPressCount   = useRef(0);
-  const backTimer        = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-  // Keep refs in sync with current values (no effect re-subscription needed)
+  // Keep ref in sync — the listener always reads the latest value without
+  // needing to re-register every time location changes.
   useEffect(() => { locationRef.current = location; }, [location]);
-  useEffect(() => { setLocationRef.current = setLocation; }, [setLocation]);
 
   useEffect(() => {
-    if (!isNative()) return;
-
-    let listenerHandle: { remove: () => void } | null = null;
+    let handle: { remove: () => void } | null = null;
     let unmounted = false;
 
-    // App.addListener returns Promise<PluginListenerHandle> in Capacitor v8
     App.addListener("backButton", () => {
-      const loc       = locationRef.current;
-      const navigate  = setLocationRef.current;
-      const isRoot    = loc === "/" || loc === "";
+      const loc    = locationRef.current;
+      const isRoot = loc === "/" || loc === "";
 
-      // ── Non-root: go up one level in our Wouter route tree ───────────────
+      // ── Non-root: let the WebView pop its own history ─────────────────────
+      // Wouter automatically reacts to the resulting popstate event.
       if (!isRoot) {
-        const parts = loc.split("/").filter(Boolean);
-        if (parts.length > 1) {
-          navigate("/" + parts.slice(0, -1).join("/"));
-        } else {
-          navigate("/");
-        }
+        window.history.back();
         return;
       }
 
@@ -110,19 +107,19 @@ export function useAndroidBack() {
         backPressCount.current = 0;
         App.exitApp().catch(() => {});
       }
-    }).then((handle) => {
-      if (unmounted) {
-        handle.remove(); // cleanup already ran before the Promise resolved
-      } else {
-        listenerHandle = handle;
-      }
-    });
+    })
+      .then((h) => {
+        if (unmounted) h.remove();
+        else           handle = h;
+      })
+      .catch(() => {
+        // App plugin unavailable (browser) — no-op
+      });
 
     return () => {
       unmounted = true;
-      listenerHandle?.remove();
+      handle?.remove();
       if (backTimer.current) clearTimeout(backTimer.current);
     };
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []); // ← intentionally empty: refs keep everything fresh without re-subscribing
+  }, []); // intentionally empty — locationRef keeps everything fresh
 }

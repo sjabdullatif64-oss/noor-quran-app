@@ -6,6 +6,7 @@ import {
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useI18n } from "@/lib/i18n-context";
+import { RewardedAdButton } from "@/components/rewarded-ad-button";
 
 const APP_SHARE_URL = "https://play.google.com/store/apps/details?id=com.sj64noorquran";
 const APP_SHARE_MSG =
@@ -201,6 +202,11 @@ export function More() {
             ))}
           </div>
         </button>
+      </div>
+
+      {/* Support Noor Quran — Rewarded Ad */}
+      <div className="px-4 mb-4">
+        <RewardedAdButton />
       </div>
 
       {/* Feature grid */}

@@ -63,9 +63,13 @@ export function isInstalledPWA(): boolean {
  * Capacitor injects window.Capacitor before the page script runs.
  */
 export function isCapacitorApp(): boolean {
+  // Must call isNativePlatform() — @capacitor/core injects window.Capacitor in
+  // browser builds too (isNativePlatform returns false there), so just checking
+  // !!window.Capacitor incorrectly returns true in the browser.
   return (
     typeof window !== "undefined" &&
-    !!(window as Window & { Capacitor?: { isNativePlatform?: () => boolean } }).Capacitor
+    !!(window as Window & { Capacitor?: { isNativePlatform?: () => boolean } })
+      .Capacitor?.isNativePlatform?.()
   );
 }
 

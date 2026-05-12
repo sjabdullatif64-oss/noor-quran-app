@@ -1,22 +1,67 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
     Network security config for Noor Quran.
-    Only HTTPS is allowed; no cleartext traffic.
-    Trusted APIs: alquran.cloud, aladhan.com, cdn.islamic.network, everyayah.com
+    Only HTTPS is allowed — no cleartext traffic anywhere.
+
+    Explicitly trusted domains (system + user certs) for all API calls so that
+    Android devices with older or missing intermediate CA certs still succeed:
+      - api.alquran.cloud   — Quran text & translations
+      - cdn.islamic.network — Quran audio (Afasy CDN)
+      - api.aladhan.com     — Prayer times
+      - Google AdMob        — banner & rewarded ads
 -->
 <network-security-config>
+    <!-- Default: HTTPS only, system certs -->
     <base-config cleartextTrafficPermitted="false">
         <trust-anchors>
             <certificates src="system" />
         </trust-anchors>
     </base-config>
 
-    <!-- Allow the Capacitor local server (always HTTPS via androidScheme=https) -->
+    <!-- Capacitor local server -->
     <domain-config cleartextTrafficPermitted="false">
         <domain includeSubdomains="true">localhost</domain>
         <trust-anchors>
             <certificates src="system" />
             <certificates src="user" />
+        </trust-anchors>
+    </domain-config>
+
+    <!-- AlQuran Cloud — Quran text & translations -->
+    <domain-config cleartextTrafficPermitted="false">
+        <domain includeSubdomains="true">alquran.cloud</domain>
+        <trust-anchors>
+            <certificates src="system" />
+            <certificates src="user" />
+        </trust-anchors>
+    </domain-config>
+
+    <!-- Islamic CDN — Afasy audio -->
+    <domain-config cleartextTrafficPermitted="false">
+        <domain includeSubdomains="true">islamic.network</domain>
+        <trust-anchors>
+            <certificates src="system" />
+            <certificates src="user" />
+        </trust-anchors>
+    </domain-config>
+
+    <!-- Aladhan — prayer times -->
+    <domain-config cleartextTrafficPermitted="false">
+        <domain includeSubdomains="true">aladhan.com</domain>
+        <trust-anchors>
+            <certificates src="system" />
+            <certificates src="user" />
+        </trust-anchors>
+    </domain-config>
+
+    <!-- Google AdMob / ads infrastructure -->
+    <domain-config cleartextTrafficPermitted="false">
+        <domain includeSubdomains="true">googlesyndication.com</domain>
+        <domain includeSubdomains="true">doubleclick.net</domain>
+        <domain includeSubdomains="true">googleadservices.com</domain>
+        <domain includeSubdomains="true">google.com</domain>
+        <trust-anchors>
+            <certificates src="system" />
         </trust-anchors>
     </domain-config>
 </network-security-config>

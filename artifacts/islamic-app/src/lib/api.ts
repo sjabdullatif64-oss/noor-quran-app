@@ -164,13 +164,20 @@ export const useSurahList = () =>
     staleTime: Infinity,
   });
 
-/** Safely fetch a URL and parse JSON.  Returns null on any error. */
+/** Safely fetch a URL and parse JSON.
+ *  Returns null on any error, non-OK response, or if the request takes > 15 s.
+ *  The 15-second timeout prevents Android WebView from hanging indefinitely on
+ *  slow or unreachable API endpoints and lets the caller fall back gracefully. */
 async function safeFetch(url: string): Promise<unknown> {
+  const controller = new AbortController();
+  const timeout    = setTimeout(() => controller.abort(), 15_000);
   try {
-    const res = await fetch(url);
+    const res = await fetch(url, { signal: controller.signal });
+    clearTimeout(timeout);
     if (!res.ok) return null;
     return await res.json();
   } catch {
+    clearTimeout(timeout);
     return null;
   }
 }
