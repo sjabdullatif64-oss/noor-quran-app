@@ -33,10 +33,13 @@
     <uses-permission android:name="android.permission.VIBRATE" />
 
     <!-- AdMob / Google Mobile Ads — required on Android 12+ (API 31+).
-         Grants access to the Advertising ID so AdMob can serve personalised ads
-         and attribute conversions correctly. Without this declaration Google Play
-         may reject the AAB with a "Missing AD_ID permission" policy violation. -->
-    <uses-permission android:name="com.google.android.gms.permission.AD_ID" />
+         tools:node="replace" is the force-inject directive: it tells the manifest
+         merger that THIS app-level declaration wins unconditionally, preventing
+         any library AAR (including play-services-ads itself) from suppressing or
+         removing the permission during the release manifest merge. -->
+    <uses-permission
+        android:name="com.google.android.gms.permission.AD_ID"
+        tools:node="replace" />
 
     <application
         android:name=".MainApplication"

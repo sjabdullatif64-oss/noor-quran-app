@@ -91,9 +91,15 @@ dependencies {
     implementation project(':capacitor-haptics')
     implementation project(':capacitor-network')
 
-    // AdMob — Capacitor community plugin + Google Mobile Ads SDK
+    // AdMob — Capacitor community plugin (pulls in play-services-ads 24.9+ & UMP 4.0)
+    // The plugin module MUST be included here so its AndroidManifest and the
+    // Google Mobile Ads SDK AAR manifest are both fed into the manifest merger.
+    // Without this line, play-services-ads is never compiled in and Google Play
+    // cannot detect a valid AdMob integration → AD_ID check fails.
+    implementation project(':capacitor-community-admob')
 
-    implementation 'com.google.android.ump:user-messaging-platform:3.1.0'
+    // UMP (User Messaging Platform / consent) — kept in sync with plugin default
+    implementation 'com.google.android.ump:user-messaging-platform:4.0.0'
 
     // AndroidX
     implementation 'androidx.appcompat:appcompat:1.7.0'
