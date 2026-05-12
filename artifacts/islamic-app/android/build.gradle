@@ -2,8 +2,17 @@ buildscript {
     ext {
         kotlin_version = '2.0.0'
         compileSdkVersion = 36
-        targetSdkVersion = 36
-        minSdkVersion = 24
+        targetSdkVersion  = 36
+        minSdkVersion     = 24
+
+        // ── ext vars consumed by @capacitor-community/admob/android/build.gradle ──
+        // The plugin reads these from rootProject.ext; if they are set here,
+        // it uses our values instead of its own defaults.
+        playServicesAdsVersion         = '24.4.0'   // pinned stable release
+        userMessagingPlatformVersion   = '4.0.0'
+        androidxAppCompatVersion       = '1.7.0'
+        androidxCoordinatorLayoutVersion = '1.2.0'
+        androidxCoreKTXVersion         = '1.13.1'
     }
     repositories {
         google()
@@ -19,6 +28,34 @@ allprojects {
     repositories {
         google()
         mavenCentral()
+    }
+}
+
+// ── Java / Kotlin version override for capacitor-community-admob ──────────────
+//
+// @capacitor-community/admob v8 hardcodes `JavaVersion.VERSION_21` in its own
+// compileOptions.  That value is not exposed as a rootProject.ext property, so
+// it cannot be overridden by setting an ext variable.
+//
+// The root Gradle JDK (shipped with AGP 8.9.1) is Java 17.  Targeting Java 21
+// with a Java 17 JDK causes :capacitor-community-admob:compileReleaseKotlin to
+// fail with "error: release version 21 not supported".
+//
+// This afterEvaluate hook runs AFTER the admob module's own build.gradle has
+// applied, so our settings take final precedence and override the hardcoded 21.
+subprojects { sub ->
+    sub.afterEvaluate {
+        if (sub.name == 'capacitor-community-admob') {
+            sub.android {
+                compileOptions {
+                    sourceCompatibility JavaVersion.VERSION_17
+                    targetCompatibility JavaVersion.VERSION_17
+                }
+                kotlinOptions {
+                    jvmTarget = '17'
+                }
+            }
+        }
     }
 }
 
