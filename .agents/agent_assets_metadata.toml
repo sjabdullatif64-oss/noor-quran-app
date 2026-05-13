@@ -24,3 +24,9 @@ id = "pbY39OiMEgoAzJETa0Pxo"
 uri = "file://artifacts/islamic-app/android/app/build/outputs/apk/release/noor-quran-bugfix.tar.gz"
 type = "unspecified"
 title = "Noor Quran — Bug-Fix Release APK"
+
+[[outputs]]
+id = "YFt8TAdlqzbhsLsRupEGa"
+uri = "file://artifacts/islamic-app/android/app/build/outputs/apk/release/noor-quran-signed.zip"
+type = "unspecified"
+title = "Noor Quran APK (original upload key سے signed)"
