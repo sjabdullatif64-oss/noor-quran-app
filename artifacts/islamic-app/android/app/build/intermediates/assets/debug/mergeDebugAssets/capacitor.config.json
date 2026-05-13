@@ -1,0 +1,47 @@
+{
+	"appId": "com.sj64noorquran",
+	"appName": "Noor Quran",
+	"webDir": "dist/public",
+	"server": {
+		"androidScheme": "https",
+		"cleartext": false
+	},
+	"android": {
+		"backgroundColor": "#071a0e",
+		"allowMixedContent": false,
+		"captureInput": true,
+		"webContentsDebuggingEnabled": false
+	},
+	"plugins": {
+		"SplashScreen": {
+			"launchShowDuration": 2000,
+			"launchAutoHide": true,
+			"launchFadeOutDuration": 400,
+			"backgroundColor": "#071a0e",
+			"androidSplashResourceName": "splash",
+			"androidScaleType": "CENTER_CROP",
+			"showSpinner": false,
+			"splashFullScreen": true,
+			"splashImmersive": true
+		},
+		"StatusBar": {
+			"style": "Dark",
+			"backgroundColor": "#071a0e",
+			"overlaysWebView": false
+		},
+		"LocalNotifications": {
+			"smallIcon": "ic_stat_noor",
+			"iconColor": "#1a5c38"
+		},
+		"App": {
+			"backgroundColor": "#071a0e"
+		},
+		"Keyboard": {
+			"resize": "body",
+			"style": "dark"
+		},
+		"AdMob": {
+			"initializeForTesting": false
+		}
+	}
+}

@@ -653,6 +653,19 @@
       externalAnnotations="annotations.zip"
       proguardRules="proguard.txt"/>
   <library
+      name="com.google.android.gms:play-services-ads-identifier:18.0.0@aar"
+      jars="/home/runner/.gradle/caches/8.11.1/transforms/231fd039122e68c26f626670c74c09a4/transformed/jetified-play-services-ads-identifier-18.0.0/jars/classes.jar"
+      resolved="com.google.android.gms:play-services-ads-identifier:18.0.0"
+      folder="/home/runner/.gradle/caches/8.11.1/transforms/231fd039122e68c26f626670c74c09a4/transformed/jetified-play-services-ads-identifier-18.0.0"
+      manifest="AndroidManifest.xml"
+      resFolder="res"
+      assetsFolder="assets"
+      lintJar="lint.jar"
+      publicResources="public.txt"
+      symbolFile="R.txt"
+      externalAnnotations="annotations.zip"
+      proguardRules="proguard.txt"/>
+  <library
       name="com.google.android.gms:play-services-appset:16.0.1@aar"
       jars="/home/runner/.gradle/caches/8.11.1/transforms/25e55b80f035e6b84a0cf6bceeb7f3b7/transformed/jetified-play-services-appset-16.0.1/jars/classes.jar"
       resolved="com.google.android.gms:play-services-appset:16.0.1"
@@ -666,10 +679,10 @@
       externalAnnotations="annotations.zip"
       proguardRules="proguard.txt"/>
   <library
-      name="com.google.android.gms:play-services-base:18.5.0@aar"
-      jars="/home/runner/.gradle/caches/8.11.1/transforms/2da9a6e5213c878c18f02341d399cf0f/transformed/jetified-play-services-base-18.5.0/jars/classes.jar"
-      resolved="com.google.android.gms:play-services-base:18.5.0"
-      folder="/home/runner/.gradle/caches/8.11.1/transforms/2da9a6e5213c878c18f02341d399cf0f/transformed/jetified-play-services-base-18.5.0"
+      name="com.google.android.gms:play-services-base:18.0.0@aar"
+      jars="/home/runner/.gradle/caches/8.11.1/transforms/2f85f493897787f2b30e98b05fd532d3/transformed/jetified-play-services-base-18.0.0/jars/classes.jar"
+      resolved="com.google.android.gms:play-services-base:18.0.0"
+      folder="/home/runner/.gradle/caches/8.11.1/transforms/2f85f493897787f2b30e98b05fd532d3/transformed/jetified-play-services-base-18.0.0"
       manifest="AndroidManifest.xml"
       resFolder="res"
       assetsFolder="assets"
@@ -683,19 +696,6 @@
       jars="/home/runner/.gradle/caches/8.11.1/transforms/42c0b068220b263e3ba54b7bcc2de977/transformed/jetified-play-services-tasks-18.2.0/jars/classes.jar"
       resolved="com.google.android.gms:play-services-tasks:18.2.0"
       folder="/home/runner/.gradle/caches/8.11.1/transforms/42c0b068220b263e3ba54b7bcc2de977/transformed/jetified-play-services-tasks-18.2.0"
-      manifest="AndroidManifest.xml"
-      resFolder="res"
-      assetsFolder="assets"
-      lintJar="lint.jar"
-      publicResources="public.txt"
-      symbolFile="R.txt"
-      externalAnnotations="annotations.zip"
-      proguardRules="proguard.txt"/>
-  <library
-      name="com.google.android.gms:play-services-ads-identifier:18.0.0@aar"
-      jars="/home/runner/.gradle/caches/8.11.1/transforms/231fd039122e68c26f626670c74c09a4/transformed/jetified-play-services-ads-identifier-18.0.0/jars/classes.jar"
-      resolved="com.google.android.gms:play-services-ads-identifier:18.0.0"
-      folder="/home/runner/.gradle/caches/8.11.1/transforms/231fd039122e68c26f626670c74c09a4/transformed/jetified-play-services-ads-identifier-18.0.0"
       manifest="AndroidManifest.xml"
       resFolder="res"
       assetsFolder="assets"

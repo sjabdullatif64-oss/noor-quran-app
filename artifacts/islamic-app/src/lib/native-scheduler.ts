@@ -58,32 +58,6 @@ const CONTENT: Record<keyof AllNotifSettings, { title: string; body: string }> =
 /** Keys that fire weekly on Friday rather than daily. */
 const FRIDAY_KEYS: ReadonlySet<keyof AllNotifSettings> = new Set(["jummaReminder"]);
 
-// ── Helpers ───────────────────────────────────────────────────────────────────
-
-/**
- * Build a Date for the next occurrence of the given "HH:MM" time.
- * If `fridayOnly` is true, the date is advanced to the next Friday.
- * If today's slot has already passed, moves to tomorrow (or next Friday).
- */
-function nextOccurrence(timeStr: string, fridayOnly: boolean): Date {
-  const [hours, minutes] = timeStr.split(":").map(Number);
-  const now = new Date();
-
-  const d = new Date();
-  d.setHours(hours, minutes, 0, 0);
-
-  if (fridayOnly) {
-    const day = d.getDay(); // 0=Sun … 5=Fri … 6=Sat
-    let daysAhead = (5 - day + 7) % 7;
-    if (daysAhead === 0 && d <= now) daysAhead = 7; // this Friday already passed
-    d.setDate(d.getDate() + daysAhead);
-  } else {
-    if (d <= now) d.setDate(d.getDate() + 1); // already passed today → tomorrow
-  }
-
-  return d;
-}
-
 // ── Public API ────────────────────────────────────────────────────────────────
 
 /**
@@ -112,17 +86,25 @@ export async function scheduleNativeNotifications(
       if (!setting.enabled) continue;
 
       const fridayOnly = FRIDAY_KEYS.has(key);
-      const at = nextOccurrence(setting.time, fridayOnly);
+      const [hour, minute] = setting.time.split(":").map(Number);
       const { title, body } = CONTENT[key];
+
+      // Use 'on' (calendar-field matching) instead of 'at' (exact timestamp).
+      // 'at' scheduling requires SCHEDULE_EXACT_ALARM permission which:
+      //   - Android 12+ (API 31): must be manually granted in system settings
+      //   - Android 14+ (API 34): revoked by default for new installs
+      // 'on: { hour, minute }' uses inexact AlarmManager repeats — no special
+      // permission needed, fires at the specified wall-clock time each day/week.
+      // Capacitor weekday: 1 = Sunday … 6 = Friday … 7 = Saturday
+      const on: { hour: number; minute: number; weekday?: number } = { hour, minute };
+      if (fridayOnly) on.weekday = 6;
 
       toSchedule.push({
         id:    NOTIF_IDS[key],
         title,
         body,
         schedule: {
-          at,
-          repeats: true,                          // REQUIRED: without this, every: 'day' fires only once
-          every: fridayOnly ? "week" : "day",
+          on,
           allowWhileIdle: true,
         },
         channelId:    "noor-islamic",

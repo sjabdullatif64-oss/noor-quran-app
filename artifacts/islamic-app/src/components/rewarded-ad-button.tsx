@@ -4,6 +4,16 @@
  * AdMob App ID   : ca-app-pub-5050437827917011~3831002202  (AndroidManifest.xml)
  * Rewarded Unit  : ca-app-pub-5050437827917011/8806398221
  *
+ * ⚠️  WARNING — ADMOB UNIT ID MISMATCH:
+ *   The unit ID above is IDENTICAL to the one used in banner-ad.tsx.
+ *   A Rewarded ad MUST use a unit created as "Rewarded" in AdMob; using a
+ *   Banner unit ID will cause every rewarded request to fail with error 2
+ *   (NETWORK_ERROR / invalid ad unit type).
+ *   ACTION REQUIRED: replace REWARDED_AD_UNIT below with the correct
+ *   Rewarded unit ID from your AdMob dashboard
+ *   (AdMob → Apps → Noor Quran → Ad units → [your Rewarded unit]).
+ *   Until this is corrected the rewarded ad will always hit the fallback.
+ *
  * Flow (native APK):
  *  1. User taps button → prepareRewardVideoAd() starts loading
  *  2. Ad loads (Loaded event) → showRewardVideoAd() presents full-screen ad

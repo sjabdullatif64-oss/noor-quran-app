@@ -362,13 +362,13 @@
 199-->[com.google.android.gms:play-services-ads-api:24.4.0] /home/runner/.gradle/caches/8.11.1/transforms/25789c8c6e628918cbb90f9be278f340/transformed/jetified-play-services-ads-api-24.4.0/AndroidManifest.xml:112:13-33
 200
 201        <activity
-201-->[com.google.android.gms:play-services-base:18.5.0] /home/runner/.gradle/caches/8.11.1/transforms/2da9a6e5213c878c18f02341d399cf0f/transformed/jetified-play-services-base-18.5.0/AndroidManifest.xml:5:9-173
+201-->[com.google.android.gms:play-services-base:18.0.0] /home/runner/.gradle/caches/8.11.1/transforms/2f85f493897787f2b30e98b05fd532d3/transformed/jetified-play-services-base-18.0.0/AndroidManifest.xml:20:9-22:45
 202            android:name="com.google.android.gms.common.api.GoogleApiActivity"
-202-->[com.google.android.gms:play-services-base:18.5.0] /home/runner/.gradle/caches/8.11.1/transforms/2da9a6e5213c878c18f02341d399cf0f/transformed/jetified-play-services-base-18.5.0/AndroidManifest.xml:5:19-85
+202-->[com.google.android.gms:play-services-base:18.0.0] /home/runner/.gradle/caches/8.11.1/transforms/2f85f493897787f2b30e98b05fd532d3/transformed/jetified-play-services-base-18.0.0/AndroidManifest.xml:20:19-85
 203            android:exported="false"
-203-->[com.google.android.gms:play-services-base:18.5.0] /home/runner/.gradle/caches/8.11.1/transforms/2da9a6e5213c878c18f02341d399cf0f/transformed/jetified-play-services-base-18.5.0/AndroidManifest.xml:5:146-170
+203-->[com.google.android.gms:play-services-base:18.0.0] /home/runner/.gradle/caches/8.11.1/transforms/2f85f493897787f2b30e98b05fd532d3/transformed/jetified-play-services-base-18.0.0/AndroidManifest.xml:22:19-43
 204            android:theme="@android:style/Theme.Translucent.NoTitleBar" />
-204-->[com.google.android.gms:play-services-base:18.5.0] /home/runner/.gradle/caches/8.11.1/transforms/2da9a6e5213c878c18f02341d399cf0f/transformed/jetified-play-services-base-18.5.0/AndroidManifest.xml:5:86-145
+204-->[com.google.android.gms:play-services-base:18.0.0] /home/runner/.gradle/caches/8.11.1/transforms/2f85f493897787f2b30e98b05fd532d3/transformed/jetified-play-services-base-18.0.0/AndroidManifest.xml:21:19-78
 205
 206        <meta-data
 206-->[com.google.android.gms:play-services-basement:18.9.0] /home/runner/.gradle/caches/8.11.1/transforms/44627223623debaf976d57762551e0d3/transformed/jetified-play-services-basement-18.9.0/AndroidManifest.xml:21:9-23:69

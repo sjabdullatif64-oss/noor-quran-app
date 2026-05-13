@@ -18,3 +18,9 @@ id = "8yB72PqaHaG5BPkE3N7kv"
 uri = "file://artifacts/islamic-app/android/app/build/outputs/noor-quran-release.apk.zip"
 type = "unspecified"
 title = "Noor Quran — Release APK (direct install)"
+
+[[outputs]]
+id = "pbY39OiMEgoAzJETa0Pxo"
+uri = "file://artifacts/islamic-app/android/app/build/outputs/apk/release/noor-quran-bugfix.tar.gz"
+type = "unspecified"
+title = "Noor Quran — Bug-Fix Release APK"

@@ -26,10 +26,10 @@ MERGED from [androidx.constraintlayout:constraintlayout:2.0.1] /home/runner/.gra
 MERGED from [androidx.appcompat:appcompat:1.7.0] /home/runner/.gradle/caches/8.11.1/transforms/2a390fc34f80f4009984c8fe178a6acb/transformed/appcompat-1.7.0/AndroidManifest.xml:2:1-7:12
 MERGED from [androidx.coordinatorlayout:coordinatorlayout:1.2.0] /home/runner/.gradle/caches/8.11.1/transforms/66758d0072699b89a224988f0a5572b4/transformed/coordinatorlayout-1.2.0/AndroidManifest.xml:17:1-24:12
 MERGED from [androidx.webkit:webkit:1.14.0] /home/runner/.gradle/caches/8.11.1/transforms/8c5d7e65fe628e0a4eae2bb907694f4f/transformed/webkit-1.14.0/AndroidManifest.xml:2:1-7:12
-MERGED from [com.google.android.gms:play-services-appset:16.0.1] /home/runner/.gradle/caches/8.11.1/transforms/25e55b80f035e6b84a0cf6bceeb7f3b7/transformed/jetified-play-services-appset-16.0.1/AndroidManifest.xml:2:1-9:12
-MERGED from [com.google.android.gms:play-services-base:18.5.0] /home/runner/.gradle/caches/8.11.1/transforms/2da9a6e5213c878c18f02341d399cf0f/transformed/jetified-play-services-base-18.5.0/AndroidManifest.xml:2:1-7:12
-MERGED from [com.google.android.gms:play-services-tasks:18.2.0] /home/runner/.gradle/caches/8.11.1/transforms/42c0b068220b263e3ba54b7bcc2de977/transformed/jetified-play-services-tasks-18.2.0/AndroidManifest.xml:2:1-5:12
 MERGED from [com.google.android.gms:play-services-ads-identifier:18.0.0] /home/runner/.gradle/caches/8.11.1/transforms/231fd039122e68c26f626670c74c09a4/transformed/jetified-play-services-ads-identifier-18.0.0/AndroidManifest.xml:17:1-27:12
+MERGED from [com.google.android.gms:play-services-appset:16.0.1] /home/runner/.gradle/caches/8.11.1/transforms/25e55b80f035e6b84a0cf6bceeb7f3b7/transformed/jetified-play-services-appset-16.0.1/AndroidManifest.xml:2:1-9:12
+MERGED from [com.google.android.gms:play-services-base:18.0.0] /home/runner/.gradle/caches/8.11.1/transforms/2f85f493897787f2b30e98b05fd532d3/transformed/jetified-play-services-base-18.0.0/AndroidManifest.xml:16:1-24:12
+MERGED from [com.google.android.gms:play-services-tasks:18.2.0] /home/runner/.gradle/caches/8.11.1/transforms/42c0b068220b263e3ba54b7bcc2de977/transformed/jetified-play-services-tasks-18.2.0/AndroidManifest.xml:2:1-5:12
 MERGED from [com.google.android.gms:play-services-measurement-sdk-api:20.1.2] /home/runner/.gradle/caches/8.11.1/transforms/db8109be527a1f40e8f27843d9538d58/transformed/jetified-play-services-measurement-sdk-api-20.1.2/AndroidManifest.xml:17:1-28:12
 MERGED from [com.google.android.gms:play-services-measurement-base:20.1.2] /home/runner/.gradle/caches/8.11.1/transforms/1fd4f328e27f3fe42ef34249cd9ccf01/transformed/jetified-play-services-measurement-base-20.1.2/AndroidManifest.xml:2:1-9:12
 MERGED from [com.google.android.gms:play-services-basement:18.9.0] /home/runner/.gradle/caches/8.11.1/transforms/44627223623debaf976d57762551e0d3/transformed/jetified-play-services-basement-18.9.0/AndroidManifest.xml:16:1-26:12
@@ -208,14 +208,14 @@ MERGED from [com.google.android.material:material:1.12.0] /home/runner/.gradle/c
 MERGED from [com.google.android.material:material:1.12.0] /home/runner/.gradle/caches/8.11.1/transforms/ef82a73591eea14503c5ca287248a527/transformed/material-1.12.0/AndroidManifest.xml:22:5-20
 MERGED from [androidx.constraintlayout:constraintlayout:2.0.1] /home/runner/.gradle/caches/8.11.1/transforms/a0a414fe4a5308c97f0b878bc48c97a3/transformed/constraintlayout-2.0.1/AndroidManifest.xml:9:5-20
 MERGED from [androidx.constraintlayout:constraintlayout:2.0.1] /home/runner/.gradle/caches/8.11.1/transforms/a0a414fe4a5308c97f0b878bc48c97a3/transformed/constraintlayout-2.0.1/AndroidManifest.xml:9:5-20
-MERGED from [com.google.android.gms:play-services-appset:16.0.1] /home/runner/.gradle/caches/8.11.1/transforms/25e55b80f035e6b84a0cf6bceeb7f3b7/transformed/jetified-play-services-appset-16.0.1/AndroidManifest.xml:7:5-20
-MERGED from [com.google.android.gms:play-services-appset:16.0.1] /home/runner/.gradle/caches/8.11.1/transforms/25e55b80f035e6b84a0cf6bceeb7f3b7/transformed/jetified-play-services-appset-16.0.1/AndroidManifest.xml:7:5-20
-MERGED from [com.google.android.gms:play-services-base:18.5.0] /home/runner/.gradle/caches/8.11.1/transforms/2da9a6e5213c878c18f02341d399cf0f/transformed/jetified-play-services-base-18.5.0/AndroidManifest.xml:4:5-6:19
-MERGED from [com.google.android.gms:play-services-base:18.5.0] /home/runner/.gradle/caches/8.11.1/transforms/2da9a6e5213c878c18f02341d399cf0f/transformed/jetified-play-services-base-18.5.0/AndroidManifest.xml:4:5-6:19
-MERGED from [com.google.android.gms:play-services-tasks:18.2.0] /home/runner/.gradle/caches/8.11.1/transforms/42c0b068220b263e3ba54b7bcc2de977/transformed/jetified-play-services-tasks-18.2.0/AndroidManifest.xml:4:5-20
-MERGED from [com.google.android.gms:play-services-tasks:18.2.0] /home/runner/.gradle/caches/8.11.1/transforms/42c0b068220b263e3ba54b7bcc2de977/transformed/jetified-play-services-tasks-18.2.0/AndroidManifest.xml:4:5-20
 MERGED from [com.google.android.gms:play-services-ads-identifier:18.0.0] /home/runner/.gradle/caches/8.11.1/transforms/231fd039122e68c26f626670c74c09a4/transformed/jetified-play-services-ads-identifier-18.0.0/AndroidManifest.xml:25:5-20
 MERGED from [com.google.android.gms:play-services-ads-identifier:18.0.0] /home/runner/.gradle/caches/8.11.1/transforms/231fd039122e68c26f626670c74c09a4/transformed/jetified-play-services-ads-identifier-18.0.0/AndroidManifest.xml:25:5-20
+MERGED from [com.google.android.gms:play-services-appset:16.0.1] /home/runner/.gradle/caches/8.11.1/transforms/25e55b80f035e6b84a0cf6bceeb7f3b7/transformed/jetified-play-services-appset-16.0.1/AndroidManifest.xml:7:5-20
+MERGED from [com.google.android.gms:play-services-appset:16.0.1] /home/runner/.gradle/caches/8.11.1/transforms/25e55b80f035e6b84a0cf6bceeb7f3b7/transformed/jetified-play-services-appset-16.0.1/AndroidManifest.xml:7:5-20
+MERGED from [com.google.android.gms:play-services-base:18.0.0] /home/runner/.gradle/caches/8.11.1/transforms/2f85f493897787f2b30e98b05fd532d3/transformed/jetified-play-services-base-18.0.0/AndroidManifest.xml:19:5-23:19
+MERGED from [com.google.android.gms:play-services-base:18.0.0] /home/runner/.gradle/caches/8.11.1/transforms/2f85f493897787f2b30e98b05fd532d3/transformed/jetified-play-services-base-18.0.0/AndroidManifest.xml:19:5-23:19
+MERGED from [com.google.android.gms:play-services-tasks:18.2.0] /home/runner/.gradle/caches/8.11.1/transforms/42c0b068220b263e3ba54b7bcc2de977/transformed/jetified-play-services-tasks-18.2.0/AndroidManifest.xml:4:5-20
+MERGED from [com.google.android.gms:play-services-tasks:18.2.0] /home/runner/.gradle/caches/8.11.1/transforms/42c0b068220b263e3ba54b7bcc2de977/transformed/jetified-play-services-tasks-18.2.0/AndroidManifest.xml:4:5-20
 MERGED from [com.google.android.gms:play-services-measurement-base:20.1.2] /home/runner/.gradle/caches/8.11.1/transforms/1fd4f328e27f3fe42ef34249cd9ccf01/transformed/jetified-play-services-measurement-base-20.1.2/AndroidManifest.xml:7:5-20
 MERGED from [com.google.android.gms:play-services-measurement-base:20.1.2] /home/runner/.gradle/caches/8.11.1/transforms/1fd4f328e27f3fe42ef34249cd9ccf01/transformed/jetified-play-services-measurement-base-20.1.2/AndroidManifest.xml:7:5-20
 MERGED from [com.google.android.gms:play-services-basement:18.9.0] /home/runner/.gradle/caches/8.11.1/transforms/44627223623debaf976d57762551e0d3/transformed/jetified-play-services-basement-18.9.0/AndroidManifest.xml:20:5-24:19
@@ -398,14 +398,14 @@ MERGED from [androidx.coordinatorlayout:coordinatorlayout:1.2.0] /home/runner/.g
 MERGED from [androidx.coordinatorlayout:coordinatorlayout:1.2.0] /home/runner/.gradle/caches/8.11.1/transforms/66758d0072699b89a224988f0a5572b4/transformed/coordinatorlayout-1.2.0/AndroidManifest.xml:20:5-22:41
 MERGED from [androidx.webkit:webkit:1.14.0] /home/runner/.gradle/caches/8.11.1/transforms/8c5d7e65fe628e0a4eae2bb907694f4f/transformed/webkit-1.14.0/AndroidManifest.xml:5:5-44
 MERGED from [androidx.webkit:webkit:1.14.0] /home/runner/.gradle/caches/8.11.1/transforms/8c5d7e65fe628e0a4eae2bb907694f4f/transformed/webkit-1.14.0/AndroidManifest.xml:5:5-44
-MERGED from [com.google.android.gms:play-services-appset:16.0.1] /home/runner/.gradle/caches/8.11.1/transforms/25e55b80f035e6b84a0cf6bceeb7f3b7/transformed/jetified-play-services-appset-16.0.1/AndroidManifest.xml:5:5-44
-MERGED from [com.google.android.gms:play-services-appset:16.0.1] /home/runner/.gradle/caches/8.11.1/transforms/25e55b80f035e6b84a0cf6bceeb7f3b7/transformed/jetified-play-services-appset-16.0.1/AndroidManifest.xml:5:5-44
-MERGED from [com.google.android.gms:play-services-base:18.5.0] /home/runner/.gradle/caches/8.11.1/transforms/2da9a6e5213c878c18f02341d399cf0f/transformed/jetified-play-services-base-18.5.0/AndroidManifest.xml:3:5-44
-MERGED from [com.google.android.gms:play-services-base:18.5.0] /home/runner/.gradle/caches/8.11.1/transforms/2da9a6e5213c878c18f02341d399cf0f/transformed/jetified-play-services-base-18.5.0/AndroidManifest.xml:3:5-44
-MERGED from [com.google.android.gms:play-services-tasks:18.2.0] /home/runner/.gradle/caches/8.11.1/transforms/42c0b068220b263e3ba54b7bcc2de977/transformed/jetified-play-services-tasks-18.2.0/AndroidManifest.xml:3:5-44
-MERGED from [com.google.android.gms:play-services-tasks:18.2.0] /home/runner/.gradle/caches/8.11.1/transforms/42c0b068220b263e3ba54b7bcc2de977/transformed/jetified-play-services-tasks-18.2.0/AndroidManifest.xml:3:5-44
 MERGED from [com.google.android.gms:play-services-ads-identifier:18.0.0] /home/runner/.gradle/caches/8.11.1/transforms/231fd039122e68c26f626670c74c09a4/transformed/jetified-play-services-ads-identifier-18.0.0/AndroidManifest.xml:20:5-44
 MERGED from [com.google.android.gms:play-services-ads-identifier:18.0.0] /home/runner/.gradle/caches/8.11.1/transforms/231fd039122e68c26f626670c74c09a4/transformed/jetified-play-services-ads-identifier-18.0.0/AndroidManifest.xml:20:5-44
+MERGED from [com.google.android.gms:play-services-appset:16.0.1] /home/runner/.gradle/caches/8.11.1/transforms/25e55b80f035e6b84a0cf6bceeb7f3b7/transformed/jetified-play-services-appset-16.0.1/AndroidManifest.xml:5:5-44
+MERGED from [com.google.android.gms:play-services-appset:16.0.1] /home/runner/.gradle/caches/8.11.1/transforms/25e55b80f035e6b84a0cf6bceeb7f3b7/transformed/jetified-play-services-appset-16.0.1/AndroidManifest.xml:5:5-44
+MERGED from [com.google.android.gms:play-services-base:18.0.0] /home/runner/.gradle/caches/8.11.1/transforms/2f85f493897787f2b30e98b05fd532d3/transformed/jetified-play-services-base-18.0.0/AndroidManifest.xml:18:5-43
+MERGED from [com.google.android.gms:play-services-base:18.0.0] /home/runner/.gradle/caches/8.11.1/transforms/2f85f493897787f2b30e98b05fd532d3/transformed/jetified-play-services-base-18.0.0/AndroidManifest.xml:18:5-43
+MERGED from [com.google.android.gms:play-services-tasks:18.2.0] /home/runner/.gradle/caches/8.11.1/transforms/42c0b068220b263e3ba54b7bcc2de977/transformed/jetified-play-services-tasks-18.2.0/AndroidManifest.xml:3:5-44
+MERGED from [com.google.android.gms:play-services-tasks:18.2.0] /home/runner/.gradle/caches/8.11.1/transforms/42c0b068220b263e3ba54b7bcc2de977/transformed/jetified-play-services-tasks-18.2.0/AndroidManifest.xml:3:5-44
 MERGED from [com.google.android.gms:play-services-measurement-sdk-api:20.1.2] /home/runner/.gradle/caches/8.11.1/transforms/db8109be527a1f40e8f27843d9538d58/transformed/jetified-play-services-measurement-sdk-api-20.1.2/AndroidManifest.xml:20:5-44
 MERGED from [com.google.android.gms:play-services-measurement-sdk-api:20.1.2] /home/runner/.gradle/caches/8.11.1/transforms/db8109be527a1f40e8f27843d9538d58/transformed/jetified-play-services-measurement-sdk-api-20.1.2/AndroidManifest.xml:20:5-44
 MERGED from [com.google.android.gms:play-services-measurement-base:20.1.2] /home/runner/.gradle/caches/8.11.1/transforms/1fd4f328e27f3fe42ef34249cd9ccf01/transformed/jetified-play-services-measurement-base-20.1.2/AndroidManifest.xml:5:5-44
@@ -647,13 +647,13 @@ ADDED from [com.google.android.gms:play-services-ads-api:24.4.0] /home/runner/.g
 	android:name
 		ADDED from [com.google.android.gms:play-services-ads-api:24.4.0] /home/runner/.gradle/caches/8.11.1/transforms/25789c8c6e628918cbb90f9be278f340/transformed/jetified-play-services-ads-api-24.4.0/AndroidManifest.xml:111:13-83
 activity#com.google.android.gms.common.api.GoogleApiActivity
-ADDED from [com.google.android.gms:play-services-base:18.5.0] /home/runner/.gradle/caches/8.11.1/transforms/2da9a6e5213c878c18f02341d399cf0f/transformed/jetified-play-services-base-18.5.0/AndroidManifest.xml:5:9-173
+ADDED from [com.google.android.gms:play-services-base:18.0.0] /home/runner/.gradle/caches/8.11.1/transforms/2f85f493897787f2b30e98b05fd532d3/transformed/jetified-play-services-base-18.0.0/AndroidManifest.xml:20:9-22:45
 	android:exported
-		ADDED from [com.google.android.gms:play-services-base:18.5.0] /home/runner/.gradle/caches/8.11.1/transforms/2da9a6e5213c878c18f02341d399cf0f/transformed/jetified-play-services-base-18.5.0/AndroidManifest.xml:5:146-170
+		ADDED from [com.google.android.gms:play-services-base:18.0.0] /home/runner/.gradle/caches/8.11.1/transforms/2f85f493897787f2b30e98b05fd532d3/transformed/jetified-play-services-base-18.0.0/AndroidManifest.xml:22:19-43
 	android:theme
-		ADDED from [com.google.android.gms:play-services-base:18.5.0] /home/runner/.gradle/caches/8.11.1/transforms/2da9a6e5213c878c18f02341d399cf0f/transformed/jetified-play-services-base-18.5.0/AndroidManifest.xml:5:86-145
+		ADDED from [com.google.android.gms:play-services-base:18.0.0] /home/runner/.gradle/caches/8.11.1/transforms/2f85f493897787f2b30e98b05fd532d3/transformed/jetified-play-services-base-18.0.0/AndroidManifest.xml:21:19-78
 	android:name
-		ADDED from [com.google.android.gms:play-services-base:18.5.0] /home/runner/.gradle/caches/8.11.1/transforms/2da9a6e5213c878c18f02341d399cf0f/transformed/jetified-play-services-base-18.5.0/AndroidManifest.xml:5:19-85
+		ADDED from [com.google.android.gms:play-services-base:18.0.0] /home/runner/.gradle/caches/8.11.1/transforms/2f85f493897787f2b30e98b05fd532d3/transformed/jetified-play-services-base-18.0.0/AndroidManifest.xml:20:19-85
 meta-data#com.google.android.gms.version
 ADDED from [com.google.android.gms:play-services-basement:18.9.0] /home/runner/.gradle/caches/8.11.1/transforms/44627223623debaf976d57762551e0d3/transformed/jetified-play-services-basement-18.9.0/AndroidManifest.xml:21:9-23:69
 	android:value
