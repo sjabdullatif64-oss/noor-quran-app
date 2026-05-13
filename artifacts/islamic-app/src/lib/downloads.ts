@@ -115,9 +115,39 @@ function saveMeta(packs: DownloadedPack[]): void {
   localStorage.setItem(PACK_META_KEY, JSON.stringify(packs));
 }
 
-export function getDownloadedPacks(): DownloadedPack[] { return loadMeta(); }
+/**
+ * Returns the list of downloaded packs.
+ *
+ * Recovery pass: if a pack has text in localStorage but is absent from the
+ * metadata (e.g. the app was killed between text-save and meta-save, or
+ * Android cleared the noor-downloads-meta key under memory pressure) we
+ * reconstruct the metadata entry so the pack re-appears in the UI.
+ */
+export function getDownloadedPacks(): DownloadedPack[] {
+  let meta = loadMeta();
+  const metaIds = new Set(meta.map((p) => p.id));
+  let repaired = false;
+
+  for (const pack of SURAH_PACKS) {
+    if (metaIds.has(pack.id)) continue; // already in metadata
+    const raw = localStorage.getItem(`noor-dl-text-${pack.id}`);
+    if (!raw) continue; // truly not downloaded
+    try {
+      const ayahs = JSON.parse(raw) as Array<{ globalNum: number }>;
+      meta = [
+        ...meta,
+        { ...pack, downloadedAt: Date.now(), ayahGlobals: ayahs.map((a) => a.globalNum) },
+      ];
+      repaired = true;
+    } catch { /* corrupt text key — ignore */ }
+  }
+
+  if (repaired) saveMeta(meta); // persist the repair so next call is instant
+  return meta;
+}
+
 export function isPackDownloaded(packId: string): boolean {
-  return loadMeta().some((p) => p.id === packId);
+  return getDownloadedPacks().some((p) => p.id === packId);
 }
 
 // ── Resilient fetch with retry + timeout ─────────────────────────────────────
@@ -211,7 +241,28 @@ export async function downloadPack(
   // 2. Store text in localStorage
   localStorage.setItem(`noor-dl-text-${pack.id}`, JSON.stringify(allAyahs));
 
-  // 3. Download audio sequentially in small batches (2 at a time)
+  // 3. Save pack metadata NOW — before audio downloads start.
+  //
+  //    Why early? Previously metadata was written only after ALL audio files
+  //    downloaded.  If the download was interrupted (connection drop, Android
+  //    killing the WebView, OS clearing storage under memory pressure) the
+  //    metadata was never written.  On the next app open the pack appeared
+  //    absent from the Downloads list even though the text was already saved.
+  //
+  //    Writing metadata here means the pack always appears in the Downloads
+  //    list as soon as the text is fetched.  If audio is later incomplete the
+  //    pack still shows up, and the user can delete + re-download cleanly.
+  //    The getDownloadedPacks() recovery pass handles the reverse case
+  //    (text exists, metadata was lost) as a belt-and-suspenders measure.
+  const metaEarly = loadMeta().filter((p) => p.id !== pack.id);
+  metaEarly.push({
+    ...pack,
+    downloadedAt: Date.now(),
+    ayahGlobals:  allAyahs.map((a) => a.globalNum),
+  });
+  saveMeta(metaEarly);
+
+  // 4. Download audio sequentially in small batches (2 at a time)
   //    Small batch size avoids rate-limiting and Android WebView concurrency limits.
   const total      = allAyahs.length;
   let   completed  = 0;
@@ -251,15 +302,6 @@ export async function downloadPack(
       await new Promise((r) => setTimeout(r, 150));
     }
   }
-
-  // 4. Save pack metadata
-  const meta = loadMeta().filter((p) => p.id !== pack.id);
-  meta.push({
-    ...pack,
-    downloadedAt: Date.now(),
-    ayahGlobals:  allAyahs.map((a) => a.globalNum),
-  });
-  saveMeta(meta);
 }
 
 // ── Delete a downloaded pack ──────────────────────────────────────────────────

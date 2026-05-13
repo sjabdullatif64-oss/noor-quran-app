@@ -172,12 +172,30 @@ export function SurahReader() {
   useEffect(() => { localStorage.setItem(AUDIO_MODE_KEY, audioMode); }, [audioMode]);
 
   // Load TTS voices (async — Chrome fires voiceschanged after page load)
+  // Android WebView polling fallback: voiceschanged may never fire on some
+  // Android builds.  We poll every 500 ms for up to 6 s and stop as soon as
+  // at least one voice is found.
   useEffect(() => {
     if (!isTTSSupported()) return;
-    const load = () => setTtsVoices(window.speechSynthesis.getVoices());
+
+    const load = () => {
+      const v = window.speechSynthesis.getVoices();
+      if (v.length) setTtsVoices(v);
+    };
     load();
     window.speechSynthesis.addEventListener("voiceschanged", load);
-    return () => window.speechSynthesis.removeEventListener("voiceschanged", load);
+
+    let polls = 0;
+    const poll = setInterval(() => {
+      const v = window.speechSynthesis.getVoices();
+      if (v.length) { setTtsVoices(v); clearInterval(poll); return; }
+      if (++polls >= 12) clearInterval(poll); // give up after 6 s
+    }, 500);
+
+    return () => {
+      window.speechSynthesis.removeEventListener("voiceschanged", load);
+      clearInterval(poll);
+    };
   }, []);
 
   // ── Helpers ────────────────────────────────────────────────────────────────
@@ -356,7 +374,10 @@ export function SurahReader() {
    * (common on Android WebView when no voice is installed for the target
    * language). We call onDone() to advance cleanly rather than hanging.
    */
-  const TTS_START_TIMEOUT_MS = 4000;
+  // 6 s gives slow Android devices enough time to spin up the TTS engine.
+  // 4 s was too aggressive: some OEM TTS services (Samsung, Xiaomi) can take
+  // 4–5 s on first use before onstart fires.
+  const TTS_START_TIMEOUT_MS = 6000;
 
   const playTTSPhase = useCallback((index: number, gen: number, onDone: () => void) => {
     if (cancelledRef.current || playGenRef.current !== gen || !isTTSSupported()) {
@@ -437,6 +458,15 @@ export function SurahReader() {
         setTimeout(speakNext, 100); // skip bad chunk, continue
       };
 
+      // ── Critical Android WebView fix ──────────────────────────────────────
+      // After speechSynthesis.cancel() the engine can stay in a "paused"
+      // internal state on Android WebView (Chromium bug).  In that state,
+      // speak() adds utterances to the queue but they are never dequeued —
+      // onstart never fires, the 6-second watchdog kicks in, and the user
+      // hears nothing.  Calling resume() before every speak() forces the
+      // engine back into the "playing" state so the queue is processed
+      // immediately.  This is a no-op on platforms that are already running.
+      window.speechSynthesis.resume();
       window.speechSynthesis.speak(utt);
     }
 
