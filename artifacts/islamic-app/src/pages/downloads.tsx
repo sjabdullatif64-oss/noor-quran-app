@@ -1,5 +1,5 @@
 import { useState, useCallback } from "react";
-import { ChevronLeft, Download, Trash2, CheckCircle, Play, Pause, HardDrive, Wifi, XCircle } from "lucide-react";
+import { ChevronLeft, Download, Trash2, CheckCircle, Play, Pause, HardDrive, Wifi, XCircle, Search } from "lucide-react";
 import { Link } from "wouter";
 import {
   SURAH_PACKS,
@@ -41,6 +41,7 @@ export function Downloads() {
   //    always correct on first render — no empty-flash or stale-data issues.
   const [packStates, setPackStates] = useState<Record<string, PackState>>(buildInitialPackStates);
   const [downloadedPacks, setDownloadedPacks] = useState<DownloadedPack[]>(() => getDownloadedPacks());
+  const [search, setSearch] = useState("");
 
   const [playingPackId, setPlayingPackId] = useState<string | null>(null);
   const [playingAyahIdx, setPlayingAyahIdx] = useState<number>(0);
@@ -200,129 +201,159 @@ export function Downloads() {
         </div>
       </div>
 
-      {/* Available packs */}
-      <div className="px-4 space-y-3 mb-6">
-        <p className="text-emerald-500 text-xs uppercase tracking-wider font-medium">Available Packs</p>
-        {SURAH_PACKS.map((pack) => {
-          const state         = packStates[pack.id];
-          const isComplete    = state.status === "complete";
-          const isDownloading = state.status === "downloading";
-          const isError       = state.status === "error";
-          const progressPct   = state.total > 0 ? Math.round((state.progress / state.total) * 100) : 0;
-          const isOfflinePlaying = playingPackId === pack.id;
+      {/* All Surahs — searchable list */}
+      <div className="px-4 mb-6">
+        {/* Section header + count */}
+        <div className="flex items-center justify-between mb-3">
+          <p className="text-emerald-500 text-xs uppercase tracking-wider font-medium">
+            All Surahs ({SURAH_PACKS.length})
+          </p>
+          <p className="text-emerald-700 text-xs">
+            {SURAH_PACKS.filter((p) => packStates[p.id]?.status === "complete").length} downloaded
+          </p>
+        </div>
 
-          return (
-            <div
-              key={pack.id}
-              className="rounded-2xl border border-emerald-900/40 overflow-hidden"
-              style={{ background: "rgba(255,255,255,0.04)" }}
-            >
-              <div className="flex items-center gap-4 p-4">
-                <div className="w-11 h-11 rounded-xl flex items-center justify-center shrink-0"
-                  style={{
-                    background: isComplete ? "rgba(52,211,153,0.15)" : "rgba(45,212,191,0.08)",
-                    border: "1px solid rgba(52,211,153,0.2)",
-                  }}>
-                  {isComplete ? (
-                    <CheckCircle className="w-5 h-5 text-emerald-400" />
-                  ) : (
-                    <Wifi className="w-5 h-5 text-teal-500" />
-                  )}
-                </div>
+        {/* Search input */}
+        <div className="relative mb-3">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-emerald-700 pointer-events-none" />
+          <input
+            type="text"
+            placeholder="Search surah name…"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="w-full bg-transparent border border-emerald-900/50 rounded-xl pl-9 pr-4 py-2.5 text-sm text-emerald-200 placeholder:text-emerald-800 focus:outline-none focus:border-emerald-700 transition-colors"
+          />
+        </div>
 
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2">
-                    <p className="text-white font-semibold text-sm">{pack.name}</p>
-                    <span dir="rtl" className="font-arabic text-emerald-500 text-sm">{pack.nameAr}</span>
+        {/* Filtered surah list */}
+        <div className="space-y-2">
+          {SURAH_PACKS.filter((pack) => {
+            if (!search.trim()) return true;
+            const q = search.toLowerCase();
+            return (
+              pack.name.toLowerCase().includes(q) ||
+              pack.nameAr.includes(search) ||
+              pack.id.includes(`surah-${search}`)
+            );
+          }).map((pack) => {
+            const state            = packStates[pack.id];
+            const isComplete       = state?.status === "complete";
+            const isDownloading    = state?.status === "downloading";
+            const isError          = state?.status === "error";
+            const progressPct      = state?.total > 0 ? Math.round((state.progress / state.total) * 100) : 0;
+            const isOfflinePlaying = playingPackId === pack.id;
+            // Surah number extracted from "surah-N" id
+            const surahNum         = pack.id.startsWith("surah-") ? pack.id.slice(6) : "";
+
+            return (
+              <div
+                key={pack.id}
+                className="rounded-xl border border-emerald-900/40 overflow-hidden"
+                style={{ background: "rgba(255,255,255,0.03)" }}
+              >
+                <div className="flex items-center gap-3 px-3 py-2.5">
+                  {/* Surah number badge */}
+                  <div
+                    className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0 text-xs font-bold"
+                    style={{
+                      background: isComplete ? "rgba(52,211,153,0.18)" : "rgba(45,212,191,0.07)",
+                      color: isComplete ? "#34d399" : "#2dd4bf",
+                      border: isComplete ? "1px solid rgba(52,211,153,0.25)" : "1px solid rgba(45,212,191,0.15)",
+                    }}
+                  >
+                    {isComplete ? <CheckCircle className="w-4 h-4" /> : surahNum}
                   </div>
-                  <p className="text-emerald-700 text-xs mt-0.5">{pack.description} · {pack.size}</p>
+
+                  {/* Name */}
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-1.5">
+                      <p className="text-white font-medium text-sm leading-tight truncate">{pack.name}</p>
+                      <span dir="rtl" className="font-arabic text-emerald-600 text-sm shrink-0">{pack.nameAr}</span>
+                    </div>
+                    <p className="text-emerald-800 text-xs">{pack.description} · {pack.size}</p>
+                  </div>
+
+                  {/* Actions */}
+                  <div className="flex items-center gap-1.5 shrink-0">
+                    {isComplete && (
+                      <button
+                        onClick={() => togglePlay(pack.id)}
+                        className="w-8 h-8 rounded-full flex items-center justify-center text-emerald-400 border border-emerald-800/40 hover:border-emerald-600 transition-all"
+                        style={{ background: "rgba(52,211,153,0.1)" }}
+                        data-testid={`button-play-offline-${pack.id}`}
+                      >
+                        {isOfflinePlaying && isPlaying ? <Pause className="w-3.5 h-3.5" /> : <Play className="w-3.5 h-3.5" />}
+                      </button>
+                    )}
+
+                    {!isComplete && !isDownloading && !isError && (
+                      <button
+                        onClick={() => handleDownload(pack)}
+                        className="flex items-center gap-1 px-2.5 py-1.5 rounded-full text-xs font-medium text-teal-300 border border-teal-800/40 hover:border-teal-600 transition-colors"
+                        style={{ background: "rgba(45,212,191,0.08)" }}
+                        data-testid={`button-download-${pack.id}`}
+                      >
+                        <Download className="w-3 h-3" />
+                        Save
+                      </button>
+                    )}
+
+                    {isComplete && (
+                      <button
+                        onClick={() => handleDelete(pack.id)}
+                        className="w-8 h-8 rounded-full flex items-center justify-center text-red-400 hover:text-red-300 transition-colors"
+                        data-testid={`button-delete-${pack.id}`}
+                        aria-label={`Delete ${pack.name}`}
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    )}
+
+                    {isError && (
+                      <button
+                        onClick={() => handleDownload(pack)}
+                        className="flex items-center gap-1 px-2.5 py-1.5 rounded-full text-xs font-medium text-red-300 border border-red-800/40"
+                      >
+                        <XCircle className="w-3 h-3" />
+                        Retry
+                      </button>
+                    )}
+
+                    {isDownloading && (
+                      <span className="text-emerald-600 text-xs tabular-nums">{progressPct}%</span>
+                    )}
+                  </div>
                 </div>
 
-                <div className="flex items-center gap-2 shrink-0">
-                  {/* Play/pause offline audio */}
-                  {isComplete && (
-                    <button
-                      onClick={() => togglePlay(pack.id)}
-                      className="w-9 h-9 rounded-full flex items-center justify-center text-emerald-400 border border-emerald-800/40 hover:border-emerald-600 transition-all"
-                      style={{ background: "rgba(52,211,153,0.1)" }}
-                      data-testid={`button-play-offline-${pack.id}`}
-                    >
-                      {isOfflinePlaying && isPlaying ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4" />}
-                    </button>
-                  )}
+                {/* Inline progress bar */}
+                {isDownloading && (
+                  <div className="px-3 pb-2.5">
+                    <div className="h-1 bg-emerald-900/40 rounded-full overflow-hidden">
+                      <div
+                        className="h-full bg-emerald-500 rounded-full transition-all"
+                        style={{ width: `${progressPct}%` }}
+                      />
+                    </div>
+                  </div>
+                )}
 
-                  {/* Download button */}
-                  {!isComplete && !isDownloading && (
-                    <button
-                      onClick={() => handleDownload(pack)}
-                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium text-teal-300 border border-teal-800/40 hover:border-teal-600 transition-colors"
-                      style={{ background: "rgba(45,212,191,0.08)" }}
-                      data-testid={`button-download-${pack.id}`}
-                    >
-                      <Download className="w-3.5 h-3.5" />
-                      Save
-                    </button>
-                  )}
+                {isError && (
+                  <div className="px-3 pb-2">
+                    <p className="text-red-400 text-xs">{state.errorMsg}</p>
+                  </div>
+                )}
 
-                  {/* Delete — always fully visible on mobile (no hover-only opacity) */}
-                  {isComplete && (
-                    <button
-                      onClick={() => handleDelete(pack.id)}
-                      className="w-8 h-8 rounded-full flex items-center justify-center text-red-400 hover:text-red-300 transition-colors"
-                      data-testid={`button-delete-${pack.id}`}
-                      aria-label={`Delete ${pack.name}`}
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </button>
-                  )}
-
-                  {/* Retry on error */}
-                  {isError && (
-                    <button
-                      onClick={() => handleDownload(pack)}
-                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium text-red-300 border border-red-800/40"
-                    >
-                      <XCircle className="w-3.5 h-3.5" />
-                      Retry
-                    </button>
-                  )}
-                </div>
+                {isOfflinePlaying && (
+                  <div className="px-3 pb-2 border-t border-emerald-900/30 pt-2">
+                    <p className="text-emerald-600 text-xs">
+                      ▶ Ayah {playingAyahIdx + 1} / {getDownloadedAyahs(pack.id).length}
+                    </p>
+                  </div>
+                )}
               </div>
-
-              {/* Progress bar */}
-              {isDownloading && (
-                <div className="px-4 pb-4 space-y-2">
-                  <div className="flex justify-between text-xs text-emerald-700">
-                    <span>Downloading audio…</span>
-                    <span>{state.progress}/{state.total} files · {progressPct}%</span>
-                  </div>
-                  <div className="h-1.5 bg-emerald-900/40 rounded-full overflow-hidden">
-                    <div
-                      className="h-full bg-emerald-500 rounded-full transition-all"
-                      style={{ width: `${progressPct}%` }}
-                    />
-                  </div>
-                </div>
-              )}
-
-              {/* Error */}
-              {isError && (
-                <div className="px-4 pb-3">
-                  <p className="text-red-400 text-xs">{state.errorMsg}</p>
-                </div>
-              )}
-
-              {/* Offline player info */}
-              {isOfflinePlaying && (
-                <div className="px-4 pb-3 border-t border-emerald-900/30 pt-3">
-                  <p className="text-emerald-500 text-xs">
-                    ▶ Playing offline · Ayah {playingAyahIdx + 1} of {getDownloadedAyahs(pack.id).length}
-                  </p>
-                </div>
-              )}
-            </div>
-          );
-        })}
+            );
+          })}
+        </div>
       </div>
 
       {/* Downloaded summary list */}

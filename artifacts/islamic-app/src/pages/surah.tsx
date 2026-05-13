@@ -15,6 +15,7 @@ import { Button } from "@/components/ui/button";
 import { getBookmarks, saveBookmark, removeBookmark } from "@/lib/bookmarks";
 import { getFavAyahs, toggleAyahFav } from "@/lib/favorites";
 import { getLang } from "@/lib/settings";
+import { useToast } from "@/hooks/use-toast";
 
 // ── Types ──────────────────────────────────────────────────────────────────────
 type AudioMode  = "arabic" | "translation" | "both";
@@ -37,13 +38,33 @@ const TTS_CANCEL_DELAY_MS = 100; // wait after cancel() before next speak() — 
 /** Sindhi: text translation only, no TTS (device voice almost never installed). */
 const TTS_NO_AUDIO = new Set<TranslationLanguage>(["sindhi"]);
 
+/**
+ * Languages written in Latin script.
+ * When no exact-language voice is installed, we allow ANY available voice as a
+ * fallback for these languages so TTS at least plays the text.  Latin-script
+ * text is readable by any TTS engine (e.g. English voice reading Turkish).
+ * We do NOT do this for Arabic-script languages (Urdu, Bengali uses its own
+ * script) because an English voice produces unintelligible output for them.
+ */
+const LATIN_SCRIPT_TTS_FALLBACK = new Set<TranslationLanguage>([
+  "english", "turkish", "indonesian", "french", "spanish", "malay",
+]);
+
 // ── Pure helpers ───────────────────────────────────────────────────────────────
 function isTTSSupported() {
   return typeof window !== "undefined" && "speechSynthesis" in window;
 }
 
-/** Find the best installed voice for a translation language.
- *  Returns null when language has TTS disabled or no matching voice. */
+/**
+ * Find the best installed voice for a translation language.
+ *
+ * Priority order:
+ *  1. Exact BCP-47 match       (e.g. "tr-TR" for Turkish)
+ *  2. Language-prefix match    (e.g. "tr" for "tr-TR")
+ *  3. Device default voice     — only for Latin-script languages
+ *  4. Any available voice      — only for Latin-script languages
+ *  5. null                     — no usable voice found
+ */
 function findBestVoice(
   lang: TranslationLanguage,
   voices: SpeechSynthesisVoice[],
@@ -51,11 +72,14 @@ function findBestVoice(
   if (TTS_NO_AUDIO.has(lang) || !voices.length) return null;
   const code   = TTS_LANG_CODES[lang] ?? "en-US";
   const prefix = code.split("-")[0];
-  return (
-    voices.find((v) => v.lang === code) ??
-    voices.find((v) => v.lang.startsWith(prefix)) ??
-    null
-  );
+
+  const exact        = voices.find((v) => v.lang === code);
+  const prefixMatch  = voices.find((v) => v.lang.startsWith(prefix));
+  const defaultVoice = LATIN_SCRIPT_TTS_FALLBACK.has(lang)
+    ? (voices.find((v) => v.default) ?? voices[0])
+    : null;
+
+  return exact ?? prefixMatch ?? defaultVoice ?? null;
 }
 
 /** True when TTS can be used for this language on this device. */
@@ -159,6 +183,11 @@ export function SurahReader() {
   const audioModeRef     = useRef(audioMode);
   const ttsVoicesRef     = useRef(ttsVoices);
   const ayahRefs         = useRef<Map<number, HTMLDivElement>>(new Map());
+
+  // Toast — stable ref avoids adding `toast` to deep useCallback deps
+  const { toast } = useToast();
+  const toastRef  = useRef(toast);
+  useEffect(() => { toastRef.current = toast; }, [toast]);
 
   // Sync all refs
   useEffect(() => { playingIndexRef.current = playingIndex; }, [playingIndex]);
@@ -528,6 +557,16 @@ export function SurahReader() {
         setPlayState("idle");
         setPlayingIndex(null);
         playingIndexRef.current = null;
+        // If voices have actually loaded (not still pending), tell the user
+        // WHY nothing is playing so they can fix it (install a voice pack).
+        if (ttsVoicesRef.current.length > 0) {
+          const langLabel = TRANSLATION_LABELS[lang] ?? lang;
+          toastRef.current({
+            title: `${langLabel} voice not installed`,
+            description:
+              "Go to Android Settings → General Management → Language & Input → Text-to-Speech to install this language.",
+          });
+        }
       }
 
     } else {
