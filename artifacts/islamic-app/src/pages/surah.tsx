@@ -1,8 +1,8 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useWakeLock } from "@/hooks/useWakeLock";
 import {
-  useSurah, ALL_LANGUAGES, TRANSLATION_LABELS, TTS_LANG_CODES,
-  RTL_LANGUAGES, TranslationLanguage,
+  useSurah, ALL_LANGUAGES, TRANSLATION_LABELS, TRANSLATION_ENGLISH_NAMES,
+  TTS_LANG_CODES, RTL_LANGUAGES, TranslationLanguage,
 } from "@/lib/api";
 import { useParams, Link } from "wouter";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -16,6 +16,7 @@ import { getBookmarks, saveBookmark, removeBookmark } from "@/lib/bookmarks";
 import { getFavAyahs, toggleAyahFav } from "@/lib/favorites";
 import { getLang } from "@/lib/settings";
 import { useToast } from "@/hooks/use-toast";
+import { NativeTTS } from "@/lib/native-tts";
 
 // ── Types ──────────────────────────────────────────────────────────────────────
 type AudioMode  = "arabic" | "translation" | "both";
@@ -32,62 +33,14 @@ const BETWEEN_AYAH_MS   = 400;               // smooth silence gap between auto-
 const MAX_RETRIES     = 3;
 const RETRY_BASE_MS   = 1200;
 const PRELOAD_AHEAD   = 2;
-const TTS_CHUNK_CHARS = 90; // max chars per TTS chunk (prevents Chrome mobile truncation)
-const TTS_CANCEL_DELAY_MS = 100; // wait after cancel() before next speak() — Chrome timing fix
+const TTS_CHUNK_CHARS = 90; // max chars per TTS chunk
 
-/** Sindhi: text translation only, no TTS (device voice almost never installed). */
+/**
+ * Sindhi: text-only, no TTS audio.  Voice pack essentially never installed.
+ * All other supported languages route through NativeTTSPlugin.kt which calls
+ * android.speech.tts.TextToSpeech directly (no WebView speechSynthesis shim).
+ */
 const TTS_NO_AUDIO = new Set<TranslationLanguage>(["sindhi"]);
-
-/**
- * Languages written in Latin script.
- * When no exact-language voice is installed, we allow ANY available voice as a
- * fallback for these languages so TTS at least plays the text.  Latin-script
- * text is readable by any TTS engine (e.g. English voice reading Turkish).
- * We do NOT do this for Arabic-script languages (Urdu, Bengali uses its own
- * script) because an English voice produces unintelligible output for them.
- */
-const LATIN_SCRIPT_TTS_FALLBACK = new Set<TranslationLanguage>([
-  "english", "turkish", "indonesian", "french", "spanish", "malay",
-]);
-
-// ── Pure helpers ───────────────────────────────────────────────────────────────
-function isTTSSupported() {
-  return typeof window !== "undefined" && "speechSynthesis" in window;
-}
-
-/**
- * Find the best installed voice for a translation language.
- *
- * Priority order:
- *  1. Exact BCP-47 match       (e.g. "tr-TR" for Turkish)
- *  2. Language-prefix match    (e.g. "tr" for "tr-TR")
- *  3. Device default voice     — only for Latin-script languages
- *  4. Any available voice      — only for Latin-script languages
- *  5. null                     — no usable voice found
- */
-function findBestVoice(
-  lang: TranslationLanguage,
-  voices: SpeechSynthesisVoice[],
-): SpeechSynthesisVoice | null {
-  if (TTS_NO_AUDIO.has(lang) || !voices.length) return null;
-  const code   = TTS_LANG_CODES[lang] ?? "en-US";
-  const prefix = code.split("-")[0];
-
-  const exact        = voices.find((v) => v.lang === code);
-  const prefixMatch  = voices.find((v) => v.lang.startsWith(prefix));
-  const defaultVoice = LATIN_SCRIPT_TTS_FALLBACK.has(lang)
-    ? (voices.find((v) => v.default) ?? voices[0])
-    : null;
-
-  return exact ?? prefixMatch ?? defaultVoice ?? null;
-}
-
-/** True when TTS can be used for this language on this device. */
-function isTTSEnabled(lang: TranslationLanguage, voices: SpeechSynthesisVoice[]): boolean {
-  if (TTS_NO_AUDIO.has(lang) || !isTTSSupported()) return false;
-  if (!voices.length) return true; // optimistic until voices loaded
-  return findBestVoice(lang, voices) !== null;
-}
 
 /** Split long text into browser-safe chunks at word boundaries.
  *  Critical: Chrome mobile silently drops utterances > ~100 chars on many devices. */
@@ -138,9 +91,6 @@ export function SurahReader() {
   const [favSet, setFavSet]               = useState<Set<string>>(new Set());
   const [favPopped, setFavPopped]         = useState<string | null>(null);
 
-  // TTS voices — loaded async via voiceschanged event
-  const [ttsVoices, setTtsVoices] = useState<SpeechSynthesisVoice[]>([]);
-
   // Audio state
   const [playState, setPlayState]     = useState<PlayState>("idle");
   const [playingIndex, setPlayingIndex] = useState<number | null>(null);
@@ -181,7 +131,6 @@ export function SurahReader() {
   const surahRef         = useRef(surah);
   const languageRef      = useRef(language);
   const audioModeRef     = useRef(audioMode);
-  const ttsVoicesRef     = useRef(ttsVoices);
   const ayahRefs         = useRef<Map<number, HTMLDivElement>>(new Map());
 
   // Toast — stable ref avoids adding `toast` to deep useCallback deps
@@ -195,37 +144,9 @@ export function SurahReader() {
   useEffect(() => { surahRef.current        = surah;        }, [surah]);
   useEffect(() => { languageRef.current     = language;     }, [language]);
   useEffect(() => { audioModeRef.current    = audioMode;    }, [audioMode]);
-  useEffect(() => { ttsVoicesRef.current    = ttsVoices;    }, [ttsVoices]);
 
   // Persist audio mode
   useEffect(() => { localStorage.setItem(AUDIO_MODE_KEY, audioMode); }, [audioMode]);
-
-  // Load TTS voices (async — Chrome fires voiceschanged after page load)
-  // Android WebView polling fallback: voiceschanged may never fire on some
-  // Android builds.  We poll every 500 ms for up to 6 s and stop as soon as
-  // at least one voice is found.
-  useEffect(() => {
-    if (!isTTSSupported()) return;
-
-    const load = () => {
-      const v = window.speechSynthesis.getVoices();
-      if (v.length) setTtsVoices(v);
-    };
-    load();
-    window.speechSynthesis.addEventListener("voiceschanged", load);
-
-    let polls = 0;
-    const poll = setInterval(() => {
-      const v = window.speechSynthesis.getVoices();
-      if (v.length) { setTtsVoices(v); clearInterval(poll); return; }
-      if (++polls >= 12) clearInterval(poll); // give up after 6 s
-    }, 500);
-
-    return () => {
-      window.speechSynthesis.removeEventListener("voiceschanged", load);
-      clearInterval(poll);
-    };
-  }, []);
 
   // ── Helpers ────────────────────────────────────────────────────────────────
   const scrollToAyah = useCallback((index: number) => {
@@ -258,7 +179,7 @@ export function SurahReader() {
     teardownAudio();
     clearRetryTimer();
     retryCountRef.current = 0;
-    if (isTTSSupported()) window.speechSynthesis.cancel();
+    NativeTTS.stop().catch(() => {}); // stop native TTS; fire-and-forget
     setPlayState("idle");
     setProgress(0);
     setRetrying(false);
@@ -269,7 +190,7 @@ export function SurahReader() {
     return () => {
       cancelledRef.current = true;
       if (audioRef.current) { audioRef.current.pause(); audioRef.current.src = ""; }
-      if (isTTSSupported()) window.speechSynthesis.cancel();
+      NativeTTS.stop().catch(() => {}); // stop any in-progress native TTS
       clearRetryTimer();
     };
   }, [number, clearRetryTimer]);
@@ -392,124 +313,83 @@ export function SurahReader() {
 
   useEffect(() => { playArabicPhaseRef.current = playArabicPhase; }, [playArabicPhase]);
 
-  // ── TTS phase — chunked, with start watchdog ──────────────────────────────
+  // ── TTS phase — native Android TextToSpeech via NativeTTSPlugin ──────────
   /**
-   * gen parameter: every callback checks playGenRef.current === gen before
-   * acting — prevents zombie utterances from a previous ayah continuing after
-   * the user moves to a new one.
+   * WHY we replaced speechSynthesis with a native plugin
+   * ────────────────────────────────────────────────────
+   * Android Capacitor WebView does NOT reliably implement the Web Speech API:
+   *   • getVoices() frequently returns [] (no voiceschanged event either)
+   *   • speak() enqueues utterances but the engine never dequeues them
+   *   • onstart never fires → the 6-second watchdog masked the failure
+   * The root cause is that Chrome WebView ships without the TTS bridge enabled
+   * on many Android builds/OEMs.
    *
-   * Watchdog: if the first utterance's onstart doesn't fire within
-   * TTS_START_TIMEOUT_MS, TTS is considered silently broken on this device
-   * (common on Android WebView when no voice is installed for the target
-   * language). We call onDone() to advance cleanly rather than hanging.
+   * Fix: NativeTTSPlugin.kt calls android.speech.tts.TextToSpeech directly,
+   * bypassing the WebView layer entirely.  speak() returns a Promise that
+   * resolves when the utterance finishes, so chunks are simply chained
+   * sequentially.  The gen guard aborts the chain the moment the user stops
+   * playback or moves to a different ayah.
    */
-  // 6 s gives slow Android devices enough time to spin up the TTS engine.
-  // 4 s was too aggressive: some OEM TTS services (Samsung, Xiaomi) can take
-  // 4–5 s on first use before onstart fires.
-  const TTS_START_TIMEOUT_MS = 6000;
-
   const playTTSPhase = useCallback((index: number, gen: number, onDone: () => void) => {
-    if (cancelledRef.current || playGenRef.current !== gen || !isTTSSupported()) {
-      onDone();
-      return;
-    }
+    if (cancelledRef.current || playGenRef.current !== gen) { onDone(); return; }
 
-    const cur  = surahRef.current;
-    const ayah = cur?.ayahs[index];
+    const ayah = surahRef.current?.ayahs[index];
     const text = ayah?.textTranslation ?? "";
-
     if (!text) { onDone(); return; }
+
+    const lang   = languageRef.current;
+    const code   = TTS_LANG_CODES[lang] ?? "en-US";
+    const chunks = chunkText(text);
+    if (!chunks.length) { onDone(); return; }
 
     currentPhaseRef.current = "tts";
     setTtsPhase("tts");
-
-    // Tear down any HTML audio cleanly
     teardownAudio();
+    setPlayState("playing");
+    setProgress(0);
+    scrollToAyah(index);
 
-    const lang    = languageRef.current;
-    const voices  = ttsVoicesRef.current;
-    const voice   = findBestVoice(lang, voices);
-    const code    = TTS_LANG_CODES[lang] ?? "en-US";
-    const chunks  = chunkText(text);
-
-    if (!chunks.length) { onDone(); return; }
-
-    let chunkIdx  = 0;
-    let ttsStarted = false;
-
-    // Watchdog: fires if the first onstart never arrives (silent TTS failure).
-    // Uses gen guard so it's a no-op if a newer playAyah has already taken over.
-    const watchdog = setTimeout(() => {
-      if (!ttsStarted && !cancelledRef.current && playGenRef.current === gen) {
-        window.speechSynthesis.cancel();
-        onDone(); // advance / stop cleanly
-      }
-    }, TTS_START_TIMEOUT_MS);
+    let chunkIdx = 0;
 
     function speakNext() {
-      // Guard gen on every chunk — if user tapped a new ayah, stop here
-      if (cancelledRef.current || playGenRef.current !== gen) {
-        clearTimeout(watchdog);
-        return;
-      }
+      if (cancelledRef.current || playGenRef.current !== gen) return;
+
       if (chunkIdx >= chunks.length) {
-        clearTimeout(watchdog);
+        currentPhaseRef.current = "arabic";
+        setTtsPhase("arabic");
         onDone();
         return;
       }
 
       const chunk = chunks[chunkIdx++];
-      const utt   = new SpeechSynthesisUtterance(chunk);
-      if (voice) utt.voice = voice;
-      utt.lang   = voice?.lang ?? code;
-      utt.rate   = 0.86;
-      utt.pitch  = 1;
-      utt.volume = 1;
 
-      utt.onstart = () => {
-        if (cancelledRef.current || playGenRef.current !== gen) return;
-        // First chunk actually started — TTS is working; disarm the watchdog
-        if (!ttsStarted) {
-          ttsStarted = true;
-          clearTimeout(watchdog);
-        }
-        setPlayState("playing");
-      };
+      NativeTTS.speak({ text: chunk, lang: code, rate: 0.86, pitch: 1.0 })
+        .then(() => {
+          if (!cancelledRef.current && playGenRef.current === gen) speakNext();
+        })
+        .catch((err: unknown) => {
+          if (cancelledRef.current || playGenRef.current !== gen) return;
+          const msg = (err instanceof Error ? err.message : String(err)).toUpperCase();
 
-      // 50ms gap between chunks — crucial for Chrome stability
-      utt.onend = () => {
-        if (!cancelledRef.current && playGenRef.current === gen) setTimeout(speakNext, 50);
-      };
-
-      utt.onerror = (e) => {
-        if (cancelledRef.current || playGenRef.current !== gen) return;
-        if (e.error === "interrupted" || e.error === "canceled") return;
-        setTimeout(speakNext, 100); // skip bad chunk, continue
-      };
-
-      // ── Critical Android WebView fix ──────────────────────────────────────
-      // After speechSynthesis.cancel() the engine can stay in a "paused"
-      // internal state on Android WebView (Chromium bug).  In that state,
-      // speak() adds utterances to the queue but they are never dequeued —
-      // onstart never fires, the 6-second watchdog kicks in, and the user
-      // hears nothing.  Calling resume() before every speak() forces the
-      // engine back into the "playing" state so the queue is processed
-      // immediately.  This is a no-op on platforms that are already running.
-      window.speechSynthesis.resume();
-      window.speechSynthesis.speak(utt);
+          if (msg.includes("LANG_NOT_SUPPORTED") || msg.includes("LANG_MISSING")) {
+            // Android TTS engine doesn't have a voice for this language.
+            const label = TRANSLATION_ENGLISH_NAMES[lang] ?? lang;
+            toastRef.current({
+              title: `${label} voice not installed`,
+              description:
+                "Go to Android Settings → General Management → Language & Input → Text-to-Speech to install this voice.",
+            });
+            setPlayState("idle");
+            setPlayingIndex(null);
+            playingIndexRef.current = null;
+          } else {
+            // Non-language error (network, TTS engine hiccup) — skip chunk
+            speakNext();
+          }
+        });
     }
 
-    setPlayState("loading");
-    setProgress(0);
-    scrollToAyah(index);
-
-    // Cancel any lingering speech, then wait TTS_CANCEL_DELAY_MS before speaking.
-    // Chrome doesn't reliably speak() if called < ~80ms after cancel().
-    window.speechSynthesis.cancel();
-    setTimeout(() => {
-      // Re-check gen after the delay — user may have moved on during the 100ms
-      if (!cancelledRef.current && playGenRef.current === gen) speakNext();
-    }, TTS_CANCEL_DELAY_MS);
+    speakNext();
   }, [scrollToAyah, teardownAudio]);
 
   // ── Unified dispatcher ─────────────────────────────────────────────────────
@@ -530,9 +410,9 @@ export function SurahReader() {
     const mode = audioModeRef.current;
     const lang = languageRef.current;
 
-    // 2. Tear down existing audio and TTS cleanly
+    // 2. Tear down existing audio and native TTS cleanly
     teardownAudio();
-    if (isTTSSupported()) window.speechSynthesis.cancel();
+    NativeTTS.stop().catch(() => {}); // fire-and-forget; gen guard prevents overlap
 
     setPlayingIndex(index);
     playingIndexRef.current = index;
@@ -540,45 +420,30 @@ export function SurahReader() {
     setProgress(0);
 
     // onComplete passes gen so advanceOrStop can verify the chain is still valid
-    const onComplete = () => advanceOrStop(index, gen);
-    const ttsOk      = isTTSEnabled(lang, ttsVoicesRef.current);
+    const onComplete   = () => advanceOrStop(index, gen);
+    const ttsAvailable = !TTS_NO_AUDIO.has(lang); // false only for Sindhi
 
     if (mode === "arabic") {
       playArabicPhase(index, gen, onComplete);
 
     } else if (mode === "translation") {
-      if (ttsOk) {
+      if (ttsAvailable) {
         playTTSPhase(index, gen, onComplete);
       } else {
-        // No TTS voice available for this language — stop cleanly.
-        // Do NOT fall back to Arabic: the user explicitly chose translation mode
-        // and silently playing Arabic is confusing. The mode button will be
-        // disabled on next render once voices finish loading (or never load).
+        // Sindhi: text-only, no TTS — just stop cleanly
         setPlayState("idle");
         setPlayingIndex(null);
         playingIndexRef.current = null;
-        // If voices have actually loaded (not still pending), tell the user
-        // WHY nothing is playing so they can fix it (install a voice pack).
-        if (ttsVoicesRef.current.length > 0) {
-          const langLabel = TRANSLATION_LABELS[lang] ?? lang;
-          toastRef.current({
-            title: `${langLabel} voice not installed`,
-            description:
-              "Go to Android Settings → General Management → Language & Input → Text-to-Speech to install this language.",
-          });
-        }
       }
 
     } else {
       // "both" — Arabic CDN first, THEN translation TTS
-      // Islamic order: recite the ayah in Arabic, then explain in translation.
       playArabicPhase(index, gen, () => {
-        // Arabic finished — chain TTS only if still valid and TTS is available
         if (!cancelledRef.current && playGenRef.current === gen) {
-          if (ttsOk) {
+          if (ttsAvailable) {
             playTTSPhase(index, gen, onComplete);
           } else {
-            onComplete(); // TTS unavailable — treat Arabic-only as complete
+            onComplete();
           }
         }
       });
@@ -598,13 +463,16 @@ export function SurahReader() {
     const phase = currentPhaseRef.current;
     const isTTSActive = mode === "translation" || (mode === "both" && phase === "tts");
 
-    if (isTTSActive && isTTSSupported()) {
+    if (isTTSActive) {
       if (playState === "playing") {
-        window.speechSynthesis.pause();
+        // Native TTS has no pause API — stop the chain and mark paused so
+        // the user can tap play again to restart from the current ayah.
+        playGenRef.current++;
+        NativeTTS.stop().catch(() => {});
         setPlayState("paused");
       } else if (playState === "paused") {
-        window.speechSynthesis.resume();
-        setPlayState("playing");
+        // Restart the current ayah (native TTS doesn't support mid-resume)
+        playAyah(playingIndexRef.current ?? 0);
       }
     } else if (audioRef.current) {
       if (playState === "playing" || playState === "loading") {
@@ -691,7 +559,7 @@ export function SurahReader() {
   // ── Derived ────────────────────────────────────────────────────────────────
   const isRtl       = RTL_LANGUAGES.has(language);
   const langShort   = TRANSLATION_LABELS[language] ?? language;
-  const ttsEnabled  = isTTSEnabled(language, ttsVoices);
+  const ttsEnabled  = !TTS_NO_AUDIO.has(language); // false only for Sindhi
   const isSindhi    = language === "sindhi";
   const isActive    = playState === "playing";
 
