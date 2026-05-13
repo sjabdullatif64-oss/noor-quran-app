@@ -345,12 +345,19 @@ export function SurahReader() {
 
   useEffect(() => { playArabicPhaseRef.current = playArabicPhase; }, [playArabicPhase]);
 
-  // ── TTS phase — chunked, zero watchdog ────────────────────────────────────
+  // ── TTS phase — chunked, with start watchdog ──────────────────────────────
   /**
    * gen parameter: every callback checks playGenRef.current === gen before
    * acting — prevents zombie utterances from a previous ayah continuing after
    * the user moves to a new one.
+   *
+   * Watchdog: if the first utterance's onstart doesn't fire within
+   * TTS_START_TIMEOUT_MS, TTS is considered silently broken on this device
+   * (common on Android WebView when no voice is installed for the target
+   * language). We call onDone() to advance cleanly rather than hanging.
    */
+  const TTS_START_TIMEOUT_MS = 4000;
+
   const playTTSPhase = useCallback((index: number, gen: number, onDone: () => void) => {
     if (cancelledRef.current || playGenRef.current !== gen || !isTTSSupported()) {
       onDone();
@@ -377,12 +384,29 @@ export function SurahReader() {
 
     if (!chunks.length) { onDone(); return; }
 
-    let chunkIdx = 0;
+    let chunkIdx  = 0;
+    let ttsStarted = false;
+
+    // Watchdog: fires if the first onstart never arrives (silent TTS failure).
+    // Uses gen guard so it's a no-op if a newer playAyah has already taken over.
+    const watchdog = setTimeout(() => {
+      if (!ttsStarted && !cancelledRef.current && playGenRef.current === gen) {
+        window.speechSynthesis.cancel();
+        onDone(); // advance / stop cleanly
+      }
+    }, TTS_START_TIMEOUT_MS);
 
     function speakNext() {
       // Guard gen on every chunk — if user tapped a new ayah, stop here
-      if (cancelledRef.current || playGenRef.current !== gen) return;
-      if (chunkIdx >= chunks.length) { onDone(); return; }
+      if (cancelledRef.current || playGenRef.current !== gen) {
+        clearTimeout(watchdog);
+        return;
+      }
+      if (chunkIdx >= chunks.length) {
+        clearTimeout(watchdog);
+        onDone();
+        return;
+      }
 
       const chunk = chunks[chunkIdx++];
       const utt   = new SpeechSynthesisUtterance(chunk);
@@ -393,7 +417,13 @@ export function SurahReader() {
       utt.volume = 1;
 
       utt.onstart = () => {
-        if (!cancelledRef.current && playGenRef.current === gen) setPlayState("playing");
+        if (cancelledRef.current || playGenRef.current !== gen) return;
+        // First chunk actually started — TTS is working; disarm the watchdog
+        if (!ttsStarted) {
+          ttsStarted = true;
+          clearTimeout(watchdog);
+        }
+        setPlayState("playing");
       };
 
       // 50ms gap between chunks — crucial for Chrome stability
@@ -461,7 +491,13 @@ export function SurahReader() {
       if (ttsOk) {
         playTTSPhase(index, gen, onComplete);
       } else {
-        playArabicPhase(index, gen, onComplete);
+        // No TTS voice available for this language — stop cleanly.
+        // Do NOT fall back to Arabic: the user explicitly chose translation mode
+        // and silently playing Arabic is confusing. The mode button will be
+        // disabled on next render once voices finish loading (or never load).
+        setPlayState("idle");
+        setPlayingIndex(null);
+        playingIndexRef.current = null;
       }
 
     } else {

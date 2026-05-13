@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useCallback } from "react";
 import { ChevronLeft, Download, Trash2, CheckCircle, Play, Pause, HardDrive, Wifi, XCircle } from "lucide-react";
 import { Link } from "wouter";
 import {
@@ -8,11 +8,11 @@ import {
   downloadPack,
   deletePack,
   getDownloadedPacks,
-  isPackDownloaded,
   getDownloadedAyahs,
   getAudioBlobUrl,
 } from "@/lib/downloads";
 import { useToast } from "@/hooks/use-toast";
+import { useRef } from "react";
 
 interface PackState {
   status: "idle" | "downloading" | "complete" | "error";
@@ -21,61 +21,88 @@ interface PackState {
   errorMsg?: string;
 }
 
-export function Downloads() {
-  const [packStates, setPackStates] = useState<Record<string, PackState>>(() => {
-    const initial: Record<string, PackState> = {};
-    for (const p of SURAH_PACKS) {
-      initial[p.id] = {
-        status: isPackDownloaded(p.id) ? "complete" : "idle",
-        progress: 0,
-        total: 0,
-      };
-    }
-    return initial;
-  });
+/** Build the initial packStates map from what is currently persisted. */
+function buildInitialPackStates(): Record<string, PackState> {
+  const downloaded = getDownloadedPacks();
+  const downloadedIds = new Set(downloaded.map((p) => p.id));
+  const initial: Record<string, PackState> = {};
+  for (const p of SURAH_PACKS) {
+    initial[p.id] = {
+      status:   downloadedIds.has(p.id) ? "complete" : "idle",
+      progress: 0,
+      total:    0,
+    };
+  }
+  return initial;
+}
 
-  const [downloadedPacks, setDownloadedPacks] = useState<DownloadedPack[]>([]);
+export function Downloads() {
+  // ── Both states initialized synchronously from localStorage so the UI is
+  //    always correct on first render — no empty-flash or stale-data issues.
+  const [packStates, setPackStates] = useState<Record<string, PackState>>(buildInitialPackStates);
+  const [downloadedPacks, setDownloadedPacks] = useState<DownloadedPack[]>(() => getDownloadedPacks());
+
   const [playingPackId, setPlayingPackId] = useState<string | null>(null);
   const [playingAyahIdx, setPlayingAyahIdx] = useState<number>(0);
   const [isPlaying, setIsPlaying] = useState(false);
-  const audioRef = useRef<HTMLAudioElement | null>(null);
+  const audioRef    = useRef<HTMLAudioElement | null>(null);
   const blobUrlsRef = useRef<string[]>([]);
-  const { toast } = useToast();
+  const { toast }   = useToast();
 
-  useEffect(() => {
-    setDownloadedPacks(getDownloadedPacks());
+  // ── Single source of truth for refreshing both states from storage ──────────
+  const refreshDownloads = useCallback(() => {
+    const fresh = getDownloadedPacks();
+    const freshIds = new Set(fresh.map((p) => p.id));
+
+    setDownloadedPacks(fresh);
+
+    // Re-sync packStates: mark packs that are now absent as idle,
+    // packs that are present as complete (unless currently downloading).
+    setPackStates((prev) => {
+      const next = { ...prev };
+      for (const p of SURAH_PACKS) {
+        const cur = next[p.id];
+        if (freshIds.has(p.id) && cur.status !== "downloading") {
+          next[p.id] = { ...cur, status: "complete" };
+        } else if (!freshIds.has(p.id) && cur.status === "complete") {
+          next[p.id] = { ...cur, status: "idle", progress: 0, total: 0 };
+        }
+      }
+      return next;
+    });
   }, []);
 
-  const setPackStatus = (packId: string, update: Partial<PackState>) => {
+  const setPackStatus = useCallback((packId: string, update: Partial<PackState>) => {
     setPackStates((prev) => ({ ...prev, [packId]: { ...prev[packId], ...update } }));
-  };
+  }, []);
 
+  // ── Download ─────────────────────────────────────────────────────────────────
   const handleDownload = async (pack: SurahPack) => {
     setPackStatus(pack.id, { status: "downloading", progress: 0, total: 0 });
     try {
       await downloadPack(pack, (completed, total) => {
         setPackStatus(pack.id, { progress: completed, total });
       });
+      // Mark complete then refresh both states from storage atomically
       setPackStatus(pack.id, { status: "complete" });
-      const refreshed = getDownloadedPacks();
-      setDownloadedPacks(refreshed);
+      refreshDownloads();
       toast({ title: "Download complete!", description: `${pack.name} is now available offline.` });
-    } catch (err) {
+    } catch {
       setPackStatus(pack.id, { status: "error", errorMsg: "Download failed. Check your connection." });
       toast({ title: "Download failed", description: "Please check your internet connection.", variant: "destructive" });
     }
   };
 
+  // ── Delete ───────────────────────────────────────────────────────────────────
   const handleDelete = async (packId: string) => {
     if (playingPackId === packId) stopPlayer();
     await deletePack(packId);
-    setPackStatus(packId, { status: "idle", progress: 0, total: 0 });
-    setDownloadedPacks(getDownloadedPacks());
+    refreshDownloads();
     toast({ title: "Deleted", description: "Pack removed from your device." });
   };
 
-  // Offline player
-  const stopPlayer = () => {
+  // ── Offline player ───────────────────────────────────────────────────────────
+  const stopPlayer = useCallback(() => {
     if (audioRef.current) {
       audioRef.current.pause();
       audioRef.current.src = "";
@@ -85,9 +112,9 @@ export function Downloads() {
     setPlayingPackId(null);
     setIsPlaying(false);
     setPlayingAyahIdx(0);
-  };
+  }, []);
 
-  const playOffline = async (packId: string, ayahIdx = 0) => {
+  const playOffline = useCallback(async (packId: string, ayahIdx = 0) => {
     const ayahs = getDownloadedAyahs(packId);
     if (!ayahs.length) return;
     const ayah = ayahs[ayahIdx];
@@ -120,9 +147,9 @@ export function Downloads() {
       }
     });
     audio.play().catch(() => setIsPlaying(false));
-  };
+  }, [toast]);
 
-  const togglePlay = (packId: string) => {
+  const togglePlay = useCallback((packId: string) => {
     if (playingPackId === packId && isPlaying) {
       audioRef.current?.pause();
       setIsPlaying(false);
@@ -133,11 +160,11 @@ export function Downloads() {
       stopPlayer();
       playOffline(packId, 0);
     }
-  };
+  }, [playingPackId, isPlaying, stopPlayer, playOffline]);
 
   const usedMB = downloadedPacks.reduce((sum, p) => {
     const ayahs = getDownloadedAyahs(p.id);
-    return sum + ayahs.length * 0.06; // rough estimate 60KB per ayah
+    return sum + ayahs.length * 0.06; // ~60 KB per ayah
   }, 0);
 
   return (
@@ -177,11 +204,11 @@ export function Downloads() {
       <div className="px-4 space-y-3 mb-6">
         <p className="text-emerald-500 text-xs uppercase tracking-wider font-medium">Available Packs</p>
         {SURAH_PACKS.map((pack) => {
-          const state = packStates[pack.id];
-          const isComplete = state.status === "complete";
+          const state         = packStates[pack.id];
+          const isComplete    = state.status === "complete";
           const isDownloading = state.status === "downloading";
-          const isError = state.status === "error";
-          const progressPct = state.total > 0 ? Math.round((state.progress / state.total) * 100) : 0;
+          const isError       = state.status === "error";
+          const progressPct   = state.total > 0 ? Math.round((state.progress / state.total) * 100) : 0;
           const isOfflinePlaying = playingPackId === pack.id;
 
           return (
@@ -192,7 +219,10 @@ export function Downloads() {
             >
               <div className="flex items-center gap-4 p-4">
                 <div className="w-11 h-11 rounded-xl flex items-center justify-center shrink-0"
-                  style={{ background: isComplete ? "rgba(52,211,153,0.15)" : "rgba(45,212,191,0.08)", border: "1px solid rgba(52,211,153,0.2)" }}>
+                  style={{
+                    background: isComplete ? "rgba(52,211,153,0.15)" : "rgba(45,212,191,0.08)",
+                    border: "1px solid rgba(52,211,153,0.2)",
+                  }}>
                   {isComplete ? (
                     <CheckCircle className="w-5 h-5 text-emerald-400" />
                   ) : (
@@ -209,6 +239,7 @@ export function Downloads() {
                 </div>
 
                 <div className="flex items-center gap-2 shrink-0">
+                  {/* Play/pause offline audio */}
                   {isComplete && (
                     <button
                       onClick={() => togglePlay(pack.id)}
@@ -219,6 +250,8 @@ export function Downloads() {
                       {isOfflinePlaying && isPlaying ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4" />}
                     </button>
                   )}
+
+                  {/* Download button */}
                   {!isComplete && !isDownloading && (
                     <button
                       onClick={() => handleDownload(pack)}
@@ -230,15 +263,20 @@ export function Downloads() {
                       Save
                     </button>
                   )}
+
+                  {/* Delete — always fully visible on mobile (no hover-only opacity) */}
                   {isComplete && (
                     <button
                       onClick={() => handleDelete(pack.id)}
-                      className="w-8 h-8 rounded-full flex items-center justify-center text-red-400 opacity-50 hover:opacity-100 transition-opacity"
+                      className="w-8 h-8 rounded-full flex items-center justify-center text-red-400 hover:text-red-300 transition-colors"
                       data-testid={`button-delete-${pack.id}`}
+                      aria-label={`Delete ${pack.name}`}
                     >
                       <Trash2 className="w-4 h-4" />
                     </button>
                   )}
+
+                  {/* Retry on error */}
                   {isError && (
                     <button
                       onClick={() => handleDownload(pack)}
@@ -287,7 +325,7 @@ export function Downloads() {
         })}
       </div>
 
-      {/* Downloaded list */}
+      {/* Downloaded summary list */}
       {downloadedPacks.length > 0 && (
         <div className="px-4 space-y-3">
           <p className="text-emerald-500 text-xs uppercase tracking-wider font-medium">
@@ -306,6 +344,15 @@ export function Downloads() {
                   {pack.ayahGlobals.length} ayahs · Saved {new Date(pack.downloadedAt).toLocaleDateString()}
                 </p>
               </div>
+              {/* Delete shortcut in summary row — always visible */}
+              <button
+                onClick={() => handleDelete(pack.id)}
+                className="w-8 h-8 rounded-full flex items-center justify-center text-red-400 hover:text-red-300 transition-colors shrink-0"
+                data-testid={`button-delete-summary-${pack.id}`}
+                aria-label={`Delete ${pack.name}`}
+              >
+                <Trash2 className="w-4 h-4" />
+              </button>
             </div>
           ))}
         </div>
