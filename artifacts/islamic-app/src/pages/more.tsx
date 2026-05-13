@@ -7,6 +7,7 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import { useI18n } from "@/lib/i18n-context";
 import { RewardedAdButton } from "@/components/rewarded-ad-button";
+import { nativeShare } from "@/lib/capacitor";
 
 const APP_SHARE_URL = "https://play.google.com/store/apps/details?id=com.sj64noorquran";
 const APP_SHARE_MSG =
@@ -17,14 +18,20 @@ export function More() {
   const { toast }    = useToast();
   const { t }        = useI18n();
 
-  function handleShare() {
-    const fullText = `${APP_SHARE_MSG}\n\n${APP_SHARE_URL}`;
-    if (typeof navigator !== "undefined" && navigator.share) {
-      navigator.share({ title: "Noor Quran", text: APP_SHARE_MSG, url: APP_SHARE_URL }).catch(() => {});
-    } else if (navigator.clipboard) {
-      navigator.clipboard.writeText(fullText).then(() =>
-        toast({ title: "Link copied!", description: "Share Noor Quran with your family & friends." })
-      );
+  async function handleShare() {
+    const shared = await nativeShare({
+      title:       "Noor Quran",
+      text:        APP_SHARE_MSG,
+      url:         APP_SHARE_URL,
+      dialogTitle: "Share Noor Quran",
+    });
+    if (!shared) {
+      // Clipboard fallback — only reached on environments with no share API
+      const fullText = `${APP_SHARE_MSG}\n\n${APP_SHARE_URL}`;
+      try {
+        await navigator.clipboard.writeText(fullText);
+        toast({ title: "Link copied!", description: "Share Noor Quran with your family & friends." });
+      } catch { /* clipboard unavailable — silent */ }
     }
   }
 

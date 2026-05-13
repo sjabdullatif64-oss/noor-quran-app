@@ -2,6 +2,7 @@ import { useState, useRef, useCallback } from "react";
 import { ChevronLeft, Gift, Share2, Download, X, Check } from "lucide-react";
 import { Link } from "wouter";
 import { useToast } from "@/hooks/use-toast";
+import { nativeShare } from "@/lib/capacitor";
 
 interface GiftCard {
   id: string;
@@ -216,19 +217,24 @@ export function IslamicGifts() {
 
   const handleShare = async (card: GiftCard) => {
     const text = `${card.arabic}\n${card.title}\n${card.subtitle}\n\n— Shared via Noor Quran`;
-    if (navigator.share) {
-      try {
-        await navigator.share({ title: card.title, text });
-        setShared(true);
-        setTimeout(() => setShared(false), 2000);
-      } catch {
-        // User cancelled
-      }
-    } else {
-      await navigator.clipboard.writeText(text);
+    const APP_SHARE_URL = "https://play.google.com/store/apps/details?id=com.sj64noorquran";
+    const shared = await nativeShare({
+      title:       card.title,
+      text,
+      url:         APP_SHARE_URL,
+      dialogTitle: "Share via",
+    });
+    if (shared) {
       setShared(true);
       setTimeout(() => setShared(false), 2000);
-      toast({ title: "Copied!", description: "Card text copied to clipboard." });
+    } else {
+      // Clipboard fallback
+      try {
+        await navigator.clipboard.writeText(`${text}\n\n${APP_SHARE_URL}`);
+        setShared(true);
+        setTimeout(() => setShared(false), 2000);
+        toast({ title: "Copied!", description: "Card text copied to clipboard." });
+      } catch { /* clipboard unavailable — silent */ }
     }
   };
 

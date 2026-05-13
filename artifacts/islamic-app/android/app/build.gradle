@@ -90,6 +90,7 @@ dependencies {
     implementation project(':capacitor-filesystem')
     implementation project(':capacitor-haptics')
     implementation project(':capacitor-network')
+    implementation project(':capacitor-share')
 
     // AdMob — Capacitor community plugin (pulls in play-services-ads + UMP)
     implementation project(':capacitor-community-admob')

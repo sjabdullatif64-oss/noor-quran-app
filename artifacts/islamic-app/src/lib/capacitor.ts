@@ -204,6 +204,75 @@ export async function hapticSuccess(): Promise<void> {
   try { await h.notification({ type: "Success" }); } catch { /* ignore */ }
 }
 
+// ── Share ──────────────────────────────────────────────────────────────────────
+//
+// Why not navigator.share?
+// navigator.share() in a Capacitor WebView blocks the JS thread while the
+// native share sheet is open.  On some Android OEMs this freezes the UI for
+// the entire duration of the share sheet (can be several seconds).
+//
+// @capacitor/share uses Capacitor's proper async IPC bridge: the JS thread
+// is NOT blocked, the share sheet opens immediately, and the Promise resolves
+// only after the user closes the sheet (or cancels).
+//
+// Strategy:
+//   1. Native Android → Capacitor Share plugin (non-blocking, instant sheet)
+//   2. Web / fallback → navigator.share if available (non-blocking on desktop)
+//   3. Last resort     → clipboard copy (always works)
+
+interface SharePlugin {
+  share(opts: {
+    title?: string;
+    text?: string;
+    url?: string;
+    dialogTitle?: string;
+  }): Promise<{ activityType?: string }>;
+}
+
+export interface ShareOptions {
+  title:       string;
+  text:        string;
+  url?:        string;
+  dialogTitle?: string;
+}
+
+/**
+ * Opens the native share sheet without blocking the UI thread.
+ * Returns true if sharing succeeded, false if the user cancelled or it failed.
+ * Never throws — all errors are swallowed so call sites stay clean.
+ */
+export async function nativeShare(opts: ShareOptions): Promise<boolean> {
+  // 1. Prefer @capacitor/share on native Android (non-blocking bridge)
+  const sharePlugin = getPlugin<SharePlugin>("Share");
+  if (sharePlugin) {
+    try {
+      await sharePlugin.share({
+        title:       opts.title,
+        text:        opts.text,
+        url:         opts.url,
+        dialogTitle: opts.dialogTitle ?? opts.title,
+      });
+      return true;
+    } catch {
+      // AbortError = user cancelled — not an error we need to surface
+      return false;
+    }
+  }
+
+  // 2. Web Share API (works on desktop Chrome, Safari, some Android browsers)
+  if (typeof navigator !== "undefined" && navigator.share) {
+    try {
+      await navigator.share({ title: opts.title, text: opts.text, url: opts.url });
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
+  // 3. Clipboard fallback
+  return false; // caller handles clipboard copy
+}
+
 // ── Network ────────────────────────────────────────────────────────────────────
 
 interface NetworkPlugin {

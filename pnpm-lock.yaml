@@ -217,6 +217,10 @@ importers:
         version: 3.1.0
 
   artifacts/islamic-app:
+    dependencies:
+      '@capacitor/share':
+        specifier: ^8.0.1
+        version: 8.0.1(@capacitor/core@8.3.3)
     devDependencies:
       '@capacitor-community/admob':
         specifier: ^8.0.0
@@ -804,6 +808,11 @@ packages:
 
   '@capacitor/network@8.0.1':
     resolution: {integrity: sha512-9xK/FHFmzKGanB6BdoSZOzXk8vF0OFVQSQ4PAsIrzAzLuXHryO317qy8dcHVpgxYeuZq2noI0My9z1DvVDi/9w==}
+    peerDependencies:
+      '@capacitor/core': '>=8.0.0'
+
+  '@capacitor/share@8.0.1':
+    resolution: {integrity: sha512-3cSBKBCJVon54rKDROP2rqGyeGks4pBh9TbaEk9S375Kbek/ZHe72N50zIa0Vn9Eac/SuhwgehO/mmA4CsUOiw==}
     peerDependencies:
       '@capacitor/core': '>=8.0.0'
 
@@ -3705,6 +3714,10 @@ snapshots:
       '@capacitor/core': 8.3.3
 
   '@capacitor/network@8.0.1(@capacitor/core@8.3.3)':
+    dependencies:
+      '@capacitor/core': 8.3.3
+
+  '@capacitor/share@8.0.1(@capacitor/core@8.3.3)':
     dependencies:
       '@capacitor/core': 8.3.3
 

@@ -5,6 +5,7 @@ import {
   Calculator, ExternalLink,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { nativeShare } from "@/lib/capacitor";
 
 const APP_SHARE_URL = "https://play.google.com/store/apps/details?id=com.sj64noorquran";
 const APP_SHARE_MSG =
@@ -127,14 +128,19 @@ const SUPPORTED_LANGS = [
   { native: "Español", english: "Spanish",     flag: "🇪🇸" },
 ];
 
-function shareApp(toast: ReturnType<typeof useToast>["toast"]) {
-  const fullText = `${APP_SHARE_MSG}\n\n${APP_SHARE_URL}`;
-  if (typeof navigator !== "undefined" && navigator.share) {
-    navigator.share({ title: "Noor Quran", text: APP_SHARE_MSG, url: APP_SHARE_URL }).catch(() => {});
-  } else if (navigator.clipboard) {
-    navigator.clipboard.writeText(fullText).then(() =>
-      toast({ title: "Link copied!", description: "Share it with your friends and family." })
-    );
+async function shareApp(toast: ReturnType<typeof useToast>["toast"]) {
+  const shared = await nativeShare({
+    title:       "Noor Quran",
+    text:        APP_SHARE_MSG,
+    url:         APP_SHARE_URL,
+    dialogTitle: "Share Noor Quran",
+  });
+  if (!shared) {
+    const fullText = `${APP_SHARE_MSG}\n\n${APP_SHARE_URL}`;
+    try {
+      await navigator.clipboard.writeText(fullText);
+      toast({ title: "Link copied!", description: "Share it with your friends and family." });
+    } catch { /* clipboard unavailable — silent */ }
   }
 }
 
