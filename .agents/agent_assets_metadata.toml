@@ -6,3 +6,15 @@ id = "b-Wx88Et6pQ7deKjg8Dwp"
 uri = "file://keystore-base64-for-github.txt"
 type = "text"
 title = "KEYSTORE_BASE64 — paste this into GitHub Secrets"
+
+[[outputs]]
+id = "aZa6zi3Bq3Zwmcira-bs-"
+uri = "file://artifacts/islamic-app/android/app/build/outputs/noor-quran-release.aab.zip"
+type = "unspecified"
+title = "Noor Quran — Release AAB (Play Store upload)"
+
+[[outputs]]
+id = "8yB72PqaHaG5BPkE3N7kv"
+uri = "file://artifacts/islamic-app/android/app/build/outputs/noor-quran-release.apk.zip"
+type = "unspecified"
+title = "Noor Quran — Release APK (direct install)"

@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="colorAccent">#1a5c38</color>
+    <color name="colorPrimary">#1a5c38</color>
+    <color name="colorPrimaryDark">#071a0e</color>
+    <color name="ic_launcher_background">#1a5c38</color>
+    <color name="splash_background">#071a0e</color>
+    <string name="app_name">Noor Quran</string>
+    <string name="custom_url_scheme">com.sj64noorquran</string>
+    <string name="package_name">com.sj64noorquran</string>
+    <string name="title_activity_main">Noor Quran</string>
+    <style name="AppTheme" parent="Theme.AppCompat.DayNight.NoActionBar">
+        <item name="colorPrimary">#1a5c38</item>
+        <item name="colorPrimaryDark">#071a0e</item>
+        <item name="colorAccent">#1a5c38</item>
+        <item name="android:windowBackground">#071a0e</item>
+        <item name="android:statusBarColor">#071a0e</item>
+        <item name="android:navigationBarColor">#071a0e</item>
+        <item name="android:windowLightStatusBar">false</item>
+    </style>
+    <style name="AppTheme.Launcher" parent="AppTheme.NoActionBar">
+        <item name="android:windowBackground">@drawable/splash</item>
+    </style>
+    <style name="AppTheme.NoActionBar" parent="AppTheme">
+        <item name="windowActionBar">false</item>
+        <item name="windowNoTitle">true</item>
+        <item name="android:windowFullscreen">false</item>
+        <item name="android:windowDrawsSystemBarBackgrounds">true</item>
+    </style>
+</resources>
