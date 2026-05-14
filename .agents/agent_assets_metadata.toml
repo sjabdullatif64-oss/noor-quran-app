@@ -30,3 +30,9 @@ id = "YFt8TAdlqzbhsLsRupEGa"
 uri = "file://artifacts/islamic-app/android/app/build/outputs/apk/release/noor-quran-signed.zip"
 type = "unspecified"
 title = "Noor Quran APK (original upload key سے signed)"
+
+[[outputs]]
+id = "2MWFK01VvII9VwF-WrSpi"
+uri = "file://artifacts/islamic-app/android/app/build/outputs/bundle/release/noor-quran-playstore.zip"
+type = "unspecified"
+title = "Noor Quran — Play Store AAB (original upload key سے signed)"
