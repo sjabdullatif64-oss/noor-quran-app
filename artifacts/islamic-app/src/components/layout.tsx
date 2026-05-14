@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect } from "react";
 import { Link, useLocation } from "wouter";
 import {
   Book, Bookmark, Compass, Home as HomeIcon,
@@ -7,7 +7,7 @@ import {
 import { useTheme } from "./theme-provider";
 import { Button } from "./ui/button";
 import { useI18n } from "@/lib/i18n-context";
-import { BannerAd } from "@/components/banner-ad";
+import { BannerAd, hideBanner, resumeBanner } from "@/components/banner-ad";
 
 const MORE_PATHS = [
   "/more", "/qibla", "/favorites", "/tasbeeh", "/settings", "/islamic-gifts",
@@ -31,8 +31,19 @@ export function Layout({ children }: { children: React.ReactNode }) {
 
   const isMoreActive = MORE_PATHS.some((p) => location.startsWith(p));
 
-  // Show banner on every route EXCEPT the Quran reading screen (/quran/:number)
-  const showBanner = !NO_AD_ROUTES.some((r) => location.startsWith(r));
+  // Hide banner on Quran reading screens; resume it everywhere else.
+  // We never unmount <BannerAd> — the native overlay persists; we only
+  // call hideBanner() / resumeBanner() to avoid the removeBanner+showBanner
+  // cycle that causes blank/flickering ads on real devices.
+  const onNoAdRoute = NO_AD_ROUTES.some((r) => location.startsWith(r));
+
+  useEffect(() => {
+    if (onNoAdRoute) {
+      hideBanner();
+    } else {
+      resumeBanner();
+    }
+  }, [onNoAdRoute]);
 
   return (
     <div className="min-h-[100dvh] flex flex-col md:flex-row bg-background">
@@ -104,7 +115,9 @@ export function Layout({ children }: { children: React.ReactNode }) {
           (don't show ads on content-consumption pages that require full attention).
           The spacer div ensures the last page content is never hidden under the native overlay.
         */}
-        {showBanner && <BannerAd placement="fixed-bottom" />}
+        {/* Always rendered — never conditionally unmounted.
+            hide/resumeBanner() control native visibility per route. */}
+        <BannerAd placement="fixed-bottom" />
       </main>
 
       {/* Mobile bottom navigation — 4 tabs

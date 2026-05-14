@@ -2,38 +2,32 @@
  * RewardedAdButton — "Support Noor Quran" button with native AdMob Rewarded Ad.
  *
  * AdMob App ID   : ca-app-pub-5050437827917011~3831002202  (AndroidManifest.xml)
- * Rewarded Unit  : ca-app-pub-5050437827917011/8806398221
+ * Banner Ad Unit : ca-app-pub-5050437827917011/8806398221
  *
- * ⚠️  WARNING — ADMOB UNIT ID MISMATCH:
- *   The unit ID above is IDENTICAL to the one used in banner-ad.tsx.
- *   A Rewarded ad MUST use a unit created as "Rewarded" in AdMob; using a
- *   Banner unit ID will cause every rewarded request to fail with error 2
- *   (NETWORK_ERROR / invalid ad unit type).
- *   ACTION REQUIRED: replace REWARDED_AD_UNIT below with the correct
- *   Rewarded unit ID from your AdMob dashboard
- *   (AdMob → Apps → Noor Quran → Ad units → [your Rewarded unit]).
- *   Until this is corrected the rewarded ad will always hit the fallback.
+ * ⚠️  ACTION REQUIRED — REWARDED UNIT ID:
+ *   You currently only have ONE ad unit (the banner unit above).
+ *   A Rewarded ad MUST use a unit created as type "Rewarded" in AdMob.
+ *   Using a Banner unit ID for rewarded requests causes AdMob to return
+ *   error code 2 (invalid request) every single time — this is why rewarded
+ *   ads fail instantly.
  *
- * Flow (native APK):
+ *   HOW TO FIX:
+ *   1. Go to AdMob → Apps → Noor Quran → Ad units → Add ad unit
+ *   2. Choose "Rewarded" as the format
+ *   3. Name it (e.g. "Noor Quran Rewarded")
+ *   4. Copy the new unit ID (ca-app-pub-5050437827917011/XXXXXXXXX)
+ *   5. Replace REWARDED_AD_UNIT below with it
+ *   6. Rebuild the APK
+ *
+ *   Until you do this, the rewarded button will always show the fallback
+ *   screen (which is a graceful experience, not a crash).
+ *
+ * Flow (native APK with a real Rewarded unit):
  *  1. User taps button → prepareRewardVideoAd() starts loading
  *  2. Ad loads (Loaded event) → showRewardVideoAd() presents full-screen ad
  *  3. User earns reward (Rewarded event) → wasRewarded = true, thank-you toast
- *  4. Ad closes (Dismissed event) → reset to idle (toast already shown if rewarded)
- *                                   OR show fallback if user skipped without reward
- *  5. Any load/show failure → beautiful fallback screen (never a blank or crash)
- *
- * In browser / non-Capacitor: shows the thank-you toast directly (no-op ad).
- *
- * Bug fixes in this version vs previous:
- *  - wasRewarded ref prevents double toast (Rewarded + Dismissed both fired)
- *  - clearListeners() never called INSIDE an event handler (causes handle to
- *    remove itself while executing, which is unsafe in some native bridges)
- *  - mountedRef correctly initialised once and cleared only on unmount
- *  - 30-second load timeout → fallback if ad never responds
- *
- * Google Play policy compliance:
- *  - Fully voluntary — user must tap to start
- *  - Never gate core functionality behind watching an ad
+ *  4. Ad closes (Dismissed event) → reset to idle
+ *  5. Any failure → graceful fallback screen
  */
 
 import { useState, useRef, useEffect } from "react";
@@ -42,11 +36,22 @@ import { isNative } from "@/lib/capacitor";
 import { useToast } from "@/hooks/use-toast";
 import type { PluginListenerHandle } from "@capacitor/core";
 
-// ── Constants ─────────────────────────────────────────────────────────────────
-const REWARDED_AD_UNIT  = "ca-app-pub-5050437827917011/8806398221";
-const JAZAK_TITLE       = "JazakAllah Khair 🌙";
-const JAZAK_MSG         = "JazakAllah for supporting Noor Quran 🌙";
-const LOAD_TIMEOUT_MS   = 30_000; // give the ad network 30 s to respond
+// ── Ad Unit IDs ───────────────────────────────────────────────────────────────
+// ⚠️ Replace with your actual Rewarded unit ID from AdMob dashboard.
+// The banner unit ID CANNOT be used here — it will always fail.
+const REWARDED_AD_UNIT = "ca-app-pub-5050437827917011/REPLACE_WITH_REWARDED_UNIT_ID";
+
+const JAZAK_TITLE     = "JazakAllah Khair 🌙";
+const JAZAK_MSG       = "JazakAllah for supporting Noor Quran 🌙";
+const LOAD_TIMEOUT_MS = 30_000;
+
+function log(msg: string, data?: unknown) {
+  if (data !== undefined) {
+    console.log(`[AdMob Rewarded] ${msg}`, data);
+  } else {
+    console.log(`[AdMob Rewarded] ${msg}`);
+  }
+}
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 type AdState = "idle" | "loading" | "showing" | "done" | "fallback";
@@ -77,7 +82,6 @@ function FallbackScreen({ onClose }: { onClose: () => void }) {
       }}
       onClick={handleClose}
     >
-      {/* Card */}
       <div
         className="relative w-full max-w-sm rounded-3xl overflow-hidden text-center"
         style={{
@@ -89,7 +93,6 @@ function FallbackScreen({ onClose }: { onClose: () => void }) {
         }}
         onClick={(e) => e.stopPropagation()}
       >
-        {/* Close button */}
         <button
           onClick={handleClose}
           className="absolute top-4 right-4 w-8 h-8 flex items-center justify-center rounded-full text-emerald-600 hover:text-emerald-400 transition-colors"
@@ -99,14 +102,12 @@ function FallbackScreen({ onClose }: { onClose: () => void }) {
           <X className="w-4 h-4" />
         </button>
 
-        {/* Decorative top glow */}
         <div
           className="absolute top-0 left-1/2 -translate-x-1/2 w-48 h-1 rounded-full"
           style={{ background: "linear-gradient(90deg, transparent, #1a5c38, transparent)" }}
         />
 
         <div className="px-7 pt-10 pb-8">
-          {/* Crescent & star motif */}
           <div className="flex justify-center mb-5">
             <div
               className="w-20 h-20 rounded-full flex items-center justify-center text-4xl"
@@ -120,48 +121,30 @@ function FallbackScreen({ onClose }: { onClose: () => void }) {
             </div>
           </div>
 
-          {/* Title */}
-          <h2
-            className="text-2xl font-bold mb-1"
-            style={{ color: "#e8f5ee", letterSpacing: "-0.02em" }}
-          >
+          <h2 className="text-2xl font-bold mb-1" style={{ color: "#e8f5ee", letterSpacing: "-0.02em" }}>
             MashaAllah 🤍
           </h2>
 
-          {/* Decorative divider */}
           <div className="flex items-center gap-2 justify-center my-4">
             <div className="h-px flex-1" style={{ background: "rgba(26,92,56,0.4)" }} />
             <span className="text-emerald-700 text-xs">✦</span>
             <div className="h-px flex-1" style={{ background: "rgba(26,92,56,0.4)" }} />
           </div>
 
-          {/* Subtitle */}
-          <p
-            className="text-base font-semibold mb-1"
-            style={{ color: "rgba(134,239,172,0.7)" }}
-          >
+          <p className="text-base font-semibold mb-1" style={{ color: "rgba(134,239,172,0.7)" }}>
             New rewards coming soon
           </p>
 
-          {/* Message */}
-          <p
-            className="text-sm leading-relaxed"
-            style={{ color: "rgba(200,230,215,0.75)" }}
-          >
+          <p className="text-sm leading-relaxed" style={{ color: "rgba(200,230,215,0.75)" }}>
             Thank you for supporting Noor Quran.
             <br />
             Your kindness helps this Islamic app grow for everyone.
           </p>
 
-          {/* Quranic touch */}
-          <p
-            className="mt-4 text-xs"
-            style={{ color: "rgba(52,211,153,0.55)", fontStyle: "italic" }}
-          >
+          <p className="mt-4 text-xs" style={{ color: "rgba(52,211,153,0.55)", fontStyle: "italic" }}>
             "And whoever does good — Allah is appreciative and Knowing." — Quran 2:158
           </p>
 
-          {/* Close / Continue button */}
           <button
             onClick={handleClose}
             className="mt-7 w-full py-3.5 rounded-2xl text-sm font-semibold text-white transition-all active:scale-[0.97]"
@@ -183,13 +166,11 @@ export function RewardedAdButton() {
   const [adState, setAdState] = useState<AdState>("idle");
   const { toast }             = useToast();
 
-  // Lifecycle refs — never trigger re-renders
-  const mountedRef    = useRef(true);
-  const wasRewarded   = useRef(false);        // true once Rewarded event fires
-  const listeners     = useRef<PluginListenerHandle[]>([]);
-  const loadTimer     = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const mountedRef  = useRef(true);
+  const wasRewarded = useRef(false);
+  const listeners   = useRef<PluginListenerHandle[]>([]);
+  const loadTimer   = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // Mark unmounted on cleanup — prevents setState after unmount
   useEffect(() => {
     mountedRef.current = true;
     return () => {
@@ -211,118 +192,106 @@ export function RewardedAdButton() {
     listeners.current = [];
   }
 
-  function safeSetState(s: AdState) {
+  function safeSet(s: AdState) {
     if (mountedRef.current) setAdState(s);
   }
 
-  function showFallback() {
+  function showFallback(reason: string) {
+    log(`showFallback — reason: ${reason}`);
     clearLoadTimer();
-    safeSetState("fallback");
-  }
-
-  function closeFallback() {
-    safeSetState("idle");
+    cleanupListeners();
+    safeSet("fallback");
   }
 
   async function handleSupport() {
     if (adState !== "idle") return;
 
-    // ── Browser / web fallback — show thank-you toast directly ──────────────
     if (!isNative()) {
       toast({ title: JAZAK_TITLE, description: JAZAK_MSG });
-      safeSetState("done");
-      setTimeout(() => safeSetState("idle"), 4000);
+      safeSet("done");
+      setTimeout(() => safeSet("idle"), 4000);
       return;
     }
 
-    // ── Native APK — load and show rewarded ad ───────────────────────────────
+    // Detect placeholder unit ID — show fallback immediately with clear log
+    if (REWARDED_AD_UNIT.includes("REPLACE_WITH")) {
+      log("⚠️  Rewarded unit ID is still the placeholder. Create a Rewarded unit in AdMob and update REWARDED_AD_UNIT.");
+      showFallback("placeholder unit ID");
+      return;
+    }
+
     wasRewarded.current = false;
-    safeSetState("loading");
+    safeSet("loading");
+    log(`Loading rewarded ad — unit: ${REWARDED_AD_UNIT}`);
 
     try {
       const { AdMob, RewardAdPluginEvents } = await import("@capacitor-community/admob");
 
-      // Safe re-init guard — no-ops if AdMob is already initialised
-      await AdMob.initialize({}).catch(() => {});
+      // Clean up any stale listeners from a previous attempt
+      cleanupListeners();
 
-      // Register ALL listeners BEFORE calling prepareRewardVideoAd so we
-      // never miss an event that fires immediately after load starts.
-      const onLoaded = await AdMob.addListener(
-        RewardAdPluginEvents.Loaded,
-        async () => {
-          clearLoadTimer();
-          if (!mountedRef.current) return;
-          safeSetState("showing");
-          try {
-            await AdMob.showRewardVideoAd();
-          } catch {
-            showFallback();
-          }
+      const onLoaded = await AdMob.addListener(RewardAdPluginEvents.Loaded, async () => {
+        log("Loaded ✓ — calling showRewardVideoAd()");
+        clearLoadTimer();
+        if (!mountedRef.current) return;
+        safeSet("showing");
+        try {
+          await AdMob.showRewardVideoAd();
+          log("showRewardVideoAd() returned");
+        } catch (err) {
+          log("showRewardVideoAd() threw", err);
+          showFallback("showRewardVideoAd threw");
         }
-      );
+      });
 
-      // Rewarded: user watched enough to earn the reward
-      const onRewarded = await AdMob.addListener(
-        RewardAdPluginEvents.Rewarded,
-        () => {
-          wasRewarded.current = true;
-          if (!mountedRef.current) return;
-          toast({ title: JAZAK_TITLE, description: JAZAK_MSG });
-          safeSetState("done");
+      const onRewarded = await AdMob.addListener(RewardAdPluginEvents.Rewarded, (reward) => {
+        log("Rewarded ✓", reward);
+        wasRewarded.current = true;
+        if (!mountedRef.current) return;
+        toast({ title: JAZAK_TITLE, description: JAZAK_MSG });
+        safeSet("done");
+      });
+
+      const onDismissed = await AdMob.addListener(RewardAdPluginEvents.Dismissed, () => {
+        log(`Dismissed (wasRewarded=${wasRewarded.current})`);
+        if (!mountedRef.current) return;
+        if (wasRewarded.current) {
+          setTimeout(() => safeSet("idle"), 4000);
+        } else {
+          toast({ title: "JazakAllah 🌙", description: "Thanks for trying! Your support means the world." });
+          safeSet("done");
+          setTimeout(() => safeSet("idle"), 3000);
         }
-      );
+      });
 
-      // Dismissed: ad closed (fires after Rewarded on success, or alone on skip)
-      // NOTE: never call cleanupListeners() inside a listener callback — removing
-      // a handle while its own event is still propagating is unsafe in some native
-      // bridges. Let the useEffect cleanup handle it on unmount.
-      const onDismissed = await AdMob.addListener(
-        RewardAdPluginEvents.Dismissed,
-        () => {
-          if (!mountedRef.current) return;
-          if (wasRewarded.current) {
-            // Toast already shown by onRewarded — just reset after a delay
-            setTimeout(() => safeSetState("idle"), 4000);
-          } else {
-            // User skipped the ad — show a brief thank-you anyway
-            toast({ title: "JazakAllah 🌙", description: "Thanks for trying! Your support means the world." });
-            safeSetState("done");
-            setTimeout(() => safeSetState("idle"), 3000);
-          }
-        }
-      );
+      const onFailedToShow = await AdMob.addListener(RewardAdPluginEvents.FailedToShow, (err) => {
+        log("FailedToShow ✗", err);
+        showFallback("FailedToShow");
+      });
 
-      // FailedToShow: ad loaded but could not be presented (e.g., already showing)
-      const onFailedToShow = await AdMob.addListener(
-        RewardAdPluginEvents.FailedToShow,
-        () => showFallback()
-      );
-
-      // FailedToLoad: no inventory or network issue
-      const onFailedToLoad = await AdMob.addListener(
-        RewardAdPluginEvents.FailedToLoad,
-        () => showFallback()
-      );
+      const onFailedToLoad = await AdMob.addListener(RewardAdPluginEvents.FailedToLoad, (err) => {
+        log("FailedToLoad ✗", err);
+        showFallback("FailedToLoad");
+      });
 
       listeners.current = [onLoaded, onRewarded, onDismissed, onFailedToShow, onFailedToLoad];
 
-      // Safety net: if neither Loaded nor FailedToLoad fires within 30 s,
-      // show fallback so the button doesn't stay "loading" indefinitely.
-      // The timer is cleared in onLoaded (before showRewardVideoAd), so this
-      // only fires when the ad network truly fails to respond.
+      // 30-second safety net
       loadTimer.current = setTimeout(() => {
-        if (mountedRef.current) showFallback();
+        if (mountedRef.current) {
+          log("Load timeout after 30 s");
+          showFallback("timeout");
+        }
       }, LOAD_TIMEOUT_MS);
 
-      // Start loading the ad
+      log("Calling prepareRewardVideoAd()…");
       await AdMob.prepareRewardVideoAd({
         adId:      REWARDED_AD_UNIT,
         isTesting: false,
       });
-
-    } catch {
-      // Plugin unavailable or unexpected error
-      showFallback();
+    } catch (err) {
+      log("Unexpected error", err);
+      showFallback("unexpected exception");
     }
   }
 
@@ -331,8 +300,7 @@ export function RewardedAdButton() {
 
   return (
     <>
-      {/* Fallback screen — shown when ad unavailable or fails */}
-      {adState === "fallback" && <FallbackScreen onClose={closeFallback} />}
+      {adState === "fallback" && <FallbackScreen onClose={() => safeSet("idle")} />}
 
       <button
         onClick={handleSupport}
@@ -347,7 +315,6 @@ export function RewardedAdButton() {
         }}
         data-testid="button-support-noor-quran"
       >
-        {/* Icon */}
         <span
           className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0"
           style={{ background: "rgba(236,72,153,0.18)" }}
@@ -361,7 +328,6 @@ export function RewardedAdButton() {
           )}
         </span>
 
-        {/* Text */}
         <div className="flex-1 min-w-0">
           {isDone ? (
             <>
@@ -381,7 +347,6 @@ export function RewardedAdButton() {
           )}
         </div>
 
-        {/* Right badge */}
         {!isLoading && !isDone && (
           <span
             className="text-[10px] font-bold text-pink-400 px-2 py-1 rounded-full border border-pink-900/50 shrink-0"

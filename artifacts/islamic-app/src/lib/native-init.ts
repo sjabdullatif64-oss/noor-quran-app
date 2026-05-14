@@ -53,6 +53,13 @@ async function initAdMob(): Promise<void> {
       tagForChildDirectedTreatment: false,
       tagForUnderAgeOfConsent: false,
     });
+
+    console.log("[AdMob] initialize() OK");
+
+    // Start the banner immediately after SDK init so it's ready before the
+    // first page renders. startBanner() is idempotent — safe to call again.
+    const { startBanner } = await import("../components/banner-ad");
+    await startBanner();
   } catch (err) {
     console.warn("[AdMob] initialize error:", err);
   }

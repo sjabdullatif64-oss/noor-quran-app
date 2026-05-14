@@ -4,143 +4,180 @@
  * AdMob App ID  : ca-app-pub-5050437827917011~3831002202  (AndroidManifest.xml)
  * Banner Ad Unit: ca-app-pub-5050437827917011/8806398221
  *
- * Flow:
- *  1. AdMob.initialize() called once (safe to call multiple times — ignores repeat calls)
- *  2. On mount: AdMob.showBanner() → native Android AdView at BOTTOM_CENTER
- *  3. BannerAdPluginEvents.Loaded → reserve BANNER_HEIGHT_PX so content clears the native view
- *  4. On unmount: AdMob.removeBanner() removes the native View cleanly
- *
- * In browser / non-Capacitor: renders nothing, zero layout impact.
- *
- * ADAPTIVE_BANNER automatically sizes itself based on device width (typically 50–90 dp).
- * We reserve 60 dp as a safe default — tall enough for most phones, avoids layout jumps.
+ * Architecture:
+ *  - The banner is shown ONCE at app start and NEVER removed during navigation.
+ *    Calling removeBanner() + showBanner() on every route change is the #1 cause
+ *    of blank/flickering banners on real devices. Instead we hide/show the spacer
+ *    and call AdMob.hideBanner() / AdMob.resumeBanner() which is lightweight.
+ *  - A module-level singleton prevents double-init if React ever re-mounts.
+ *  - All events are logged with [AdMob] prefix for real-device debugging via logcat.
  */
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { isNative } from "@/lib/capacitor";
-import type { PluginListenerHandle } from "@capacitor/core";
-import type { BannerAdOptions } from "@capacitor-community/admob";
 
-// ── Constants ─────────────────────────────────────────────────────────────────
 const BANNER_AD_UNIT   = "ca-app-pub-5050437827917011/8806398221";
-
-/**
- * Spacer height reserved when an ADAPTIVE_BANNER is active.
- * ADAPTIVE_BANNER on a 360 dp wide phone is ~60 dp; 60 px is a safe reserve.
- */
 const BANNER_HEIGHT_PX = 60;
+
+// ── Module-level singleton — survives React unmount/remount ──────────────────
+let bannerState: "idle" | "loading" | "showing" | "hidden" | "failed" = "idle";
+let stateListeners: Array<(s: typeof bannerState) => void> = [];
+
+function setBannerState(s: typeof bannerState) {
+  bannerState = s;
+  stateListeners.forEach((fn) => fn(s));
+}
+
+function log(msg: string, data?: unknown) {
+  if (data !== undefined) {
+    console.log(`[AdMob Banner] ${msg}`, data);
+  } else {
+    console.log(`[AdMob Banner] ${msg}`);
+  }
+}
+
+// Called once at startup from native-init.ts (or on first mount as fallback)
+export async function startBanner(): Promise<void> {
+  if (!isNative()) return;
+  if (bannerState !== "idle") {
+    log(`startBanner() skipped — already in state: ${bannerState}`);
+    return;
+  }
+
+  setBannerState("loading");
+  log("Starting banner ad…");
+
+  try {
+    const {
+      AdMob,
+      BannerAdSize,
+      BannerAdPosition,
+      BannerAdPluginEvents,
+    } = await import("@capacitor-community/admob");
+
+    await AdMob.addListener(BannerAdPluginEvents.Loaded, () => {
+      log("Loaded ✓");
+      setBannerState("showing");
+    });
+
+    await AdMob.addListener(BannerAdPluginEvents.FailedToLoad, (err) => {
+      log("FailedToLoad ✗", err);
+      setBannerState("failed");
+      // Retry after 60 s — common when there's no fill
+      setTimeout(() => {
+        if (bannerState === "failed") {
+          log("Retrying after fill failure…");
+          setBannerState("idle");
+          startBanner();
+        }
+      }, 60_000);
+    });
+
+    await AdMob.addListener(BannerAdPluginEvents.AdImpression, () => {
+      log("AdImpression");
+    });
+
+    await AdMob.addListener(BannerAdPluginEvents.Opened, () => {
+      log("Opened (user tapped)");
+    });
+
+    await AdMob.addListener(BannerAdPluginEvents.Closed, () => {
+      log("Closed");
+    });
+
+    await AdMob.showBanner({
+      adId:      BANNER_AD_UNIT,
+      adSize:    BannerAdSize.ADAPTIVE_BANNER,
+      position:  BannerAdPosition.BOTTOM_CENTER,
+      margin:    0,
+      isTesting: false,
+    });
+
+    log("showBanner() called — waiting for Loaded event");
+  } catch (err) {
+    log("showBanner() threw", err);
+    setBannerState("failed");
+  }
+}
+
+// Called by Layout when entering a no-ad route (Quran reader)
+export async function hideBanner(): Promise<void> {
+  if (!isNative() || bannerState !== "showing") return;
+  try {
+    const { AdMob } = await import("@capacitor-community/admob");
+    await AdMob.hideBanner();
+    setBannerState("hidden");
+    log("hideBanner() — ad hidden for Quran screen");
+  } catch (err) {
+    log("hideBanner() threw", err);
+  }
+}
+
+// Called by Layout when leaving a no-ad route
+export async function resumeBanner(): Promise<void> {
+  if (!isNative() || bannerState !== "hidden") return;
+  try {
+    const { AdMob } = await import("@capacitor-community/admob");
+    await AdMob.resumeBanner();
+    setBannerState("showing");
+    log("resumeBanner() — ad visible again");
+  } catch (err) {
+    log("resumeBanner() threw", err);
+  }
+}
 
 // ── Props ─────────────────────────────────────────────────────────────────────
 export interface BannerAdProps {
-  /**
-   * "fixed-bottom" — native banner anchored at screen bottom.
-   *   A spacer div is injected so scrollable content never scrolls under the ad.
-   * "inline"       — same native overlay (Capacitor doesn't support mid-page banners),
-   *   but space is reserved inline in the document flow.
-   */
   placement?: "fixed-bottom" | "inline";
   className?: string;
 }
 
-// ── Component ─────────────────────────────────────────────────────────────────
+// ── Component — only renders the spacer; ad itself is a native overlay ────────
 export function BannerAd({ placement = "fixed-bottom", className = "" }: BannerAdProps) {
-  const [adReady, setAdReady] = useState(false);
-  const listeners = useRef<PluginListenerHandle[]>([]);
-  const mounted   = useRef(true);
-  const adShown   = useRef(false);
+  const [currentState, setCurrentState] = useState<typeof bannerState>(bannerState);
 
   useEffect(() => {
-    mounted.current  = true;
-    adShown.current  = false;
+    // Subscribe to singleton state changes
+    stateListeners.push(setCurrentState);
 
-    if (!isNative()) return;
-
-    async function initBanner() {
-      try {
-        const {
-          AdMob,
-          BannerAdSize,
-          BannerAdPosition,
-          BannerAdPluginEvents,
-        } = await import("@capacitor-community/admob");
-
-        // Initialize AdMob SDK — safe to call multiple times (subsequent calls are no-ops)
-        await AdMob.initialize({}).catch(() => { /* already initialized */ });
-
-        // Subscribe to banner events BEFORE calling showBanner to avoid race conditions
-        const onLoaded = await AdMob.addListener(
-          BannerAdPluginEvents.Loaded,
-          () => { if (mounted.current) setAdReady(true); }
-        );
-
-        const onFailed = await AdMob.addListener(
-          BannerAdPluginEvents.FailedToLoad,
-          () => { if (mounted.current) setAdReady(false); }
-        );
-
-        listeners.current = [onLoaded, onFailed];
-
-        // ADAPTIVE_BANNER adjusts its height based on device screen width
-        const options: BannerAdOptions = {
-          adId:     BANNER_AD_UNIT,
-          adSize:   BannerAdSize.ADAPTIVE_BANNER,
-          position: BannerAdPosition.BOTTOM_CENTER,
-          margin:   0,
-          isTesting: false,
-        };
-
-        await AdMob.showBanner(options);
-        adShown.current = true;
-      } catch {
-        // AdMob unavailable or request failed — no layout impact
-        if (mounted.current) setAdReady(false);
-      }
+    // If banner hasn't been started yet (no native-init call), start it now
+    if (bannerState === "idle") {
+      startBanner();
     }
 
-    initBanner();
-
     return () => {
-      mounted.current = false;
-
-      listeners.current.forEach((h) => h.remove().catch(() => {}));
-      listeners.current = [];
-
-      if (adShown.current) {
-        import("@capacitor-community/admob")
-          .then(({ AdMob }) => AdMob.removeBanner())
-          .catch(() => {});
-        adShown.current = false;
-      }
+      stateListeners = stateListeners.filter((fn) => fn !== setCurrentState);
+      // NOTE: do NOT call removeBanner() here — the banner must persist across
+      // React remounts. The singleton keeps it alive.
     };
   }, []);
 
-  // Nothing to render in browser, or while waiting for the ad to load
-  if (!isNative() || !adReady) return null;
+  // Reserve the spacer always (even while loading) to prevent content jump
+  // when the ad finally renders. Only hide it when the banner is intentionally
+  // hidden (Quran screen) or failed to load.
+  const showSpacer = isNative() && (currentState === "loading" || currentState === "showing");
+
+  if (!showSpacer) return null;
 
   if (placement === "fixed-bottom") {
     return (
       <>
-        {/* Spacer — pushes scrollable content above the native AdView */}
         <div style={{ height: BANNER_HEIGHT_PX }} aria-hidden="true" />
-        {/* Invisible marker useful for layout debugging */}
         <div
           id="admob-banner-bottom"
           className={`fixed bottom-0 left-0 right-0 z-40 pointer-events-none ${className}`}
           style={{ height: BANNER_HEIGHT_PX }}
-          data-admob-unit={BANNER_AD_UNIT}
           aria-hidden="true"
         />
       </>
     );
   }
 
-  // "inline" — space reserved in document flow; native overlay still appears at bottom
   return (
     <div
       id="admob-banner-inline"
       className={`w-full ${className}`}
       style={{ height: BANNER_HEIGHT_PX, minHeight: BANNER_HEIGHT_PX }}
-      data-admob-unit={BANNER_AD_UNIT}
       aria-hidden="true"
     />
   );
