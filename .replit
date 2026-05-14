@@ -30,3 +30,6 @@ externalPort = 8081
 [[ports]]
 localPort = 22446
 externalPort = 3000
+
+[nix]
+packages = ["jre_minimal"]
