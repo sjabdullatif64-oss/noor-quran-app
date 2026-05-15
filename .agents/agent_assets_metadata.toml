@@ -90,3 +90,9 @@ id = "LvEMZgHPREqjhOJXgtFrX"
 uri = "file://artifacts/islamic-app/android/app/build/outputs/downloads/NoorQuran-v1.0.5-splash-fix.zip"
 type = "unspecified"
 title = "Noor Quran v1.0.5 — Splash Fix (root cause resolved)"
+
+[[outputs]]
+id = "ECgwZlFjFYIQ--Hv7IccR"
+uri = "file://artifacts/islamic-app/android/app/build/outputs/downloads/NoorQuran-v1.0.6-back-button-fix.zip"
+type = "unspecified"
+title = "Noor Quran v1.0.6 — Back Button Fix"
