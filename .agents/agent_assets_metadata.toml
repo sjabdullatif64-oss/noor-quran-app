@@ -72,3 +72,9 @@ id = "4m3Cqk0qEC_MPYKxZPwCJ"
 uri = "file://artifacts/islamic-app/android/app/build/outputs/downloads/NoorQuran-v1.0.2-DIAGNOSTIC.zip"
 type = "unspecified"
 title = "Noor Quran v1.0.2 — Diagnostic APK (AdMob + Providers removed)"
+
+[[outputs]]
+id = "9shT1scPDTaDbPGqhxkmx"
+uri = "file://artifacts/islamic-app/android/app/build/outputs/downloads/NoorQuran-v1.0.3-fix-classnotfound.zip"
+type = "unspecified"
+title = "Noor Quran v1.0.3 — ClassNotFoundException Fix"
