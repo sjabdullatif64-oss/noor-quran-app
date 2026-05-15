@@ -114,14 +114,21 @@
             android:name="com.google.android.gms.ads.DELAY_APP_MEASUREMENT_INIT"
             android:value="true" />
 
-        <!-- Main Activity — fullscreen, portrait-locked -->
+        <!--
+             Main Activity — fullscreen, portrait-locked.
+             android:theme is set to AppTheme.Launcher (extends Theme.SplashScreen)
+             so that SplashScreen.installSplashScreen() — called in MainActivity.onCreate()
+             BEFORE super.onCreate() — finds the correct windowSplashScreen* attributes.
+             BridgeActivity programmatically switches the theme to AppTheme.NoActionBar
+             after setContentView(), and postSplashScreenTheme does the same.
+        -->
         <activity
             android:name="com.sj64noorquran.MainActivity"
             android:configChanges="orientation|keyboardHidden|keyboard|screenSize|locale|smallestScreenSize|screenLayout|uiMode"
             android:exported="true"
             android:launchMode="singleTask"
             android:screenOrientation="portrait"
-            android:theme="@style/AppTheme.NoActionBar"
+            android:theme="@style/AppTheme.Launcher"
             android:windowSoftInputMode="adjustResize" >
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
@@ -160,6 +167,30 @@
         <receiver
             android:name="com.capacitorjs.plugins.localnotifications.LocalNotificationReceiver"
             android:exported="false" />
+
+        <!--
+             Remove WorkManagerInitializer from the AndroidX Startup auto-init.
+             WorkManager is pulled in transitively by AdMob but is NOT used by this
+             app directly. Removing it from startup prevents a potential initialization
+             crash before Application.onCreate() runs, on devices where WorkManager's
+             Room/Kotlin dependencies behave unexpectedly at Content Provider init time.
+             WorkManager still initialises lazily if any plugin ever needs it.
+        -->
+        <provider
+            android:name="androidx.startup.InitializationProvider"
+            android:authorities="com.sj64noorquran.androidx-startup"
+            android:exported="false" >
+            <meta-data
+                android:name="androidx.emoji2.text.EmojiCompatInitializer"
+                android:value="androidx.startup" />
+            <meta-data
+                android:name="androidx.lifecycle.ProcessLifecycleInitializer"
+                android:value="androidx.startup" />
+            <meta-data
+                android:name="androidx.profileinstaller.ProfileInstallerInitializer"
+                android:value="androidx.startup" />
+        </provider>
+
         <receiver android:name="com.capacitorjs.plugins.localnotifications.TimedNotificationPublisher" />
         <receiver android:name="com.capacitorjs.plugins.localnotifications.NotificationDismissReceiver" /> <!-- Include the AdActivity and InAppPurchaseActivity configChanges and themes. -->
         <activity
@@ -206,24 +237,6 @@
         <meta-data
             android:name="com.google.android.gms.version"
             android:value="@integer/google_play_services_version" />
-
-        <provider
-            android:name="androidx.startup.InitializationProvider"
-            android:authorities="com.sj64noorquran.androidx-startup"
-            android:exported="false" >
-            <meta-data
-                android:name="androidx.emoji2.text.EmojiCompatInitializer"
-                android:value="androidx.startup" />
-            <meta-data
-                android:name="androidx.work.WorkManagerInitializer"
-                android:value="androidx.startup" />
-            <meta-data
-                android:name="androidx.lifecycle.ProcessLifecycleInitializer"
-                android:value="androidx.startup" />
-            <meta-data
-                android:name="androidx.profileinstaller.ProfileInstallerInitializer"
-                android:value="androidx.startup" />
-        </provider>
 
         <service
             android:name="androidx.work.impl.background.systemalarm.SystemAlarmService"
