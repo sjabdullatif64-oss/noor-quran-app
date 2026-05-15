@@ -36,3 +36,15 @@ id = "2MWFK01VvII9VwF-WrSpi"
 uri = "file://artifacts/islamic-app/android/app/build/outputs/bundle/release/noor-quran-playstore.zip"
 type = "unspecified"
 title = "Noor Quran — Play Store AAB (original upload key سے signed)"
+
+[[outputs]]
+id = "Kb9ecrrH7YbFDH4fQyLU4"
+uri = "file://noor-quran-v1.0.1-apk.zip"
+type = "unspecified"
+title = "Noor Quran APK v1.0.1 — Android پر سیدھا انسٹال کریں"
+
+[[outputs]]
+id = "ioZRb2IuDgk8mBldnb5Og"
+uri = "file://noor-quran-v1.0.1-aab.zip"
+type = "unspecified"
+title = "Noor Quran AAB v1.0.1 — Google Play Console کے لیے"
