@@ -114,3 +114,9 @@ id = "2j_RFAaIDiCS4691WBJND"
 uri = "file://artifacts/islamic-app/android/app/build/outputs/downloads/NoorQuran-v1.0.8-PlayStore.zip"
 type = "unspecified"
 title = "Noor Quran v1.0.8 — Play Store AAB (upgrade-compatible, existing upload key)"
+
+[[outputs]]
+id = "5fj5cakqE7DRbPnI7FSoQ"
+uri = "file://artifacts/islamic-app/android/app/build/outputs/downloads/NoorQuran-v74684540-PlayStore.zip"
+type = "unspecified"
+title = "Noor Quran — versionCode 74684540 — Play Store AAB"
