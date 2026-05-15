@@ -8,35 +8,24 @@
         android:minSdkVersion="24"
         android:targetSdkVersion="34" />
 
-    <!-- Network -->
         <uses-permission android:name="com.google.android.gms.permission.AD_ID"/>
 <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
-
-    <!-- Notifications (Android 13+) -->
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
     <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" />
     <uses-permission android:name="android.permission.USE_EXACT_ALARM" />
-
-    <!-- Location (prayer times & Qibla) -->
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
-
-    <!-- Audio -->
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK" />
     <uses-permission android:name="android.permission.WAKE_LOCK" />
-
-    <!-- Storage (Android ≤ 9) -->
     <uses-permission
         android:name="android.permission.WRITE_EXTERNAL_STORAGE"
         android:maxSdkVersion="28" />
     <uses-permission
         android:name="android.permission.READ_EXTERNAL_STORAGE"
         android:maxSdkVersion="32" />
-
-    <!-- Vibration -->
     <uses-permission android:name="android.permission.VIBRATE" />
 
     <permission
@@ -59,17 +48,7 @@
         android:supportsRtl="true"
         android:theme="@style/AppTheme" >
 
-        <!--
-             ── DIAGNOSTIC BUILD: AdMob disabled ─────────────────────────────────
-             The MobileAdsInitProvider ContentProvider runs before Application.onCreate()
-             and has been identified as a prime crash suspect. The entire
-             capacitor-community-admob dependency has been removed from build.gradle
-             so MobileAdsInitProvider will not appear in the merged manifest at all.
-             Re-enable by un-commenting the dependency in app/build.gradle.
-        -->
-
-
-        <!-- ── Activity ──────────────────────────────────────────────────────── -->
+        <!-- ── Main activity ──────────────────────────────────────────────── -->
         <activity
             android:name="com.sj64noorquran.MainActivity"
             android:configChanges="orientation|keyboardHidden|keyboard|screenSize|locale|smallestScreenSize|screenLayout|uiMode"
@@ -83,8 +62,6 @@
 
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
-
-            <!-- Deep links -->
             <intent-filter android:autoVerify="true" >
                 <action android:name="android.intent.action.VIEW" />
 
@@ -97,7 +74,18 @@
             </intent-filter>
         </activity>
 
-        <!-- Notification receivers for Capacitor LocalNotifications -->
+        <!-- ── Crash reporter — plain Activity, NO AppCompat theme ─────────── -->
+        <!--
+             Uses the platform default theme so it works even if our theme
+             chain is what caused the crash in the first place.
+        -->
+        <activity
+            android:name="com.sj64noorquran.CrashActivity"
+            android:excludeFromRecents="true"
+            android:exported="false"
+            android:theme="@android:style/Theme.Material.NoActionBar" />
+
+        <!-- ── Notification receivers ────────────────────────────────────── -->
         <receiver
             android:name="com.capacitorjs.plugins.localnotifications.LocalNotificationRestoreReceiver"
             android:directBootAware="true"
