@@ -39,7 +39,7 @@ on:
 
 env:
   NODE_VERSION:  '22'
-  JAVA_VERSION:  '21'
+  JAVA_VERSION:  '17'
   GRADLE_VERSION: '8.11.1'
   PNPM_VERSION:  '10'
   APP_DIR:       artifacts/islamic-app
