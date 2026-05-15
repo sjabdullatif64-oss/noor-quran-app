@@ -20,18 +20,16 @@
     </style>
 
     <!-- Launch/splash theme: shown during cold start before WebView is ready.
-         Parent is Theme.SplashScreen so androidx.core.splashscreen.SplashScreen
-         .installSplashScreen() can read windowSplashScreen* attributes correctly
-         on Android 12+ (API 31+) and fall back gracefully on older APIs.
-         postSplashScreenTheme switches the window to AppTheme.NoActionBar once
-         the splash finishes — BridgeActivity also does this programmatically. -->
-    <style name="AppTheme.Launcher" parent="Theme.SplashScreen">
-        <item name="windowSplashScreenBackground">@color/splash_background</item>
-        <item name="windowSplashScreenAnimatedIcon">@mipmap/ic_launcher</item>
-        <item name="postSplashScreenTheme">@style/AppTheme.NoActionBar</item>
+         MUST extend an AppCompat-compatible theme so that AppCompatActivity
+         (BridgeActivity's ancestor) does not throw "You need to use a
+         Theme.AppCompat theme" when super.onCreate() is called.
+         Theme.SplashScreen from core-splashscreen 1.2.0 extends Material3 which
+         requires com.google.android.material — we do NOT have that dependency, so
+         we must NOT extend Theme.SplashScreen here.
+         android:windowBackground shows the splash drawable in the window before
+         setContentView() runs; SplashScreen.installSplashScreen() handles the
+         API-31+ platform splash transition regardless of the parent theme. -->
+    <style name="AppTheme.Launcher" parent="AppTheme.NoActionBar">
         <item name="android:windowBackground">@drawable/splash</item>
-        <item name="colorPrimary">#1a5c38</item>
-        <item name="colorPrimaryDark">#071a0e</item>
-        <item name="colorAccent">#1a5c38</item>
     </style>
 </resources>

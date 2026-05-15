@@ -2190,14 +2190,8 @@
         <item name="android:navigationBarColor">#071a0e</item>
         <item name="android:windowLightStatusBar">false</item>
     </style>
-    <style name="AppTheme.Launcher" parent="Theme.SplashScreen">
-        <item name="windowSplashScreenBackground">@color/splash_background</item>
-        <item name="windowSplashScreenAnimatedIcon">@mipmap/ic_launcher</item>
-        <item name="postSplashScreenTheme">@style/AppTheme.NoActionBar</item>
+    <style name="AppTheme.Launcher" parent="AppTheme.NoActionBar">
         <item name="android:windowBackground">@drawable/splash</item>
-        <item name="colorPrimary">#1a5c38</item>
-        <item name="colorPrimaryDark">#071a0e</item>
-        <item name="colorAccent">#1a5c38</item>
     </style>
     <style name="AppTheme.NoActionBar" parent="AppTheme">
         <item name="windowActionBar">false</item>
