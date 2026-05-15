@@ -1821,11 +1821,11 @@ module_dependencies {
   dependency_index: 51
   dependency_index: 93
   dependency_index: 4
+  dependency_index: 54
   dependency_index: 7
   dependency_index: 1
   dependency_index: 47
   dependency_index: 53
-  dependency_index: 54
   dependency_index: 55
   dependency_index: 17
   dependency_index: 56

@@ -1,127 +1,121 @@
 <?xml version="1.0" encoding="utf-8"?>
-<manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:tools="http://schemas.android.com/tools">
+  <manifest xmlns:android="http://schemas.android.com/apk/res/android"
+      xmlns:tools="http://schemas.android.com/tools">
 
-    <uses-permission android:name="android.permission.INTERNET" />
-    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
-    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
-    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
-    <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" />
-    <uses-permission android:name="android.permission.USE_EXACT_ALARM" />
-    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
-    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
-    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
-    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK" />
-    <uses-permission android:name="android.permission.WAKE_LOCK" />
-    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" android:maxSdkVersion="28" />
-    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" android:maxSdkVersion="32" />
-    <uses-permission android:name="android.permission.VIBRATE" />
+      <uses-permission android:name="android.permission.INTERNET" />
+      <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+      <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+      <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+      <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" />
+      <uses-permission android:name="android.permission.USE_EXACT_ALARM" />
+      <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
+      <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
+      <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+      <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK" />
+      <uses-permission android:name="android.permission.WAKE_LOCK" />
+      <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" android:maxSdkVersion="28" />
+      <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" android:maxSdkVersion="32" />
+      <uses-permission android:name="android.permission.VIBRATE" />
 
-    <application
-        android:name=".MainApplication"
-        android:allowBackup="false"
-        android:fullBackupContent="false"
-        android:icon="@mipmap/ic_launcher"
-        android:roundIcon="@mipmap/ic_launcher_round"
-        android:label="@string/app_name"
-        android:supportsRtl="true"
-        android:theme="@style/AppTheme"
-        android:hardwareAccelerated="true"
-        android:networkSecurityConfig="@xml/network_security_config"
-        tools:targetApi="31">
+      <application
+          android:name=".MainApplication"
+          android:allowBackup="false"
+          android:fullBackupContent="false"
+          android:icon="@mipmap/ic_launcher"
+          android:roundIcon="@mipmap/ic_launcher_round"
+          android:label="@string/app_name"
+          android:supportsRtl="true"
+          android:theme="@style/AppTheme"
+          android:hardwareAccelerated="true"
+          android:networkSecurityConfig="@xml/network_security_config"
+          tools:targetApi="31">
 
-        <!-- ── Main activity ──────────────────────────────────────────────── -->
-        <activity
-            android:name=".MainActivity"
-            android:configChanges="orientation|keyboardHidden|keyboard|screenSize|locale|smallestScreenSize|screenLayout|uiMode"
-            android:exported="true"
-            android:launchMode="singleTask"
-            android:screenOrientation="portrait"
-            android:windowSoftInputMode="adjustResize"
-            android:theme="@style/AppTheme.Launcher">
+          <!-- ── Main activity ──────────────────────────────────────────────── -->
+          <activity
+              android:name=".MainActivity"
+              android:configChanges="orientation|keyboardHidden|keyboard|screenSize|locale|smallestScreenSize|screenLayout|uiMode"
+              android:exported="true"
+              android:launchMode="singleTask"
+              android:screenOrientation="portrait"
+              android:windowSoftInputMode="adjustResize"
+              android:theme="@style/AppTheme.Launcher">
 
-            <intent-filter>
-                <action android:name="android.intent.action.MAIN" />
-                <category android:name="android.intent.category.LAUNCHER" />
-            </intent-filter>
+              <intent-filter>
+                  <action android:name="android.intent.action.MAIN" />
+                  <category android:name="android.intent.category.LAUNCHER" />
+              </intent-filter>
 
-            <intent-filter android:autoVerify="true">
-                <action android:name="android.intent.action.VIEW" />
-                <category android:name="android.intent.category.DEFAULT" />
-                <category android:name="android.intent.category.BROWSABLE" />
-                <data android:scheme="https" android:host="noorquran.app" />
-            </intent-filter>
-        </activity>
+              <intent-filter android:autoVerify="true">
+                  <action android:name="android.intent.action.VIEW" />
+                  <category android:name="android.intent.category.DEFAULT" />
+                  <category android:name="android.intent.category.BROWSABLE" />
+                  <data android:scheme="https" android:host="noorquran.app" />
+              </intent-filter>
+          </activity>
 
-        <!-- ── Diagnostic log viewer (not the launcher) ──────────────────── -->
-        <activity
-            android:name=".LogViewerActivity"
-            android:exported="false"
-            android:excludeFromRecents="true"
-            android:configChanges="orientation|keyboardHidden|keyboard|screenSize|locale|smallestScreenSize|screenLayout|uiMode" />
+          <!-- ── Diagnostic log viewer (not the launcher) ──────────────────── -->
+          <activity
+              android:name=".LogViewerActivity"
+              android:exported="false"
+              android:excludeFromRecents="true"
+              android:configChanges="orientation|keyboardHidden|keyboard|screenSize|locale|smallestScreenSize|screenLayout|uiMode" />
 
-        <!-- ── Legacy crash reporter (kept for compatibility) ───────────────── -->
-        <activity
-            android:name=".CrashActivity"
-            android:exported="false"
-            android:excludeFromRecents="true" />
+          <!-- ── Legacy crash reporter (kept for compatibility) ───────────────── -->
+          <activity
+              android:name=".CrashActivity"
+              android:exported="false"
+              android:excludeFromRecents="true" />
 
-        <!-- ── Notification receivers ────────────────────────────────────── -->
-        <receiver
-            android:name="com.capacitorjs.plugins.localnotifications.LocalNotificationRestoreReceiver"
-            android:exported="false">
-            <intent-filter>
-                <action android:name="android.intent.action.BOOT_COMPLETED" />
-                <action android:name="android.intent.action.REBOOT" />
-            </intent-filter>
-        </receiver>
+          <!-- ── Notification receivers ────────────────────────────────────── -->
+          <receiver
+              android:name="com.capacitorjs.plugins.localnotifications.LocalNotificationRestoreReceiver"
+              android:exported="false">
+              <intent-filter>
+                  <action android:name="android.intent.action.BOOT_COMPLETED" />
+                  <action android:name="android.intent.action.REBOOT" />
+              </intent-filter>
+          </receiver>
 
-        <receiver
-            android:name="com.capacitorjs.plugins.localnotifications.LocalNotificationReceiver"
-            android:exported="false" />
+          <receiver
+              android:name="com.capacitorjs.plugins.localnotifications.LocalNotificationReceiver"
+              android:exported="false" />
 
-        <!-- ── Azan (prayer-time) alarm receivers & service ──────────────── -->
+          <!-- ── Azan (prayer-time) alarm receivers & service ──────────────── -->
 
-        <!-- Fires when an AlarmManager exact alarm triggers -->
-        <receiver
-            android:name=".AzanReceiver"
-            android:exported="false">
-            <intent-filter>
-                <action android:name="com.sj64noorquran.AZAN_TRIGGER" />
-            </intent-filter>
-        </receiver>
+          <!-- Fires when an AlarmManager exact alarm triggers -->
+          <receiver
+              android:name=".AzanReceiver"
+              android:exported="false">
+              <intent-filter>
+                  <action android:name="com.sj64noorquran.AZAN_TRIGGER" />
+              </intent-filter>
+          </receiver>
 
-        <!-- Re-schedules prayer alarms after device reboot -->
-        <receiver
-            android:name=".AzanBootReceiver"
-            android:exported="false">
-            <intent-filter>
-                <action android:name="android.intent.action.BOOT_COMPLETED" />
-                <action android:name="android.intent.action.REBOOT" />
-                <action android:name="android.intent.action.QUICKBOOT_POWERON" />
-            </intent-filter>
-        </receiver>
+          <!-- Re-schedules prayer alarms after device reboot -->
+          <receiver
+              android:name=".AzanBootReceiver"
+              android:exported="false">
+              <intent-filter>
+                  <action android:name="android.intent.action.BOOT_COMPLETED" />
+                  <action android:name="android.intent.action.REBOOT" />
+                  <action android:name="android.intent.action.QUICKBOOT_POWERON" />
+              </intent-filter>
+          </receiver>
 
-        <!-- Foreground service that streams Azan audio -->
-        <service
-            android:name=".AzanService"
-            android:exported="false"
-            android:foregroundServiceType="mediaPlayback" />
+          <!-- Foreground service that streams Azan audio -->
+          <service
+              android:name=".AzanService"
+              android:exported="false"
+              android:foregroundServiceType="mediaPlayback" />
 
-        <!-- ── Google AdMob App ID ───────────────────────────────────────── -->
-        <!-- Required by the AdMob SDK — must match the App ID in the AdMob dashboard. -->
-        <meta-data
-            android:name="com.google.android.gms.ads.APPLICATION_ID"
-            android:value="ca-app-pub-1852283311826362~9656395130" />
+          <!-- ── Remove ALL AndroidX Startup auto-initializers ─────────────── -->
+          <!-- Removes MobileAdsInitProvider and WorkManagerInitializer.         -->
+          <provider
+              android:name="androidx.startup.InitializationProvider"
+              android:authorities="${applicationId}.androidx-startup"
+              android:exported="false"
+              tools:node="remove" />
 
-        <!-- ── Remove ALL AndroidX Startup auto-initializers ─────────────── -->
-        <!-- This also disables MobileAdsInitProvider (AdMob auto-init) so that  -->
-        <!-- AdMob.initialize() in native-init.ts is the single init path.       -->
-        <provider
-            android:name="androidx.startup.InitializationProvider"
-            android:authorities="${applicationId}.androidx-startup"
-            android:exported="false"
-            tools:node="remove" />
-
-    </application>
-</manifest>
+      </application>
+  </manifest>
+  

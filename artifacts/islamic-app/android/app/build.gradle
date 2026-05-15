@@ -123,8 +123,8 @@ dependencies {
     // Kotlin stdlib
     implementation "org.jetbrains.kotlin:kotlin-stdlib:$kotlin_version"
 
-    // SplashScreen — not needed directly; plugin provides it transitively
-    // implementation 'androidx.core:core-splashscreen:1.2.0'
+    // SplashScreen — required by MainActivity.installSplashScreen() before super.onCreate()
+    implementation 'androidx.core:core-splashscreen:1.2.0'
 }
 
 // ── AD_ID permission: post-merge safety net ────────────────────────────────────

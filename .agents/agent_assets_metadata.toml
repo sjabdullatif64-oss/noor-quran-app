@@ -48,3 +48,9 @@ id = "ioZRb2IuDgk8mBldnb5Og"
 uri = "file://noor-quran-v1.0.1-aab.zip"
 type = "unspecified"
 title = "Noor Quran AAB v1.0.1 — Google Play Console کے لیے"
+
+[[outputs]]
+id = "LjR8Ogbr59EkURe7yKUtS"
+uri = "file://artifacts/islamic-app/android/app/build/outputs/apk/release/NoorQuran-v1.0.1-release.zip"
+type = "unspecified"
+title = "Noor Quran v1.0.1 — Fixed APK (ZIP)"
