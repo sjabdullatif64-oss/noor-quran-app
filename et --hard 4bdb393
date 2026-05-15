@@ -1,0 +1,50 @@
+[33m997032b[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmain[m[33m, [m[1;31morigin/main[m[33m)[m Create Android workflow
+[33mc8e272c[m Fix Android workflow
+[33m5cae61e[m Create clean Android workflow
+[33m7013d2e[m Replace workflow with clean Gradle build
+[33mfecb370[m Trigger fresh rebuild
+[33m65e8aa7[m Fix Android workflow
+[33m8a66338[m Update pnpm lockfile
+[33m831cb00[m Rebuild Android platform
+[33m866f322[m Force Java 17 for Gradle
+[33m790c95c[m Remove forced Java home
+[33mfc59833[m Use Android SDK 34
+[33mb4150d0[m Really disable JdkImageTransform
+[33m87d33b3[m Disable JdkImageTransform
+[33mbe63530[m Force Java 17 for Gradle
+[33m3587027[m Move workflow to correct location
+[33m95e0920[m Add Java 17 GitHub Actions build
+[33m350d781[m Fix SDK 35
+[33m8210e7c[m Remove invalid Java path
+[33m4bdb393[m Fix Android stability and ads
+[33m6f698e1[m[33m ([m[1;32mreplit-agent[m[33m)[m Improve ad loading stability and user experience across the app
+[33m4b0b57f[m Improve ad loading stability and user experience across the app
+[33ma88c185[m Add Android App Bundle for Play Store upload
+[33m9ff9e84[m Add Android App Bundle for Play Store upload
+[33m6ae5330[m Build and package the Islamic app APK for download
+[33me546842[m Build and package the Islamic app APK for download
+[33mf87f9f5[m Saved progress at the end of the loop
+[33m813d82e[m Saved progress at the end of the loop
+[33m5c81636[m Saved progress at the end of the loop
+[33m1bb91f6[m Saved progress at the end of the loop
+[33ma84833f[m Saved progress at the end of the loop
+[33m3eeca84[m Saved progress at the end of the loop
+[33m3b2295e[m Saved progress at the end of the loop
+[33mecfe6d8[m Saved progress at the end of the loop
+[33m31b85cd[m Replace web speech API with native TTS for improved audio performance
+[33m748be45[m Replace web speech API with native TTS for improved audio performance
+[33m79494e4[m Improve translation audio playback and update the downloads screen Improve translation audio playback for all supported languages and enhance the downloads screen to show all surahs with search functionality.
+[33m6539c6f[m Improve translation audio playback and update the downloads screen Improve translation audio playback for all supported languages and enhance the downloads screen to show all surahs with search functionality.
+[33m7c3d80d[m Improve audio playback and downloads list accuracy for Quran app
+[33m97d2c9a[m Improve audio playback and downloads list accuracy for Quran app
+[33mb6a3f5e[m Published your App
+[33m6b9abe5[m Published your App
+[33me66a0ba[m Improve native sharing experience across the application
+[33ma5c231a[m Improve native sharing experience across the application
+[33mf5f3308[m Fix translation audio and downloads screen issues
+[33mabb9546[m Fix translation audio and downloads screen issues
+[33mc87e7fc[m Update manifest merging to ensure AD_ID permission is always included
+[33mb8d9f4c[m Update manifest merging to ensure AD_ID permission is always included
+[33m29c8300[m Add a reliable system to include AD_ID permission for Google Play releases
+[33mbab5a08[m Add a reliable system to include AD_ID permission for Google Play releases
+[33mc4ca8f7[m Fix Android build errors related to AdMob plugin configuration
