@@ -84,3 +84,9 @@ id = "qHpqO2ac-e0TmgRpro_qS"
 uri = "file://artifacts/islamic-app/android/app/build/outputs/downloads/NoorQuran-v1.0.4-crash-reporter.zip"
 type = "unspecified"
 title = "Noor Quran v1.0.4 — Crash Reporter"
+
+[[outputs]]
+id = "LvEMZgHPREqjhOJXgtFrX"
+uri = "file://artifacts/islamic-app/android/app/build/outputs/downloads/NoorQuran-v1.0.5-splash-fix.zip"
+type = "unspecified"
+title = "Noor Quran v1.0.5 — Splash Fix (root cause resolved)"
