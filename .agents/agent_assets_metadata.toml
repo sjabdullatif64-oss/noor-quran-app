@@ -126,3 +126,9 @@ id = "CAtaW3eLjN2Aq2CObv7cm"
 uri = "file://noor-quran-azan-v1.0.9.zip"
 type = "unspecified"
 title = "Noor Quran — Azan Notifications AAB (v1.0.9)"
+
+[[outputs]]
+id = "K2eRVJT14OTwUSF2fU61d"
+uri = "file://noor-quran-v1.0.10.zip"
+type = "unspecified"
+title = "Noor Quran v1.0.10 — Signed AAB (versionCode 74684542)"
