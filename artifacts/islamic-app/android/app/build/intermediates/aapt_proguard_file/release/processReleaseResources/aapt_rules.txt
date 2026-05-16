@@ -4,6 +4,9 @@
 -keep class com.capacitorjs.plugins.localnotifications.LocalNotificationRestoreReceiver { <init>(); }
 -keep class com.capacitorjs.plugins.localnotifications.NotificationDismissReceiver { <init>(); }
 -keep class com.capacitorjs.plugins.localnotifications.TimedNotificationPublisher { <init>(); }
+-keep class com.sj64noorquran.AzanBootReceiver { <init>(); }
+-keep class com.sj64noorquran.AzanReceiver { <init>(); }
+-keep class com.sj64noorquran.AzanService { <init>(); }
 -keep class com.sj64noorquran.CrashActivity { <init>(); }
 -keep class com.sj64noorquran.MainActivity { <init>(); }
 -keep class com.sj64noorquran.MainApplication { <init>(); }

@@ -1,6 +1,6 @@
 -- Merging decision tree log ---
 provider#androidx.startup.InitializationProvider
-INJECTED from /home/runner/workspace/artifacts/islamic-app/android/app/src/main/AndroidManifest.xml:80:9-84:35
+INJECTED from /home/runner/workspace/artifacts/islamic-app/android/app/src/main/AndroidManifest.xml:108:9-112:35
 REJECTED from [androidx.emoji2:emoji2:1.3.0] /home/runner/.gradle/caches/8.11.1/transforms/7bedf7f55e8fdb7c06f27602f7c9a149/transformed/jetified-emoji2-1.3.0/AndroidManifest.xml:24:9-32:20
 MERGED from [androidx.lifecycle:lifecycle-process:2.6.2] /home/runner/.gradle/caches/8.11.1/transforms/2142e3a8a3a3640cd00f7f7913620223/transformed/jetified-lifecycle-process-2.6.2/AndroidManifest.xml:24:9-32:20
 MERGED from [androidx.lifecycle:lifecycle-process:2.6.2] /home/runner/.gradle/caches/8.11.1/transforms/2142e3a8a3a3640cd00f7f7913620223/transformed/jetified-lifecycle-process-2.6.2/AndroidManifest.xml:24:9-32:20
@@ -9,19 +9,19 @@ MERGED from [androidx.profileinstaller:profileinstaller:1.4.0] /home/runner/.gra
 MERGED from [androidx.startup:startup-runtime:1.1.1] /home/runner/.gradle/caches/8.11.1/transforms/b8e3762e41858d47f1e04847b73eff8b/transformed/jetified-startup-runtime-1.1.1/AndroidManifest.xml:26:9-30:34
 MERGED from [androidx.startup:startup-runtime:1.1.1] /home/runner/.gradle/caches/8.11.1/transforms/b8e3762e41858d47f1e04847b73eff8b/transformed/jetified-startup-runtime-1.1.1/AndroidManifest.xml:26:9-30:34
 	tools:node
-		ADDED from /home/runner/workspace/artifacts/islamic-app/android/app/src/main/AndroidManifest.xml:84:13-32
+		ADDED from /home/runner/workspace/artifacts/islamic-app/android/app/src/main/AndroidManifest.xml:112:13-32
 	android:authorities
 		INJECTED from /home/runner/workspace/artifacts/islamic-app/android/app/src/main/AndroidManifest.xml
-		ADDED from /home/runner/workspace/artifacts/islamic-app/android/app/src/main/AndroidManifest.xml:82:13-68
+		ADDED from /home/runner/workspace/artifacts/islamic-app/android/app/src/main/AndroidManifest.xml:110:13-68
 	android:exported
-		ADDED from /home/runner/workspace/artifacts/islamic-app/android/app/src/main/AndroidManifest.xml:83:13-37
+		ADDED from /home/runner/workspace/artifacts/islamic-app/android/app/src/main/AndroidManifest.xml:111:13-37
 	android:name
-		ADDED from /home/runner/workspace/artifacts/islamic-app/android/app/src/main/AndroidManifest.xml:81:13-67
+		ADDED from /home/runner/workspace/artifacts/islamic-app/android/app/src/main/AndroidManifest.xml:109:13-67
 manifest
-ADDED from /home/runner/workspace/artifacts/islamic-app/android/app/src/main/AndroidManifest.xml:2:1-87:12
-INJECTED from /home/runner/workspace/artifacts/islamic-app/android/app/src/main/AndroidManifest.xml:2:1-87:12
-INJECTED from /home/runner/workspace/artifacts/islamic-app/android/app/src/main/AndroidManifest.xml:2:1-87:12
-INJECTED from /home/runner/workspace/artifacts/islamic-app/android/app/src/main/AndroidManifest.xml:2:1-87:12
+ADDED from /home/runner/workspace/artifacts/islamic-app/android/app/src/main/AndroidManifest.xml:2:1-115:12
+INJECTED from /home/runner/workspace/artifacts/islamic-app/android/app/src/main/AndroidManifest.xml:2:1-115:12
+INJECTED from /home/runner/workspace/artifacts/islamic-app/android/app/src/main/AndroidManifest.xml:2:1-115:12
+INJECTED from /home/runner/workspace/artifacts/islamic-app/android/app/src/main/AndroidManifest.xml:2:1-115:12
 MERGED from [:capacitor-local-notifications] /home/runner/workspace/artifacts/islamic-app/node_modules/@capacitor/local-notifications/android/build/intermediates/merged_manifest/release/processReleaseManifest/AndroidManifest.xml:2:1-26:12
 MERGED from [:capacitor-splash-screen] /home/runner/workspace/artifacts/islamic-app/node_modules/@capacitor/splash-screen/android/build/intermediates/merged_manifest/release/processReleaseManifest/AndroidManifest.xml:2:1-7:12
 MERGED from [:capacitor-status-bar] /home/runner/workspace/artifacts/islamic-app/node_modules/@capacitor/status-bar/android/build/intermediates/merged_manifest/release/processReleaseManifest/AndroidManifest.xml:2:1-7:12
@@ -164,8 +164,8 @@ MERGED from [:capacitor-haptics] /home/runner/workspace/artifacts/islamic-app/no
 	android:name
 		ADDED from /home/runner/workspace/artifacts/islamic-app/android/app/src/main/AndroidManifest.xml:18:22-63
 application
-ADDED from /home/runner/workspace/artifacts/islamic-app/android/app/src/main/AndroidManifest.xml:20:5-86:19
-INJECTED from /home/runner/workspace/artifacts/islamic-app/android/app/src/main/AndroidManifest.xml:20:5-86:19
+ADDED from /home/runner/workspace/artifacts/islamic-app/android/app/src/main/AndroidManifest.xml:20:5-114:19
+INJECTED from /home/runner/workspace/artifacts/islamic-app/android/app/src/main/AndroidManifest.xml:20:5-114:19
 MERGED from [:capacitor-local-notifications] /home/runner/workspace/artifacts/islamic-app/node_modules/@capacitor/local-notifications/android/build/intermediates/merged_manifest/release/processReleaseManifest/AndroidManifest.xml:11:5-24:19
 MERGED from [:capacitor-local-notifications] /home/runner/workspace/artifacts/islamic-app/node_modules/@capacitor/local-notifications/android/build/intermediates/merged_manifest/release/processReleaseManifest/AndroidManifest.xml:11:5-24:19
 MERGED from [:capacitor-cordova-android-plugins] /home/runner/workspace/artifacts/islamic-app/android/capacitor-cordova-android-plugins/build/intermediates/merged_manifest/release/processReleaseManifest/AndroidManifest.xml:8:5-9:19
@@ -296,6 +296,38 @@ ADDED from /home/runner/workspace/artifacts/islamic-app/android/app/src/main/And
 		ADDED from /home/runner/workspace/artifacts/islamic-app/android/app/src/main/AndroidManifest.xml:77:13-37
 	android:name
 		ADDED from /home/runner/workspace/artifacts/islamic-app/android/app/src/main/AndroidManifest.xml:76:13-96
+receiver#com.sj64noorquran.AzanReceiver
+ADDED from /home/runner/workspace/artifacts/islamic-app/android/app/src/main/AndroidManifest.xml:82:9-88:20
+	android:exported
+		ADDED from /home/runner/workspace/artifacts/islamic-app/android/app/src/main/AndroidManifest.xml:84:13-37
+	android:name
+		ADDED from /home/runner/workspace/artifacts/islamic-app/android/app/src/main/AndroidManifest.xml:83:13-41
+intent-filter#action:name:com.sj64noorquran.AZAN_TRIGGER
+ADDED from /home/runner/workspace/artifacts/islamic-app/android/app/src/main/AndroidManifest.xml:85:13-87:29
+action#com.sj64noorquran.AZAN_TRIGGER
+ADDED from /home/runner/workspace/artifacts/islamic-app/android/app/src/main/AndroidManifest.xml:86:17-73
+	android:name
+		ADDED from /home/runner/workspace/artifacts/islamic-app/android/app/src/main/AndroidManifest.xml:86:25-70
+receiver#com.sj64noorquran.AzanBootReceiver
+ADDED from /home/runner/workspace/artifacts/islamic-app/android/app/src/main/AndroidManifest.xml:91:9-99:20
+	android:exported
+		ADDED from /home/runner/workspace/artifacts/islamic-app/android/app/src/main/AndroidManifest.xml:93:13-37
+	android:name
+		ADDED from /home/runner/workspace/artifacts/islamic-app/android/app/src/main/AndroidManifest.xml:92:13-45
+intent-filter#action:name:android.intent.action.BOOT_COMPLETED+action:name:android.intent.action.QUICKBOOT_POWERON+action:name:android.intent.action.REBOOT
+ADDED from /home/runner/workspace/artifacts/islamic-app/android/app/src/main/AndroidManifest.xml:94:13-98:29
+action#android.intent.action.QUICKBOOT_POWERON
+ADDED from /home/runner/workspace/artifacts/islamic-app/android/app/src/main/AndroidManifest.xml:97:17-82
+	android:name
+		ADDED from /home/runner/workspace/artifacts/islamic-app/android/app/src/main/AndroidManifest.xml:97:25-79
+service#com.sj64noorquran.AzanService
+ADDED from /home/runner/workspace/artifacts/islamic-app/android/app/src/main/AndroidManifest.xml:102:9-105:61
+	android:exported
+		ADDED from /home/runner/workspace/artifacts/islamic-app/android/app/src/main/AndroidManifest.xml:104:13-37
+	android:foregroundServiceType
+		ADDED from /home/runner/workspace/artifacts/islamic-app/android/app/src/main/AndroidManifest.xml:105:13-58
+	android:name
+		ADDED from /home/runner/workspace/artifacts/islamic-app/android/app/src/main/AndroidManifest.xml:103:13-40
 uses-sdk
 INJECTED from /home/runner/workspace/artifacts/islamic-app/android/app/src/main/AndroidManifest.xml reason: use-sdk injection requested
 INJECTED from /home/runner/workspace/artifacts/islamic-app/android/app/src/main/AndroidManifest.xml
@@ -440,10 +472,6 @@ action#android.intent.action.LOCKED_BOOT_COMPLETED
 ADDED from [:capacitor-local-notifications] /home/runner/workspace/artifacts/islamic-app/node_modules/@capacitor/local-notifications/android/build/intermediates/merged_manifest/release/processReleaseManifest/AndroidManifest.xml:19:17-86
 	android:name
 		ADDED from [:capacitor-local-notifications] /home/runner/workspace/artifacts/islamic-app/node_modules/@capacitor/local-notifications/android/build/intermediates/merged_manifest/release/processReleaseManifest/AndroidManifest.xml:19:25-83
-action#android.intent.action.QUICKBOOT_POWERON
-ADDED from [:capacitor-local-notifications] /home/runner/workspace/artifacts/islamic-app/node_modules/@capacitor/local-notifications/android/build/intermediates/merged_manifest/release/processReleaseManifest/AndroidManifest.xml:21:17-82
-	android:name
-		ADDED from [:capacitor-local-notifications] /home/runner/workspace/artifacts/islamic-app/node_modules/@capacitor/local-notifications/android/build/intermediates/merged_manifest/release/processReleaseManifest/AndroidManifest.xml:21:25-79
 permission#${applicationId}.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION
 ADDED from [androidx.core:core:1.17.0] /home/runner/.gradle/caches/8.11.1/transforms/a39d9c6e2997913ca9123c3dd61cbcf3/transformed/core-1.17.0/AndroidManifest.xml:22:5-24:47
 	android:protectionLevel

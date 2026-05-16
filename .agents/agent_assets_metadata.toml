@@ -120,3 +120,9 @@ id = "5fj5cakqE7DRbPnI7FSoQ"
 uri = "file://artifacts/islamic-app/android/app/build/outputs/downloads/NoorQuran-v74684540-PlayStore.zip"
 type = "unspecified"
 title = "Noor Quran — versionCode 74684540 — Play Store AAB"
+
+[[outputs]]
+id = "CAtaW3eLjN2Aq2CObv7cm"
+uri = "file://noor-quran-azan-v1.0.9.zip"
+type = "unspecified"
+title = "Noor Quran — Azan Notifications AAB (v1.0.9)"

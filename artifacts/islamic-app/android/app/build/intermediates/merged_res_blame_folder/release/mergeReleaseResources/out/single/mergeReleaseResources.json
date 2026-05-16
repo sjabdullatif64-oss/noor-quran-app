@@ -772,6 +772,10 @@
         "source": "com.sj64noorquran.app-material-1.12.0-34:/color/m3_tabs_ripple_color_secondary.xml"
     },
     {
+        "merged": "com.sj64noorquran.app-release-40:/raw_azan_short.wav.flat",
+        "source": "com.sj64noorquran.app-main-41:/raw/azan_short.wav"
+    },
+    {
         "merged": "com.sj64noorquran.app-release-40:/layout_notification_template_part_time.xml.flat",
         "source": "com.sj64noorquran.app-core-1.17.0-22:/layout/notification_template_part_time.xml"
     },

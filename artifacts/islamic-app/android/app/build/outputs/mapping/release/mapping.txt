@@ -3,8 +3,8 @@
 # min_api: 24
 # common_typos_disable
 # {"id":"com.android.tools.r8.mapping","version":"2.2"}
-# pg_map_id: ac5ae4a
-# pg_map_hash: SHA-256 ac5ae4a929a1ba27dd0217aa565e17fb0e03959ee5d8366153cbab5744a5d5d1
+# pg_map_id: 1b332c6
+# pg_map_hash: SHA-256 1b332c6f8e4276221ab46a9bd3131b2f53ccd6d8ab864c59d672240836dcc8b6
 _COROUTINE.ArtificialStackFrames -> R8$$REMOVED$$CLASS$$0:
 # {"id":"sourceFile","fileName":"CoroutineDebugging.kt"}
 _COROUTINE.CoroutineDebuggingKt -> R8$$REMOVED$$CLASS$$1:
@@ -107742,65 +107742,65 @@ com.capacitorjs.plugins.localnotifications.NotificationChannelManager -> com.cap
 com.capacitorjs.plugins.localnotifications.NotificationChannelManager$$ExternalSyntheticApiModelOutline8 -> com.capacitorjs.plugins.localnotifications.a:
 # {"id":"sourceFile","fileName":"R8$$SyntheticClass"}
 # {"id":"com.android.tools.r8.synthesized"}
-    1:1:boolean m$1(android.app.NotificationChannel):0:0 -> A
+    1:1:void m$2(android.app.NotificationChannel):0:0 -> A
       # {"id":"com.android.tools.r8.synthesized"}
-    1:1:java.nio.file.Path m$2(java.nio.file.Path):0:0 -> B
+    1:1:void m$3(android.app.NotificationChannel):0:0 -> B
       # {"id":"com.android.tools.r8.synthesized"}
-    1:1:void m$2(android.app.NotificationChannel):0:0 -> C
+    1:1:void m$4(android.app.NotificationChannel):0:0 -> C
       # {"id":"com.android.tools.r8.synthesized"}
-    1:1:void m$3(android.app.NotificationChannel):0:0 -> D
+    1:1:void m$5(android.app.NotificationChannel):0:0 -> D
       # {"id":"com.android.tools.r8.synthesized"}
     1:1:int m(java.util.regex.Matcher,java.lang.String):0:0 -> a
       # {"id":"com.android.tools.r8.synthesized"}
     1:1:android.app.NotificationChannel m():0:0 -> b
       # {"id":"com.android.tools.r8.synthesized"}
-    1:1:android.os.VibrationEffect m(long):0:0 -> c
+    1:1:android.app.NotificationChannel m(android.app.NotificationManager):0:0 -> c
       # {"id":"com.android.tools.r8.synthesized"}
-    1:1:android.os.VibrationEffect m(long[],int[]):0:0 -> d
+    1:1:android.os.VibrationEffect m(long):0:0 -> d
       # {"id":"com.android.tools.r8.synthesized"}
-    1:1:java.lang.String m(java.nio.file.FileSystem):0:0 -> e
+    1:1:android.os.VibrationEffect m(long[],int[]):0:0 -> e
       # {"id":"com.android.tools.r8.synthesized"}
     1:1:java.lang.String m(java.util.regex.Matcher,java.lang.String):0:0 -> f
       # {"id":"com.android.tools.r8.synthesized"}
     1:1:java.lang.Throwable m(java.nio.file.FileSystemException,java.lang.Exception):0:0 -> g
       # {"id":"com.android.tools.r8.synthesized"}
-    1:1:java.nio.file.FileSystem m(java.nio.file.Path):0:0 -> h
+    1:1:java.nio.file.FileSystemException m(java.lang.String):0:0 -> h
       # {"id":"com.android.tools.r8.synthesized"}
-    1:1:java.nio.file.FileSystemException m(java.lang.String):0:0 -> i
+    1:1:java.nio.file.FileSystemException m(java.lang.Throwable):0:0 -> i
       # {"id":"com.android.tools.r8.synthesized"}
-    1:1:java.nio.file.FileSystemException m(java.lang.Throwable):0:0 -> j
+    1:1:java.nio.file.FileVisitor m(java.lang.Object):0:0 -> j
       # {"id":"com.android.tools.r8.synthesized"}
-    1:1:java.nio.file.FileVisitOption m():0:0 -> k
+    1:1:java.nio.file.Path m(java.lang.Object):0:0 -> k
       # {"id":"com.android.tools.r8.synthesized"}
-    1:1:java.nio.file.FileVisitor m(java.lang.Object):0:0 -> l
+    1:1:java.nio.file.Path m(java.nio.file.Path):0:0 -> l
       # {"id":"com.android.tools.r8.synthesized"}
-    1:1:java.nio.file.LinkOption m():0:0 -> m
+    1:1:java.nio.file.Path m(java.nio.file.Path,java.nio.file.Path):0:0 -> m
       # {"id":"com.android.tools.r8.synthesized"}
-    1:1:java.nio.file.Path m(java.lang.Object):0:0 -> n
+    1:1:java.util.Base64$Decoder m():0:0 -> n
       # {"id":"com.android.tools.r8.synthesized"}
-    1:1:java.nio.file.Path m(java.nio.file.Path):0:0 -> o
+    1:1:void m(android.app.NotificationChannel):0:0 -> o
       # {"id":"com.android.tools.r8.synthesized"}
-    1:1:java.nio.file.Path m(java.nio.file.Path,java.nio.file.Path):0:0 -> p
+    1:1:void m(android.app.NotificationChannel,long[]):0:0 -> p
       # {"id":"com.android.tools.r8.synthesized"}
-    1:1:java.util.Base64$Decoder m():0:0 -> q
+    1:1:void m(android.content.Context,android.content.Intent):0:0 -> q
       # {"id":"com.android.tools.r8.synthesized"}
-    1:1:void m():0:0 -> r
+    1:1:void m(android.os.Vibrator,android.os.VibrationEffect):0:0 -> r
       # {"id":"com.android.tools.r8.synthesized"}
-    1:1:void m(android.app.NotificationChannel):0:0 -> s
+    1:1:void m(java.nio.file.Path,java.util.Set,java.nio.file.FileVisitor):0:0 -> s
       # {"id":"com.android.tools.r8.synthesized"}
-    1:1:void m(android.os.Vibrator,android.os.VibrationEffect):0:0 -> t
+    1:1:boolean m(android.app.NotificationChannel):0:0 -> t
       # {"id":"com.android.tools.r8.synthesized"}
-    1:1:void m(java.nio.file.Path,java.util.Set,java.nio.file.FileVisitor):0:0 -> u
+    1:1:byte[] m(java.util.Base64$Decoder,java.lang.String):0:0 -> u
       # {"id":"com.android.tools.r8.synthesized"}
-    1:1:boolean m(android.app.NotificationChannel):0:0 -> v
+    1:1:int m$1(java.util.regex.Matcher,java.lang.String):0:0 -> v
       # {"id":"com.android.tools.r8.synthesized"}
-    1:1:byte[] m(java.util.Base64$Decoder,java.lang.String):0:0 -> w
+    1:1:android.app.NotificationChannel m$1():0:0 -> w
       # {"id":"com.android.tools.r8.synthesized"}
-    1:1:int m$1(java.util.regex.Matcher,java.lang.String):0:0 -> x
+    1:1:java.nio.file.Path m$1(java.nio.file.Path):0:0 -> x
       # {"id":"com.android.tools.r8.synthesized"}
-    1:1:java.nio.file.Path m$1(java.nio.file.Path):0:0 -> y
+    1:1:void m$1(android.app.NotificationChannel):0:0 -> y
       # {"id":"com.android.tools.r8.synthesized"}
-    1:1:void m$1(android.app.NotificationChannel):0:0 -> z
+    1:1:boolean m$1(android.app.NotificationChannel):0:0 -> z
       # {"id":"com.android.tools.r8.synthesized"}
 com.capacitorjs.plugins.localnotifications.NotificationDismissReceiver -> com.capacitorjs.plugins.localnotifications.NotificationDismissReceiver:
 # {"id":"sourceFile","fileName":"NotificationDismissReceiver.java"}
@@ -131159,6 +131159,239 @@ com.google.android.material.transformation.FabTransformationSheetBehavior -> com
 com.google.common.util.concurrent.ListenableFuture -> H.a:
 # {"id":"sourceFile","fileName":"ListenableFuture.java"}
     void addListener(java.lang.Runnable,java.util.concurrent.Executor) -> addListener
+com.sj64noorquran.AzanBootReceiver -> com.sj64noorquran.AzanBootReceiver:
+# {"id":"sourceFile","fileName":"AzanBootReceiver.java"}
+    1:4:void <init>():18:18 -> <init>
+    4:7:void onReceive(android.content.Context,android.content.Intent):23:23 -> onReceive
+    8:17:void onReceive(android.content.Context,android.content.Intent):24:24 -> onReceive
+    18:25:void onReceive(android.content.Context,android.content.Intent):25:25 -> onReceive
+    26:32:void onReceive(android.content.Context,android.content.Intent):26:26 -> onReceive
+    33:35:void onReceive(android.content.Context,android.content.Intent):30:30 -> onReceive
+    36:39:void onReceive(android.content.Context,android.content.Intent):31:31 -> onReceive
+    40:48:void onReceive(android.content.Context,android.content.Intent):32:32 -> onReceive
+    49:55:void onReceive(android.content.Context,android.content.Intent):33:33 -> onReceive
+    56:66:void onReceive(android.content.Context,android.content.Intent):35:35 -> onReceive
+    67:69:void onReceive(android.content.Context,android.content.Intent):39:39 -> onReceive
+    70:74:void onReceive(android.content.Context,android.content.Intent):42:42 -> onReceive
+    75:80:void onReceive(android.content.Context,android.content.Intent):43:43 -> onReceive
+    81:84:void onReceive(android.content.Context,android.content.Intent):44:44 -> onReceive
+    85:91:void onReceive(android.content.Context,android.content.Intent):45:45 -> onReceive
+com.sj64noorquran.AzanPlugin -> com.sj64noorquran.AzanPlugin:
+# {"id":"sourceFile","fileName":"AzanPlugin.java"}
+    1:4:void <init>():22:22 -> <init>
+    1:7:android.app.PendingIntent buildAlarmPi(android.content.Context,int,java.lang.String,java.lang.String):175:175 -> buildAlarmPi
+    8:12:android.app.PendingIntent buildAlarmPi(android.content.Context,int,java.lang.String,java.lang.String):176:176 -> buildAlarmPi
+    13:17:android.app.PendingIntent buildAlarmPi(android.content.Context,int,java.lang.String,java.lang.String):177:177 -> buildAlarmPi
+    18:25:android.app.PendingIntent buildAlarmPi(android.content.Context,int,java.lang.String,java.lang.String):178:178 -> buildAlarmPi
+    26:34:android.app.PendingIntent buildAlarmPi(android.content.Context,int,java.lang.String,java.lang.String):179:179 -> buildAlarmPi
+    35:39:android.app.PendingIntent buildAlarmPi(android.content.Context,int,java.lang.String,java.lang.String):180:180 -> buildAlarmPi
+    1:11:void cancelAlarm(android.content.Context,int):185:185 -> cancelAlarm
+    12:18:void cancelAlarm(android.content.Context,int):187:187 -> cancelAlarm
+    19:25:void cancelAlarm(android.content.Context,int):188:188 -> cancelAlarm
+    26:31:void cancelAlarm(android.content.Context,int):189:189 -> cancelAlarm
+    32:35:void cancelAlarm(android.content.Context,int):191:191 -> cancelAlarm
+    1:10:void cancelAll(com.getcapacitor.PluginCall):118:118 -> cancelAll
+    11:16:void cancelAll(com.getcapacitor.PluginCall):119:119 -> cancelAll
+    17:20:void cancelAll(com.getcapacitor.PluginCall):120:120 -> cancelAll
+    2:17:void cancelPrayer(com.getcapacitor.PluginCall):109:109 -> cancelPrayer
+    18:23:void cancelPrayer(com.getcapacitor.PluginCall):110:110 -> cancelPrayer
+    24:30:void cancelPrayer(com.getcapacitor.PluginCall):111:111 -> cancelPrayer
+    31:34:void cancelPrayer(com.getcapacitor.PluginCall):112:112 -> cancelPrayer
+    1:4:void checkPermissions(com.getcapacitor.PluginCall):128:128 -> checkPermissions
+    5:9:void checkPermissions(com.getcapacitor.PluginCall):129:129 -> checkPermissions
+    10:17:void checkPermissions(com.getcapacitor.PluginCall):131:131 -> checkPermissions
+    18:22:void checkPermissions(com.getcapacitor.PluginCall):130:130 -> checkPermissions
+    23:31:void checkPermissions(com.getcapacitor.PluginCall):132:132 -> checkPermissions
+    32:41:void checkPermissions(com.getcapacitor.PluginCall):133:133 -> checkPermissions
+    42:53:void checkPermissions(com.getcapacitor.PluginCall):134:134 -> checkPermissions
+    54:56:void checkPermissions(com.getcapacitor.PluginCall):136:136 -> checkPermissions
+    57:60:void checkPermissions(com.getcapacitor.PluginCall):138:138 -> checkPermissions
+    1:7:void ensureChannel(android.content.Context):33:33 -> ensureChannel
+    8:9:void ensureChannel(android.content.Context):34:34 -> ensureChannel
+    10:17:void ensureChannel(android.content.Context):35:35 -> ensureChannel
+    18:24:void ensureChannel(android.content.Context):36:36 -> ensureChannel
+    25:28:void ensureChannel(android.content.Context):37:37 -> ensureChannel
+    29:31:void ensureChannel(android.content.Context):39:39 -> ensureChannel
+    32:35:void ensureChannel(android.content.Context):40:40 -> ensureChannel
+    36:43:void ensureChannel(android.content.Context):41:41 -> ensureChannel
+    44:46:void ensureChannel(android.content.Context):42:42 -> ensureChannel
+    47:49:void ensureChannel(android.content.Context):43:43 -> ensureChannel
+    50:54:void ensureChannel(android.content.Context):44:44 -> ensureChannel
+    1:8:void load():49:49 -> load
+    1:6:void openAlarmSettings(com.getcapacitor.PluginCall):144:144 -> openAlarmSettings
+    7:15:void openAlarmSettings(com.getcapacitor.PluginCall):145:145 -> openAlarmSettings
+    16:41:void openAlarmSettings(com.getcapacitor.PluginCall):147:147 -> openAlarmSettings
+    42:44:void openAlarmSettings(com.getcapacitor.PluginCall):148:148 -> openAlarmSettings
+    45:51:void openAlarmSettings(com.getcapacitor.PluginCall):149:149 -> openAlarmSettings
+    52:55:void openAlarmSettings(com.getcapacitor.PluginCall):151:151 -> openAlarmSettings
+    1:6:void rescheduleFromJson(android.content.Context,android.app.AlarmManager,org.json.JSONObject):197:197 -> rescheduleFromJson
+    7:14:void rescheduleFromJson(android.content.Context,android.app.AlarmManager,org.json.JSONObject):198:198 -> rescheduleFromJson
+    15:20:void rescheduleFromJson(android.content.Context,android.app.AlarmManager,org.json.JSONObject):199:199 -> rescheduleFromJson
+    21:28:void rescheduleFromJson(android.content.Context,android.app.AlarmManager,org.json.JSONObject):200:200 -> rescheduleFromJson
+    29:37:void rescheduleFromJson(android.content.Context,android.app.AlarmManager,org.json.JSONObject):201:201 -> rescheduleFromJson
+    38:41:void rescheduleFromJson(android.content.Context,android.app.AlarmManager,org.json.JSONObject):202:202 -> rescheduleFromJson
+    42:48:void rescheduleFromJson(android.content.Context,android.app.AlarmManager,org.json.JSONObject):203:203 -> rescheduleFromJson
+    49:54:void rescheduleFromJson(android.content.Context,android.app.AlarmManager,org.json.JSONObject):204:204 -> rescheduleFromJson
+    55:58:void rescheduleFromJson(android.content.Context,android.app.AlarmManager,org.json.JSONObject):205:205 -> rescheduleFromJson
+    59:62:void rescheduleFromJson(android.content.Context,android.app.AlarmManager,org.json.JSONObject):207:207 -> rescheduleFromJson
+    63:66:void rescheduleFromJson(android.content.Context,android.app.AlarmManager,org.json.JSONObject):210:210 -> rescheduleFromJson
+    1:8:void savePrayerTimes(com.getcapacitor.PluginCall):161:161 -> savePrayerTimes
+    9:16:void savePrayerTimes(com.getcapacitor.PluginCall):162:162 -> savePrayerTimes
+    17:33:void savePrayerTimes(com.getcapacitor.PluginCall):163:163 -> savePrayerTimes
+    34:41:void savePrayerTimes(com.getcapacitor.PluginCall):164:164 -> savePrayerTimes
+    42:44:void savePrayerTimes(com.getcapacitor.PluginCall):165:165 -> savePrayerTimes
+    45:48:void savePrayerTimes(com.getcapacitor.PluginCall):166:166 -> savePrayerTimes
+    49:70:void savePrayerTimes(com.getcapacitor.PluginCall):168:168 -> savePrayerTimes
+    2:15:void schedulePrayer(com.getcapacitor.PluginCall):64:64 -> schedulePrayer
+    16:23:void schedulePrayer(com.getcapacitor.PluginCall):65:65 -> schedulePrayer
+    24:31:void schedulePrayer(com.getcapacitor.PluginCall):66:66 -> schedulePrayer
+    32:57:void schedulePrayer(com.getcapacitor.PluginCall):69:69 -> schedulePrayer
+    58:63:void schedulePrayer(com.getcapacitor.PluginCall):75:75 -> schedulePrayer
+    64:67:void schedulePrayer(com.getcapacitor.PluginCall):77:77 -> schedulePrayer
+    68:77:void schedulePrayer(com.getcapacitor.PluginCall):78:78 -> schedulePrayer
+    78:83:void schedulePrayer(com.getcapacitor.PluginCall):79:79 -> schedulePrayer
+    84:108:void schedulePrayer(com.getcapacitor.PluginCall):82:82 -> schedulePrayer
+    109:126:void schedulePrayer(com.getcapacitor.PluginCall):83:83 -> schedulePrayer
+    127:130:void schedulePrayer(com.getcapacitor.PluginCall):84:84 -> schedulePrayer
+    131:133:void schedulePrayer(com.getcapacitor.PluginCall):85:85 -> schedulePrayer
+    134:137:void schedulePrayer(com.getcapacitor.PluginCall):87:87 -> schedulePrayer
+    138:143:void schedulePrayer(com.getcapacitor.PluginCall):89:89 -> schedulePrayer
+    144:149:void schedulePrayer(com.getcapacitor.PluginCall):90:90 -> schedulePrayer
+    150:155:void schedulePrayer(com.getcapacitor.PluginCall):91:91 -> schedulePrayer
+    156:159:void schedulePrayer(com.getcapacitor.PluginCall):93:93 -> schedulePrayer
+    160:162:void schedulePrayer(com.getcapacitor.PluginCall):96:96 -> schedulePrayer
+    163:167:void schedulePrayer(com.getcapacitor.PluginCall):98:98 -> schedulePrayer
+    168:173:void schedulePrayer(com.getcapacitor.PluginCall):99:99 -> schedulePrayer
+    174:177:void schedulePrayer(com.getcapacitor.PluginCall):100:100 -> schedulePrayer
+    178:199:void schedulePrayer(com.getcapacitor.PluginCall):102:102 -> schedulePrayer
+    200:205:void schedulePrayer(com.getcapacitor.PluginCall):74:74 -> schedulePrayer
+    206:211:void schedulePrayer(com.getcapacitor.PluginCall):71:71 -> schedulePrayer
+com.sj64noorquran.AzanReceiver -> com.sj64noorquran.AzanReceiver:
+# {"id":"sourceFile","fileName":"AzanReceiver.java"}
+    1:4:void <init>():12:12 -> <init>
+    4:11:void onReceive(android.content.Context,android.content.Intent):18:18 -> onReceive
+    12:17:void onReceive(android.content.Context,android.content.Intent):19:19 -> onReceive
+    18:25:void onReceive(android.content.Context,android.content.Intent):20:20 -> onReceive
+    26:29:void onReceive(android.content.Context,android.content.Intent):21:21 -> onReceive
+    30:31:void onReceive(android.content.Context,android.content.Intent):22:22 -> onReceive
+    32:34:void onReceive(android.content.Context,android.content.Intent):25:25 -> onReceive
+    35:41:void onReceive(android.content.Context,android.content.Intent):27:27 -> onReceive
+    42:44:void onReceive(android.content.Context,android.content.Intent):28:28 -> onReceive
+    45:47:void onReceive(android.content.Context,android.content.Intent):29:29 -> onReceive
+    48:50:void onReceive(android.content.Context,android.content.Intent):30:30 -> onReceive
+    51:56:void onReceive(android.content.Context,android.content.Intent):32:32 -> onReceive
+    57:60:void onReceive(android.content.Context,android.content.Intent):33:33 -> onReceive
+    61:64:void onReceive(android.content.Context,android.content.Intent):35:35 -> onReceive
+com.sj64noorquran.AzanService -> com.sj64noorquran.AzanService:
+# {"id":"sourceFile","fileName":"AzanService.java"}
+    1:7:void <clinit>():33:33 -> <clinit>
+    8:14:void <clinit>():35:35 -> <clinit>
+    15:21:void <clinit>():36:36 -> <clinit>
+    22:28:void <clinit>():37:37 -> <clinit>
+    29:36:void <clinit>():38:38 -> <clinit>
+    1:4:void <init>():27:27 -> <init>
+    1:1:void $r8$lambda$-JGS6cBIw9smLZ477q_Is9XskMA(com.sj64noorquran.AzanService,android.media.MediaPlayer):0:0 -> a
+      # {"id":"com.android.tools.r8.synthesized"}
+    1:1:boolean $r8$lambda$MQ2A-iIK0RYPAHVl2EXpKz3Y2pM(com.sj64noorquran.AzanService,android.media.MediaPlayer,int,int):0:0 -> b
+      # {"id":"com.android.tools.r8.synthesized"}
+    1:9:android.app.Notification buildNotification(java.lang.String,java.lang.String):133:133 -> buildNotification
+    10:15:android.app.Notification buildNotification(java.lang.String,java.lang.String):134:134 -> buildNotification
+    16:19:android.app.Notification buildNotification(java.lang.String,java.lang.String):135:135 -> buildNotification
+    20:26:android.app.Notification buildNotification(java.lang.String,java.lang.String):139:139 -> buildNotification
+    27:32:android.app.Notification buildNotification(java.lang.String,java.lang.String):140:140 -> buildNotification
+    33:36:android.app.Notification buildNotification(java.lang.String,java.lang.String):141:141 -> buildNotification
+    37:42:android.app.Notification buildNotification(java.lang.String,java.lang.String):144:144 -> buildNotification
+    43:46:android.app.Notification buildNotification(java.lang.String,java.lang.String):145:145 -> buildNotification
+    47:57:android.app.Notification buildNotification(java.lang.String,java.lang.String):144:144 -> buildNotification
+    58:61:android.app.Notification buildNotification(java.lang.String,java.lang.String):148:148 -> buildNotification
+    62:65:android.app.Notification buildNotification(java.lang.String,java.lang.String):149:149 -> buildNotification
+    66:72:android.app.Notification buildNotification(java.lang.String,java.lang.String):151:151 -> buildNotification
+    73:101:android.app.Notification buildNotification(java.lang.String,java.lang.String):152:152 -> buildNotification
+    102:124:android.app.Notification buildNotification(java.lang.String,java.lang.String):153:153 -> buildNotification
+    125:130:android.app.Notification buildNotification(java.lang.String,java.lang.String):154:154 -> buildNotification
+    131:134:android.app.Notification buildNotification(java.lang.String,java.lang.String):155:155 -> buildNotification
+    135:143:android.app.Notification buildNotification(java.lang.String,java.lang.String):156:156 -> buildNotification
+    144:148:android.app.Notification buildNotification(java.lang.String,java.lang.String):157:157 -> buildNotification
+    149:154:android.app.Notification buildNotification(java.lang.String,java.lang.String):158:158 -> buildNotification
+    155:158:android.app.Notification buildNotification(java.lang.String,java.lang.String):159:159 -> buildNotification
+    159:162:android.app.Notification buildNotification(java.lang.String,java.lang.String):160:160 -> buildNotification
+    163:166:android.app.Notification buildNotification(java.lang.String,java.lang.String):161:161 -> buildNotification
+    167:173:android.app.Notification buildNotification(java.lang.String,java.lang.String):162:162 -> buildNotification
+    174:177:android.app.Notification buildNotification(java.lang.String,java.lang.String):163:163 -> buildNotification
+    178:182:android.app.Notification buildNotification(java.lang.String,java.lang.String):164:164 -> buildNotification
+    1:5:java.lang.String getPrayerEmoji(java.lang.String):168:168 -> getPrayerEmoji
+    6:81:java.lang.String getPrayerEmoji(java.lang.String):169:169 -> getPrayerEmoji
+    82:84:java.lang.String getPrayerEmoji(java.lang.String):173:173 -> getPrayerEmoji
+    85:88:java.lang.String getPrayerEmoji(java.lang.String):171:171 -> getPrayerEmoji
+    89:92:java.lang.String getPrayerEmoji(java.lang.String):172:172 -> getPrayerEmoji
+    1:6:java.lang.String getSoundLabel(java.lang.String):180:180 -> getSoundLabel
+    7:50:java.lang.String getSoundLabel(java.lang.String):181:181 -> getSoundLabel
+    51:53:java.lang.String getSoundLabel(java.lang.String):184:184 -> getSoundLabel
+    54:56:java.lang.String getSoundLabel(java.lang.String):183:183 -> getSoundLabel
+    57:60:java.lang.String getSoundLabel(java.lang.String):182:182 -> getSoundLabel
+    1:4:void lambda$playAzan$0(android.media.MediaPlayer):101:101 -> lambda$playAzan$0
+    1:5:boolean lambda$playAzan$1(android.media.MediaPlayer,int,int):103:103 -> lambda$playAzan$1
+    1:3:void onDestroy():79:79 -> onDestroy
+    4:6:void onDestroy():80:80 -> onDestroy
+    7:10:void onDestroy():81:81 -> onDestroy
+    4:15:int onStartCommand(android.content.Intent,int,int):52:52 -> onStartCommand
+    16:22:int onStartCommand(android.content.Intent,int,int):53:53 -> onStartCommand
+    23:32:int onStartCommand(android.content.Intent,int,int):57:57 -> onStartCommand
+    33:40:int onStartCommand(android.content.Intent,int,int):58:58 -> onStartCommand
+    41:44:int onStartCommand(android.content.Intent,int,int):59:59 -> onStartCommand
+    45:46:int onStartCommand(android.content.Intent,int,int):60:60 -> onStartCommand
+    47:57:int onStartCommand(android.content.Intent,int,int):63:63 -> onStartCommand
+    58:68:int onStartCommand(android.content.Intent,int,int):65:65 -> onStartCommand
+    69:73:int onStartCommand(android.content.Intent,int,int):67:67 -> onStartCommand
+    74:80:int onStartCommand(android.content.Intent,int,int):71:71 -> onStartCommand
+    81:84:int onStartCommand(android.content.Intent,int,int):73:73 -> onStartCommand
+    1:3:void playAzan(java.lang.String):87:87 -> playAzan
+    4:11:void playAzan(java.lang.String):88:88 -> playAzan
+    12:18:void playAzan(java.lang.String):89:89 -> playAzan
+    19:28:void playAzan(java.lang.String):90:90 -> playAzan
+    29:32:void playAzan(java.lang.String):91:91 -> playAzan
+    33:39:void playAzan(java.lang.String):94:94 -> playAzan
+    40:45:void playAzan(java.lang.String):95:95 -> playAzan
+    46:50:void playAzan(java.lang.String):96:96 -> playAzan
+    51:54:void playAzan(java.lang.String):97:97 -> playAzan
+    55:58:void playAzan(java.lang.String):98:98 -> playAzan
+    59:61:void playAzan(java.lang.String):95:95 -> playAzan
+    62:66:void playAzan(java.lang.String):99:99 -> playAzan
+    67:76:void playAzan(java.lang.String):100:100 -> playAzan
+    77:86:void playAzan(java.lang.String):101:101 -> playAzan
+    87:96:void playAzan(java.lang.String):102:102 -> playAzan
+    97:102:void playAzan(java.lang.String):106:106 -> playAzan
+    103:106:void playAzan(java.lang.String):108:108 -> playAzan
+    1:10:void releaseWakeLock():123:123 -> releaseWakeLock
+    11:16:void releaseWakeLock():124:124 -> releaseWakeLock
+    17:19:void releaseWakeLock():126:126 -> releaseWakeLock
+    1:4:void stopMedia():113:113 -> stopMedia
+    5:15:void stopMedia():115:115 -> stopMedia
+    16:21:void stopMedia():116:116 -> stopMedia
+    22:24:void stopMedia():118:118 -> stopMedia
+com.sj64noorquran.AzanService$$ExternalSyntheticLambda0 -> com.sj64noorquran.a:
+# {"id":"sourceFile","fileName":"R8$$SyntheticClass"}
+# {"id":"com.android.tools.r8.synthesized"}
+    1:1:void onPrepared(android.media.MediaPlayer):0:0 -> onPrepared
+      # {"id":"com.android.tools.r8.synthesized"}
+com.sj64noorquran.AzanService$$ExternalSyntheticLambda1 -> com.sj64noorquran.b:
+# {"id":"sourceFile","fileName":"R8$$SyntheticClass"}
+# {"id":"com.android.tools.r8.synthesized"}
+    com.sj64noorquran.AzanService com.sj64noorquran.AzanService$$InternalSyntheticLambda$1$b5d62398f28cb7304be050af916a28e0d3223013c6e0b78b78e38124bac73b45$1.f$0 -> a
+      # {"id":"com.android.tools.r8.synthesized"}
+    1:1:void <init>(com.sj64noorquran.AzanService):0:0 -> <init>
+      # {"id":"com.android.tools.r8.synthesized"}
+    1:1:void onCompletion(android.media.MediaPlayer):0:0 -> onCompletion
+      # {"id":"com.android.tools.r8.synthesized"}
+com.sj64noorquran.AzanService$$ExternalSyntheticLambda2 -> com.sj64noorquran.c:
+# {"id":"sourceFile","fileName":"R8$$SyntheticClass"}
+# {"id":"com.android.tools.r8.synthesized"}
+    com.sj64noorquran.AzanService com.sj64noorquran.AzanService$$InternalSyntheticLambda$1$b5d62398f28cb7304be050af916a28e0d3223013c6e0b78b78e38124bac73b45$2.f$0 -> a
+      # {"id":"com.android.tools.r8.synthesized"}
+    1:1:void <init>(com.sj64noorquran.AzanService):0:0 -> <init>
+      # {"id":"com.android.tools.r8.synthesized"}
+    1:1:boolean onError(android.media.MediaPlayer,int,int):0:0 -> onError
+      # {"id":"com.android.tools.r8.synthesized"}
 com.sj64noorquran.CrashActivity -> com.sj64noorquran.CrashActivity:
 # {"id":"sourceFile","fileName":"CrashActivity.java"}
     1:4:void <init>():27:27 -> <init>
@@ -131209,7 +131442,7 @@ com.sj64noorquran.CrashActivity -> com.sj64noorquran.CrashActivity:
     212:214:void onCreate(android.os.Bundle):95:95 -> onCreate
     215:217:void onCreate(android.os.Bundle):96:96 -> onCreate
     218:221:void onCreate(android.os.Bundle):98:98 -> onCreate
-com.sj64noorquran.CrashActivity$$ExternalSyntheticLambda0 -> com.sj64noorquran.a:
+com.sj64noorquran.CrashActivity$$ExternalSyntheticLambda0 -> com.sj64noorquran.d:
 # {"id":"sourceFile","fileName":"R8$$SyntheticClass"}
 # {"id":"com.android.tools.r8.synthesized"}
     com.sj64noorquran.CrashActivity com.sj64noorquran.CrashActivity$$InternalSyntheticLambda$1$017cf9cdc86d4075769ed92dfa7cc7c919952dc47542daa2864674ccdab6b4f0$0.f$0 -> a
@@ -131251,42 +131484,43 @@ com.sj64noorquran.MainActivity -> com.sj64noorquran.MainActivity:
     1:3:com.getcapacitor.Bridge access$200(com.sj64noorquran.MainActivity):17:17 -> access$200
     1:3:com.getcapacitor.Bridge access$300(com.sj64noorquran.MainActivity):17:17 -> access$300
     1:7:void onCreate(android.os.Bundle):21:21 -> onCreate
-    8:10:void onCreate(android.os.Bundle):29:29 -> onCreate
-    11:23:void onCreate(android.os.Bundle):36:36 -> onCreate
-    24:28:void onCreate(android.os.Bundle):50:50 -> onCreate
+    8:12:void onCreate(android.os.Bundle):22:22 -> onCreate
+    13:15:void onCreate(android.os.Bundle):30:30 -> onCreate
+    16:28:void onCreate(android.os.Bundle):37:37 -> onCreate
     29:33:void onCreate(android.os.Bundle):51:51 -> onCreate
     34:38:void onCreate(android.os.Bundle):52:52 -> onCreate
     39:43:void onCreate(android.os.Bundle):53:53 -> onCreate
-    44:46:void onCreate(android.os.Bundle):54:54 -> onCreate
-    47:53:void onCreate(android.os.Bundle):55:55 -> onCreate
-    54:60:void onCreate(android.os.Bundle):56:56 -> onCreate
-    61:62:void onCreate(android.os.Bundle):58:58 -> onCreate
-    63:69:void onCreate(android.os.Bundle):59:59 -> onCreate
-    70:72:void onCreate(android.os.Bundle):60:60 -> onCreate
-    73:77:void onCreate(android.os.Bundle):61:61 -> onCreate
-    78:82:void onCreate(android.os.Bundle):63:63 -> onCreate
-    83:89:void onCreate(android.os.Bundle):66:66 -> onCreate
-    90:95:void onCreate(android.os.Bundle):31:31 -> onCreate
-    1:7:void saveCrashAndShow(java.lang.Throwable,java.lang.String):71:71 -> saveCrashAndShow
-    8:15:void saveCrashAndShow(java.lang.Throwable,java.lang.String):72:72 -> saveCrashAndShow
-    16:30:void saveCrashAndShow(java.lang.Throwable,java.lang.String):73:73 -> saveCrashAndShow
-    31:46:void saveCrashAndShow(java.lang.Throwable,java.lang.String):74:74 -> saveCrashAndShow
-    47:58:void saveCrashAndShow(java.lang.Throwable,java.lang.String):75:75 -> saveCrashAndShow
-    59:69:void saveCrashAndShow(java.lang.Throwable,java.lang.String):76:76 -> saveCrashAndShow
-    70:76:void saveCrashAndShow(java.lang.Throwable,java.lang.String):78:78 -> saveCrashAndShow
-    77:89:void saveCrashAndShow(java.lang.Throwable,java.lang.String):79:79 -> saveCrashAndShow
-    90:96:void saveCrashAndShow(java.lang.Throwable,java.lang.String):81:81 -> saveCrashAndShow
-    97:103:void saveCrashAndShow(java.lang.Throwable,java.lang.String):82:82 -> saveCrashAndShow
-    104:106:void saveCrashAndShow(java.lang.Throwable,java.lang.String):83:83 -> saveCrashAndShow
-    107:109:void saveCrashAndShow(java.lang.Throwable,java.lang.String):84:84 -> saveCrashAndShow
-    110:113:void saveCrashAndShow(java.lang.Throwable,java.lang.String):85:85 -> saveCrashAndShow
+    44:48:void onCreate(android.os.Bundle):54:54 -> onCreate
+    49:51:void onCreate(android.os.Bundle):55:55 -> onCreate
+    52:58:void onCreate(android.os.Bundle):56:56 -> onCreate
+    59:65:void onCreate(android.os.Bundle):57:57 -> onCreate
+    66:67:void onCreate(android.os.Bundle):59:59 -> onCreate
+    68:74:void onCreate(android.os.Bundle):60:60 -> onCreate
+    75:77:void onCreate(android.os.Bundle):61:61 -> onCreate
+    78:82:void onCreate(android.os.Bundle):62:62 -> onCreate
+    83:87:void onCreate(android.os.Bundle):64:64 -> onCreate
+    88:94:void onCreate(android.os.Bundle):67:67 -> onCreate
+    95:100:void onCreate(android.os.Bundle):32:32 -> onCreate
+    1:7:void saveCrashAndShow(java.lang.Throwable,java.lang.String):72:72 -> saveCrashAndShow
+    8:15:void saveCrashAndShow(java.lang.Throwable,java.lang.String):73:73 -> saveCrashAndShow
+    16:30:void saveCrashAndShow(java.lang.Throwable,java.lang.String):74:74 -> saveCrashAndShow
+    31:46:void saveCrashAndShow(java.lang.Throwable,java.lang.String):75:75 -> saveCrashAndShow
+    47:58:void saveCrashAndShow(java.lang.Throwable,java.lang.String):76:76 -> saveCrashAndShow
+    59:69:void saveCrashAndShow(java.lang.Throwable,java.lang.String):77:77 -> saveCrashAndShow
+    70:76:void saveCrashAndShow(java.lang.Throwable,java.lang.String):79:79 -> saveCrashAndShow
+    77:89:void saveCrashAndShow(java.lang.Throwable,java.lang.String):80:80 -> saveCrashAndShow
+    90:96:void saveCrashAndShow(java.lang.Throwable,java.lang.String):82:82 -> saveCrashAndShow
+    97:103:void saveCrashAndShow(java.lang.Throwable,java.lang.String):83:83 -> saveCrashAndShow
+    104:106:void saveCrashAndShow(java.lang.Throwable,java.lang.String):84:84 -> saveCrashAndShow
+    107:109:void saveCrashAndShow(java.lang.Throwable,java.lang.String):85:85 -> saveCrashAndShow
+    110:113:void saveCrashAndShow(java.lang.Throwable,java.lang.String):86:86 -> saveCrashAndShow
 com.sj64noorquran.MainActivity$1 -> com.sj64noorquran.MainActivity$1:
 # {"id":"sourceFile","fileName":"MainActivity.java"}
-    1:6:void <init>(com.sj64noorquran.MainActivity,boolean):36:36 -> <init>
-    1:22:void handleOnBackPressed():39:39 -> handleOnBackPressed
-    23:36:void handleOnBackPressed():40:40 -> handleOnBackPressed
-    37:50:void handleOnBackPressed():41:41 -> handleOnBackPressed
-    51:56:void handleOnBackPressed():43:43 -> handleOnBackPressed
+    1:6:void <init>(com.sj64noorquran.MainActivity,boolean):37:37 -> <init>
+    1:22:void handleOnBackPressed():40:40 -> handleOnBackPressed
+    23:36:void handleOnBackPressed():41:41 -> handleOnBackPressed
+    37:50:void handleOnBackPressed():42:42 -> handleOnBackPressed
+    51:56:void handleOnBackPressed():44:44 -> handleOnBackPressed
 com.sj64noorquran.MainApplication -> com.sj64noorquran.MainApplication:
 # {"id":"sourceFile","fileName":"MainApplication.java"}
     1:4:void <init>():24:24 -> <init>
@@ -131371,7 +131605,7 @@ com.sj64noorquran.NativeTTSPlugin -> com.sj64noorquran.NativeTTSPlugin:
     28:43:void stop(com.getcapacitor.PluginCall):144 -> stop
     44:47:void stop(com.getcapacitor.PluginCall):144:144 -> stop
     48:51:void stop(com.getcapacitor.PluginCall):145:145 -> stop
-com.sj64noorquran.NativeTTSPlugin$$ExternalSyntheticLambda0 -> com.sj64noorquran.b:
+com.sj64noorquran.NativeTTSPlugin$$ExternalSyntheticLambda0 -> com.sj64noorquran.e:
 # {"id":"sourceFile","fileName":"R8$$SyntheticClass"}
 # {"id":"com.android.tools.r8.synthesized"}
     com.sj64noorquran.NativeTTSPlugin com.sj64noorquran.NativeTTSPlugin$$InternalSyntheticLambda$1$a50921b3207807f87649e626349b38e0024977bfa5b8ca71fab5de990524ecd2$0.f$0 -> a
@@ -148163,6 +148397,69 @@ kotlin.io.path.ExceptionsCollector -> kotlin.io.path.ExceptionsCollector:
     1:3:java.nio.file.Path getPath():325:325 -> getPath
     1:3:int getTotalExceptions():320:320 -> getTotalExceptions
     1:3:void setPath(java.nio.file.Path):325:325 -> setPath
+kotlin.io.path.ExceptionsCollector$$ExternalSyntheticApiModelOutline6 -> kotlin.io.path.a:
+# {"id":"sourceFile","fileName":"R8$$SyntheticClass"}
+# {"id":"com.android.tools.r8.synthesized"}
+    1:1:java.nio.file.FileVisitResult m$1():0:0 -> A
+      # {"id":"com.android.tools.r8.synthesized"}
+    1:1:java.nio.file.Path m$1(java.lang.String[]):0:0 -> B
+      # {"id":"com.android.tools.r8.synthesized"}
+    1:1:void m$1():0:0 -> C
+      # {"id":"com.android.tools.r8.synthesized"}
+    1:1:java.nio.file.FileVisitResult m$2():0:0 -> D
+      # {"id":"com.android.tools.r8.synthesized"}
+    1:1:int m(java.nio.file.Path):0:0 -> a
+      # {"id":"com.android.tools.r8.synthesized"}
+    1:1:java.io.BufferedReader m(java.nio.file.Path,java.nio.charset.Charset):0:0 -> b
+      # {"id":"com.android.tools.r8.synthesized"}
+    1:1:java.lang.String m(java.nio.file.FileSystem):0:0 -> c
+      # {"id":"com.android.tools.r8.synthesized"}
+    1:1:java.nio.file.DirectoryStream m(java.lang.Object):0:0 -> d
+      # {"id":"com.android.tools.r8.synthesized"}
+    1:1:java.nio.file.DirectoryStream m(java.nio.file.Path):0:0 -> e
+      # {"id":"com.android.tools.r8.synthesized"}
+    1:1:java.nio.file.FileSystem m(java.nio.file.Path):0:0 -> f
+      # {"id":"com.android.tools.r8.synthesized"}
+    1:1:java.nio.file.FileSystemException m():0:0 -> g
+      # {"id":"com.android.tools.r8.synthesized"}
+    1:1:java.nio.file.FileSystemLoopException m(java.lang.String):0:0 -> h
+      # {"id":"com.android.tools.r8.synthesized"}
+    1:1:java.nio.file.FileVisitOption m():0:0 -> i
+      # {"id":"com.android.tools.r8.synthesized"}
+    1:1:java.nio.file.FileVisitResult m():0:0 -> j
+      # {"id":"com.android.tools.r8.synthesized"}
+    1:1:java.nio.file.LinkOption m():0:0 -> k
+      # {"id":"com.android.tools.r8.synthesized"}
+    1:1:java.nio.file.Path m(java.nio.file.FileSystem,java.lang.String,java.lang.String[]):0:0 -> l
+      # {"id":"com.android.tools.r8.synthesized"}
+    1:1:java.nio.file.Path m(java.nio.file.Path):0:0 -> m
+      # {"id":"com.android.tools.r8.synthesized"}
+    1:1:java.nio.file.Path m(java.nio.file.Path,int):0:0 -> n
+      # {"id":"com.android.tools.r8.synthesized"}
+    1:1:java.nio.file.Path m(java.nio.file.Path,java.lang.Iterable,java.nio.charset.Charset,java.nio.file.OpenOption[]):0:0 -> o
+      # {"id":"com.android.tools.r8.synthesized"}
+    1:1:java.nio.file.Path m(java.nio.file.Path,java.nio.file.Path):0:0 -> p
+      # {"id":"com.android.tools.r8.synthesized"}
+    1:1:java.nio.file.Path m(java.lang.String[]):0:0 -> q
+      # {"id":"com.android.tools.r8.synthesized"}
+    1:1:java.nio.file.SecureDirectoryStream m(java.lang.Object):0:0 -> r
+      # {"id":"com.android.tools.r8.synthesized"}
+    1:1:java.nio.file.StandardOpenOption m():0:0 -> s
+      # {"id":"com.android.tools.r8.synthesized"}
+    1:1:java.util.List m(java.nio.file.Path,java.nio.charset.Charset):0:0 -> t
+      # {"id":"com.android.tools.r8.synthesized"}
+    1:1:void m():0:0 -> u
+      # {"id":"com.android.tools.r8.synthesized"}
+    1:1:void m(java.nio.file.Path,byte[],java.nio.file.OpenOption[]):0:0 -> v
+      # {"id":"com.android.tools.r8.synthesized"}
+    1:1:boolean m(java.lang.Object):0:0 -> w
+      # {"id":"com.android.tools.r8.synthesized"}
+    1:1:boolean m(java.nio.file.Path):0:0 -> x
+      # {"id":"com.android.tools.r8.synthesized"}
+    1:1:boolean m(java.nio.file.Path,java.nio.file.Path):0:0 -> y
+      # {"id":"com.android.tools.r8.synthesized"}
+    1:1:byte[] m(java.nio.file.Path):0:0 -> z
+      # {"id":"com.android.tools.r8.synthesized"}
 kotlin.io.path.ExperimentalPathApi -> kotlin.io.path.ExperimentalPathApi:
 # {"id":"sourceFile","fileName":"ExperimentalPathApi.kt"}
 kotlin.io.path.FileVisitorBuilder -> kotlin.io.path.FileVisitorBuilder:
@@ -148254,69 +148551,6 @@ kotlin.io.path.PathRelativizer -> kotlin.io.path.PathRelativizer:
     91:109:java.nio.file.Path tryRelativeTo(java.nio.file.Path,java.nio.file.Path):179:179 -> tryRelativeTo
     110:137:java.nio.file.Path tryRelativeTo(java.nio.file.Path,java.nio.file.Path):180:180 -> tryRelativeTo
     138:141:java.nio.file.Path tryRelativeTo(java.nio.file.Path,java.nio.file.Path):184:184 -> tryRelativeTo
-kotlin.io.path.PathRelativizer$$ExternalSyntheticApiModelOutline3 -> kotlin.io.path.a:
-# {"id":"sourceFile","fileName":"R8$$SyntheticClass"}
-# {"id":"com.android.tools.r8.synthesized"}
-    1:1:java.nio.file.FileVisitResult m$1():0:0 -> A
-      # {"id":"com.android.tools.r8.synthesized"}
-    1:1:java.nio.file.Path m$1(java.lang.String[]):0:0 -> B
-      # {"id":"com.android.tools.r8.synthesized"}
-    1:1:boolean m$1(java.nio.file.Path,java.nio.file.Path):0:0 -> C
-      # {"id":"com.android.tools.r8.synthesized"}
-    1:1:java.nio.file.FileVisitResult m$2():0:0 -> D
-      # {"id":"com.android.tools.r8.synthesized"}
-    1:1:int m(java.nio.file.Path):0:0 -> a
-      # {"id":"com.android.tools.r8.synthesized"}
-    1:1:java.io.BufferedReader m(java.nio.file.Path,java.nio.charset.Charset):0:0 -> b
-      # {"id":"com.android.tools.r8.synthesized"}
-    1:1:java.nio.file.DirectoryStream m(java.lang.Object):0:0 -> c
-      # {"id":"com.android.tools.r8.synthesized"}
-    1:1:java.nio.file.DirectoryStream m(java.nio.file.Path):0:0 -> d
-      # {"id":"com.android.tools.r8.synthesized"}
-    1:1:java.nio.file.FileSystemException m():0:0 -> e
-      # {"id":"com.android.tools.r8.synthesized"}
-    1:1:java.nio.file.FileSystemLoopException m(java.lang.String):0:0 -> f
-      # {"id":"com.android.tools.r8.synthesized"}
-    1:1:java.nio.file.FileVisitResult m():0:0 -> g
-      # {"id":"com.android.tools.r8.synthesized"}
-    1:1:java.nio.file.Path m(java.lang.String,java.lang.String[]):0:0 -> h
-      # {"id":"com.android.tools.r8.synthesized"}
-    1:1:java.nio.file.Path m(java.nio.file.FileSystem,java.lang.String,java.lang.String[]):0:0 -> i
-      # {"id":"com.android.tools.r8.synthesized"}
-    1:1:java.nio.file.Path m(java.nio.file.Path,int):0:0 -> j
-      # {"id":"com.android.tools.r8.synthesized"}
-    1:1:java.nio.file.Path m(java.nio.file.Path,java.lang.Iterable,java.nio.charset.Charset,java.nio.file.OpenOption[]):0:0 -> k
-      # {"id":"com.android.tools.r8.synthesized"}
-    1:1:java.nio.file.Path m(java.nio.file.Path,java.lang.String):0:0 -> l
-      # {"id":"com.android.tools.r8.synthesized"}
-    1:1:java.nio.file.Path m(java.nio.file.Path,java.nio.file.Path):0:0 -> m
-      # {"id":"com.android.tools.r8.synthesized"}
-    1:1:java.nio.file.Path m(java.nio.file.Path,java.nio.file.attribute.UserPrincipal):0:0 -> n
-      # {"id":"com.android.tools.r8.synthesized"}
-    1:1:java.nio.file.Path m(java.lang.String[]):0:0 -> o
-      # {"id":"com.android.tools.r8.synthesized"}
-    1:1:java.nio.file.SecureDirectoryStream m(java.lang.Object):0:0 -> p
-      # {"id":"com.android.tools.r8.synthesized"}
-    1:1:java.nio.file.StandardOpenOption m():0:0 -> q
-      # {"id":"com.android.tools.r8.synthesized"}
-    1:1:java.nio.file.attribute.BasicFileAttributes m(java.lang.Object):0:0 -> r
-      # {"id":"com.android.tools.r8.synthesized"}
-    1:1:java.util.List m(java.nio.file.Path,java.nio.charset.Charset):0:0 -> s
-      # {"id":"com.android.tools.r8.synthesized"}
-    1:1:void m():0:0 -> t
-      # {"id":"com.android.tools.r8.synthesized"}
-    1:1:void m(java.nio.file.Path):0:0 -> u
-      # {"id":"com.android.tools.r8.synthesized"}
-    1:1:void m(java.nio.file.Path,byte[],java.nio.file.OpenOption[]):0:0 -> v
-      # {"id":"com.android.tools.r8.synthesized"}
-    1:1:boolean m(java.lang.Object):0:0 -> w
-      # {"id":"com.android.tools.r8.synthesized"}
-    1:1:boolean m(java.nio.file.Path):0:0 -> x
-      # {"id":"com.android.tools.r8.synthesized"}
-    1:1:boolean m(java.nio.file.Path,java.nio.file.Path):0:0 -> y
-      # {"id":"com.android.tools.r8.synthesized"}
-    1:1:byte[] m(java.nio.file.Path):0:0 -> z
-      # {"id":"com.android.tools.r8.synthesized"}
 kotlin.io.path.PathTreeWalk -> kotlin.io.path.PathTreeWalk:
 # {"id":"sourceFile","fileName":"PathTreeWalk.kt"}
     11:13:void <init>(java.nio.file.Path,kotlin.io.path.PathWalkOption[]):20:20 -> <init>
@@ -148704,7 +148938,52 @@ kotlin.io.path.PathsKt__PathRecursiveFunctionsKt -> kotlin.io.path.PathsKt__Path
     7:7:java.nio.file.FileVisitResult toFileVisitResult$PathsKt__PathRecursiveFunctionsKt(kotlin.io.path.OnErrorResult):280:280 -> toFileVisitResult$PathsKt__PathRecursiveFunctionsKt
     8:9:java.nio.file.FileVisitResult toFileVisitResult$PathsKt__PathRecursiveFunctionsKt(kotlin.io.path.OnErrorResult):278:279 -> toFileVisitResult$PathsKt__PathRecursiveFunctionsKt
     1:7:java.lang.Object tryIgnoreNoSuchFileException$PathsKt__PathRecursiveFunctionsKt(kotlin.jvm.functions.Function0):384:384 -> tryIgnoreNoSuchFileException$PathsKt__PathRecursiveFunctionsKt
-kotlin.io.path.PathsKt__PathRecursiveFunctionsKt$$ExternalSyntheticLambda13 -> kotlin.io.path.b:
+kotlin.io.path.PathsKt__PathRecursiveFunctionsKt$$ExternalSyntheticApiModelOutline8 -> kotlin.io.path.b:
+# {"id":"sourceFile","fileName":"R8$$SyntheticClass"}
+# {"id":"com.android.tools.r8.synthesized"}
+    1:1:long m(java.nio.file.Path):0:0 -> a
+      # {"id":"com.android.tools.r8.synthesized"}
+    1:1:java.nio.file.DirectoryStream m(java.nio.file.Path,java.lang.String):0:0 -> b
+      # {"id":"com.android.tools.r8.synthesized"}
+    1:1:java.nio.file.FileStore m(java.nio.file.Path):0:0 -> c
+      # {"id":"com.android.tools.r8.synthesized"}
+    1:1:java.nio.file.Path m(java.lang.String,java.lang.String[]):0:0 -> d
+      # {"id":"com.android.tools.r8.synthesized"}
+    1:1:java.nio.file.Path m(java.net.URI):0:0 -> e
+      # {"id":"com.android.tools.r8.synthesized"}
+    1:1:java.nio.file.Path m(java.nio.file.Path):0:0 -> f
+      # {"id":"com.android.tools.r8.synthesized"}
+    1:1:java.nio.file.Path m(java.nio.file.Path,java.lang.String):0:0 -> g
+      # {"id":"com.android.tools.r8.synthesized"}
+    1:1:java.nio.file.Path m(java.nio.file.Path,java.nio.file.Path):0:0 -> h
+      # {"id":"com.android.tools.r8.synthesized"}
+    1:1:java.nio.file.Path m(java.nio.file.Path,java.nio.file.attribute.FileTime):0:0 -> i
+      # {"id":"com.android.tools.r8.synthesized"}
+    1:1:java.nio.file.Path m(java.nio.file.Path,java.nio.file.attribute.UserPrincipal):0:0 -> j
+      # {"id":"com.android.tools.r8.synthesized"}
+    1:1:java.nio.file.Path m(java.nio.file.Path,java.util.Set):0:0 -> k
+      # {"id":"com.android.tools.r8.synthesized"}
+    1:1:java.nio.file.attribute.BasicFileAttributes m(java.lang.Object):0:0 -> l
+      # {"id":"com.android.tools.r8.synthesized"}
+    1:1:void m(java.nio.file.Path):0:0 -> m
+      # {"id":"com.android.tools.r8.synthesized"}
+    1:1:void m(java.nio.file.Path,java.util.Set,int,java.nio.file.FileVisitor):0:0 -> n
+      # {"id":"com.android.tools.r8.synthesized"}
+    1:1:boolean m(java.nio.file.Path):0:0 -> o
+      # {"id":"com.android.tools.r8.synthesized"}
+    1:1:boolean m(java.nio.file.Path,java.nio.file.Path):0:0 -> p
+      # {"id":"com.android.tools.r8.synthesized"}
+    1:1:java.nio.file.Path m$1(java.nio.file.Path):0:0 -> q
+      # {"id":"com.android.tools.r8.synthesized"}
+    1:1:boolean m$1(java.nio.file.Path):0:0 -> r
+      # {"id":"com.android.tools.r8.synthesized"}
+    1:1:boolean m$2(java.nio.file.Path):0:0 -> s
+      # {"id":"com.android.tools.r8.synthesized"}
+    1:1:boolean m$3(java.nio.file.Path):0:0 -> t
+      # {"id":"com.android.tools.r8.synthesized"}
+    1:1:boolean m$4(java.nio.file.Path):0:0 -> u
+      # {"id":"com.android.tools.r8.synthesized"}
+kotlin.io.path.PathsKt__PathRecursiveFunctionsKt$$ExternalSyntheticLambda13 -> kotlin.io.path.c:
 # {"id":"sourceFile","fileName":"R8$$SyntheticClass"}
 # {"id":"com.android.tools.r8.synthesized"}
     int $r8$classId -> b
@@ -148715,7 +148994,7 @@ kotlin.io.path.PathsKt__PathRecursiveFunctionsKt$$ExternalSyntheticLambda13 -> k
       # {"id":"com.android.tools.r8.synthesized"}
     1:1:java.lang.Object invoke(java.lang.Object,java.lang.Object,java.lang.Object):0:0 -> invoke
       # {"id":"com.android.tools.r8.synthesized"}
-kotlin.io.path.PathsKt__PathRecursiveFunctionsKt$$ExternalSyntheticLambda15 -> kotlin.io.path.c:
+kotlin.io.path.PathsKt__PathRecursiveFunctionsKt$$ExternalSyntheticLambda15 -> kotlin.io.path.d:
 # {"id":"sourceFile","fileName":"R8$$SyntheticClass"}
 # {"id":"com.android.tools.r8.synthesized"}
     java.util.ArrayList kotlin.io.path.PathsKt__PathRecursiveFunctionsKt$$InternalSyntheticLambda$1$68ae3e38596d8d6b7ceb8185a48526ac59ded5c3b777e96127fe34b058310a37$17.f$0 -> b
@@ -148734,7 +149013,7 @@ kotlin.io.path.PathsKt__PathRecursiveFunctionsKt$$ExternalSyntheticLambda15 -> k
       # {"id":"com.android.tools.r8.synthesized"}
     1:1:java.lang.Object invoke(java.lang.Object):0:0 -> invoke
       # {"id":"com.android.tools.r8.synthesized"}
-kotlin.io.path.PathsKt__PathRecursiveFunctionsKt$$ExternalSyntheticLambda16 -> kotlin.io.path.d:
+kotlin.io.path.PathsKt__PathRecursiveFunctionsKt$$ExternalSyntheticLambda16 -> kotlin.io.path.e:
 # {"id":"sourceFile","fileName":"R8$$SyntheticClass"}
 # {"id":"com.android.tools.r8.synthesized"}
     java.util.ArrayList kotlin.io.path.PathsKt__PathRecursiveFunctionsKt$$InternalSyntheticLambda$1$dcc8aff9a942477c8997d6096f69fb19a3210fac711ab11f6b6fa1f3cab82627$0.f$0 -> b
@@ -148753,7 +149032,7 @@ kotlin.io.path.PathsKt__PathRecursiveFunctionsKt$$ExternalSyntheticLambda16 -> k
       # {"id":"com.android.tools.r8.synthesized"}
     1:1:java.lang.Object invoke(java.lang.Object,java.lang.Object):0:0 -> invoke
       # {"id":"com.android.tools.r8.synthesized"}
-kotlin.io.path.PathsKt__PathRecursiveFunctionsKt$$ExternalSyntheticLambda17 -> kotlin.io.path.e:
+kotlin.io.path.PathsKt__PathRecursiveFunctionsKt$$ExternalSyntheticLambda17 -> kotlin.io.path.f:
 # {"id":"sourceFile","fileName":"R8$$SyntheticClass"}
 # {"id":"com.android.tools.r8.synthesized"}
     java.util.ArrayList kotlin.io.path.PathsKt__PathRecursiveFunctionsKt$$InternalSyntheticLambda$1$dcc8aff9a942477c8997d6096f69fb19a3210fac711ab11f6b6fa1f3cab82627$1.f$0 -> b
@@ -148901,39 +149180,6 @@ kotlin.io.path.PathsKt__PathUtilsKt -> kotlin.io.path.PathsKt__PathUtilsKt:
     1:1:void visitFileTree$default(java.nio.file.Path,java.nio.file.FileVisitor,int,boolean,int,java.lang.Object):1143:1143 -> visitFileTree$default
     2:2:void visitFileTree$default(java.nio.file.Path,int,boolean,kotlin.jvm.functions.Function1,int,java.lang.Object):1193:1193 -> visitFileTree$default
     11:16:kotlin.sequences.Sequence walk(java.nio.file.Path,kotlin.io.path.PathWalkOption[]):1100:1100 -> walk
-kotlin.io.path.PathsKt__PathUtilsKt$$ExternalSyntheticApiModelOutline12 -> kotlin.io.path.f:
-# {"id":"sourceFile","fileName":"R8$$SyntheticClass"}
-# {"id":"com.android.tools.r8.synthesized"}
-    1:1:long m(java.nio.file.Path):0:0 -> a
-      # {"id":"com.android.tools.r8.synthesized"}
-    1:1:java.nio.file.DirectoryStream m(java.nio.file.Path,java.lang.String):0:0 -> b
-      # {"id":"com.android.tools.r8.synthesized"}
-    1:1:java.nio.file.FileStore m(java.nio.file.Path):0:0 -> c
-      # {"id":"com.android.tools.r8.synthesized"}
-    1:1:java.nio.file.Path m(java.net.URI):0:0 -> d
-      # {"id":"com.android.tools.r8.synthesized"}
-    1:1:java.nio.file.Path m(java.nio.file.Path):0:0 -> e
-      # {"id":"com.android.tools.r8.synthesized"}
-    1:1:java.nio.file.Path m(java.nio.file.Path,java.nio.file.Path):0:0 -> f
-      # {"id":"com.android.tools.r8.synthesized"}
-    1:1:java.nio.file.Path m(java.nio.file.Path,java.nio.file.attribute.FileTime):0:0 -> g
-      # {"id":"com.android.tools.r8.synthesized"}
-    1:1:java.nio.file.Path m(java.nio.file.Path,java.util.Set):0:0 -> h
-      # {"id":"com.android.tools.r8.synthesized"}
-    1:1:void m(java.nio.file.Path,java.util.Set,int,java.nio.file.FileVisitor):0:0 -> i
-      # {"id":"com.android.tools.r8.synthesized"}
-    1:1:boolean m(java.nio.file.Path):0:0 -> j
-      # {"id":"com.android.tools.r8.synthesized"}
-    1:1:java.nio.file.Path m$1(java.nio.file.Path):0:0 -> k
-      # {"id":"com.android.tools.r8.synthesized"}
-    1:1:boolean m$1(java.nio.file.Path):0:0 -> l
-      # {"id":"com.android.tools.r8.synthesized"}
-    1:1:boolean m$2(java.nio.file.Path):0:0 -> m
-      # {"id":"com.android.tools.r8.synthesized"}
-    1:1:boolean m$3(java.nio.file.Path):0:0 -> n
-      # {"id":"com.android.tools.r8.synthesized"}
-    1:1:boolean m$4(java.nio.file.Path):0:0 -> o
-      # {"id":"com.android.tools.r8.synthesized"}
 kotlin.jdk7.AutoCloseableKt -> kotlin.jdk7.AutoCloseableKt:
 # {"id":"sourceFile","fileName":"AutoCloseableJVM.kt"}
     6:11:java.lang.AutoCloseable AutoCloseable(kotlin.jvm.functions.Function0):19:19 -> AutoCloseable

@@ -103,6 +103,36 @@
         <receiver
             android:name="com.capacitorjs.plugins.localnotifications.LocalNotificationReceiver"
             android:exported="false" />
+
+        <!-- ── Azan (prayer-time) alarm receivers & service ──────────────── -->
+
+
+        <!-- Fires when an AlarmManager exact alarm triggers -->
+        <receiver
+            android:name="com.sj64noorquran.AzanReceiver"
+            android:exported="false" >
+            <intent-filter>
+                <action android:name="com.sj64noorquran.AZAN_TRIGGER" />
+            </intent-filter>
+        </receiver>
+
+        <!-- Re-schedules prayer alarms after device reboot -->
+        <receiver
+            android:name="com.sj64noorquran.AzanBootReceiver"
+            android:exported="false" >
+            <intent-filter>
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
+                <action android:name="android.intent.action.REBOOT" />
+                <action android:name="android.intent.action.QUICKBOOT_POWERON" />
+            </intent-filter>
+        </receiver>
+
+        <!-- Foreground service that streams Azan audio -->
+        <service
+            android:name="com.sj64noorquran.AzanService"
+            android:exported="false"
+            android:foregroundServiceType="mediaPlayback" />
+
         <receiver android:name="com.capacitorjs.plugins.localnotifications.TimedNotificationPublisher" />
         <receiver android:name="com.capacitorjs.plugins.localnotifications.NotificationDismissReceiver" />
         <receiver

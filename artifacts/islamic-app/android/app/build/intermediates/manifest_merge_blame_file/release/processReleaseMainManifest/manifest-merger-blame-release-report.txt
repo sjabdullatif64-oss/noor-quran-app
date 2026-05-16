@@ -69,7 +69,7 @@
 34-->[androidx.core:core:1.17.0] /home/runner/.gradle/caches/8.11.1/transforms/a39d9c6e2997913ca9123c3dd61cbcf3/transformed/core-1.17.0/AndroidManifest.xml:26:22-94
 35
 36    <application
-36-->/home/runner/workspace/artifacts/islamic-app/android/app/src/main/AndroidManifest.xml:20:5-86:19
+36-->/home/runner/workspace/artifacts/islamic-app/android/app/src/main/AndroidManifest.xml:20:5-114:19
 37        android:name="com.sj64noorquran.MainApplication"
 37-->/home/runner/workspace/artifacts/islamic-app/android/app/src/main/AndroidManifest.xml:21:9-40
 38        android:allowBackup="false"
@@ -187,8 +187,8 @@
 98-->/home/runner/workspace/artifacts/islamic-app/android/app/src/main/AndroidManifest.xml:70:17-79
 98-->/home/runner/workspace/artifacts/islamic-app/android/app/src/main/AndroidManifest.xml:70:25-76
 99                <action android:name="android.intent.action.QUICKBOOT_POWERON" />
-99-->[:capacitor-local-notifications] /home/runner/workspace/artifacts/islamic-app/node_modules/@capacitor/local-notifications/android/build/intermediates/merged_manifest/release/processReleaseManifest/AndroidManifest.xml:21:17-82
-99-->[:capacitor-local-notifications] /home/runner/workspace/artifacts/islamic-app/node_modules/@capacitor/local-notifications/android/build/intermediates/merged_manifest/release/processReleaseManifest/AndroidManifest.xml:21:25-79
+99-->/home/runner/workspace/artifacts/islamic-app/android/app/src/main/AndroidManifest.xml:97:17-82
+99-->/home/runner/workspace/artifacts/islamic-app/android/app/src/main/AndroidManifest.xml:97:25-79
 100            </intent-filter>
 101        </receiver>
 102        <receiver
@@ -197,49 +197,99 @@
 103-->/home/runner/workspace/artifacts/islamic-app/android/app/src/main/AndroidManifest.xml:76:13-96
 104            android:exported="false" />
 104-->/home/runner/workspace/artifacts/islamic-app/android/app/src/main/AndroidManifest.xml:77:13-37
-105        <receiver android:name="com.capacitorjs.plugins.localnotifications.TimedNotificationPublisher" />
-105-->[:capacitor-local-notifications] /home/runner/workspace/artifacts/islamic-app/node_modules/@capacitor/local-notifications/android/build/intermediates/merged_manifest/release/processReleaseManifest/AndroidManifest.xml:12:9-106
-105-->[:capacitor-local-notifications] /home/runner/workspace/artifacts/islamic-app/node_modules/@capacitor/local-notifications/android/build/intermediates/merged_manifest/release/processReleaseManifest/AndroidManifest.xml:12:19-103
-106        <receiver android:name="com.capacitorjs.plugins.localnotifications.NotificationDismissReceiver" />
-106-->[:capacitor-local-notifications] /home/runner/workspace/artifacts/islamic-app/node_modules/@capacitor/local-notifications/android/build/intermediates/merged_manifest/release/processReleaseManifest/AndroidManifest.xml:13:9-107
-106-->[:capacitor-local-notifications] /home/runner/workspace/artifacts/islamic-app/node_modules/@capacitor/local-notifications/android/build/intermediates/merged_manifest/release/processReleaseManifest/AndroidManifest.xml:13:19-104
-107        <receiver
-107-->[androidx.profileinstaller:profileinstaller:1.4.0] /home/runner/.gradle/caches/8.11.1/transforms/349bb6ca6c92be5a4e3b5716d9a33b51/transformed/jetified-profileinstaller-1.4.0/AndroidManifest.xml:34:9-52:20
-108            android:name="androidx.profileinstaller.ProfileInstallReceiver"
-108-->[androidx.profileinstaller:profileinstaller:1.4.0] /home/runner/.gradle/caches/8.11.1/transforms/349bb6ca6c92be5a4e3b5716d9a33b51/transformed/jetified-profileinstaller-1.4.0/AndroidManifest.xml:35:13-76
-109            android:directBootAware="false"
-109-->[androidx.profileinstaller:profileinstaller:1.4.0] /home/runner/.gradle/caches/8.11.1/transforms/349bb6ca6c92be5a4e3b5716d9a33b51/transformed/jetified-profileinstaller-1.4.0/AndroidManifest.xml:36:13-44
-110            android:enabled="true"
-110-->[androidx.profileinstaller:profileinstaller:1.4.0] /home/runner/.gradle/caches/8.11.1/transforms/349bb6ca6c92be5a4e3b5716d9a33b51/transformed/jetified-profileinstaller-1.4.0/AndroidManifest.xml:37:13-35
-111            android:exported="true"
-111-->[androidx.profileinstaller:profileinstaller:1.4.0] /home/runner/.gradle/caches/8.11.1/transforms/349bb6ca6c92be5a4e3b5716d9a33b51/transformed/jetified-profileinstaller-1.4.0/AndroidManifest.xml:38:13-36
-112            android:permission="android.permission.DUMP" >
-112-->[androidx.profileinstaller:profileinstaller:1.4.0] /home/runner/.gradle/caches/8.11.1/transforms/349bb6ca6c92be5a4e3b5716d9a33b51/transformed/jetified-profileinstaller-1.4.0/AndroidManifest.xml:39:13-57
+105
+106        <!-- ── Azan (prayer-time) alarm receivers & service ──────────────── -->
+107
+108
+109        <!-- Fires when an AlarmManager exact alarm triggers -->
+110        <receiver
+110-->/home/runner/workspace/artifacts/islamic-app/android/app/src/main/AndroidManifest.xml:82:9-88:20
+111            android:name="com.sj64noorquran.AzanReceiver"
+111-->/home/runner/workspace/artifacts/islamic-app/android/app/src/main/AndroidManifest.xml:83:13-41
+112            android:exported="false" >
+112-->/home/runner/workspace/artifacts/islamic-app/android/app/src/main/AndroidManifest.xml:84:13-37
 113            <intent-filter>
-113-->[androidx.profileinstaller:profileinstaller:1.4.0] /home/runner/.gradle/caches/8.11.1/transforms/349bb6ca6c92be5a4e3b5716d9a33b51/transformed/jetified-profileinstaller-1.4.0/AndroidManifest.xml:40:13-42:29
-114                <action android:name="androidx.profileinstaller.action.INSTALL_PROFILE" />
-114-->[androidx.profileinstaller:profileinstaller:1.4.0] /home/runner/.gradle/caches/8.11.1/transforms/349bb6ca6c92be5a4e3b5716d9a33b51/transformed/jetified-profileinstaller-1.4.0/AndroidManifest.xml:41:17-91
-114-->[androidx.profileinstaller:profileinstaller:1.4.0] /home/runner/.gradle/caches/8.11.1/transforms/349bb6ca6c92be5a4e3b5716d9a33b51/transformed/jetified-profileinstaller-1.4.0/AndroidManifest.xml:41:25-88
+113-->/home/runner/workspace/artifacts/islamic-app/android/app/src/main/AndroidManifest.xml:85:13-87:29
+114                <action android:name="com.sj64noorquran.AZAN_TRIGGER" />
+114-->/home/runner/workspace/artifacts/islamic-app/android/app/src/main/AndroidManifest.xml:86:17-73
+114-->/home/runner/workspace/artifacts/islamic-app/android/app/src/main/AndroidManifest.xml:86:25-70
 115            </intent-filter>
-116            <intent-filter>
-116-->[androidx.profileinstaller:profileinstaller:1.4.0] /home/runner/.gradle/caches/8.11.1/transforms/349bb6ca6c92be5a4e3b5716d9a33b51/transformed/jetified-profileinstaller-1.4.0/AndroidManifest.xml:43:13-45:29
-117                <action android:name="androidx.profileinstaller.action.SKIP_FILE" />
-117-->[androidx.profileinstaller:profileinstaller:1.4.0] /home/runner/.gradle/caches/8.11.1/transforms/349bb6ca6c92be5a4e3b5716d9a33b51/transformed/jetified-profileinstaller-1.4.0/AndroidManifest.xml:44:17-85
-117-->[androidx.profileinstaller:profileinstaller:1.4.0] /home/runner/.gradle/caches/8.11.1/transforms/349bb6ca6c92be5a4e3b5716d9a33b51/transformed/jetified-profileinstaller-1.4.0/AndroidManifest.xml:44:25-82
-118            </intent-filter>
-119            <intent-filter>
-119-->[androidx.profileinstaller:profileinstaller:1.4.0] /home/runner/.gradle/caches/8.11.1/transforms/349bb6ca6c92be5a4e3b5716d9a33b51/transformed/jetified-profileinstaller-1.4.0/AndroidManifest.xml:46:13-48:29
-120                <action android:name="androidx.profileinstaller.action.SAVE_PROFILE" />
-120-->[androidx.profileinstaller:profileinstaller:1.4.0] /home/runner/.gradle/caches/8.11.1/transforms/349bb6ca6c92be5a4e3b5716d9a33b51/transformed/jetified-profileinstaller-1.4.0/AndroidManifest.xml:47:17-88
-120-->[androidx.profileinstaller:profileinstaller:1.4.0] /home/runner/.gradle/caches/8.11.1/transforms/349bb6ca6c92be5a4e3b5716d9a33b51/transformed/jetified-profileinstaller-1.4.0/AndroidManifest.xml:47:25-85
-121            </intent-filter>
+116        </receiver>
+117
+118        <!-- Re-schedules prayer alarms after device reboot -->
+119        <receiver
+119-->/home/runner/workspace/artifacts/islamic-app/android/app/src/main/AndroidManifest.xml:91:9-99:20
+120            android:name="com.sj64noorquran.AzanBootReceiver"
+120-->/home/runner/workspace/artifacts/islamic-app/android/app/src/main/AndroidManifest.xml:92:13-45
+121            android:exported="false" >
+121-->/home/runner/workspace/artifacts/islamic-app/android/app/src/main/AndroidManifest.xml:93:13-37
 122            <intent-filter>
-122-->[androidx.profileinstaller:profileinstaller:1.4.0] /home/runner/.gradle/caches/8.11.1/transforms/349bb6ca6c92be5a4e3b5716d9a33b51/transformed/jetified-profileinstaller-1.4.0/AndroidManifest.xml:49:13-51:29
-123                <action android:name="androidx.profileinstaller.action.BENCHMARK_OPERATION" />
-123-->[androidx.profileinstaller:profileinstaller:1.4.0] /home/runner/.gradle/caches/8.11.1/transforms/349bb6ca6c92be5a4e3b5716d9a33b51/transformed/jetified-profileinstaller-1.4.0/AndroidManifest.xml:50:17-95
-123-->[androidx.profileinstaller:profileinstaller:1.4.0] /home/runner/.gradle/caches/8.11.1/transforms/349bb6ca6c92be5a4e3b5716d9a33b51/transformed/jetified-profileinstaller-1.4.0/AndroidManifest.xml:50:25-92
-124            </intent-filter>
-125        </receiver>
-126    </application>
-127
-128</manifest>
+122-->/home/runner/workspace/artifacts/islamic-app/android/app/src/main/AndroidManifest.xml:94:13-98:29
+123                <action android:name="android.intent.action.BOOT_COMPLETED" />
+123-->/home/runner/workspace/artifacts/islamic-app/android/app/src/main/AndroidManifest.xml:70:17-79
+123-->/home/runner/workspace/artifacts/islamic-app/android/app/src/main/AndroidManifest.xml:70:25-76
+124                <action android:name="android.intent.action.REBOOT" />
+124-->/home/runner/workspace/artifacts/islamic-app/android/app/src/main/AndroidManifest.xml:71:17-71
+124-->/home/runner/workspace/artifacts/islamic-app/android/app/src/main/AndroidManifest.xml:71:25-68
+125                <action android:name="android.intent.action.QUICKBOOT_POWERON" />
+125-->/home/runner/workspace/artifacts/islamic-app/android/app/src/main/AndroidManifest.xml:97:17-82
+125-->/home/runner/workspace/artifacts/islamic-app/android/app/src/main/AndroidManifest.xml:97:25-79
+126            </intent-filter>
+127        </receiver>
+128
+129        <!-- Foreground service that streams Azan audio -->
+130        <service
+130-->/home/runner/workspace/artifacts/islamic-app/android/app/src/main/AndroidManifest.xml:102:9-105:61
+131            android:name="com.sj64noorquran.AzanService"
+131-->/home/runner/workspace/artifacts/islamic-app/android/app/src/main/AndroidManifest.xml:103:13-40
+132            android:exported="false"
+132-->/home/runner/workspace/artifacts/islamic-app/android/app/src/main/AndroidManifest.xml:104:13-37
+133            android:foregroundServiceType="mediaPlayback" />
+133-->/home/runner/workspace/artifacts/islamic-app/android/app/src/main/AndroidManifest.xml:105:13-58
+134
+135        <receiver android:name="com.capacitorjs.plugins.localnotifications.TimedNotificationPublisher" />
+135-->[:capacitor-local-notifications] /home/runner/workspace/artifacts/islamic-app/node_modules/@capacitor/local-notifications/android/build/intermediates/merged_manifest/release/processReleaseManifest/AndroidManifest.xml:12:9-106
+135-->[:capacitor-local-notifications] /home/runner/workspace/artifacts/islamic-app/node_modules/@capacitor/local-notifications/android/build/intermediates/merged_manifest/release/processReleaseManifest/AndroidManifest.xml:12:19-103
+136        <receiver android:name="com.capacitorjs.plugins.localnotifications.NotificationDismissReceiver" />
+136-->[:capacitor-local-notifications] /home/runner/workspace/artifacts/islamic-app/node_modules/@capacitor/local-notifications/android/build/intermediates/merged_manifest/release/processReleaseManifest/AndroidManifest.xml:13:9-107
+136-->[:capacitor-local-notifications] /home/runner/workspace/artifacts/islamic-app/node_modules/@capacitor/local-notifications/android/build/intermediates/merged_manifest/release/processReleaseManifest/AndroidManifest.xml:13:19-104
+137        <receiver
+137-->[androidx.profileinstaller:profileinstaller:1.4.0] /home/runner/.gradle/caches/8.11.1/transforms/349bb6ca6c92be5a4e3b5716d9a33b51/transformed/jetified-profileinstaller-1.4.0/AndroidManifest.xml:34:9-52:20
+138            android:name="androidx.profileinstaller.ProfileInstallReceiver"
+138-->[androidx.profileinstaller:profileinstaller:1.4.0] /home/runner/.gradle/caches/8.11.1/transforms/349bb6ca6c92be5a4e3b5716d9a33b51/transformed/jetified-profileinstaller-1.4.0/AndroidManifest.xml:35:13-76
+139            android:directBootAware="false"
+139-->[androidx.profileinstaller:profileinstaller:1.4.0] /home/runner/.gradle/caches/8.11.1/transforms/349bb6ca6c92be5a4e3b5716d9a33b51/transformed/jetified-profileinstaller-1.4.0/AndroidManifest.xml:36:13-44
+140            android:enabled="true"
+140-->[androidx.profileinstaller:profileinstaller:1.4.0] /home/runner/.gradle/caches/8.11.1/transforms/349bb6ca6c92be5a4e3b5716d9a33b51/transformed/jetified-profileinstaller-1.4.0/AndroidManifest.xml:37:13-35
+141            android:exported="true"
+141-->[androidx.profileinstaller:profileinstaller:1.4.0] /home/runner/.gradle/caches/8.11.1/transforms/349bb6ca6c92be5a4e3b5716d9a33b51/transformed/jetified-profileinstaller-1.4.0/AndroidManifest.xml:38:13-36
+142            android:permission="android.permission.DUMP" >
+142-->[androidx.profileinstaller:profileinstaller:1.4.0] /home/runner/.gradle/caches/8.11.1/transforms/349bb6ca6c92be5a4e3b5716d9a33b51/transformed/jetified-profileinstaller-1.4.0/AndroidManifest.xml:39:13-57
+143            <intent-filter>
+143-->[androidx.profileinstaller:profileinstaller:1.4.0] /home/runner/.gradle/caches/8.11.1/transforms/349bb6ca6c92be5a4e3b5716d9a33b51/transformed/jetified-profileinstaller-1.4.0/AndroidManifest.xml:40:13-42:29
+144                <action android:name="androidx.profileinstaller.action.INSTALL_PROFILE" />
+144-->[androidx.profileinstaller:profileinstaller:1.4.0] /home/runner/.gradle/caches/8.11.1/transforms/349bb6ca6c92be5a4e3b5716d9a33b51/transformed/jetified-profileinstaller-1.4.0/AndroidManifest.xml:41:17-91
+144-->[androidx.profileinstaller:profileinstaller:1.4.0] /home/runner/.gradle/caches/8.11.1/transforms/349bb6ca6c92be5a4e3b5716d9a33b51/transformed/jetified-profileinstaller-1.4.0/AndroidManifest.xml:41:25-88
+145            </intent-filter>
+146            <intent-filter>
+146-->[androidx.profileinstaller:profileinstaller:1.4.0] /home/runner/.gradle/caches/8.11.1/transforms/349bb6ca6c92be5a4e3b5716d9a33b51/transformed/jetified-profileinstaller-1.4.0/AndroidManifest.xml:43:13-45:29
+147                <action android:name="androidx.profileinstaller.action.SKIP_FILE" />
+147-->[androidx.profileinstaller:profileinstaller:1.4.0] /home/runner/.gradle/caches/8.11.1/transforms/349bb6ca6c92be5a4e3b5716d9a33b51/transformed/jetified-profileinstaller-1.4.0/AndroidManifest.xml:44:17-85
+147-->[androidx.profileinstaller:profileinstaller:1.4.0] /home/runner/.gradle/caches/8.11.1/transforms/349bb6ca6c92be5a4e3b5716d9a33b51/transformed/jetified-profileinstaller-1.4.0/AndroidManifest.xml:44:25-82
+148            </intent-filter>
+149            <intent-filter>
+149-->[androidx.profileinstaller:profileinstaller:1.4.0] /home/runner/.gradle/caches/8.11.1/transforms/349bb6ca6c92be5a4e3b5716d9a33b51/transformed/jetified-profileinstaller-1.4.0/AndroidManifest.xml:46:13-48:29
+150                <action android:name="androidx.profileinstaller.action.SAVE_PROFILE" />
+150-->[androidx.profileinstaller:profileinstaller:1.4.0] /home/runner/.gradle/caches/8.11.1/transforms/349bb6ca6c92be5a4e3b5716d9a33b51/transformed/jetified-profileinstaller-1.4.0/AndroidManifest.xml:47:17-88
+150-->[androidx.profileinstaller:profileinstaller:1.4.0] /home/runner/.gradle/caches/8.11.1/transforms/349bb6ca6c92be5a4e3b5716d9a33b51/transformed/jetified-profileinstaller-1.4.0/AndroidManifest.xml:47:25-85
+151            </intent-filter>
+152            <intent-filter>
+152-->[androidx.profileinstaller:profileinstaller:1.4.0] /home/runner/.gradle/caches/8.11.1/transforms/349bb6ca6c92be5a4e3b5716d9a33b51/transformed/jetified-profileinstaller-1.4.0/AndroidManifest.xml:49:13-51:29
+153                <action android:name="androidx.profileinstaller.action.BENCHMARK_OPERATION" />
+153-->[androidx.profileinstaller:profileinstaller:1.4.0] /home/runner/.gradle/caches/8.11.1/transforms/349bb6ca6c92be5a4e3b5716d9a33b51/transformed/jetified-profileinstaller-1.4.0/AndroidManifest.xml:50:17-95
+153-->[androidx.profileinstaller:profileinstaller:1.4.0] /home/runner/.gradle/caches/8.11.1/transforms/349bb6ca6c92be5a4e3b5716d9a33b51/transformed/jetified-profileinstaller-1.4.0/AndroidManifest.xml:50:25-92
+154            </intent-filter>
+155        </receiver>
+156    </application>
+157
+158</manifest>
