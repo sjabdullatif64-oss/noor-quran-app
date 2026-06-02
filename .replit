@@ -33,3 +33,8 @@ externalPort = 3000
 
 [nix]
 packages = ["jre_minimal", "wget"]
+
+[userenv]
+
+[userenv.shared]
+CI = "true"
