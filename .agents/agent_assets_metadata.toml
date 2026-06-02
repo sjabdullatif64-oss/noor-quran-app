@@ -144,3 +144,9 @@ id = "-sY75SKxqcSda9eevlryb"
 uri = "file://noor-quran-v1.0.10-admob-full.zip"
 type = "unspecified"
 title = "Noor Quran v1.0.10 — AAB + APK (AdMob)"
+
+[[outputs]]
+id = "j0m6wqYGSGcku29WfSyS5"
+uri = "file://noor-quran-v1.0.10-admob.apk.zip"
+type = "unspecified"
+title = "Noor Quran v1.0.10 — APK (AdMob)"
