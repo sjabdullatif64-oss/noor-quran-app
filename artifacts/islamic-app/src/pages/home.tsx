@@ -2,11 +2,115 @@ import React, { useEffect, useState } from "react";
 import { usePrayerTimes, useRandomAyah } from "@/lib/api";
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import { MapPin, Clock, BookOpen } from "lucide-react";
+import { MapPin, Clock, BookOpen, ImageOff, ChevronRight, Play } from "lucide-react";
 import { Link } from "wouter";
 import { getCity, getCountry } from "@/lib/settings";
 import { useI18n } from "@/lib/i18n-context";
+import { useQuery } from "@tanstack/react-query";
+import { fetchUpdates, resolveImageUrl, UpdateItem } from "@/lib/updates-data";
 
+// ── Islamic Updates preview strip ─────────────────────────────────────────────
+function useUpdatesPreview() {
+  return useQuery({
+    queryKey: ["updates"],
+    queryFn: fetchUpdates,
+    staleTime: 60_000,
+    retry: 1,
+  });
+}
+
+function UpdatePreviewCard({ item }: { item: UpdateItem }) {
+  const [imgStatus, setImgStatus] = useState<"loading" | "ok" | "error">("loading");
+  const resolved = resolveImageUrl(item.image_url);
+  const hasVideo = !!item.video_url?.trim();
+
+  return (
+    <Link href="/updates"
+      className="shrink-0 w-48 rounded-2xl overflow-hidden border border-emerald-900/30 flex flex-col transition-all active:scale-[0.97]"
+      style={{ background: "rgba(255,255,255,0.03)" }}>
+      {/* Image */}
+      <div className="relative w-full overflow-hidden" style={{ aspectRatio: "16/9" }}>
+        {imgStatus === "loading" && item.image_url && (
+          <div className="absolute inset-0 animate-pulse" style={{ background: "rgba(26,92,56,0.15)" }} />
+        )}
+        {item.image_url && imgStatus !== "error" ? (
+          <img
+            src={resolved}
+            alt={item.title}
+            className="w-full h-full object-cover"
+            style={{ opacity: imgStatus === "ok" ? 1 : 0, transition: "opacity 0.3s" }}
+            onLoad={() => setImgStatus("ok")}
+            onError={() => {
+              console.error(`[Noor/Home] Image failed: ${resolved}`);
+              setImgStatus("error");
+            }}
+            loading="lazy"
+          />
+        ) : (
+          <div className="w-full h-full flex items-center justify-center"
+            style={{ background: "rgba(26,92,56,0.12)" }}>
+            <ImageOff className="w-6 h-6 text-emerald-900" />
+          </div>
+        )}
+        {hasVideo && imgStatus === "ok" && (
+          <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+            <div className="w-8 h-8 rounded-full flex items-center justify-center"
+              style={{ background: "rgba(0,0,0,0.5)" }}>
+              <Play className="w-3.5 h-3.5 text-white ml-0.5" />
+            </div>
+          </div>
+        )}
+        <div className="absolute inset-0" style={{ background: "linear-gradient(to bottom, transparent 40%, rgba(6,22,16,0.7) 100%)" }} />
+      </div>
+      {/* Title */}
+      <div className="px-3 py-2.5 flex-1 flex flex-col justify-between">
+        <p className="text-white text-xs font-semibold leading-snug line-clamp-2">{item.title}</p>
+        {item.category && (
+          <p className="text-emerald-700 text-[10px] mt-1 font-medium">{item.category}</p>
+        )}
+      </div>
+    </Link>
+  );
+}
+
+function IslamicUpdatesStrip() {
+  const { data: items = [], isLoading } = useUpdatesPreview();
+  const visible = items.filter((it) => it.image_url).slice(0, 6);
+
+  if (!isLoading && visible.length === 0) return null;
+
+  return (
+    <div className="space-y-3">
+      <div className="flex items-center justify-between">
+        <h2 className="text-base font-bold text-foreground">Latest Updates</h2>
+        <Link href="/updates"
+          className="flex items-center gap-0.5 text-sm text-primary hover:underline font-medium">
+          View all <ChevronRight className="w-4 h-4" />
+        </Link>
+      </div>
+
+      <div className="flex gap-3 overflow-x-auto pb-1 scrollbar-hide -mx-1 px-1">
+        {isLoading
+          ? Array.from({ length: 3 }).map((_, i) => (
+              <div key={i} className="shrink-0 w-48 rounded-2xl overflow-hidden border border-border"
+                style={{ background: "var(--card)" }}>
+                <div className="w-full animate-pulse" style={{ aspectRatio: "16/9", background: "rgba(26,92,56,0.1)" }} />
+                <div className="p-3 space-y-2">
+                  <Skeleton className="h-3 w-full" />
+                  <Skeleton className="h-3 w-3/4" />
+                </div>
+              </div>
+            ))
+          : visible.map((item) => (
+              <UpdatePreviewCard key={item.id || item.title} item={item} />
+            ))
+        }
+      </div>
+    </div>
+  );
+}
+
+// ── Home page ─────────────────────────────────────────────────────────────────
 export function Home() {
   const [city]    = useState(() => getCity());
   const [country] = useState(() => getCountry());
@@ -158,6 +262,9 @@ export function Home() {
         </Card>
       </div>
 
+      {/* Islamic Updates strip */}
+      <IslamicUpdatesStrip />
+
       {/* Quick links */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         {[
@@ -176,7 +283,6 @@ export function Home() {
           </Link>
         ))}
       </div>
-
     </div>
   );
 }
