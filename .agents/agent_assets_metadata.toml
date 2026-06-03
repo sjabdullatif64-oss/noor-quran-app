@@ -162,3 +162,9 @@ id = "_L2T9W09IaAJGJaT18_8T"
 uri = "file://noor-quran-admin-imagefix.zip"
 type = "unspecified"
 title = "Noor Quran — Admin Panel + Image Fix APK"
+
+[[outputs]]
+id = "2Hb3qh01HeSuKTbqcDKN2"
+uri = "file://noor-quran-v1.0.10-vc74684543.zip"
+type = "unspecified"
+title = "Noor Quran v1.0.10 — Signed AAB (Play Store)"
