@@ -4,59 +4,39 @@
  * Provides full CRUD write access to the Noor Quran Updates Google Sheet.
  *
  * SHEET ID : 1sXPeYJ8X671aypFr6P1MjwTsj93-ExMslXvnF2R1cHw
- * SHEET URL: https://docs.google.com/spreadsheets/d/1sXPeYJ8X671aypFr6P1MjwTsj93-ExMslXvnF2R1cHw
- *
- * ── Expected Sheet Columns (Row 1 = headers) ─────────────────────────────────
- *  Column A : id           — unique identifier (auto-generated if empty)
- *  Column B : title        — item title (required)
- *  Column C : description  — short description
- *  Column D : image_url    — Google Drive share link or direct image URL
- *  Column E : video_url    — YouTube or other video URL
- *  Column F : button_text  — label for the action button (e.g. "Watch", "Read")
- *  Column G : target_link  — URL opened when the button is tapped
- *  Column H : category     — Quran | Prayer | Event | Feature | Update | General
- *  Column I : status       — "active" = visible in app, anything else = hidden
- *  Column J : created_at   — date string (e.g. 2025-01-15)
- *
- * ── Image URL format ─────────────────────────────────────────────────────────
- *  Use the standard Google Drive share link for images:
- *    https://drive.google.com/file/d/FILE_ID/view?usp=sharing
- *  The app converts this automatically to:
- *    https://lh3.googleusercontent.com/d/FILE_ID
- *  IMPORTANT: The file must be shared as "Anyone with the link can view".
- *  Private files will NOT display in the app.
  *
  * ── Deployment Steps ─────────────────────────────────────────────────────────
- *  1. Open: https://script.google.com  → click "New project"
- *  2. Delete the empty function, paste THIS entire file
- *  3. Save (Ctrl+S) — name it e.g. "Noor Quran API"
- *  4. Click "Deploy" → "New deployment"
- *  5. Click the ⚙ gear icon → select "Web app"
- *  6. Description: "Noor Quran Sheet API v1"
- *  7. Execute as:      Me  (your Google account)
- *  8. Who has access:  Anyone
- *  9. Click "Deploy" → authorise when prompted → copy the Web App URL
- * 10. In the app: Updates → tap any card title 20 times → PIN 2963@531
- *     → Admin Panel → Google Sheet Sync → paste URL → Save & Activate
+ *  1. Open: https://script.google.com  → open your existing project
+ *  2. DELETE all existing code and paste THIS entire file
+ *  3. Save (Ctrl+S)
+ *  4. Click "Deploy" → "Manage deployments" → ✏ Edit latest → "New version"
+ *     (or "New deployment" → Web app if first time)
+ *  5. Execute as: Me  |  Who has access: Anyone
+ *  6. Click "Deploy" → copy the Web App URL
  *
- * ── API Reference ────────────────────────────────────────────────────────────
- *  GET  <webAppUrl>                          → { ok: true, message: "..." }
- *  POST <webAppUrl>  Content-Type: text/plain
+ * ── Quick test (after deploy) ────────────────────────────────────────────────
+ *  Open this URL in your browser — you should see JSON with sheet info:
+ *    https://script.google.com/macros/s/YOUR_DEPLOYMENT_ID/exec
  *
- *  { "action": "read" }
- *  { "action": "create", "item": { "title": "...", "image_url": "...", ... } }
- *  { "action": "edit",   "id": "...", "item": { "status": "inactive", ... } }
- *  { "action": "delete", "id": "..." }
+ * ── Sheet Columns (Row 1 = headers) ─────────────────────────────────────────
+ *  A=id  B=title  C=description  D=image_url  E=video_url
+ *  F=button_text  G=target_link  H=category  I=status  J=created_at
  *
- *  All responses: { "ok": true|false, "error"?: "...", ... }
+ * ── Image URLs ───────────────────────────────────────────────────────────────
+ *  Use the standard Google Drive share link for images:
+ *    https://drive.google.com/file/d/FILE_ID/view?usp=sharing
+ *  IMPORTANT: File must be shared as "Anyone with the link can view"
  */
 
 // ── Configuration ─────────────────────────────────────────────────────────────
 
-/** Change only if your tab has a different name. */
+/** Target spreadsheet — uses openById so this works as a standalone script. */
+var SHEET_ID = "1sXPeYJ8X671aypFr6P1MjwTsj93-ExMslXvnF2R1cHw";
+
+/** Sheet tab name. If you renamed the tab, update this. */
 var SHEET_NAME = "Sheet1";
 
-/** Canonical column order — written when the sheet is empty. */
+/** Canonical column order — written automatically when sheet is empty. */
 var CANONICAL_HEADERS = [
   "id", "title", "description", "image_url", "video_url",
   "button_text", "target_link", "category", "status", "created_at"
@@ -64,29 +44,87 @@ var CANONICAL_HEADERS = [
 
 // ── Entry points ──────────────────────────────────────────────────────────────
 
-function doGet() {
-  return buildResponse({ ok: true, message: "Noor Quran Sheet API is live." });
+/**
+ * GET handler — used to test that the script is deployed and reachable.
+ * Open the Web App URL in a browser; you should see JSON with sheet info.
+ */
+function doGet(e) {
+  try {
+    var ss    = SpreadsheetApp.openById(SHEET_ID);
+    var sheet = ss.getSheetByName(SHEET_NAME) || ss.getSheets()[0];
+    var rows  = Math.max(0, sheet.getLastRow() - 1); // exclude header
+    return buildResponse({
+      ok:         true,
+      message:    "Noor Quran Sheet API is live.",
+      sheet_name: sheet.getName(),
+      data_rows:  rows,
+      sheet_url:  "https://docs.google.com/spreadsheets/d/" + SHEET_ID
+    });
+  } catch (err) {
+    return buildResponse({ ok: false, error: "doGet error: " + err.message });
+  }
 }
 
+/**
+ * POST handler — receives JSON from the app.
+ * Supported actions: "read" | "create" | "edit" | "delete" | "test"
+ */
 function doPost(e) {
+  // ── 1. Parse body ──────────────────────────────────────────────────────────
+  var raw = "";
+  try { raw = e && e.postData ? e.postData.contents : ""; } catch (_) {}
+
+  Logger.log("doPost called — raw body: " + raw);
+
+  if (!raw || raw.trim() === "") {
+    Logger.log("Empty body — returning error");
+    return buildResponse({ ok: false, error: "Empty request body." });
+  }
+
+  var data;
   try {
-    var raw = e && e.postData ? e.postData.contents : "";
-    if (!raw || raw.trim() === "") {
-      return buildResponse({ ok: false, error: "Empty request body." });
-    }
+    data = JSON.parse(raw);
+  } catch (parseErr) {
+    Logger.log("JSON parse error: " + parseErr.message);
+    return buildResponse({ ok: false, error: "Invalid JSON: " + parseErr.message });
+  }
 
-    var data   = JSON.parse(raw);
-    var action = (data.action || "").toLowerCase();
-    var sheet  = getSheet_();
+  var action = String(data.action || "").toLowerCase();
+  Logger.log("action=" + action);
 
+  // ── 2. Open sheet via ID (works for standalone scripts) ───────────────────
+  var ss, sheet;
+  try {
+    ss    = SpreadsheetApp.openById(SHEET_ID);
+    sheet = ss.getSheetByName(SHEET_NAME) || ss.getSheets()[0];
+    Logger.log("Sheet opened: " + sheet.getName() + " (" + sheet.getLastRow() + " rows)");
+  } catch (sheetErr) {
+    Logger.log("Cannot open sheet: " + sheetErr.message);
+    return buildResponse({ ok: false, error: "Cannot open sheet: " + sheetErr.message });
+  }
+
+  // ── 3. Dispatch ───────────────────────────────────────────────────────────
+  try {
     if      (action === "read")   return handleRead_(sheet);
     else if (action === "create") return handleCreate_(sheet, data.item);
     else if (action === "edit")   return handleEdit_(sheet, String(data.id || ""), data.item);
     else if (action === "delete") return handleDelete_(sheet, String(data.id || ""));
-    else return buildResponse({ ok: false, error: "Unknown action: " + action });
-
-  } catch (err) {
-    return buildResponse({ ok: false, error: "Script error: " + err.message });
+    else if (action === "test") {
+      // Simple ping — confirms the script is receiving POST bodies correctly
+      return buildResponse({
+        ok:         true,
+        message:    "Test OK — Apps Script received your POST.",
+        received:   data,
+        sheet_name: sheet.getName(),
+        data_rows:  Math.max(0, sheet.getLastRow() - 1)
+      });
+    }
+    else {
+      return buildResponse({ ok: false, error: "Unknown action: " + action });
+    }
+  } catch (handlerErr) {
+    Logger.log("Handler error: " + handlerErr.message);
+    return buildResponse({ ok: false, error: "Handler error: " + handlerErr.message });
   }
 }
 
@@ -109,6 +147,7 @@ function handleRead_(sheet) {
     if (item.title) items.push(item);
   }
 
+  Logger.log("handleRead_ → " + items.length + " items");
   return buildResponse({ ok: true, count: items.length, items: items });
 }
 
@@ -118,10 +157,10 @@ function handleCreate_(sheet, item) {
   }
 
   var headers = getHeaders_(sheet);
-
   if (headers.length === 0) {
     sheet.appendRow(CANONICAL_HEADERS);
     headers = CANONICAL_HEADERS.slice();
+    Logger.log("handleCreate_: wrote header row");
   }
 
   if (!item.id || String(item.id).trim() === "") {
@@ -138,6 +177,7 @@ function handleCreate_(sheet, item) {
   });
   sheet.appendRow(row);
 
+  Logger.log("handleCreate_: appended row id=" + item.id + " title=" + item.title);
   return buildResponse({ ok: true, id: item.id, message: "Item created." });
 }
 
@@ -163,13 +203,12 @@ function handleEdit_(sheet, id, updates) {
           sheet.getRange(i + 1, c + 1).setValue(String(updates[h]));
         }
       });
-      if (idColIdx >= 0 && !cellId && updates.id) {
-        sheet.getRange(i + 1, idColIdx + 1).setValue(String(updates.id));
-      }
+      Logger.log("handleEdit_: updated row " + (i + 1) + " id=" + id);
       return buildResponse({ ok: true, message: "Row " + (i + 1) + " updated." });
     }
   }
 
+  Logger.log("handleEdit_: no row found with id=" + id);
   return buildResponse({ ok: false, error: "No row found with id: " + id });
 }
 
@@ -188,19 +227,16 @@ function handleDelete_(sheet, id) {
 
     if (cellId === id || generated === id) {
       sheet.deleteRow(i + 1);
+      Logger.log("handleDelete_: deleted row " + (i + 1) + " id=" + id);
       return buildResponse({ ok: true, message: "Row " + (i + 1) + " deleted." });
     }
   }
 
+  Logger.log("handleDelete_: no row found with id=" + id);
   return buildResponse({ ok: false, error: "No row found with id: " + id });
 }
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
-
-function getSheet_() {
-  var ss = SpreadsheetApp.getActiveSpreadsheet();
-  return ss.getSheetByName(SHEET_NAME) || ss.getSheets()[0];
-}
 
 function getHeaders_(sheet) {
   var last = sheet.getLastColumn();
