@@ -254,7 +254,7 @@ export function Home() {
                   </p>
                   {ayahData && (
                     <Link
-                      href={`/quran/${ayahData.globalNumber}`}
+                      href={`/quran/${ayahData.surahNumber}?ayah=${ayahData.numberInSurah}`}
                       className="flex items-center gap-1.5 text-sm text-primary hover:underline"
                     >
                       <BookOpen className="w-4 h-4" />

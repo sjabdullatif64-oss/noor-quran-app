@@ -1,8 +1,9 @@
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import {
   MapPin, Search, LocateFixed, Loader2, WifiOff,
   ChevronDown, ChevronUp, Navigation, RefreshCw, X,
 } from "lucide-react";
+import { useQueryClient } from "@tanstack/react-query";
 import {
   usePrayerTimes,
   usePrayerTimesByCoords,
@@ -15,6 +16,47 @@ import {
   getLocationSource,
   CITY_COUNTRY_MAP,
 } from "@/lib/settings";
+
+// ── Prayer times offline cache ────────────────────────────────────────────────
+// Caches the last successful prayer timetable in localStorage so Azan and
+// prayer times continue working when the device is offline.
+const PRAYER_CACHE_KEY = "noor-prayer-cache";
+const PRAYER_CACHE_TTL = 24 * 60 * 60 * 1000; // 24 hours
+
+interface PrayerCache {
+  locKey:  string;
+  data:    PrayerData;
+  savedAt: number;
+}
+
+function savePrayerCache(data: PrayerData, locKey: string): void {
+  try {
+    const entry: PrayerCache = { locKey, data, savedAt: Date.now() };
+    localStorage.setItem(PRAYER_CACHE_KEY, JSON.stringify(entry));
+  } catch { /* storage full — ignore */ }
+}
+
+function loadPrayerCache(locKey: string): PrayerData | null {
+  try {
+    const raw = localStorage.getItem(PRAYER_CACHE_KEY);
+    if (!raw) return null;
+    const entry = JSON.parse(raw) as PrayerCache;
+    if (entry.locKey !== locKey) return null;
+    if (Date.now() - entry.savedAt > PRAYER_CACHE_TTL) return null;
+    return entry.data;
+  } catch { return null; }
+}
+
+function makeCacheKey(
+  useGPS: boolean,
+  lat: number | null, lng: number | null,
+  city: string, country: string,
+): string {
+  if (useGPS && lat !== null && lng !== null) {
+    return `gps:${lat.toFixed(2)},${lng.toFixed(2)}`;
+  }
+  return `city:${city},${country}`;
+}
 
 // ── Prayer definitions ────────────────────────────────────────────────────────
 const PRAYERS = [
@@ -198,9 +240,45 @@ export function PrayerTimes() {
   const displayCity    = useGPS ? gpsCity    : manualCity;
   const displayCountry = useGPS ? gpsCountry : manualCountry;
 
+  // ── Offline cache ────────────────────────────────────────────────────────────
+  // Build a cache key for the current location so we never serve stale data
+  // from a different city / coordinate pair.
+  const locCacheKey = useMemo(
+    () => makeCacheKey(useGPS, coords?.lat ?? null, coords?.lng ?? null, displayCity, displayCountry),
+    [useGPS, coords, displayCity, displayCountry],
+  );
+
+  // Save to localStorage whenever fresh data arrives.
+  useEffect(() => {
+    if (activeData && locCacheKey) savePrayerCache(activeData, locCacheKey);
+  }, [activeData, locCacheKey]);
+
+  // Fall back to cached data when the network query has not returned data yet.
+  const cachedData = useMemo(
+    () => (activeData ? null : loadPrayerCache(locCacheKey)),
+    // Recompute only when the live data status or key changes.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [locCacheKey, !!activeData],
+  );
+
+  // The data actually shown — live API result, or cached result offline.
+  const displayData = activeData ?? cachedData ?? undefined;
+  const isOfflineFallback = !activeData && !!cachedData;
+
+  // ── Auto-refresh when internet reconnects ────────────────────────────────────
+  const queryClient = useQueryClient();
+  useEffect(() => {
+    const onOnline = () => {
+      queryClient.invalidateQueries({ queryKey: ["prayerTimes"] });
+      queryClient.invalidateQueries({ queryKey: ["prayerTimesByCoords"] });
+    };
+    window.addEventListener("online", onOnline);
+    return () => window.removeEventListener("online", onOnline);
+  }, [queryClient]);
+
   // ── Current / next prayer ───────────────────────────────────────────────────
-  const { countdown, nextPrayerIdx } = useCountdown(activeData);
-  const currentIdx = getCurrentPrayerIdx(activeData);
+  const { countdown, nextPrayerIdx } = useCountdown(displayData);
+  const currentIdx = getCurrentPrayerIdx(displayData);
 
   // ── Manual search ───────────────────────────────────────────────────────────
   const handleSearch = (e: React.FormEvent) => {
@@ -328,32 +406,41 @@ export function PrayerTimes() {
           city={displayCity}
           country={displayCountry}
           gpsLoading={gpsLoading}
-          data={activeData}
+          data={displayData}
           onRetry={handleUseLocation}
           nextIdx={nextPrayerIdx}
           countdown={countdown}
         />
 
         {/* ── Prayer time cards ─────────────────────────────────────────── */}
-        {locState === "detecting" && !activeData ? (
+        {locState === "detecting" && !displayData ? (
           <DetectingPlaceholder />
-        ) : activeError && !activeData ? (
+        ) : activeError && !displayData ? (
           <ErrorCard locState={locState} onRetry={locState === "manual" ? undefined : handleUseLocation} />
-        ) : activeLoading && !activeData ? (
+        ) : activeLoading && !displayData ? (
           <LoadingCards />
-        ) : activeData ? (
-          <PrayerCards data={activeData} currentIdx={currentIdx} nextIdx={nextPrayerIdx} />
+        ) : displayData ? (
+          <>
+            <PrayerCards data={displayData} currentIdx={currentIdx} nextIdx={nextPrayerIdx} />
+            {isOfflineFallback && (
+              <div className="flex items-center gap-2 px-3 py-2 rounded-xl border border-amber-900/40 mx-1"
+                style={{ background: "rgba(217,119,6,0.07)" }}>
+                <WifiOff className="w-3.5 h-3.5 text-amber-500 shrink-0" />
+                <p className="text-amber-500 text-xs">Offline — showing last saved prayer times</p>
+              </div>
+            )}
+          </>
         ) : (
           <NoLocationPrompt onDetect={handleUseLocation} onSearch={() => setSearchOpen(true)} loading={gpsLoading} />
         )}
 
         {/* Hijri date footer (when data available) */}
-        {activeData && (
+        {displayData && (
           <div className="text-center py-2">
             <p className="text-emerald-700 text-xs">
-              {activeData.date.hijri.day} {activeData.date.hijri.month.en} {activeData.date.hijri.year} AH
+              {displayData.date.hijri.day} {displayData.date.hijri.month.en} {displayData.date.hijri.year} AH
               {" · "}
-              {activeData.date.readable}
+              {displayData.date.readable}
             </p>
           </div>
         )}

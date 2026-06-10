@@ -83,6 +83,15 @@ export function SurahReader() {
   const params = useParams();
   const number = Number(params.number);
 
+  // Parse optional ?ayah=N query param — used by "Ayah of the Day" Read button.
+  // N is 1-based (numberInSurah), so index = N - 1.
+  const targetAyahNum = (() => {
+    try {
+      const n = Number(new URLSearchParams(window.location.search).get("ayah") ?? "");
+      return Number.isFinite(n) && n >= 1 ? n : null;
+    } catch { return null; }
+  })();
+
   const [language, setLanguage]     = useState<TranslationLanguage>(() => getLang());
   const { data: surah, isLoading }  = useSurah(number, language);
 
@@ -152,6 +161,20 @@ export function SurahReader() {
   const scrollToAyah = useCallback((index: number) => {
     ayahRefs.current.get(index)?.scrollIntoView({ behavior: "smooth", block: "center" });
   }, []);
+
+  // ── Scroll to target ayah when opened via "Ayah of the Day" Read button ────
+  // Fires once after surah data loads and ?ayah=N is present in the URL.
+  const didScrollRef = useRef(false);
+  useEffect(() => {
+    if (!surah || !targetAyahNum || didScrollRef.current) return;
+    // index is 0-based; targetAyahNum is 1-based numberInSurah
+    const index = targetAyahNum - 1;
+    if (index < 0 || index >= surah.ayahs.length) return;
+    didScrollRef.current = true;
+    // Short delay lets the DOM finish rendering the ayah cards before scrolling
+    const t = setTimeout(() => scrollToAyah(index), 400);
+    return () => clearTimeout(t);
+  }, [surah, targetAyahNum, scrollToAyah]);
 
   const clearRetryTimer = useCallback(() => {
     if (retryTimerRef.current !== null) {
