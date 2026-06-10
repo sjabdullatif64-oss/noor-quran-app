@@ -221,9 +221,12 @@ jobs:
         if: ${{ (github.event.inputs.build_type || 'release') == 'release' }}
         working-directory: ${{ env.ANDROID_DIR }}
         run: |
+          # Clear stale Gradle transform caches (avoids jlink failure from cached android-34 jmod)
+          rm -rf ~/.gradle/caches/*/transforms/ || true
           ./gradlew assembleRelease bundleRelease \
             -PMINIFY_RELEASE=true \
             --no-daemon \
+            --no-build-cache \
             --stacktrace \
             --warning-mode summary
           echo "✅ Release APK + AAB built"
