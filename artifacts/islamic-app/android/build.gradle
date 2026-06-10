@@ -1,25 +1,37 @@
 buildscript {
     ext {
         kotlin_version = '2.0.0'
-        compileSdkVersion = 34
-        targetSdkVersion  = 36
+        // compileSdk must be >= 35: @capacitor/android references
+        // Build.VERSION_CODES.VANILLA_ICE_CREAM (API 35) in SystemBars.java.
+        // Setting this lower causes "cannot find symbol: VANILLA_ICE_CREAM".
+        compileSdkVersion = 36
+        // targetSdk 34 = Android 14; meets Play Store minimum requirement
+        // without opting into Android 15/16 runtime behaviour changes.
+        targetSdkVersion  = 34
         minSdkVersion     = 24
 
         // ── ext vars consumed by @capacitor-community/admob/android/build.gradle ──
-        // The plugin reads these from rootProject.ext; if they are set here,
-        // it uses our values instead of its own defaults.
-        playServicesAdsVersion         = '24.4.0'   // pinned stable release
-        userMessagingPlatformVersion   = '4.0.0'
-        androidxAppCompatVersion       = '1.7.0'
+        playServicesAdsVersion           = '24.4.0'
+        userMessagingPlatformVersion     = '4.0.0'
+        androidxAppCompatVersion         = '1.7.0'
         androidxCoordinatorLayoutVersion = '1.2.0'
-        androidxCoreKTXVersion         = '1.13.1'
+        androidxCoreKTXVersion           = '1.13.1'
     }
     repositories {
         google()
         mavenCentral()
     }
     dependencies {
-        classpath 'com.android.tools.build:gradle:7.4.2'
+        // AGP 8.9.1 is required for this project because:
+        //   1. Android SDK 36 dropped the modular jmod from core-for-system-modules.jar.
+        //      AGP 7.x JdkImageTransform relies on jlink + that jmod — fails on SDK 36.
+        //      AGP 8.x uses a completely redesigned compilation path (no jlink).
+        //   2. Transitive AndroidX deps pulled by Capacitor 8 declare minAgpVersion in
+        //      their AAR metadata: core:1.17 and activity:1.11 require AGP 8.9.1+,
+        //      core-splashscreen:1.2 requires AGP 8.6+.  AGP 8.9.1 satisfies all.
+        //   3. AGP 8.13.0 is what capacitor-android itself targets; it fixes the
+        //      jlink --disable-plugin system-modules failure introduced in AGP 8.7-8.9.
+        classpath 'com.android.tools.build:gradle:8.13.0'
         classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlin_version"
     }
 }
@@ -31,29 +43,31 @@ allprojects {
     }
 }
 
-// ── Java / Kotlin version override for capacitor-community-admob ──────────────
+// ── Java 17 override — by name (AGP 8.x compatible) ──────────────────────────
 //
-// @capacitor-community/admob v8 hardcodes `JavaVersion.VERSION_21` in its own
-// compileOptions.  That value is not exposed as a rootProject.ext property, so
-// it cannot be overridden by setting an ext variable.
+// Two plugins hardcode JavaVersion.VERSION_21 in their build.gradle and fail
+// when built with a Java 17 JDK:
+//   • capacitor-community-admob
+//   • capacitor-cordova-android-plugins
 //
-// The root Gradle JDK (shipped with AGP 8.9.1) is Java 17.  Targeting Java 21
-// with a Java 17 JDK causes :capacitor-community-admob:compileReleaseKotlin to
-// fail with "error: release version 21 not supported".
-//
-// This afterEvaluate hook runs AFTER the admob module's own build.gradle has
-// applied, so our settings take final precedence and override the hardcoded 21.
+// AGP 8.x changed compileOptions.sourceCompatibility to a lazy Property<T>.
+// Reading it in afterEvaluate throws "sourceCompatibility is not yet finalized",
+// so we cannot inspect the current value.  Instead we target the specific
+// subproject names we know need the override.
 subprojects { sub ->
-    sub.afterEvaluate {
-        if (sub.name == 'capacitor-community-admob') {
-            sub.android {
-                compileOptions {
-                    sourceCompatibility JavaVersion.VERSION_17
-                    targetCompatibility JavaVersion.VERSION_17
-                }
-                kotlinOptions {
-                    jvmTarget = '17'
-                }
+    if (sub.name in ['capacitor-community-admob',
+                     'capacitor-cordova-android-plugins']) {
+        sub.afterEvaluate {
+            def androidExt = sub.extensions.findByName('android')
+            if (androidExt == null) return
+            androidExt.compileOptions {
+                sourceCompatibility JavaVersion.VERSION_17
+                targetCompatibility JavaVersion.VERSION_17
+            }
+            try {
+                androidExt.kotlinOptions { jvmTarget = '17' }
+            } catch (ignored) {
+                // admob uses Kotlin but cordova-plugins is pure-Java
             }
         }
     }

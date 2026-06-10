@@ -40,7 +40,7 @@ on:
 env:
   NODE_VERSION:   '22'
   JAVA_VERSION:   '21'          # Java 21 — required by capacitor-android v8
-  GRADLE_VERSION: '8.11.1'
+  GRADLE_VERSION: '8.13'
   PNPM_VERSION:   '10'
   ANDROID_SDK:    '36'          # compileSdk (must be >=35 for Capacitor; targetSdk=34 in app/build.gradle)
   APP_DIR:        artifacts/islamic-app
