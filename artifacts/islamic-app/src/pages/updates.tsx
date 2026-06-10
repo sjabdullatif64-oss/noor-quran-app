@@ -611,55 +611,31 @@ function AdminPanel({ sheetItems, onClose }: {
     qc.setQueryData(["updates"], mergeItems(current, l, d, o));
   }
 
-  // ── After a successful write: fetch fresh Sheet data and refresh cache ───────
-  async function refreshFromSheet(
-    opts: {
-      clearLocalId?: string;    // remove local placeholder (create confirmed)
-      clearDeletedId?: string;  // remove from deletedIds (delete confirmed)
-      clearOverrideId?: string; // remove override (edit confirmed)
-    } = {}
-  ) {
-    // Since scriptSync uses no-cors (write always goes through), we can
-    // immediately commit the optimistic cleanup — the Sheet already has the data.
-    let nextLocal     = adminData.loadLocal();
-    let nextDeleted   = adminData.loadDeleted();
-    let nextOverrides = adminData.loadOverrides();
-
-    if (opts.clearLocalId) {
-      // Remove the local placeholder — Sheet now has this row with the same ID.
-      // mergeItems deduplicates by ID, so GViz re-fetch won't create duplicates.
-      nextLocal = nextLocal.filter((it) => it.id !== opts.clearLocalId);
-      adminData.saveLocal(nextLocal);
-      setLocal(nextLocal);
-      console.log("[Noor/Admin] ✓ Local placeholder cleared:", opts.clearLocalId);
-    }
-    if (opts.clearDeletedId) {
-      // Remove from deletedIds — Sheet row is gone, GViz won't return it again.
-      nextDeleted = nextDeleted.filter((id) => id !== opts.clearDeletedId);
-      adminData.saveDeleted(nextDeleted);
-      setDeleted(nextDeleted);
-      console.log("[Noor/Admin] ✓ Deleted ID cleared:", opts.clearDeletedId);
-    }
-    if (opts.clearOverrideId) {
-      // Remove override — Sheet row already has the updated values.
-      nextOverrides = nextOverrides.filter((o) => o.id !== opts.clearOverrideId);
-      adminData.saveOverrides(nextOverrides);
-      setOverrides(nextOverrides);
-      console.log("[Noor/Admin] ✓ Override cleared:", opts.clearOverrideId);
-    }
-
-    // Invalidate TanStack query so GViz re-fetches fresh Sheet data in background.
-    // GViz may take up to ~5 min to reflect changes (cache), but optimistic UI
-    // already shows the correct state via localItems/deletedIds/overrides.
+  // ── After a write: trigger a background GViz re-fetch ────────────────────────
+  // NOTE: We intentionally do NOT clear localItems / overrides / deletedIds here.
+  //
+  // scriptSync uses mode:"no-cors" — the browser never reads the response, so we
+  // cannot confirm whether the Sheet write actually succeeded.  Clearing local
+  // state eagerly (before GViz confirms it) causes items to disappear from the UI
+  // whenever the write is slow, the Script URL is stale, or GViz cache (~5 min)
+  // hasn't updated yet.
+  //
+  // Local state stays in localStorage permanently:
+  //   • localItems  — new items created by the admin; mergeItems deduplicates
+  //                   by ID so Sheet items with the same ID are never shown twice.
+  //   • overrides   — edited values always win over Sheet values (single-admin).
+  //   • deletedIds  — deleted items stay hidden regardless of Sheet state.
+  //
+  // The user can explicitly remove items by deleting them through the admin UI.
+  function refreshFromSheet() {
     qc.invalidateQueries({ queryKey: ["updates"] });
     console.log("[Noor/Admin] ✓ GViz query invalidated — background re-fetch triggered");
   }
 
-  // ── Main sync: write to Sheet, then refresh ──────────────────────────────────
+  // ── Main sync: write to Sheet, then trigger a background GViz refresh ────────
   async function doSync(
     action: "create" | "edit" | "delete",
     payload: { item?: Partial<UpdateItem>; id?: string },
-    refreshOpts: Parameters<typeof refreshFromSheet>[0] = {}
   ) {
     setSyncStatus("syncing");
     setSyncError(undefined);
@@ -668,7 +644,7 @@ function AdminPanel({ sheetItems, onClose }: {
 
     if (result.ok) {
       setSyncStatus("ok");
-      await refreshFromSheet(refreshOpts);
+      refreshFromSheet();
       setTimeout(() => setSyncStatus("idle"), 3000);
     } else {
       setSyncStatus("fail");
@@ -689,10 +665,11 @@ function AdminPanel({ sheetItems, onClose }: {
       setFormState({ open: false, mode: "create", item: null });
       // Write to Sheet — include tempId so the Sheet row gets the same ID.
       // When GViz eventually re-fetches, mergeItems will deduplicate by ID.
+      // The local placeholder is intentionally NOT cleared after sync — see
+      // refreshFromSheet() for the explanation.
       await doSync(
         "create",
         { item: { ...data, id: tempId } },
-        { clearLocalId: tempId },
       );
     } else if (formState.item) {
       const id = formState.item.id;
@@ -706,11 +683,11 @@ function AdminPanel({ sheetItems, onClose }: {
         persistLocal(localItems, deletedIds, newOvr);
       }
       setFormState({ open: false, mode: "create", item: null });
-      // Write edit to Sheet, then clear the override (Sheet is now authoritative)
+      // Write edit to Sheet. The local override is intentionally kept — see
+      // refreshFromSheet() for the explanation.
       await doSync(
         "edit",
         { id, item: { ...data } },
-        { clearOverrideId: id },
       );
     }
   }
@@ -725,11 +702,11 @@ function AdminPanel({ sheetItems, onClose }: {
       persistLocal(localItems, [...deletedIds, id], overrides);
     }
     setConfirmDelete(null);
-    // Write delete to Sheet, then remove from deletedIds (row is gone)
+    // Write delete to Sheet. The deletedId is intentionally kept in localStorage
+    // so the item stays hidden regardless of GViz cache or write confirmation.
     await doSync(
       "delete",
       { id },
-      { clearDeletedId: id },
     );
   }
 
