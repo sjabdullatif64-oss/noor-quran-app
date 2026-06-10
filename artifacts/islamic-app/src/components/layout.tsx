@@ -11,8 +11,8 @@ import { BannerAd, hideBanner, resumeBanner } from "@/components/banner-ad";
 
 const MORE_PATHS = [
   "/more", "/qibla", "/favorites", "/tasbeeh", "/settings", "/islamic-gifts",
-  "/downloads", "/notifications", "/about", "/privacy-policy", "/updates",
-  "/writing", "/islamic-calendar",
+  "/downloads", "/notifications", "/azan-settings", "/about", "/privacy-policy",
+  "/updates", "/writing", "/islamic-calendar",
 ];
 
 // Routes where banners must NEVER appear (Quran reading & fullscreen recitation)
@@ -25,8 +25,8 @@ export function Layout({ children }: { children: React.ReactNode }) {
 
   const isDarkPage = [
     "/qibla", "/more", "/favorites", "/tasbeeh", "/settings", "/islamic-gifts",
-    "/downloads", "/notifications", "/about", "/privacy-policy", "/updates",
-    "/writing", "/islamic-calendar", "/prayer-times",
+    "/downloads", "/notifications", "/azan-settings", "/about", "/privacy-policy",
+    "/updates", "/writing", "/islamic-calendar", "/prayer-times",
   ].includes(location);
 
   const isMoreActive = MORE_PATHS.some((p) => location.startsWith(p));
@@ -44,6 +44,13 @@ export function Layout({ children }: { children: React.ReactNode }) {
       resumeBanner();
     }
   }, [onNoAdRoute]);
+
+  // Schedule Azan alarms on app launch (no-ops gracefully in browser / when disabled)
+  useEffect(() => {
+    import("@/lib/azan-scheduler")
+      .then(({ scheduleAzan }) => scheduleAzan())
+      .catch(() => { /* non-critical */ });
+  }, []);
 
   return (
     <div className="min-h-[100dvh] flex flex-col md:flex-row bg-background">

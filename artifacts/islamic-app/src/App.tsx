@@ -27,6 +27,7 @@ import { PrivacyPolicy } from "@/pages/privacy-policy";
 import { Updates } from "@/pages/updates";
 import { Writing } from "@/pages/writing";
 import { IslamicCalendar } from "@/pages/islamic-calendar";
+import { AzanSettings } from "@/pages/azan-settings";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -62,6 +63,7 @@ function Router() {
       <Route path="/updates" component={Updates} />
       <Route path="/writing" component={Writing} />
       <Route path="/islamic-calendar" component={IslamicCalendar} />
+      <Route path="/azan-settings" component={AzanSettings} />
 
       <Route component={NotFound} />
     </Switch>

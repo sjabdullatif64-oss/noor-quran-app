@@ -1,26 +1,9 @@
 /**
- * RewardedAdButton — "Support Noor Quran" button with native AdMob Rewarded Ad.
+ * RewardedAdButton — "Support Noor Quran" button with native AdMob Rewarded Interstitial Ad.
  *
- * AdMob App ID   : ca-app-pub-5050437827917011~3831002202  (AndroidManifest.xml)
- * Banner Ad Unit : ca-app-pub-5050437827917011/8806398221
- *
- * ⚠️  ACTION REQUIRED — REWARDED UNIT ID:
- *   You currently only have ONE ad unit (the banner unit above).
- *   A Rewarded ad MUST use a unit created as type "Rewarded" in AdMob.
- *   Using a Banner unit ID for rewarded requests causes AdMob to return
- *   error code 2 (invalid request) every single time — this is why rewarded
- *   ads fail instantly.
- *
- *   HOW TO FIX:
- *   1. Go to AdMob → Apps → Noor Quran → Ad units → Add ad unit
- *   2. Choose "Rewarded" as the format
- *   3. Name it (e.g. "Noor Quran Rewarded")
- *   4. Copy the new unit ID (ca-app-pub-5050437827917011/XXXXXXXXX)
- *   5. Replace REWARDED_AD_UNIT below with it
- *   6. Rebuild the APK
- *
- *   Until you do this, the rewarded button will always show the fallback
- *   screen (which is a graceful experience, not a crash).
+ * AdMob App ID              : ca-app-pub-1852283311826362~9656395130  (AndroidManifest.xml)
+ * Banner Ad Unit            : ca-app-pub-1852283311826362/7603275962
+ * Rewarded Interstitial Unit: ca-app-pub-1852283311826362/1463723119
  *
  * Flow (native APK with a real Rewarded unit):
  *  1. User taps button → prepareRewardVideoAd() starts loading
@@ -37,9 +20,7 @@ import { useToast } from "@/hooks/use-toast";
 import type { PluginListenerHandle } from "@capacitor/core";
 
 // ── Ad Unit IDs ───────────────────────────────────────────────────────────────
-// ⚠️ Replace with your actual Rewarded unit ID from AdMob dashboard.
-// The banner unit ID CANNOT be used here — it will always fail.
-const REWARDED_AD_UNIT = "ca-app-pub-5050437827917011/REPLACE_WITH_REWARDED_UNIT_ID";
+const REWARDED_AD_UNIT = "ca-app-pub-1852283311826362/1463723119";
 
 const JAZAK_TITLE     = "JazakAllah Khair 🌙";
 const JAZAK_MSG       = "JazakAllah for supporting Noor Quran 🌙";
@@ -210,13 +191,6 @@ export function RewardedAdButton() {
       toast({ title: JAZAK_TITLE, description: JAZAK_MSG });
       safeSet("done");
       setTimeout(() => safeSet("idle"), 4000);
-      return;
-    }
-
-    // Detect placeholder unit ID — show fallback immediately with clear log
-    if (REWARDED_AD_UNIT.includes("REPLACE_WITH")) {
-      log("⚠️  Rewarded unit ID is still the placeholder. Create a Rewarded unit in AdMob and update REWARDED_AD_UNIT.");
-      showFallback("placeholder unit ID");
       return;
     }
 

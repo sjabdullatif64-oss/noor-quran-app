@@ -10,6 +10,7 @@ import {
   removeFavAyah,
 } from "@/lib/favorites";
 import { Input } from "@/components/ui/input";
+import { sanitizeUrduText } from "@/lib/api";
 
 type Tab = "surahs" | "ayahs";
 
@@ -153,7 +154,7 @@ export function Favorites() {
                 </p>
                 {ayah.textTranslation && (
                   <p dir="rtl" className="text-sm text-emerald-600 leading-relaxed text-right font-serif line-clamp-2">
-                    {ayah.textTranslation}
+                    {sanitizeUrduText(ayah.textTranslation)}
                   </p>
                 )}
               </Link>

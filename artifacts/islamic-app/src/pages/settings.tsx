@@ -466,6 +466,16 @@ export function Settings() {
               <ChevronRight className="w-5 h-5 text-emerald-700" />
             </div>
           </Link>
+          <div className="border-t border-emerald-900/30" />
+          <Link href="/azan-settings">
+            <div className="px-4 py-4 flex items-center justify-between hover:opacity-80 transition-opacity">
+              <div>
+                <p className="text-white text-sm font-medium">Azan Notifications</p>
+                <p className="text-emerald-700 text-xs mt-0.5">Automatic Azan at prayer times</p>
+              </div>
+              <ChevronRight className="w-5 h-5 text-emerald-700" />
+            </div>
+          </Link>
         </Section>
 
         <p className="text-emerald-900 text-xs text-center pt-2 pb-6">

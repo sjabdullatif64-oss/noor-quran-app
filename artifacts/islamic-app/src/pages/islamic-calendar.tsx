@@ -1,6 +1,7 @@
 import { useState, useMemo } from "react";
 import { ChevronLeft, ChevronRight, Calendar, Star, Moon, Sun } from "lucide-react";
 import { Link } from "wouter";
+import { useHijriMonthCalendar, type HijriCalendarDay } from "@/lib/api";
 
 // ── Hijri calendar data ───────────────────────────────────────────────────────
 
@@ -40,7 +41,7 @@ const ISLAMIC_EVENTS: IslamicEvent[] = [
   { hMonth: 3,  hDay: 12, name: "Mawlid al-Nabi ﷺ",       nameAr: "الْمَوْلِد النَّبَوِيّ",      type: "mawlid"    },
   { hMonth: 7,  hDay: 27, name: "Laylat al-Mi'raj",       nameAr: "لَيْلَة المِعْرَاج",          type: "miraj"     },
   { hMonth: 8,  hDay: 15, name: "Laylat al-Bara'ah",      nameAr: "لَيْلَة البَرَاءَة",          type: "baraat"    },
-  { hMonth: 9,  hDay: 1,  name: "First Day of Ramadan",   nameAr: "بِدَايَة رَمَضَان",            type: "ramadan", rangeEnd: 29 },
+  { hMonth: 9,  hDay: 1,  name: "First Day of Ramadan",   nameAr: "بِدَايَة رَمَضَان",            type: "ramadan", rangeEnd: 30 },
   { hMonth: 9,  hDay: 21, name: "Laylatul Qadr (21st)",   nameAr: "لَيْلَة القَدْر",              type: "qadr"      },
   { hMonth: 9,  hDay: 23, name: "Laylatul Qadr (23rd)",   nameAr: "لَيْلَة القَدْر",              type: "qadr"      },
   { hMonth: 9,  hDay: 25, name: "Laylatul Qadr (25th)",   nameAr: "لَيْلَة القَدْر",              type: "qadr"      },
@@ -53,32 +54,27 @@ const ISLAMIC_EVENTS: IslamicEvent[] = [
   { hMonth: 12, hDay: 11, name: "Days of Tashreeq",       nameAr: "أَيَّام التَّشْرِيق",          type: "tashreeq", rangeEnd: 13 },
 ];
 
-// ── Kuwaiti/Umm al-Qura Hijri conversion algorithm ───────────────────────────
+// ── Umm al-Qura Hijri conversion via Intl.DateTimeFormat ─────────────────────
+//
+// Uses the browser/WebView's built-in Islamic-Umalqura calendar (the official
+// Saudi calendar). This matches aladhan.com and all major Islamic references
+// exactly, with no drift or tabular-approximation errors.
+//
+// Supported in all modern browsers and Android WebView (API ≥ 24).
+
+const _hijriFormatter = new Intl.DateTimeFormat("en-u-ca-islamic-umalqura", {
+  day:   "numeric",
+  month: "numeric",   // returns 1-based month (Muharram=1 … Dhul Hijjah=12)
+  year:  "numeric",
+});
 
 function gregorianToHijri(gy: number, gm: number, gd: number): { year: number; month: number; day: number } {
-  // Julian Day Number
-  const jd =
-    Math.floor((1461 * (gy + 4800 + Math.floor((gm - 14) / 12))) / 4) +
-    Math.floor((367 * (gm - 2 - 12 * Math.floor((gm - 14) / 12))) / 12) -
-    Math.floor((3 * Math.floor((gy + 4900 + Math.floor((gm - 14) / 12)) / 100)) / 4) +
-    gd - 32075;
-
-  let l = jd - 1948440 + 10632;
-  const n = Math.floor((l - 1) / 10631);
-  l = l - 10631 * n + 354;
-  const j =
-    Math.floor((10985 - l) / 5316) * Math.floor((50 * l) / 17719) +
-    Math.floor(l / 5670) * Math.floor((43 * l) / 15238);
-  l =
-    l -
-    Math.floor((30 - j) / 15) * Math.floor((17719 * j) / 50) -
-    Math.floor(j / 16) * Math.floor((15238 * j) / 43) +
-    29;
-  const month = Math.floor((24 * l) / 709);
-  const day   = l - Math.floor((709 * month) / 24);
-  const year  = 30 * n + j - 30;
-
-  return { year, month, day };
+  // gm is 1-based (Jan=1)
+  const date  = new Date(gy, gm - 1, gd);
+  const parts = _hijriFormatter.formatToParts(date);
+  const get   = (type: string) =>
+    parseInt(parts.find((p) => p.type === type)?.value ?? "0", 10);
+  return { year: get("year"), month: get("month"), day: get("day") };
 }
 
 // ── Event colour mapping ──────────────────────────────────────────────────────
@@ -110,8 +106,17 @@ interface CalDay {
   events:  IslamicEvent[];
 }
 
-function buildMonthDays(gYear: number, gMonth: number): CalDay[] {
-  // gMonth is 0-indexed (JS Date)
+/**
+ * Build the calendar grid for the given Gregorian month.
+ * hijriLookup: Map<gDay, HijriCalendarDay> from Aladhan API.
+ * Falls back to the local Intl-based function for any day missing from the map
+ * (e.g. while the API response is still loading).
+ */
+function buildMonthDays(
+  gYear: number,
+  gMonth: number, // 0-indexed (JS Date)
+  hijriLookup: Map<number, HijriCalendarDay>,
+): CalDay[] {
   const today = new Date();
   today.setHours(0, 0, 0, 0);
 
@@ -120,7 +125,7 @@ function buildMonthDays(gYear: number, gMonth: number): CalDay[] {
 
   // Day-of-week offset so grid starts on Monday (0=Mon…6=Sun)
   let startDow = firstDay.getDay(); // 0=Sun…6=Sat
-  startDow = startDow === 0 ? 6 : startDow - 1; // convert to Mon=0…Sun=6
+  startDow = startDow === 0 ? 6 : startDow - 1;
 
   const days: CalDay[] = [];
 
@@ -131,8 +136,13 @@ function buildMonthDays(gYear: number, gMonth: number): CalDay[] {
 
   for (let d = 1; d <= lastDay.getDate(); d++) {
     const date  = new Date(gYear, gMonth, d);
-    const dow   = date.getDay();        // 0=Sun, 5=Fri, 6=Sat
-    const hijri = gregorianToHijri(gYear, gMonth + 1, d);
+    const dow   = date.getDay();
+
+    // Prefer API data; fall back to local Intl calculation while loading
+    const apiEntry = hijriLookup.get(d);
+    const hijri = apiEntry
+      ? { year: apiEntry.hYear, month: apiEntry.hMonth, day: apiEntry.hDay }
+      : gregorianToHijri(gYear, gMonth + 1, d);
 
     const dayEvents = ISLAMIC_EVENTS.filter((ev) => {
       if (ev.hMonth !== hijri.month) return false;
@@ -179,9 +189,32 @@ export function IslamicCalendar() {
   const [viewYear,  setViewYear]  = useState(today.getFullYear());
   const [viewMonth, setViewMonth] = useState(today.getMonth()); // 0-indexed
 
-  const days         = useMemo(() => buildMonthDays(viewYear, viewMonth), [viewYear, viewMonth]);
+  // ── Aladhan Hijri calendar API calls ───────────────────────────────────────
+  // Fetch accurate Hijri dates for the currently-viewed Gregorian month.
+  // gMonth is 1-based for the API.
+  const { data: viewMonthHijri }  = useHijriMonthCalendar(viewMonth + 1, viewYear);
+
+  // Fetch today's month separately so the TodayCard always has accurate data
+  // even when the user navigates to a different month.
+  const todayGMonth = today.getMonth() + 1;
+  const todayGYear  = today.getFullYear();
+  const { data: todayMonthHijri } = useHijriMonthCalendar(todayGMonth, todayGYear);
+
+  // Build gDay → hijri lookup for the viewed month
+  const hijriLookup = useMemo<Map<number, HijriCalendarDay>>(
+    () => new Map((viewMonthHijri ?? []).map((d) => [d.gDay, d])),
+    [viewMonthHijri],
+  );
+
+  // Today's accurate Hijri date (API when loaded, Intl fallback while loading)
+  const todayHijri = useMemo(() => {
+    const apiDay = todayMonthHijri?.find((d) => d.gDay === today.getDate());
+    if (apiDay) return { year: apiDay.hYear, month: apiDay.hMonth, day: apiDay.hDay };
+    return gregorianToHijri(todayGYear, todayGMonth, today.getDate());
+  }, [todayMonthHijri, todayGMonth, todayGYear]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const days         = useMemo(() => buildMonthDays(viewYear, viewMonth, hijriLookup), [viewYear, viewMonth, hijriLookup]);
   const monthEvents  = useMemo(() => getMonthEvents(days), [days]);
-  const todayHijri   = useMemo(() => gregorianToHijri(today.getFullYear(), today.getMonth() + 1, today.getDate()), []);
 
   // Determine dominant Hijri month for the header (mid-month day)
   const midDay = days.find((d) => d && d.gDay === 15) ?? days.find((d) => d);

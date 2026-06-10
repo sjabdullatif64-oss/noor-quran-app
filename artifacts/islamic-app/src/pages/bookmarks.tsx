@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { Link } from "wouter";
 import { Bookmark as BookmarkType, getBookmarks, removeBookmark } from "@/lib/bookmarks";
 import { FavoriteSurah, getFavSurahs, removeFavSurah } from "@/lib/favorites";
+import { sanitizeUrduText } from "@/lib/api";
 import { Trash2, BookOpen, BookmarkX, Search, BookMarked } from "lucide-react";
 import { Input } from "@/components/ui/input";
 
@@ -141,7 +142,7 @@ export function Bookmarks() {
                   </p>
                   {bm.textTranslation && (
                     <p dir="rtl" className="text-base text-muted-foreground leading-relaxed text-right font-serif line-clamp-3">
-                      {bm.textTranslation}
+                      {sanitizeUrduText(bm.textTranslation)}
                     </p>
                   )}
                 </Link>
