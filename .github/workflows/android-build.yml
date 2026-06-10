@@ -10,7 +10,7 @@
 # Secrets required (Settings → Secrets and variables → Actions):
 #   KEYSTORE_BASE64      base64-encoded .keystore file  (existing Play Store key)
 #   KEYSTORE_PASSWORD    keystore store password
-#   KEY_ALIAS            key alias inside the keystore
+#   KEY_ALIAS            key alias inside the keystore  (my-key-alias)
 #   KEY_PASSWORD         key password
 ##############################################################################
 
@@ -29,7 +29,7 @@ on:
         type: choice
         options: [release, debug]
       version_name:
-        description: 'Version name  e.g. 1.2.0  (leave blank to use tag or 1.0.0)'
+        description: 'Version name  e.g. 1.2.0  (leave blank to use tag or 1.0.1)'
         required: false
         default: ''
       version_code:
@@ -38,18 +38,19 @@ on:
         default: ''
 
 env:
-  NODE_VERSION:  '22'
-  JAVA_VERSION:  '17'
+  NODE_VERSION:   '22'
+  JAVA_VERSION:   '21'          # Java 21 — required by capacitor-android v8
   GRADLE_VERSION: '8.11.1'
-  PNPM_VERSION:  '10'
-  APP_DIR:       artifacts/islamic-app
-  ANDROID_DIR:   artifacts/islamic-app/android
+  PNPM_VERSION:   '10'
+  ANDROID_SDK:    '36'          # compileSdk (must be >=35 for Capacitor; targetSdk=34 in app/build.gradle)
+  APP_DIR:        artifacts/islamic-app
+  ANDROID_DIR:    artifacts/islamic-app/android
 
 jobs:
   build:
     name: >
       Build ${{ github.event.inputs.build_type || 'release' }}
-      v${{ github.event.inputs.version_name || '1.0.0' }}
+      v${{ github.event.inputs.version_name || '1.0.1' }}
     runs-on: ubuntu-latest
     timeout-minutes: 60        # first build ~20 min; cached ~8 min
 
@@ -60,32 +61,36 @@ jobs:
         with:
           fetch-depth: 0        # full history so git describe works for version
 
-      # ── 2. Java (required by Gradle AND Capacitor CLI) ────────────────────────
+      # ── 2. Java 17 (Gradle daemon + javac) ───────────────────────────────────
+      #
+      #    All Capacitor plugins that hardcode JavaVersion.VERSION_21 are
+      #    overridden to Java 17 via the subprojects hook in android/build.gradle.
+      #    org.gradle.java.installations.auto-download=false in gradle.properties
+      #    prevents Gradle from searching for / downloading a Java 21 toolchain.
       - name: Setup Java ${{ env.JAVA_VERSION }}
         uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: ${{ env.JAVA_VERSION }}
 
-      # ── 3. Android SDK (platforms + build-tools) ──────────────────────────────
+      # ── 3. Android SDK 34 ─────────────────────────────────────────────────────
       - name: Setup Android SDK
         uses: android-actions/setup-android@v3
 
       - name: Install Android SDK platform + build-tools
         run: |
           sdkmanager --install \
-            "platforms;android-36" \
-            "build-tools;36.0.0" \
+            "platforms;android-${{ env.ANDROID_SDK }}" \
+            "build-tools;34.0.0" \
             "platform-tools" \
             2>&1 | tail -5
           yes | sdkmanager --licenses > /dev/null 2>&1 || true
 
-      # ── 4. Gradle (provides `gradle` binary to generate gradlew) ─────────────
+      # ── 4. Gradle ${{ env.GRADLE_VERSION }} ──────────────────────────────────
       - name: Setup Gradle ${{ env.GRADLE_VERSION }}
         uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: ${{ env.GRADLE_VERSION }}
-          # Read-only Gradle cache on non-main branches to save space
           cache-read-only: ${{ github.ref != 'refs/heads/main' && github.ref != 'refs/heads/master' }}
 
       # ── 5. Node.js + pnpm ────────────────────────────────────────────────────
@@ -111,18 +116,15 @@ jobs:
           BASE_PATH: /
           NODE_ENV: production
 
-      # ── 7. Capacitor sync — copies assets + plugin config into android/ ───────
+      # ── 7. Capacitor sync ────────────────────────────────────────────────────
       - name: Sync Capacitor Android
         working-directory: ${{ env.APP_DIR }}
-        run: |
-          npx cap sync android 2>&1
-          echo "✅ Capacitor sync complete"
+        run: npx cap sync android 2>&1
         env:
           ANDROID_SDK_ROOT: ${{ env.ANDROID_HOME }}
-          ANDROID_HOME: ${{ env.ANDROID_HOME }}
+          ANDROID_HOME:     ${{ env.ANDROID_HOME }}
 
-      # ── 8. Gradle wrapper — generates gradlew + gradle-wrapper.jar ────────────
-      #    We generate this in CI rather than committing the binary jar.
+      # ── 8. Gradle wrapper ────────────────────────────────────────────────────
       - name: Generate Gradle wrapper
         working-directory: ${{ env.ANDROID_DIR }}
         run: |
@@ -137,22 +139,18 @@ jobs:
       - name: Resolve version
         id: version
         run: |
-          # Priority: tag → workflow input → fallback 1.0.0
           if [[ "$GITHUB_REF" == refs/tags/v* ]]; then
             VER_NAME="${GITHUB_REF#refs/tags/v}"
           elif [[ -n "${{ github.event.inputs.version_name }}" ]]; then
             VER_NAME="${{ github.event.inputs.version_name }}"
           else
-            VER_NAME="1.0.0"
+            VER_NAME="1.0.1"
           fi
-
-          # Version code: workflow input → seconds since 2024-01-01 (always increasing)
           if [[ -n "${{ github.event.inputs.version_code }}" ]]; then
             VER_CODE="${{ github.event.inputs.version_code }}"
           else
             VER_CODE=$(( $(date +%s) - 1704067200 ))
           fi
-
           echo "name=$VER_NAME" >> $GITHUB_OUTPUT
           echo "code=$VER_CODE" >> $GITHUB_OUTPUT
           echo "✅ Version $VER_NAME ($VER_CODE)"
@@ -169,32 +167,38 @@ jobs:
             app/build.gradle
           grep -E "versionCode|versionName" app/build.gradle
 
-      # ── 11. Keystore (release builds only) ───────────────────────────────────
+      # ── 11. Keystore (release builds only) ────────────────────────────────────
       #
       #    ⚠️  IMPORTANT — EXISTING PLAY STORE APP:
       #    Use the SAME keystore you used for your first Play Store upload.
       #    Changing the keystore will break updates for existing users.
-      #    See ANDROID_BUILD.md → "Existing Play Store app" section.
       #
       - name: Decode keystore
         if: ${{ (github.event.inputs.build_type || 'release') == 'release' }}
         working-directory: ${{ env.ANDROID_DIR }}
         run: |
           if [[ -z "${{ secrets.KEYSTORE_BASE64 }}" ]]; then
-            echo "❌ Secret KEYSTORE_BASE64 is not set. See ANDROID_BUILD.md."
+            echo "❌ Secret KEYSTORE_BASE64 is not set."
+            echo "   Base64-encode your keystore:  base64 -w0 upload-key.keystore"
+            echo "   Then add it as a repo secret: Settings → Secrets → KEYSTORE_BASE64"
             exit 1
           fi
-          echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 --decode > noor-quran-release.keystore
-          # Verify the keystore is valid
+          echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 --decode > app/upload-key.keystore
           keytool -list -v \
-            -keystore noor-quran-release.keystore \
+            -keystore app/upload-key.keystore \
             -storepass "${{ secrets.KEYSTORE_PASSWORD }}" \
             -alias "${{ secrets.KEY_ALIAS }}" 2>&1 | grep -E "Alias|Valid|SHA" || true
-          # KEY_ALIAS for this app is: my-key-alias
-          echo "KEYSTORE_PATH=$PWD/noor-quran-release.keystore" >> $GITHUB_ENV
           echo "✅ Keystore decoded and verified"
+          # Write keystore.properties so the signing config in app/build.gradle picks it up
+          cat > keystore.properties <<EOF
+          storeFile=upload-key.keystore
+          storePassword=${{ secrets.KEYSTORE_PASSWORD }}
+          keyAlias=${{ secrets.KEY_ALIAS }}
+          keyPassword=${{ secrets.KEY_PASSWORD }}
+          EOF
+          echo "✅ keystore.properties written"
 
-      # ── 12a. Debug build ──────────────────────────────────────────────────────
+      # ── 12a. Debug build ───────────────────────────────────────────────────────
       - name: Build Debug APK
         if: ${{ (github.event.inputs.build_type || 'release') == 'debug' }}
         working-directory: ${{ env.ANDROID_DIR }}
@@ -202,21 +206,25 @@ jobs:
           ./gradlew assembleDebug \
             --no-daemon \
             --stacktrace \
-            --warning-mode all
+            --warning-mode summary
           echo "✅ Debug APK built"
 
-      # ── 12b. Release build ────────────────────────────────────────────────────
+      # ── 12b. Release build (APK + AAB) ────────────────────────────────────────
+      #
+      # -PMINIFY_RELEASE=true enables R8 minification + resource shrinking.
+      # (Local builds omit this flag so the build stays under 2 min.)
       - name: Build Release APK + AAB
         if: ${{ (github.event.inputs.build_type || 'release') == 'release' }}
         working-directory: ${{ env.ANDROID_DIR }}
         run: |
           ./gradlew assembleRelease bundleRelease \
+            -PMINIFY_RELEASE=true \
             --no-daemon \
             --stacktrace \
-            --warning-mode all
+            --warning-mode summary
           echo "✅ Release APK + AAB built"
         env:
-          KEYSTORE_PATH:     ${{ env.KEYSTORE_PATH }}
+          KEYSTORE_PATH:     app/upload-key.keystore
           KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
           KEY_ALIAS:         ${{ secrets.KEY_ALIAS }}
           KEY_PASSWORD:      ${{ secrets.KEY_PASSWORD }}
@@ -232,13 +240,15 @@ jobs:
                app/build/outputs/apk/release/noor-quran-${V}.apk
             cp app/build/outputs/bundle/release/app-release.aab \
                app/build/outputs/bundle/release/noor-quran-${V}.aab
+            echo "APK: $(du -h app/build/outputs/apk/release/noor-quran-${V}.apk)"
+            echo "AAB: $(du -h app/build/outputs/bundle/release/noor-quran-${V}.aab)"
           else
             cp app/build/outputs/apk/debug/app-debug.apk \
                app/build/outputs/apk/debug/noor-quran-${V}-debug.apk
           fi
           echo "✅ Outputs renamed to noor-quran-${V}"
 
-      # ── 14. Upload artifacts ──────────────────────────────────────────────────
+      # ── 14. Upload artifacts ───────────────────────────────────────────────────
       - name: Upload Debug APK
         if: ${{ (github.event.inputs.build_type || 'release') == 'debug' }}
         uses: actions/upload-artifact@v4
@@ -266,7 +276,7 @@ jobs:
           if-no-files-found: error
           retention-days: 90
 
-      # ── 15. GitHub Release (tag pushes only) ─────────────────────────────────
+      # ── 15. GitHub Release (tag pushes only) ──────────────────────────────────
       - name: Create GitHub Release
         if: startsWith(github.ref, 'refs/tags/v')
         uses: softprops/action-gh-release@v2
@@ -286,6 +296,7 @@ jobs:
 
             **Package:** `com.sj64noorquran`
             **Version code:** ${{ steps.version.outputs.code }}
+            **Java:** 17 · **SDK:** 34 · **Gradle:** ${{ env.GRADLE_VERSION }}
 
             ### What's inside
             - Native Capacitor Android shell — no browser UI, no URL bar
@@ -314,5 +325,7 @@ jobs:
           echo "| Build type | ${{ github.event.inputs.build_type || 'release' }} |" >> $GITHUB_STEP_SUMMARY
           echo "| Commit | ${{ github.sha }} |" >> $GITHUB_STEP_SUMMARY
           echo "| Runner | ubuntu-latest |" >> $GITHUB_STEP_SUMMARY
-          echo "| Gradle | ${{ env.GRADLE_VERSION }} |" >> $GITHUB_STEP_SUMMARY
           echo "| Java | ${{ env.JAVA_VERSION }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Android SDK | ${{ env.ANDROID_SDK }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Gradle | ${{ env.GRADLE_VERSION }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| AGP | 8.9.1 |" >> $GITHUB_STEP_SUMMARY
