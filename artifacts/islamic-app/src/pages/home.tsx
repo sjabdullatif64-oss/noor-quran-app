@@ -39,9 +39,15 @@ function UpdatePreviewCard({ item }: { item: UpdateItem }) {
             alt={item.title}
             className="w-full h-full object-cover"
             style={{ opacity: imgStatus === "ok" ? 1 : 0, transition: "opacity 0.3s" }}
-            onLoad={() => setImgStatus("ok")}
+            onLoad={() => {
+              console.log(`[Noor/Home] Image loaded ✓ url="${resolved}"`);
+              setImgStatus("ok");
+            }}
             onError={() => {
-              console.error(`[Noor/Home] Image failed: ${resolved}`);
+              console.error(
+                `[Noor/Home] Image FAILED — resolved="${resolved}"\n` +
+                `  → Make sure the Drive file is shared as "Anyone with the link can view"`
+              );
               setImgStatus("error");
             }}
             loading="lazy"

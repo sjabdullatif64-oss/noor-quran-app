@@ -16,40 +16,47 @@
  *  Column G : target_link  — URL opened when the button is tapped
  *  Column H : category     — Quran | Prayer | Event | Feature | Update | General
  *  Column I : status       — "active" = visible in app, anything else = hidden
- *  Column J : created_at   — date string (e.g. 2025-01-15), shown in the card
+ *  Column J : created_at   — date string (e.g. 2025-01-15)
+ *
+ * ── Image URL format ─────────────────────────────────────────────────────────
+ *  Use the standard Google Drive share link for images:
+ *    https://drive.google.com/file/d/FILE_ID/view?usp=sharing
+ *  The app converts this automatically to:
+ *    https://lh3.googleusercontent.com/d/FILE_ID
+ *  IMPORTANT: The file must be shared as "Anyone with the link can view".
+ *  Private files will NOT display in the app.
  *
  * ── Deployment Steps ─────────────────────────────────────────────────────────
  *  1. Open: https://script.google.com  → click "New project"
  *  2. Delete the empty function, paste THIS entire file
- *  3. Save (Ctrl+S) — name it anything (e.g. "Noor Quran API")
+ *  3. Save (Ctrl+S) — name it e.g. "Noor Quran API"
  *  4. Click "Deploy" → "New deployment"
- *  5. Click the gear icon → select "Web app"
+ *  5. Click the ⚙ gear icon → select "Web app"
  *  6. Description: "Noor Quran Sheet API v1"
  *  7. Execute as:      Me  (your Google account)
  *  8. Who has access:  Anyone
  *  9. Click "Deploy" → authorise when prompted → copy the Web App URL
- * 10. Paste that URL in the Admin Panel → Google Sheet Sync → Save URL
+ * 10. In the app: Updates → tap any card title 20 times → PIN 2963@531
+ *     → Admin Panel → Google Sheet Sync → paste URL → Save & Activate
  *
- * ── API Endpoints ────────────────────────────────────────────────────────────
- *  GET  <webAppUrl>                          — health check (returns {ok:true})
- *  POST <webAppUrl>  body: JSON string
+ * ── API Reference ────────────────────────────────────────────────────────────
+ *  GET  <webAppUrl>                          → { ok: true, message: "..." }
+ *  POST <webAppUrl>  Content-Type: text/plain
  *
- *  POST actions (send as plain text body):
- *    { "action": "read" }
- *    { "action": "create", "item": { title, description, image_url, ... } }
- *    { "action": "edit",   "id": "...", "item": { title, status, ... } }
- *    { "action": "delete", "id": "..." }
+ *  { "action": "read" }
+ *  { "action": "create", "item": { "title": "...", "image_url": "...", ... } }
+ *  { "action": "edit",   "id": "...", "item": { "status": "inactive", ... } }
+ *  { "action": "delete", "id": "..." }
  *
- *  All responses: { "ok": true|false, "error"?: "..." , ... }
+ *  All responses: { "ok": true|false, "error"?: "...", ... }
  */
 
 // ── Configuration ─────────────────────────────────────────────────────────────
 
-/** Change only if your tab has a different name. The script falls back to
- *  the first sheet if this name is not found. */
+/** Change only if your tab has a different name. */
 var SHEET_NAME = "Sheet1";
 
-/** Canonical column order written when the sheet is empty. */
+/** Canonical column order — written when the sheet is empty. */
 var CANONICAL_HEADERS = [
   "id", "title", "description", "image_url", "video_url",
   "button_text", "target_link", "category", "status", "created_at"
@@ -68,7 +75,7 @@ function doPost(e) {
       return buildResponse({ ok: false, error: "Empty request body." });
     }
 
-    var data = JSON.parse(raw);
+    var data   = JSON.parse(raw);
     var action = (data.action || "").toLowerCase();
     var sheet  = getSheet_();
 
@@ -85,11 +92,6 @@ function doPost(e) {
 
 // ── Handlers ──────────────────────────────────────────────────────────────────
 
-/**
- * READ — returns all rows as JSON objects.
- * Note: the app already reads the sheet via the public GViz URL; this endpoint
- * is provided for completeness and admin verification.
- */
 function handleRead_(sheet) {
   var all = sheet.getDataRange().getValues();
   if (all.length < 2) return buildResponse({ ok: true, items: [] });
@@ -103,7 +105,6 @@ function handleRead_(sheet) {
     headers.forEach(function(h, c) {
       item[h] = row[c] !== undefined && row[c] !== null ? String(row[c]).trim() : "";
     });
-    // Provide generated id if the sheet's id cell is blank
     if (!item.id) item.id = "sheet-row-" + i;
     if (item.title) items.push(item);
   }
@@ -111,10 +112,6 @@ function handleRead_(sheet) {
   return buildResponse({ ok: true, count: items.length, items: items });
 }
 
-/**
- * CREATE — appends a new row to the sheet.
- * Initialises the header row if the sheet is completely empty.
- */
 function handleCreate_(sheet, item) {
   if (!item || !item.title || String(item.title).trim() === "") {
     return buildResponse({ ok: false, error: "'title' field is required." });
@@ -122,19 +119,18 @@ function handleCreate_(sheet, item) {
 
   var headers = getHeaders_(sheet);
 
-  // Bootstrap headers if sheet is empty
   if (headers.length === 0) {
     sheet.appendRow(CANONICAL_HEADERS);
     headers = CANONICAL_HEADERS.slice();
   }
 
-  // Assign a unique id if the incoming item does not have one
   if (!item.id || String(item.id).trim() === "") {
     item.id = "item-" + new Date().getTime().toString(36);
   }
-  // Default date to today
   if (!item.created_at || String(item.created_at).trim() === "") {
-    item.created_at = Utilities.formatDate(new Date(), Session.getScriptTimeZone(), "yyyy-MM-dd");
+    item.created_at = Utilities.formatDate(
+      new Date(), Session.getScriptTimeZone(), "yyyy-MM-dd"
+    );
   }
 
   var row = headers.map(function(h) {
@@ -142,23 +138,19 @@ function handleCreate_(sheet, item) {
   });
   sheet.appendRow(row);
 
-  return buildResponse({ ok: true, id: item.id, message: "Item created successfully." });
+  return buildResponse({ ok: true, id: item.id, message: "Item created." });
 }
 
-/**
- * EDIT — finds the row by id (or generated "sheet-row-N") and updates
- * every field present in the `item` object.
- */
 function handleEdit_(sheet, id, updates) {
   if (!id) return buildResponse({ ok: false, error: "'id' is required for edit." });
   if (!updates || typeof updates !== "object") {
     return buildResponse({ ok: false, error: "'item' object is required for edit." });
   }
 
-  var all = sheet.getDataRange().getValues();
+  var all     = sheet.getDataRange().getValues();
   if (all.length < 2) return buildResponse({ ok: false, error: "Sheet has no data rows." });
 
-  var headers = all[0].map(function(h) { return String(h).trim(); });
+  var headers  = all[0].map(function(h) { return String(h).trim(); });
   var idColIdx = headers.indexOf("id");
 
   for (var i = 1; i < all.length; i++) {
@@ -171,7 +163,6 @@ function handleEdit_(sheet, id, updates) {
           sheet.getRange(i + 1, c + 1).setValue(String(updates[h]));
         }
       });
-      // If the row had no id and we matched by generated id, write the id now
       if (idColIdx >= 0 && !cellId && updates.id) {
         sheet.getRange(i + 1, idColIdx + 1).setValue(String(updates.id));
       }
@@ -182,13 +173,10 @@ function handleEdit_(sheet, id, updates) {
   return buildResponse({ ok: false, error: "No row found with id: " + id });
 }
 
-/**
- * DELETE — finds the row by id (or generated "sheet-row-N") and removes it.
- */
 function handleDelete_(sheet, id) {
   if (!id) return buildResponse({ ok: false, error: "'id' is required for delete." });
 
-  var all = sheet.getDataRange().getValues();
+  var all     = sheet.getDataRange().getValues();
   if (all.length < 2) return buildResponse({ ok: false, error: "Sheet has no data rows." });
 
   var headers  = all[0].map(function(h) { return String(h).trim(); });
