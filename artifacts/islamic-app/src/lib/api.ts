@@ -1,5 +1,34 @@
 import { useQuery } from "@tanstack/react-query";
 
+/**
+ * The Jalandhry Urdu translation (ur.jalandhry) uses "خدا" wherever the
+ * Arabic says "اللہ". The Amroti Sindhi translation (sd.amroti) has the same
+ * issue — both use Arabic script, so the same replacement applies.
+ * Replace every occurrence so the app always displays the correct name.
+ * Applied at the data layer so all consumers receive corrected text.
+ */
+export function sanitizeUrduText(text: string): string {
+  return text.replace(/خدا/g, "اللہ");
+}
+
+/**
+ * The Hindi translation (hi.hindi) sometimes uses "खुदा" instead of "अल्लाह".
+ * Replace every occurrence with the correct Islamic name.
+ */
+export function sanitizeHindiText(text: string): string {
+  return text.replace(/खुदा/g, "अल्लाह");
+}
+
+/**
+ * Central sanitiser — picks the right replacement based on translation language.
+ * Safe to call on any language; no-ops for languages that don't need it.
+ */
+export function sanitizeTranslation(lang: TranslationLanguage, text: string): string {
+  if (lang === "urdu" || lang === "sindhi") return sanitizeUrduText(text);
+  if (lang === "hindi") return sanitizeHindiText(text);
+  return text;
+}
+
 export interface Ayah {
   numberInSurah: number;
   number: number;
@@ -206,7 +235,7 @@ export const useSurah = (number: number, translation: TranslationLanguage) => {
         numberInSurah:   ayah.numberInSurah,
         globalNumber:    ayah.number,
         textAr:          ayah.text,
-        textTranslation: trAyahs[index]?.text     ?? "",
+        textTranslation: sanitizeTranslation(translation, trAyahs[index]?.text ?? ""),
         textTranslit:    transitAyahs[index]?.text ?? "",
         audioUrl:        getAudioUrl(ayah.number),
       }));
@@ -294,6 +323,48 @@ export async function reverseGeocode(lat: number, lng: number): Promise<{ city: 
   }
 }
 
+// ── Hijri calendar data via Aladhan ──────────────────────────────────────────
+
+export interface HijriCalendarDay {
+  gDay:   number; // 1-based Gregorian day of the month
+  hDay:   number; // 1-based Hijri day
+  hMonth: number; // 1–12
+  hYear:  number;
+}
+
+/**
+ * Fetch the full Gregorian-month → Hijri mapping from Aladhan's calendar API.
+ * One call per (gMonth, gYear) pair, cached forever (Hijri dates never change).
+ * gMonth is 1-based (Jan = 1).
+ */
+export const useHijriMonthCalendar = (gMonth: number, gYear: number) =>
+  useQuery({
+    queryKey: ["hijriCalendar", gMonth, gYear],
+    queryFn: async () => {
+      const res = await fetch(
+        `https://api.aladhan.com/v1/gToHCalendar/${gMonth}/${gYear}`
+      );
+      if (!res.ok) throw new Error("Hijri calendar fetch failed");
+      const data = await res.json();
+      if (data.code !== 200) throw new Error("Hijri calendar API error");
+      return (
+        data.data as Array<{
+          gregorian: { day: string };
+          hijri: { day: string; month: { number: number }; year: string };
+        }>
+      ).map(
+        (item): HijriCalendarDay => ({
+          gDay:   parseInt(item.gregorian.day, 10),
+          hDay:   parseInt(item.hijri.day, 10),
+          hMonth: item.hijri.month.number,
+          hYear:  parseInt(item.hijri.year, 10),
+        })
+      );
+    },
+    staleTime: Infinity, // Hijri dates are immutable
+    retry: 2,
+  });
+
 export const useRandomAyah = () =>
   useQuery({
     queryKey: ["randomAyah"],
@@ -314,10 +385,11 @@ export const useRandomAyah = () =>
 
       return {
         surah:         data.data.englishName,
-        numberInSurah: arData.data.numberInSurah,
+        surahNumber:   randomSurah,                          // 1–114 numeric index for navigation
+        numberInSurah: arData.data.numberInSurah as number,  // 1-based ayah number within surah
         globalNumber:  randomAyah.number,
         textAr:        arData.data.text,
-        textUr:        urData.data.text,
+        textUr:        sanitizeUrduText(urData.data.text),
         audioUrl:      getAudioUrl(randomAyah.number),
       };
     },
