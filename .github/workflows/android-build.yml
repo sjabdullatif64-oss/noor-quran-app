@@ -85,6 +85,10 @@ jobs:
             "platform-tools" \
             2>&1 | tail -5
           yes | sdkmanager --licenses > /dev/null 2>&1 || true
+          # Remove android-34: its core-for-system-modules.jar is incompatible with
+          # Java 21's jlink.  AGP falls back to android-34 when android-36 has no jar.
+          # Removing it forces AGP to skip the JdkImageTransform entirely.
+          rm -rf "$ANDROID_HOME/platforms/android-34" || true
 
       # ── 4. Gradle ${{ env.GRADLE_VERSION }} ──────────────────────────────────
       - name: Setup Gradle ${{ env.GRADLE_VERSION }}
