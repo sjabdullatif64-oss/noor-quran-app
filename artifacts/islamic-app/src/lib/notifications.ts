@@ -152,8 +152,17 @@ export async function getPermissionStateAsync(): Promise<PermissionState> {
         return "granted";
       }
       if (result.display === "denied") {
-        localStorage.setItem("noor-cap-notif-perm", "denied");
-        return "denied";
+        // On Android 13+, checkPermissions() returns "denied" BEFORE the user
+        // has ever been shown the POST_NOTIFICATIONS dialog.  Only cache "denied"
+        // here if the user explicitly denied at some point (DENIAL_STORED_KEY set
+        // by requestPermission()).  Otherwise treat as "default" so the Enable
+        // button remains visible.
+        const explicitDenial = localStorage.getItem(DENIAL_STORED_KEY) === "1";
+        if (explicitDenial) {
+          localStorage.setItem("noor-cap-notif-perm", "denied");
+          return "denied";
+        }
+        return "default";
       }
       return "default";
     } catch {
