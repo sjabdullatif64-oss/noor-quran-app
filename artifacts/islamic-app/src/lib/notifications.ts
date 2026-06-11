@@ -1,5 +1,9 @@
 // Noor Quran — Notification permissions, settings, and Service Worker bridge
 
+// Static import — avoids the async dynamic-import gap inside requestPermission().
+// Capacitor plugins are always safe to import at module level; they no-op outside native.
+import { LocalNotifications } from "@capacitor/local-notifications";
+
 const STORAGE_KEY       = "noor-notif-settings";
 const SW_PATH           = "/service-worker.js";
 const DENIAL_STORED_KEY = "noor-notif-explicit-denied"; // set only after explicit denial
@@ -63,9 +67,6 @@ export function isInstalledPWA(): boolean {
  * Capacitor injects window.Capacitor before the page script runs.
  */
 export function isCapacitorApp(): boolean {
-  // Must call isNativePlatform() — @capacitor/core injects window.Capacitor in
-  // browser builds too (isNativePlatform returns false there), so just checking
-  // !!window.Capacitor incorrectly returns true in the browser.
   return (
     typeof window !== "undefined" &&
     !!(window as Window & { Capacitor?: { isNativePlatform?: () => boolean } })
@@ -144,7 +145,6 @@ export async function getPermissionStateAsync(): Promise<PermissionState> {
   // ── Capacitor: query the LocalNotifications plugin directly ─────────────────
   if (isCapacitorApp()) {
     try {
-      const { LocalNotifications } = await import("@capacitor/local-notifications");
       const result = await LocalNotifications.checkPermissions();
       // Cache the result for the sync getPermissionState()
       if (result.display === "granted") {
@@ -201,13 +201,16 @@ export async function getPermissionStateAsync(): Promise<PermissionState> {
 /**
  * Request notification permission.
  * MUST be called from a direct user-gesture handler (button click).
- * Android auto-denies Notification.requestPermission() outside user gestures.
+ *
+ * Uses a statically-imported LocalNotifications plugin so there is NO async
+ * dynamic-import gap between the user gesture and the permission request call.
+ * A dynamic import gap can cause Android to silently drop the permission dialog.
  */
 export async function requestPermission(): Promise<PermissionState> {
   // ── Capacitor: use @capacitor/local-notifications plugin ────────────────────
   if (isCapacitorApp()) {
     try {
-      const { LocalNotifications } = await import("@capacitor/local-notifications");
+      // LocalNotifications is statically imported — no async gap here.
       const result = await LocalNotifications.requestPermissions();
       const display = result.display;
       if (display === "granted") {
@@ -219,15 +222,18 @@ export async function requestPermission(): Promise<PermissionState> {
         localStorage.setItem(DENIAL_STORED_KEY, "1");
         return "denied";
       } else {
-        // "prompt" — dialog was shown but not yet answered (e.g. dismissed by
-        // tapping outside). Do NOT mark as denied; let the user try again.
+        // "prompt" — the system dialog was shown but the user dismissed without
+        // choosing.  Do NOT mark as denied; let them try again.
+        // Treat as "default" so the EnableCard remains.
         return "default";
       }
-    } catch {
-      // Plugin error on native Capacitor — do NOT fall through to Web
-      // Notification API: it cannot trigger the Android runtime permission
-      // dialog and may silently return "default" or "denied".
-      return "default";
+    } catch (e) {
+      // Plugin bridge error (rare — e.g. POST_NOTIFICATIONS missing from manifest).
+      // Log for diagnostics but do not silently swallow — fall through to the
+      // web Notification API which may still trigger a permission prompt on some
+      // Capacitor/WebView configurations.
+      console.error("[Noor/Notif] LocalNotifications.requestPermissions() failed:", e);
+      // Fall through to web path below
     }
   }
 
