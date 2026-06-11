@@ -721,13 +721,34 @@ function AdminPanel({ sheetItems, onClose }: {
 
   // ── Persist local state + update TanStack cache immediately ─────────────────
   function persistLocal(l: LocalAdminItem[], d: string[], o: OverrideEntry[]) {
-    adminData.saveLocal(l);
-    adminData.saveDeleted(d);
-    adminData.saveOverrides(o);
+    try {
+      adminData.saveLocal(l);
+      adminData.saveDeleted(d);
+      adminData.saveOverrides(o);
+    } catch (storageErr) {
+      // localStorage quota exceeded — likely caused by large base64 gallery images.
+      // Surface a clear error so the user can use the Clear Cache button.
+      const msg = (storageErr as Error)?.message ?? "Storage full";
+      throw new Error(
+        `Storage full: ${msg}. Use "Clear Local Cache" in Admin Panel to free up space, then try again.`,
+      );
+    }
     setLocal(l); setDeleted(d); setOverrides(o);
     // Optimistically update the TanStack cache so the UI reflects changes at once
     const current = qc.getQueryData<UpdateItem[]>(["updates"]) ?? sheetItems;
     qc.setQueryData(["updates"], mergeItems(current, l, d, o));
+  }
+
+  // ── Clear all local admin data + refresh from Sheet ──────────────────────────
+  function handleClearCache() {
+    try {
+      adminData.saveLocal([]);
+      adminData.saveDeleted([]);
+      adminData.saveOverrides([]);
+    } catch { /* ignore — we are clearing, errors don't matter */ }
+    setLocal([]); setDeleted([]); setOverrides([]);
+    qc.invalidateQueries({ queryKey: ["updates"] });
+    toast({ title: "✓ Local cache cleared", description: "Fetching fresh data from Sheet…" });
   }
 
   // ── After a write: trigger a background GViz re-fetch ────────────────────────
@@ -863,6 +884,16 @@ function AdminPanel({ sheetItems, onClose }: {
       {/* Sheet Sync Setup */}
       <div className="pt-3">
         <SheetSyncPanel />
+      </div>
+
+      {/* Clear Local Cache button — helps when localStorage is full or data is stale */}
+      <div className="px-5 pb-2">
+        <button
+          onClick={handleClearCache}
+          className="w-full py-2 rounded-xl text-xs font-semibold border border-red-900/30 text-red-500 hover:text-red-400 hover:border-red-700/50 transition-all active:scale-[0.98] flex items-center justify-center gap-1.5"
+          style={{ background: "rgba(239,68,68,0.06)" }}>
+          <Trash2 className="w-3 h-3" /> Clear Local Cache
+        </button>
       </div>
 
       {/* Sync status */}

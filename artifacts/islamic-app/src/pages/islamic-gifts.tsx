@@ -234,7 +234,9 @@ export function IslamicGifts() {
         setShared(true);
         setTimeout(() => setShared(false), 2000);
         toast({ title: "Copied!", description: "Card text copied to clipboard." });
-      } catch { /* clipboard unavailable — silent */ }
+      } catch {
+        toast({ title: "Share unavailable", description: "Please try again.", variant: "destructive" });
+      }
     }
   };
 
