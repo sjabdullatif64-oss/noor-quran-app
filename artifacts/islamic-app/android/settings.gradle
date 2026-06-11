@@ -32,6 +32,9 @@ project(':capacitor-network').projectDir = new File('../node_modules/@capacitor/
 include ':capacitor-share'
 project(':capacitor-share').projectDir = new File('../node_modules/@capacitor/share/android')
 
+include ':capacitor-browser'
+project(':capacitor-browser').projectDir = new File('../node_modules/@capacitor/browser/android')
+
 // AdMob — Capacitor community plugin (brings in play-services-ads + UMP)
 include ':capacitor-community-admob'
 project(':capacitor-community-admob').projectDir = new File('../node_modules/@capacitor-community/admob/android')

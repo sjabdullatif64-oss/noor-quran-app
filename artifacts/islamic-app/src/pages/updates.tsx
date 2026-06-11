@@ -12,6 +12,7 @@ import {
   resolveImageUrl, fetchUpdates, adminData,
   generateId, mergeItems, scriptSync, APPS_SCRIPT_TEMPLATE,
 } from "@/lib/updates-data";
+import { openUrl as openExternalUrl } from "@/lib/capacitor";
 
 // ── TanStack Query ─────────────────────────────────────────────────────────────
 function useSheetUpdates() {
@@ -109,7 +110,7 @@ function UpdateCard({ item, index, onTitleTap }: {
   const openLabel  = hasVideo ? "Details" : (item.button_text?.trim() || "Open");
 
   function openUrl(url: string) {
-    window.open(url, "_blank", "noopener,noreferrer");
+    void openExternalUrl(url);
   }
 
   return (

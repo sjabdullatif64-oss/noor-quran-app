@@ -273,6 +273,40 @@ export async function nativeShare(opts: ShareOptions): Promise<boolean> {
   return false; // caller handles clipboard copy
 }
 
+// ── External URL opener ────────────────────────────────────────────────────────
+//
+// window.open(_blank) in Capacitor WebView does NOT open external URLs in
+// the system browser — it either does nothing or opens a new WebView.
+// @capacitor/browser Browser.open() hands off to Chrome Custom Tabs on Android,
+// giving users the expected in-app-browser experience.
+//
+// Special schemes (mailto:, market://, tel:) are always passed to window.open
+// so the OS can route them to the correct app (Mail, Play Store, Phone).
+
+export async function openUrl(url: string): Promise<void> {
+  // OS-handled schemes: bypass Browser plugin and let system route the intent
+  if (
+    url.startsWith("mailto:") ||
+    url.startsWith("market://") ||
+    url.startsWith("tel:")
+  ) {
+    window.open(url);
+    return;
+  }
+
+  if (isCapacitorApp()) {
+    try {
+      const { Browser } = await import("@capacitor/browser");
+      await Browser.open({ url });
+      return;
+    } catch {
+      // Plugin unavailable — fall through to web fallback
+    }
+  }
+
+  window.open(url, "_blank", "noopener,noreferrer");
+}
+
 // ── Network ────────────────────────────────────────────────────────────────────
 
 interface NetworkPlugin {

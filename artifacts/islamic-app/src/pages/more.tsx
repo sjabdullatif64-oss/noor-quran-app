@@ -7,7 +7,7 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import { useI18n } from "@/lib/i18n-context";
 import { RewardedAdButton } from "@/components/rewarded-ad-button";
-import { nativeShare } from "@/lib/capacitor";
+import { nativeShare, openUrl } from "@/lib/capacitor";
 
 const APP_SHARE_URL = "https://play.google.com/store/apps/details?id=com.sj64noorquran";
 const APP_SHARE_MSG =
@@ -185,7 +185,7 @@ export function More() {
 
         {/* Rate App */}
         <button
-          onClick={() => window.open("https://play.google.com/store/apps/details?id=com.sj64noorquran&reviewId=0", "_blank", "noopener,noreferrer")}
+          onClick={() => openUrl("https://play.google.com/store/apps/details?id=com.sj64noorquran&reviewId=0")}
           className="w-full flex items-center gap-4 p-5 rounded-2xl border border-amber-700/40 text-left transition-all active:scale-[0.98] hover:border-amber-600/60"
           style={{
             background: "linear-gradient(135deg, rgba(120,80,0,0.35) 0%, rgba(80,50,0,0.28) 100%)",

@@ -102,10 +102,11 @@ dependencies {
     implementation project(':capacitor-haptics')
     implementation project(':capacitor-network')
     implementation project(':capacitor-share')
+    implementation project(':capacitor-browser')
 
-    // AdMob — DISABLED: MobileAdsInitProvider ContentProvider crashes on startup
-    // (confirmed at commit 04dcb87 — re-enable only after basic launch is working)
-    // implementation project(':capacitor-community-admob')
+    // AdMob — re-enabled with safe init (MobileAdsInitProvider removed selectively
+    // in AndroidManifest.xml so AdMob.initialize() in native-init.ts controls init)
+    implementation project(':capacitor-community-admob')
 
     // UMP (User Messaging Platform / consent) — paired with AdMob
     // implementation 'com.google.android.ump:user-messaging-platform:4.0.0'

@@ -4,6 +4,7 @@ import {
   ChevronLeft, Shield, Wifi, HardDrive, Bell,
   MapPin, Volume2, DollarSign, Lock, Mail, BookOpen,
 } from "lucide-react";
+import { openUrl } from "@/lib/capacitor";
 
 const SECTIONS = [
   {
@@ -259,7 +260,7 @@ export function PrivacyPolicy() {
             {THIRD_PARTY.map((link) => (
               <button
                 key={link.name}
-                onClick={() => window.open(link.url, "_blank", "noopener,noreferrer")}
+                onClick={() => openUrl(link.url)}
                 className="w-full text-left flex justify-between items-center py-2.5"
               >
                 <span className="text-emerald-400 text-sm">{link.name}</span>
@@ -284,7 +285,7 @@ export function PrivacyPolicy() {
           </p>
           <p className="text-emerald-700 text-xs mb-3 font-medium">The Noor Quran Team</p>
           <button
-            onClick={() => window.open("mailto:easygroupjoin@gmail.com", "_blank")}
+            onClick={() => openUrl("mailto:easygroupjoin@gmail.com")}
             className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium text-emerald-300 border border-emerald-700/50 hover:border-emerald-500 transition-colors"
             style={{ background: "rgba(26,92,56,0.3)" }}
           >

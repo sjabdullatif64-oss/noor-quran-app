@@ -5,7 +5,7 @@ import {
   Calculator, ExternalLink,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { nativeShare } from "@/lib/capacitor";
+import { nativeShare, openUrl } from "@/lib/capacitor";
 
 const APP_SHARE_URL = "https://play.google.com/store/apps/details?id=com.sj64noorquran";
 const APP_SHARE_MSG =
@@ -306,11 +306,7 @@ export function About() {
           </div>
           <button
             onClick={() =>
-              window.open(
-                "https://play.google.com/store/apps/details?id=com.sj64.smartcalculator",
-                "_blank",
-                "noopener,noreferrer",
-              )
+              openUrl("https://play.google.com/store/apps/details?id=com.sj64.smartcalculator")
             }
             className="w-full flex items-center gap-4 p-5 rounded-2xl border border-emerald-800/40 text-left transition-all active:scale-[0.98] hover:border-emerald-600/50"
             style={{
@@ -364,7 +360,7 @@ export function About() {
             bg="rgba(251,191,36,0.08)"
             border="border-amber-900/40"
             onClick={() =>
-              window.open("https://play.google.com/store/apps/details?id=com.sj64noorquran&reviewId=0", "_blank", "noopener,noreferrer")
+              openUrl("https://play.google.com/store/apps/details?id=com.sj64noorquran&reviewId=0")
             }
             testId="button-about-rate"
           />
@@ -376,7 +372,7 @@ export function About() {
             bg="rgba(56,189,248,0.08)"
             border="border-sky-900/40"
             onClick={() =>
-              window.open("mailto:easygroupjoin@gmail.com?subject=Noor Quran Feedback", "_blank")
+              openUrl("mailto:easygroupjoin@gmail.com?subject=Noor Quran Feedback")
             }
             testId="button-about-contact"
           />
