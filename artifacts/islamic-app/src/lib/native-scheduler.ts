@@ -58,6 +58,39 @@ const CONTENT: Record<keyof AllNotifSettings, { title: string; body: string }> =
 /** Keys that fire weekly on Friday rather than daily. */
 const FRIDAY_KEYS: ReadonlySet<keyof AllNotifSettings> = new Set(["jummaReminder"]);
 
+/** Maps prayer reminder keys → Aladhan API field names stored in the azan cache. */
+const PRAYER_API_FIELD: Partial<Record<keyof AllNotifSettings, string>> = {
+  fajrReminder:    "Fajr",
+  dhuhrReminder:   "Dhuhr",
+  asrReminder:     "Asr",
+  maghribReminder: "Maghrib",
+  ishaReminder:    "Isha",
+};
+
+/**
+ * Reads today's actual prayer time from the Aladhan timings cache written by
+ * azan-scheduler.ts.  Returns null if the cache is absent or stale.
+ * Caller falls back to the user-configured static time when null is returned.
+ */
+function getPrayerTimeFromCache(
+  key: keyof AllNotifSettings,
+): { hour: number; minute: number } | null {
+  const apiField = PRAYER_API_FIELD[key];
+  if (!apiField) return null;
+  try {
+    const raw = localStorage.getItem("noor-azan-timings-v1");
+    if (!raw) return null;
+    const cache = JSON.parse(raw) as { today?: Record<string, string> | null };
+    const timeStr = cache.today?.[apiField]?.replace(/ \(.*\)/, "").trim();
+    if (!timeStr) return null;
+    const [h, m] = timeStr.split(":").map(Number);
+    if (!Number.isFinite(h) || !Number.isFinite(m)) return null;
+    return { hour: h, minute: m };
+  } catch {
+    return null;
+  }
+}
+
 // ── Public API ────────────────────────────────────────────────────────────────
 
 /**
@@ -99,7 +132,14 @@ export async function scheduleNativeNotifications(
       if (!setting.enabled) continue;
 
       const fridayOnly = FRIDAY_KEYS.has(key);
-      const [hour, minute] = setting.time.split(":").map(Number);
+      // For prayer reminders, prefer the actual API time from the Aladhan cache
+      // so notifications fire at the real prayer time, not a static default.
+      // Falls back to the user-configured time if the cache is empty.
+      const cachedTime = getPrayerTimeFromCache(key);
+      const { hour, minute } = cachedTime ?? (() => {
+        const [h, m] = (setting.time ?? "08:00").split(":").map(Number);
+        return { hour: Number.isFinite(h) ? h : 8, minute: Number.isFinite(m) ? m : 0 };
+      })();
       const { title, body } = CONTENT[key];
 
       // Use 'on' (calendar-field matching) instead of 'at' (exact timestamp).
