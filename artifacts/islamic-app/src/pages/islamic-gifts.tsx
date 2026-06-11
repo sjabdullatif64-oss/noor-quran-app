@@ -2,7 +2,7 @@ import { useState, useRef, useCallback } from "react";
 import { ChevronLeft, Gift, Share2, Download, X, Check } from "lucide-react";
 import { Link } from "wouter";
 import { useToast } from "@/hooks/use-toast";
-import { nativeShare } from "@/lib/capacitor";
+import { nativeShare, isNative } from "@/lib/capacitor";
 
 interface GiftCard {
   id: string;
@@ -227,8 +227,10 @@ export function IslamicGifts() {
     if (shared) {
       setShared(true);
       setTimeout(() => setShared(false), 2000);
-    } else {
-      // Clipboard fallback
+    } else if (!isNative()) {
+      // Clipboard fallback — web environments only.
+      // On native, nativeShare() returning false means the sheet was shown but
+      // dismissed — don't silently copy to clipboard in that case.
       try {
         await navigator.clipboard.writeText(`${text}\n\n${APP_SHARE_URL}`);
         setShared(true);
