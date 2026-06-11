@@ -103,9 +103,9 @@ dependencies {
     implementation project(':capacitor-network')
     implementation project(':capacitor-share')
 
-    // AdMob — MobileAdsInitProvider auto-init is suppressed via AndroidManifest
-    // tools:node="remove" on InitializationProvider; manual init in native-init.ts.
-    implementation project(':capacitor-community-admob')
+    // AdMob — DISABLED: MobileAdsInitProvider ContentProvider crashes on startup
+    // (confirmed at commit 04dcb87 — re-enable only after basic launch is working)
+    // implementation project(':capacitor-community-admob')
 
     // UMP (User Messaging Platform / consent) — paired with AdMob
     // implementation 'com.google.android.ump:user-messaging-platform:4.0.0'
