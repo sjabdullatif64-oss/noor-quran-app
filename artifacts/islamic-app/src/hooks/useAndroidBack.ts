@@ -1,22 +1,19 @@
 // Noor Quran — Android hardware back-button handling.
 //
 // Strategy:
-//  • Non-root page → window.history.back() (WebView handles it; Wouter
-//    reacts to the popstate event naturally — no fragile setLocation calls)
-//  • Root "/" first press  → "Press back again to exit" toast + 2 s timer
-//  • Root "/" second press within 2 s → App.exitApp()
+//  • Maintain an in-memory navigation stack.  Every Wouter location change
+//    (forward navigation) is pushed onto the stack.
+//  • On back press with stack depth > 1: pop current route, call Wouter
+//    navigate() to the previous route.  This is reliable in Capacitor because
+//    it drives routing through Wouter (not window.history.back(), which may
+//    not trigger Wouter's popstate listener in the Capacitor WebView).
+//  • On back press at stack depth 1 (root): double-back-to-exit with toast.
 //
-// Why window.history.back() instead of Wouter setLocation():
-//   setLocation() pushes a new history entry; back() pops the existing one.
-//   Popping is exactly what the Android back button should do.
+// Why NOT window.history.back():
+//   Capacitor's WebView sometimes does not fire popstate after history.back(),
+//   so Wouter never hears the navigation.  Explicit navigate() is 100% reliable.
 //
-// Why we ignore canGoBack from the Capacitor event:
-//   In a Wouter SPA the WebView always has history entries after any navigation,
-//   so canGoBack is virtually always true and cannot reliably signal "at root".
-//   We use window.history.length and the Wouter location instead.
-//
-// No-ops in the browser — App.addListener resolves but the event never fires
-// because there is no hardware back button.
+// No-ops in the browser — App.addListener resolves but the event never fires.
 
 import { useEffect, useRef } from "react";
 import { useLocation } from "wouter";
@@ -69,31 +66,48 @@ function showExitToast() {
 
 // ── Hook ──────────────────────────────────────────────────────────────────────
 export function useAndroidBack() {
-  const [location] = useLocation();
+  const [location, navigate] = useLocation();
+
+  // navStack: always starts with "/" at index 0.
+  // If the app opens directly on a sub-route, pre-seed "/" beneath it.
+  const navStack = useRef<string[]>(
+    location === "/" || location === "" ? ["/"] : ["/", location],
+  );
   const locationRef    = useRef(location);
+  const isBackNav      = useRef(false); // true while WE caused the navigate
   const backPressCount = useRef(0);
   const backTimer      = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // Keep ref in sync — the listener always reads the latest value without
-  // needing to re-register every time location changes.
-  useEffect(() => { locationRef.current = location; }, [location]);
+  // ── Track every forward navigation ────────────────────────────────────────
+  useEffect(() => {
+    if (isBackNav.current) {
+      // This change was triggered by our back press — don't push it again
+      isBackNav.current = false;
+    } else if (location !== locationRef.current) {
+      navStack.current.push(location);
+    }
+    locationRef.current = location;
+  }, [location]);
 
+  // ── Register the Capacitor back-button listener ────────────────────────────
   useEffect(() => {
     let handle: { remove: () => void } | null = null;
     let unmounted = false;
 
     App.addListener("backButton", () => {
-      const loc    = locationRef.current;
-      const isRoot = loc === "/" || loc === "";
+      const stack = navStack.current;
 
-      // ── Non-root: let the WebView pop its own history ─────────────────────
-      // Wouter automatically reacts to the resulting popstate event.
-      if (!isRoot) {
-        window.history.back();
+      if (stack.length > 1) {
+        // Pop the current route and navigate to the previous one
+        stack.pop();
+        const prev = stack[stack.length - 1] ?? "/";
+        isBackNav.current = true;
+        navigate(prev);
         return;
       }
 
-      // ── Root: double-back-to-exit ─────────────────────────────────────────
+      // Stack depth 1 — we are at (or have returned to) root.
+      // Double-back-to-exit pattern.
       backPressCount.current += 1;
 
       if (backPressCount.current === 1) {
@@ -121,5 +135,5 @@ export function useAndroidBack() {
       handle?.remove();
       if (backTimer.current) clearTimeout(backTimer.current);
     };
-  }, []); // intentionally empty — locationRef keeps everything fresh
+  }, [navigate]);
 }
