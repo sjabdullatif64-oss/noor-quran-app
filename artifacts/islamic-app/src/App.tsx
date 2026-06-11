@@ -7,7 +7,7 @@ import { I18nProvider } from "@/lib/i18n-context";
 import { NotificationPrompt } from "@/components/notification-prompt";
 import NotFound from "@/pages/not-found";
 import { Layout } from "@/components/layout";
-
+import { useAndroidBack } from "@/hooks/useAndroidBack";
 import { Home } from "@/pages/home";
 import { Quran } from "@/pages/quran";
 import { SurahReader } from "@/pages/surah";
@@ -37,6 +37,11 @@ const queryClient = new QueryClient({
     },
   },
 });
+
+function AndroidBackHandler() {
+  useAndroidBack();
+  return null;
+}
 
 function Router() {
   return (
@@ -73,9 +78,12 @@ function App() {
         <QueryClientProvider client={queryClient}>
           <TooltipProvider>
             <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, "")}>
+              <AndroidBackHandler />
+
               <Layout>
                 <Router />
               </Layout>
+
               <NotificationPrompt />
             </WouterRouter>
             <Toaster />

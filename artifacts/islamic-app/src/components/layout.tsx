@@ -8,7 +8,6 @@ import { useTheme } from "./theme-provider";
 import { Button } from "./ui/button";
 import { useI18n } from "@/lib/i18n-context";
 import { BannerAd, hideBanner, resumeBanner } from "@/components/banner-ad";
-import { useAndroidBack } from "@/hooks/useAndroidBack";
 
 const MORE_PATHS = [
   "/more", "/qibla", "/favorites", "/tasbeeh", "/settings", "/islamic-gifts",
@@ -23,8 +22,6 @@ export function Layout({ children }: { children: React.ReactNode }) {
   const [location] = useLocation();
   const { theme, setTheme } = useTheme();
   const { t } = useI18n();
-
-  useAndroidBack();
 
   const isDarkPage = [
     "/qibla", "/more", "/favorites", "/tasbeeh", "/settings", "/islamic-gifts",
