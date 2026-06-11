@@ -42,6 +42,7 @@ const KEY_SCRIPT_URL = "noor-adm-script-url";
 // NOTE: The Drive file MUST be shared as "Anyone with the link can view".
 export function resolveImageUrl(url: string): string {
   if (!url) return url;
+  if (url.startsWith("data:")) return url;   // gallery image — base64 data URL, already usable
 
   let fileId: string | null = null;
 
