@@ -9,6 +9,7 @@ package com.sj64noorquran;
   import androidx.core.view.WindowCompat;
   import androidx.core.view.WindowInsetsControllerCompat;
   import com.getcapacitor.BridgeActivity;
+  import com.capacitorjs.plugins.localnotifications.LocalNotificationsPlugin;
 
   public class MainActivity extends BridgeActivity {
 
@@ -18,9 +19,13 @@ package com.sj64noorquran;
           // installSplashScreen() MUST be called before super.onCreate() / setContentView().
           SplashScreen.installSplashScreen(this);
 
-          // ── Register custom local Capacitor plugins ────────────────────────────────
-          // @CapacitorPlugin auto-discovery applies only to npm-installed plugins.
-          // Project-local Kotlin plugins MUST be registered here BEFORE super.onCreate().
+          // ── Register Capacitor plugins ─────────────────────────────────────────────
+          // Explicit registration bypasses capacitor.plugins.json auto-discovery.
+          // cap sync regenerates capacitor.plugins.json from devDependencies on CI and
+          // can drop plugins; registerPlugin() here guarantees they are always loaded
+          // regardless of what cap sync does to capacitor.plugins.json.
+          registerPlugin(LocalNotificationsPlugin.class);
+          // Project-local Kotlin plugins also registered here (not in plugins.json).
           registerPlugin(NativeTTSPlugin.class);
 
           super.onCreate(savedInstanceState);

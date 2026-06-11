@@ -228,24 +228,10 @@ export async function requestPermission(): Promise<PermissionState> {
         return "default";
       }
     } catch (e) {
+      // Plugin bridge error — clear stale state and stay on EnableCard for retry.
       console.error("[Noor/Notif] LocalNotifications.requestPermissions() failed:", e);
-
-      const message =
-        e instanceof Error
-          ? e.message
-          : typeof e === "string"
-            ? e
-            : JSON.stringify(e);
-
-      alert(
-        "Notification permission request failed.\n\n" +
-        message +
-        "\n\nCheck AndroidManifest permission and Capacitor plugin sync."
-      );
-
       localStorage.removeItem("noor-cap-notif-perm");
       localStorage.removeItem(DENIAL_STORED_KEY);
-
       return "default";
     }
   }
