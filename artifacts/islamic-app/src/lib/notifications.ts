@@ -228,16 +228,21 @@ export async function requestPermission(): Promise<PermissionState> {
         return "default";
       }
     } catch (e) {
-      // Plugin bridge error (rare — e.g. POST_NOTIFICATIONS missing from manifest).
-      // Log for diagnostics but do not silently swallow — fall through to the
-      // web Notification API which may still trigger a permission prompt on some
-      // Capacitor/WebView configurations.
+      // Plugin bridge error.
+      // IMPORTANT: do NOT fall through to the web Notification API here.
+      // In a Capacitor WebView, Notification.requestPermission() silently
+      // returns "default" without showing any system dialog — the EnableCard
+      // stays frozen with zero feedback to the user (the original bug).
+      // Return "denied" without writing DENIAL_STORED_KEY so BlockedCard
+      // shows actionable instructions; tapping "Check Again" on BlockedCard
+      // calls getPermissionStateAsync() which, with no DENIAL_STORED_KEY set,
+      // returns "default" → EnableCard reappears for a retry.
       console.error("[Noor/Notif] LocalNotifications.requestPermissions() failed:", e);
-      // Fall through to web path below
+      return "denied";
     }
   }
 
-  // ── Web Notification API ────────────────────────────────────────────────────
+  // ── Web Notification API (browser / PWA only — never reached in Capacitor) ──
   if (!isNotificationAPISupported()) return "unsupported";
   if (Notification.permission === "granted") return "granted";
 
