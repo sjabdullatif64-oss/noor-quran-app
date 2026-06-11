@@ -166,10 +166,31 @@ export function mergeItems(
   deletedIds: string[],
   overrides:  OverrideEntry[],
 ): UpdateItem[] {
-  const dead     = new Set(deletedIds);
-  const ovrMap   = new Map(overrides.map((o) => [o.id, o.data]));
+  const dead    = new Set(deletedIds);
+  const ovrMap  = new Map(overrides.map((o) => [o.id, o.data]));
 
   const liveLocals = localItems.filter((it) => !dead.has(it.id));
+
+  // Build a lookup by normalised title so we can inherit image/video URLs
+  // from the matching Sheet item when the local copy was created without them.
+  // This ensures images keep showing even after the Sheet item is deduplicated.
+  const sheetByTitle = new Map<string, UpdateItem>(
+    sheetItems
+      .filter((it) => it.title)
+      .map((it) => [it.title.trim().toLowerCase(), it]),
+  );
+
+  // Enrich local items: if a local item is missing image_url or video_url,
+  // inherit the values from the title-matched Sheet item so images always show.
+  const enrichedLocals = liveLocals.map((local) => {
+    const key   = local.title?.trim().toLowerCase() ?? "";
+    const sheet = sheetByTitle.get(key);
+    if (!sheet) return local;
+    const image_url = local.image_url || sheet.image_url;
+    const video_url = local.video_url || sheet.video_url;
+    if (image_url === local.image_url && video_url === local.video_url) return local;
+    return { ...local, image_url, video_url };
+  });
 
   // IDs already covered by local items — exclude matching Sheet rows
   const localIds = new Set(liveLocals.map((it) => it.id));
@@ -179,18 +200,18 @@ export function mergeItems(
   const localTitles = new Set(
     liveLocals
       .map((it) => it.title?.trim().toLowerCase())
-      .filter(Boolean)
+      .filter(Boolean),
   );
 
   const filtered = sheetItems
     .filter((it) =>
       !dead.has(it.id) &&
       !localIds.has(it.id) &&
-      !localTitles.has(it.title?.trim().toLowerCase())
+      !localTitles.has(it.title?.trim().toLowerCase()),
     )
     .map((it) => { const o = ovrMap.get(it.id); return o ? { ...it, ...o } : it; });
 
-  return [...liveLocals, ...filtered];
+  return [...enrichedLocals, ...filtered];
 }
 
 // ── Google Apps Script sync (write) ───────────────────────────────────────────
