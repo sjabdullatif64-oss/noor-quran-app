@@ -3,6 +3,12 @@
 
 import { isCapacitorApp } from "./notifications";
 
+// Static imports — avoids the async dynamic-import gap that breaks Android's
+// user-gesture context requirement for share sheets and external browsers.
+// Capacitor plugins are safe to import in all environments; they no-op outside native.
+import { Share } from "@capacitor/share";
+import { Browser } from "@capacitor/browser";
+
 export { isCapacitorApp as isNative };
 
 // ── Type-safe Capacitor plugin access ────────────────────────────────────────
@@ -242,13 +248,11 @@ export interface ShareOptions {
  * Never throws — all errors are swallowed so call sites stay clean.
  */
 export async function nativeShare(opts: ShareOptions): Promise<boolean> {
-  // 1. Prefer @capacitor/share on native Android (non-blocking IPC bridge).
-  //    Must use the direct npm import — window.Capacitor.Plugins does NOT
-  //    expose @capacitor/share because it registers via its own module, not
-  //    the legacy plugin-registry window object.
+  // 1. Prefer @capacitor/share on native Android.
+  //    Using the statically-imported Share avoids any async gap that would
+  //    break Android's user-gesture requirement for the native share sheet.
   if (isCapacitorApp()) {
     try {
-      const { Share } = await import("@capacitor/share");
       await Share.share({
         title:       opts.title,
         text:        opts.text,
@@ -257,18 +261,15 @@ export async function nativeShare(opts: ShareOptions): Promise<boolean> {
       });
       return true;
     } catch (e) {
-      // On Android, user-cancel resolves (doesn't throw), so reaching here means
-      // a genuine plugin error (unavailable, misconfigured, etc.).
-      // Check anyway: if the error message looks like an explicit cancel, stop.
       const msg = String((e as {message?: string})?.message ?? "").toLowerCase();
       if (msg.includes("cancel") || msg.includes("abort") || msg.includes("dismiss")) {
         return false;
       }
-      // Plugin error — fall through to navigator.share below
+      // Plugin error — fall through to navigator.share
     }
   }
 
-  // 2. Web Share API (works on desktop Chrome, Safari, some Android browsers)
+  // 2. Web Share API (desktop Chrome, Safari, some Android browsers)
   if (typeof navigator !== "undefined" && navigator.share) {
     try {
       await navigator.share({ title: opts.title, text: opts.text, url: opts.url });
@@ -278,8 +279,8 @@ export async function nativeShare(opts: ShareOptions): Promise<boolean> {
     }
   }
 
-  // 3. Clipboard fallback
-  return false; // caller handles clipboard copy
+  // 3. Clipboard fallback — caller handles
+  return false;
 }
 
 // ── External URL opener ────────────────────────────────────────────────────────
@@ -305,7 +306,7 @@ export async function openUrl(url: string): Promise<void> {
 
   if (isCapacitorApp()) {
     try {
-      const { Browser } = await import("@capacitor/browser");
+      // Static Browser import — no async gap so Chrome Custom Tabs open reliably
       await Browser.open({ url });
       return;
     } catch {

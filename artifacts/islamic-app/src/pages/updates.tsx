@@ -280,7 +280,7 @@ const EMPTY_ITEM: Omit<UpdateItem, "id"> = {
 const CATEGORIES = ["Quran", "Prayer", "Event", "Feature", "Update", "General"];
 const STATUS_OPTIONS = ["active", "inactive"];
 
-const inputCls = "w-full px-3.5 py-2.5 rounded-xl text-white text-sm border border-emerald-900/40 outline-none focus:border-emerald-600 transition-colors";
+const inputCls = "w-full px-3.5 py-2.5 rounded-xl text-white text-sm border border-emerald-900/40 outline-none focus:border-emerald-600 transition-colors bg-white/[0.06] placeholder:text-emerald-800";
 
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
@@ -776,36 +776,48 @@ function AdminPanel({ sheetItems, onClose }: {
   async function handleSave(data: Omit<UpdateItem, "id">) {
     if (submitting) return; // guard against double-tap
     setSubmitting(true);
+
+    // Capture before any state resets (formState will be cleared below)
+    const capturedMode = formState.mode;
+    const capturedItem = formState.item;
+
     try {
-      if (formState.mode === "create") {
+      if (capturedMode === "create") {
         const tempId = generateId();
         const newItem: LocalAdminItem = {
           ...data, id: tempId, _local: true, _ts: Date.now(),
         };
-        // Optimistic: add to local list immediately
         persistLocal([newItem, ...localItems], deletedIds, overrides);
+        // ↓ Reset submitting + close form BEFORE the background Sheet sync so
+        //   re-opening the form while sync is in-flight doesn't see a locked button.
         setFormState({ open: false, mode: "create", item: null });
+        setSubmitting(false);
         toast({ title: "✓ Item saved locally", description: "Syncing to Sheet in background…" });
         await doSync("create", { item: { ...data, id: tempId } });
-      } else if (formState.item) {
-        const id = formState.item.id;
+      } else if (capturedItem) {
+        const id = capturedItem.id;
         const isLocal = localItems.some((it) => it.id === id);
         if (isLocal) {
-          const updated = localItems.map((it) => it.id === id ? { ...it, ...data } : it);
-          persistLocal(updated, deletedIds, overrides);
+          persistLocal(
+            localItems.map((it) => it.id === id ? { ...it, ...data } : it),
+            deletedIds, overrides,
+          );
         } else {
-          const newOvr = overrides.filter((o) => o.id !== id).concat({ id, data });
-          persistLocal(localItems, deletedIds, newOvr);
+          persistLocal(
+            localItems, deletedIds,
+            overrides.filter((o) => o.id !== id).concat({ id, data }),
+          );
         }
         setFormState({ open: false, mode: "create", item: null });
+        setSubmitting(false);
         toast({ title: "✓ Changes saved", description: "Syncing to Sheet in background…" });
-        await doSync("edit", { id, item: { ...data } });
+        await doSync("edit", { id: capturedItem.id, item: { ...data } });
       }
     } catch (err) {
       const msg = (err as Error)?.message ?? "Unknown error";
       toast({ title: "Save error", description: msg, variant: "destructive" });
     } finally {
-      setSubmitting(false);
+      setSubmitting(false); // safety reset — already false in the happy path
     }
   }
 

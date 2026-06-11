@@ -112,11 +112,14 @@ export function Notifications() {
     setRequesting(false);
     if (result === "granted") {
       toast({ title: "🌙 Notifications enabled!", description: "You'll receive Islamic reminders at your chosen times." });
+      // Schedule default-enabled notifications immediately after permission grant.
+      // saveNotifSettings persists the settings AND triggers native scheduling on Capacitor.
+      saveNotifSettings(settings);
     } else if (result === "denied") {
       toast({ title: "Permission denied", description: "Please enable notifications in your device or browser settings.", variant: "destructive" });
     }
     return result === "granted";
-  }, [supported, denied, toast]);
+  }, [supported, denied, toast, settings]);
 
   const checkPermissionNow = useCallback(async () => {
     const current = await getPermissionStateAsync();
