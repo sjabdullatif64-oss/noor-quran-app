@@ -65,6 +65,22 @@ export function useAndroidBack() {
     let unmounted = false;
 
     App.addListener("backButton", () => {
+      // ── TEMP DIAGNOSTIC (remove before release) ──────────────────
+      // Shows a red toast on-screen so we can confirm the event fires.
+      const _dbg = document.createElement("div");
+      _dbg.textContent = `⬅ backButton fired | ${locationRef.current}`;
+      Object.assign(_dbg.style, {
+        position: "fixed", top: "60px", left: "50%",
+        transform: "translateX(-50%)",
+        background: "rgba(180,0,0,0.92)", color: "#fff",
+        padding: "8px 18px", borderRadius: "8px",
+        fontSize: "13px", fontWeight: "600",
+        zIndex: "2147483647", pointerEvents: "none",
+      });
+      document.body.appendChild(_dbg);
+      setTimeout(() => _dbg.remove(), 2500);
+      // ── END TEMP DIAGNOSTIC ──────────────────────────────────────
+
       const current = locationRef.current || HOME_ROUTE;
       const stack = routeStackRef.current;
 

@@ -8,6 +8,7 @@ package com.sj64noorquran;
   import androidx.core.view.WindowCompat;
   import androidx.core.view.WindowInsetsControllerCompat;
   import com.getcapacitor.BridgeActivity;
+  import com.capacitorjs.plugins.app.AppPlugin;
   import com.capacitorjs.plugins.localnotifications.LocalNotificationsPlugin;
 
   public class MainActivity extends BridgeActivity {
@@ -23,6 +24,10 @@ package com.sj64noorquran;
           // cap sync regenerates capacitor.plugins.json from devDependencies on CI and
           // can drop plugins; registerPlugin() here guarantees they are always loaded
           // regardless of what cap sync does to capacitor.plugins.json.
+          // @capacitor/app — MUST be explicit: cap sync drops devDependency plugins
+          // from capacitor.plugins.json on CI, so AppPlugin.load() (which registers
+          // the OnBackPressedCallback) would never run → back button closes the app.
+          registerPlugin(AppPlugin.class);
           registerPlugin(LocalNotificationsPlugin.class);
           // Project-local Kotlin plugins also registered here (not in plugins.json).
           registerPlugin(NativeTTSPlugin.class);
