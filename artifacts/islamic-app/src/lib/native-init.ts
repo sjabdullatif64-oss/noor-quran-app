@@ -1,7 +1,8 @@
 // Noor Quran — Native app initialization
 // Called once at startup (from main.tsx) before React renders.
-// Sets up Status Bar, Notification Channel, AdMob SDK, reschedules
-// any active notifications, then hides the Splash Screen.
+// Sets up Status Bar, Notification Channel, reschedules active notifications,
+// then hides the Splash Screen.
+// AdMob is DISABLED — re-enable after confirming startup stability.
 // All calls are gated behind isNative() — zero effect in the browser.
 
 import { setupStatusBar, hideSplash, createNotifChannel, isNative } from "./capacitor";
@@ -21,9 +22,9 @@ export async function initNative(): Promise<void> {
     //    Android ignores notifications sent to a non-existent channel.
     await createNotifChannel();
 
-    // 3. AdMob SDK initialization — must happen before any ad is requested.
-    //    We call this here (startup) so the first banner loads without delay.
-    await initAdMob();
+    // 3. AdMob — DISABLED for startup stability testing.
+    //    Uncomment the line below once startup is confirmed stable:
+    // await initAdMob();
 
     // 4. Reschedule active notifications.
     //    On Android, local notifications are cleared after:
@@ -36,34 +37,30 @@ export async function initNative(): Promise<void> {
     // 5. Hide splash after the app has fully painted
     setTimeout(() => hideSplash(), 800);
   } catch {
-    // Never block app startup on native init failures —
-    // a missing AdMob config or flaky network must not crash the app.
+    // Never block app startup on native init failures.
   }
 }
 
-// ── AdMob initialization ──────────────────────────────────────────────────────
+// ── AdMob initialization — DISABLED ──────────────────────────────────────────
+// MobileAdsInitProvider was confirmed as the startup crash root cause.
+// This function is kept for when AdMob is re-enabled after stability testing.
 
-async function initAdMob(): Promise<void> {
-  try {
-    const { AdMob, MaxAdContentRating } = await import("@capacitor-community/admob");
-
-    await AdMob.initialize({
-      initializeForTesting: false,
-      maxAdContentRating: MaxAdContentRating.General,
-      tagForChildDirectedTreatment: false,
-      tagForUnderAgeOfConsent: false,
-    });
-
-    console.log("[AdMob] initialize() OK");
-
-    // Start the banner immediately after SDK init so it's ready before the
-    // first page renders. startBanner() is idempotent — safe to call again.
-    const { startBanner } = await import("../components/banner-ad");
-    await startBanner();
-  } catch (err) {
-    console.warn("[AdMob] initialize error:", err);
-  }
-}
+// async function initAdMob(): Promise<void> {
+//   try {
+//     const { AdMob, MaxAdContentRating } = await import("@capacitor-community/admob");
+//     await AdMob.initialize({
+//       initializeForTesting: false,
+//       maxAdContentRating: MaxAdContentRating.General,
+//       tagForChildDirectedTreatment: false,
+//       tagForUnderAgeOfConsent: false,
+//     });
+//     console.log("[AdMob] initialize() OK");
+//     const { startBanner } = await import("../components/banner-ad");
+//     await startBanner();
+//   } catch (err) {
+//     console.warn("[AdMob] initialize error:", err);
+//   }
+// }
 
 // ── Notification restore ──────────────────────────────────────────────────────
 
