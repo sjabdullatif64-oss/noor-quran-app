@@ -5,7 +5,7 @@ import {
   ChevronLeft, RefreshCw, Play, ExternalLink, Sparkles,
   Clock, Tag, ImageOff, Wifi, X, Eye, EyeOff, Plus,
   Pencil, Trash2, Shield, Save, ChevronDown, Copy,
-  CheckCircle, AlertCircle, Loader2, Settings2,
+  CheckCircle, AlertCircle, Loader2, Settings2, ImagePlus,
 } from "lucide-react";
 import {
   UpdateItem, LocalAdminItem, OverrideEntry,
@@ -303,11 +303,55 @@ function AdminFormModal({ item, mode, onSave, onClose, submitting = false }: {
   const [form, setForm] = useState<Omit<UpdateItem, "id">>(
     item ? { ...item } : { ...EMPTY_ITEM }
   );
-  const [imgPreview, setImgPreview] = useState(false);
+  const [imgPreview, setImgPreview] = useState(() => !!item?.image_url?.startsWith("data:"));
+  const fileInputRef    = useRef<HTMLInputElement>(null);
+  const [galleryLoading, setGalleryLoading] = useState(false);
   const resolved = resolveImageUrl(form.image_url);
 
   function set(k: keyof typeof form, v: string) {
     setForm((f) => ({ ...f, [k]: v }));
+  }
+
+  async function compressImageFile(file: File): Promise<string> {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = (ev) => {
+        const img = new Image();
+        img.onload = () => {
+          const MAX = 800;
+          let { width, height } = img;
+          if (width > MAX || height > MAX) {
+            if (width > height) { height = Math.round(height * MAX / width); width = MAX; }
+            else                { width  = Math.round(width  * MAX / height); height = MAX; }
+          }
+          const canvas = document.createElement("canvas");
+          canvas.width = width; canvas.height = height;
+          const ctx = canvas.getContext("2d");
+          if (!ctx) { reject(new Error("canvas unavailable")); return; }
+          ctx.drawImage(img, 0, 0, width, height);
+          resolve(canvas.toDataURL("image/jpeg", 0.75));
+        };
+        img.onerror = reject;
+        img.src = ev.target?.result as string;
+      };
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    });
+  }
+
+  async function onGalleryChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setGalleryLoading(true);
+    try {
+      const dataUrl = await compressImageFile(file);
+      set("image_url", dataUrl);
+      setImgPreview(true);
+    } catch { /* keep existing */ }
+    finally {
+      setGalleryLoading(false);
+      e.target.value = ""; // allow re-selecting the same file
+    }
   }
 
   function handleSave() {
@@ -339,26 +383,92 @@ function AdminFormModal({ item, mode, onSave, onClose, submitting = false }: {
             className={inputCls + " resize-none"} />
         </Field>
 
-        <Field label="Image URL (Google Drive or direct)">
-          <input value={form.image_url} onChange={(e) => { set("image_url", e.target.value); setImgPreview(false); }}
-            placeholder="https://drive.google.com/file/d/.../view" className={inputCls} />
+        <Field label="Image">
+          {/* Hidden file input — triggered by the button below */}
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="image/*"
+            className="hidden"
+            onChange={onGalleryChange}
+          />
+
+          {/* Gallery picker button */}
+          <button
+            type="button"
+            onClick={() => fileInputRef.current?.click()}
+            disabled={galleryLoading}
+            className="w-full py-3 rounded-xl text-sm font-semibold flex items-center justify-center gap-2 border border-emerald-800/50 transition-all active:scale-[0.98] disabled:opacity-50"
+            style={{
+              color: form.image_url?.startsWith("data:") ? "#86efac" : "#34d399",
+              background: "rgba(52,211,153,0.06)",
+            }}
+          >
+            {galleryLoading
+              ? <Loader2 className="w-4 h-4 animate-spin" />
+              : <ImagePlus className="w-4 h-4" />}
+            {galleryLoading
+              ? "Processing image…"
+              : form.image_url?.startsWith("data:")
+                ? "Change Gallery Image"
+                : "Choose Image from Gallery"}
+          </button>
+
+          {/* OR divider */}
+          <div className="flex items-center gap-2 my-2 px-1">
+            <div className="flex-1 h-px" style={{ background: "rgba(52,211,153,0.12)" }} />
+            <span className="text-emerald-900 text-[10px] font-bold uppercase tracking-wider">or paste URL</span>
+            <div className="flex-1 h-px" style={{ background: "rgba(52,211,153,0.12)" }} />
+          </div>
+
+          {/* URL fallback — hidden when a gallery image is active */}
+          <input
+            value={form.image_url?.startsWith("data:") ? "" : form.image_url}
+            onChange={(e) => { set("image_url", e.target.value); setImgPreview(false); }}
+            placeholder="https://drive.google.com/file/d/.../view"
+            className={inputCls}
+          />
+
+          {/* Preview */}
           {form.image_url && (
-            <button onClick={() => setImgPreview((v) => !v)}
-              className="mt-1.5 ml-1 flex items-center gap-1 text-xs text-emerald-600 hover:text-emerald-400">
-              <Eye className="w-3 h-3" />
-              {imgPreview ? "Hide preview" : "Preview image"}
-            </button>
-          )}
-          {imgPreview && form.image_url && (
-            <img src={resolved} alt="preview"
-              className="mt-2 w-full rounded-xl object-cover border border-emerald-900/40"
-              style={{ maxHeight: 160 }}
-              onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }} />
-          )}
-          {form.image_url && (
-            <p className="mt-1 ml-1 text-emerald-900 text-[10px] break-all">
-              Resolved: {resolveImageUrl(form.image_url)}
-            </p>
+            <>
+              {!form.image_url.startsWith("data:") && (
+                <button
+                  type="button"
+                  onClick={() => setImgPreview((v) => !v)}
+                  className="mt-1.5 ml-1 flex items-center gap-1 text-xs text-emerald-600 hover:text-emerald-400"
+                >
+                  <Eye className="w-3 h-3" />
+                  {imgPreview ? "Hide preview" : "Preview image"}
+                </button>
+              )}
+              {(imgPreview || form.image_url.startsWith("data:")) && (
+                <div className="mt-2 relative">
+                  <img
+                    src={form.image_url.startsWith("data:") ? form.image_url : resolved}
+                    alt="preview"
+                    className="w-full rounded-xl object-cover border border-emerald-900/40"
+                    style={{ maxHeight: 160 }}
+                    onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
+                  />
+                  {form.image_url.startsWith("data:") && (
+                    <button
+                      type="button"
+                      onClick={() => { set("image_url", ""); setImgPreview(false); }}
+                      className="absolute top-1.5 right-1.5 w-6 h-6 rounded-full flex items-center justify-center text-red-400 hover:text-red-300 transition-colors"
+                      style={{ background: "rgba(0,0,0,0.6)" }}
+                    >
+                      <X className="w-3.5 h-3.5" />
+                    </button>
+                  )}
+                </div>
+              )}
+              {form.image_url && !form.image_url.startsWith("data:") && (
+                <p className="mt-1 ml-1 text-emerald-900 text-[10px] break-all">
+                  Resolved: {resolveImageUrl(form.image_url)}
+                </p>
+              )}
+            </>
           )}
         </Field>
 

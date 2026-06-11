@@ -6,6 +6,7 @@ import {
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { nativeShare, openUrl } from "@/lib/capacitor";
+import { BUILD_INFO } from "@/lib/buildInfo";
 
 const APP_SHARE_URL = "https://play.google.com/store/apps/details?id=com.sj64noorquran";
 const APP_SHARE_MSG =
@@ -176,7 +177,13 @@ export function About() {
           className="mt-2 px-3 py-1 rounded-full text-xs font-medium text-emerald-400 border border-emerald-800/60"
           style={{ background: "rgba(52,211,153,0.07)" }}
         >
-          Version 1.0.0
+          Version {BUILD_INFO.version}
+        </span>
+        <span
+          className="mt-1 px-2 py-0.5 rounded-full text-[10px] font-mono text-emerald-800 border border-emerald-900/40"
+          style={{ background: "rgba(52,211,153,0.04)" }}
+        >
+          build {BUILD_INFO.commitSha}
         </span>
         <p className="text-emerald-700 text-sm mt-2 font-arabic tracking-wide">
           بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ
