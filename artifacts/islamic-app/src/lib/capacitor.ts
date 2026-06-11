@@ -260,12 +260,12 @@ export async function nativeShare(opts: ShareOptions): Promise<boolean> {
         dialogTitle: opts.dialogTitle ?? opts.title,
       });
       return true;
-    } catch {
-      // Share sheet was shown but user cancelled, OR a plugin error occurred.
-      // Either way: do NOT fall through to navigator.share on native — that
-      // path would incorrectly trigger the clipboard fallback in callers even
-      // when the native share sheet opened and the user simply dismissed it.
-      return false;
+    } catch (e) {
+      const msg = String((e as {message?: string})?.message ?? "").toLowerCase();
+      if (msg.includes("cancel") || msg.includes("abort") || msg.includes("dismiss")) {
+        return false;
+      }
+      // Plugin error — fall through to navigator.share
     }
   }
 
