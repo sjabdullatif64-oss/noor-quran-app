@@ -3,6 +3,7 @@
 import { useEffect, useRef } from "react";
 import { useLocation } from "wouter";
 import { App } from "@capacitor/app";
+import type { BackButtonListenerEvent } from "@capacitor/app";
 
 function showExitToast() {
   const TOAST_ID = "noor-exit-toast";
@@ -59,7 +60,7 @@ export function useAndroidBack() {
     let handle: { remove: () => void } | null = null;
     let unmounted = false;
 
-    const goBack = () => {
+    const goBack = (event?: BackButtonListenerEvent) => {
       const current = locationRef.current || "/";
 
       // If user is on a main bottom-tab route:
@@ -82,10 +83,13 @@ export function useAndroidBack() {
         return;
       }
 
-      // Any sub-screen goes back to previous browser history.
-      // Also fire popstate fallback so Wouter updates in Capacitor WebView.
-      if (window.history.length > 1) {
+      // Any sub-screen: go back in WebView history.
+      // Use canGoBack from the App plugin event (authoritative Android side answer).
+      // Fallback to window.history.length for safety in non-Capacitor environments.
+      const canGoBack = event?.canGoBack ?? (window.history.length > 1);
+      if (canGoBack) {
         window.history.back();
+        // Dispatch popstate so Wouter re-evaluates location in Capacitor WebView.
         setTimeout(() => {
           window.dispatchEvent(new PopStateEvent("popstate"));
         }, 50);

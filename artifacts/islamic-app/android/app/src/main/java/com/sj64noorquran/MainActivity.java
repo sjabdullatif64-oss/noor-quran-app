@@ -4,7 +4,6 @@ package com.sj64noorquran;
   import android.view.Window;
   import android.view.WindowManager;
   import android.graphics.Color;
-  import androidx.activity.OnBackPressedCallback;
   import androidx.core.splashscreen.SplashScreen;
   import androidx.core.view.WindowCompat;
   import androidx.core.view.WindowInsetsControllerCompat;
@@ -30,21 +29,15 @@ package com.sj64noorquran;
 
           super.onCreate(savedInstanceState);
 
-          // ── Back-button override ───────────────────────────────────────────────────
-          // Fires ONLY the JS "backButton" event; useAndroidBack.ts owns all navigation.
-          getOnBackPressedDispatcher().addCallback(this, new OnBackPressedCallback(true) {
-              @Override
-              public void handleOnBackPressed() {
-                  if (bridge != null) {
-                      boolean canGoBack = bridge.getWebView().canGoBack();
-                      bridge.triggerJSEvent(
-                          "backButton",
-                          "window",
-                          "{\"canGoBack\":" + canGoBack + "}"
-                      );
-                  }
-              }
-          });
+          // ── Back-button ────────────────────────────────────────────────────────────
+          // NO custom OnBackPressedCallback here.
+          // @capacitor/app AppPlugin registers its own OnBackPressedCallback during
+          // super.onCreate(). When JS has App.addListener("backButton") registered,
+          // AppPlugin.hasListeners() is true and it calls notifyListeners("backButton")
+          // so the JS handler in useAndroidBack.ts receives every back press.
+          // Adding a second callback here would win (last-registered = highest priority)
+          // and would fire bridge.triggerJSEvent() into a different channel that
+          // App.addListener() never sees — causing the button to appear fully blocked.
 
           Window window = getWindow();
 
