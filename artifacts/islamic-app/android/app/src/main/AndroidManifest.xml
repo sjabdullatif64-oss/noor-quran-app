@@ -53,11 +53,16 @@
             </intent-filter>
         </activity>
 
-        <!-- ── Crash reporter — plain Activity, NO theme ────────────────────── -->
-        <!-- Intentionally NO android:theme — CrashActivity builds its entire UI
-             in code so it works even if the app theme is the crash cause.
-             @android:style/Theme.Material was dropped because it crashes on some
-             custom Android ROMs (MIUI, One UI) when AppCompat is involved. -->
+        <!-- ── Startup log viewer ────────────────────────────────────────────
+             Plain Activity — NO theme — all UI built in code.
+             Shown automatically on the launch AFTER a crash.             -->
+        <activity
+            android:name=".LogViewerActivity"
+            android:exported="false"
+            android:excludeFromRecents="true"
+            android:configChanges="orientation|keyboardHidden|keyboard|screenSize|locale|smallestScreenSize|screenLayout|uiMode" />
+
+        <!-- ── Legacy crash reporter (kept for compatibility) ───────────────── -->
         <activity
             android:name=".CrashActivity"
             android:exported="false"
