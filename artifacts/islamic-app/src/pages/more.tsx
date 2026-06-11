@@ -31,7 +31,13 @@ export function More() {
       try {
         await navigator.clipboard.writeText(fullText);
         toast({ title: "Link copied!", description: "Share Noor Quran with your family & friends." });
-      } catch { /* clipboard unavailable — silent */ }
+      } catch {
+        toast({
+          title: "Share unavailable",
+          description: "Please try again or copy the Play Store link manually.",
+          variant: "destructive",
+        });
+      }
     }
   }
 
