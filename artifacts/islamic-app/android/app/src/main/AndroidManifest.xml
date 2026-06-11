@@ -2,44 +2,20 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools">
 
-    <!-- Network -->
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
-
-    <!-- Notifications (Android 13+) -->
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
     <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" />
     <uses-permission android:name="android.permission.USE_EXACT_ALARM" />
-
-    <!-- Location (prayer times & Qibla) -->
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
-
-    <!-- Audio -->
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK" />
     <uses-permission android:name="android.permission.WAKE_LOCK" />
-
-    <!-- Storage (Android ≤ 9) -->
-    <uses-permission
-        android:name="android.permission.WRITE_EXTERNAL_STORAGE"
-        android:maxSdkVersion="28" />
-    <uses-permission
-        android:name="android.permission.READ_EXTERNAL_STORAGE"
-        android:maxSdkVersion="32" />
-
-    <!-- Vibration -->
+    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" android:maxSdkVersion="28" />
+    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" android:maxSdkVersion="32" />
     <uses-permission android:name="android.permission.VIBRATE" />
-
-    <!-- AdMob / Google Mobile Ads — required on Android 12+ (API 31+).
-         tools:node="replace" is the force-inject directive: it tells the manifest
-         merger that THIS app-level declaration wins unconditionally, preventing
-         any library AAR (including play-services-ads itself) from suppressing or
-         removing the permission during the release manifest merge. -->
-    <uses-permission
-        android:name="com.google.android.gms.permission.AD_ID"
-        tools:node="replace" />
 
     <application
         android:name=".MainApplication"
@@ -54,17 +30,7 @@
         android:networkSecurityConfig="@xml/network_security_config"
         tools:targetApi="31">
 
-        <!-- AdMob App ID — REQUIRED by Google Mobile Ads SDK (crash without this) -->
-        <meta-data
-            android:name="com.google.android.gms.ads.APPLICATION_ID"
-            android:value="ca-app-pub-5050437827917011~3831002202" />
-
-        <!-- Opt out of Auto-Init to control initialization timing ourselves -->
-        <meta-data
-            android:name="com.google.android.gms.ads.DELAY_APP_MEASUREMENT_INIT"
-            android:value="true" />
-
-        <!-- Main Activity — fullscreen, portrait-locked -->
+        <!-- ── Main activity ──────────────────────────────────────────────── -->
         <activity
             android:name=".MainActivity"
             android:configChanges="orientation|keyboardHidden|keyboard|screenSize|locale|smallestScreenSize|screenLayout|uiMode"
@@ -72,14 +38,13 @@
             android:launchMode="singleTask"
             android:screenOrientation="portrait"
             android:windowSoftInputMode="adjustResize"
-            android:theme="@style/AppTheme.NoActionBar">
+            android:theme="@style/AppTheme.Launcher">
 
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
 
-            <!-- Deep links -->
             <intent-filter android:autoVerify="true">
                 <action android:name="android.intent.action.VIEW" />
                 <category android:name="android.intent.category.DEFAULT" />
@@ -88,7 +53,17 @@
             </intent-filter>
         </activity>
 
-        <!-- Notification receivers for Capacitor LocalNotifications -->
+        <!-- ── Crash reporter — plain Activity, NO theme ────────────────────── -->
+        <!-- Intentionally NO android:theme — CrashActivity builds its entire UI
+             in code so it works even if the app theme is the crash cause.
+             @android:style/Theme.Material was dropped because it crashes on some
+             custom Android ROMs (MIUI, One UI) when AppCompat is involved. -->
+        <activity
+            android:name=".CrashActivity"
+            android:exported="false"
+            android:excludeFromRecents="true" />
+
+        <!-- ── Notification receivers ────────────────────────────────────── -->
         <receiver
             android:name="com.capacitorjs.plugins.localnotifications.LocalNotificationRestoreReceiver"
             android:exported="false">
@@ -101,6 +76,49 @@
         <receiver
             android:name="com.capacitorjs.plugins.localnotifications.LocalNotificationReceiver"
             android:exported="false" />
+
+        <!-- ── Azan (prayer-time) alarm receivers & service ──────────────── -->
+
+        <!-- Fires when an AlarmManager exact alarm triggers -->
+        <receiver
+            android:name=".AzanReceiver"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="com.sj64noorquran.AZAN_TRIGGER" />
+            </intent-filter>
+        </receiver>
+
+        <!-- Re-schedules prayer alarms after device reboot -->
+        <receiver
+            android:name=".AzanBootReceiver"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
+                <action android:name="android.intent.action.REBOOT" />
+                <action android:name="android.intent.action.QUICKBOOT_POWERON" />
+            </intent-filter>
+        </receiver>
+
+        <!-- Foreground service that streams Azan audio -->
+        <service
+            android:name=".AzanService"
+            android:exported="false"
+            android:foregroundServiceType="mediaPlayback" />
+
+        <!-- ── Google AdMob App ID ───────────────────────────────────────── -->
+        <!-- Required by the AdMob SDK — must match the App ID in the AdMob dashboard. -->
+        <meta-data
+            android:name="com.google.android.gms.ads.APPLICATION_ID"
+            android:value="ca-app-pub-1852283311826362~9656395130" />
+
+        <!-- ── Remove ALL AndroidX Startup auto-initializers ─────────────── -->
+        <!-- This also disables MobileAdsInitProvider (AdMob auto-init) so that  -->
+        <!-- AdMob.initialize() in native-init.ts is the single init path.       -->
+        <provider
+            android:name="androidx.startup.InitializationProvider"
+            android:authorities="${applicationId}.androidx-startup"
+            android:exported="false"
+            tools:node="remove" />
 
     </application>
 </manifest>
