@@ -7,7 +7,7 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import { useI18n } from "@/lib/i18n-context";
 import { RewardedAdButton } from "@/components/rewarded-ad-button";
-import { nativeShare, openUrl, isNative } from "@/lib/capacitor";
+import { nativeShare, openUrl } from "@/lib/capacitor";
 
 const APP_SHARE_URL = "https://play.google.com/store/apps/details?id=com.sj64noorquran";
 const APP_SHARE_MSG =
@@ -25,10 +25,8 @@ export function More() {
       url:         APP_SHARE_URL,
       dialogTitle: "Share Noor Quran",
     });
-    if (!shared && !isNative()) {
-      // Clipboard fallback — web environments only.
-      // On native, nativeShare() returning false means the sheet was shown but
-      // dismissed by the user — don't silently copy to clipboard in that case.
+    if (!shared) {
+      // Clipboard fallback — only reached on environments with no share API
       const fullText = `${APP_SHARE_MSG}\n\n${APP_SHARE_URL}`;
       try {
         await navigator.clipboard.writeText(fullText);

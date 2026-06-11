@@ -152,17 +152,10 @@ export async function getPermissionStateAsync(): Promise<PermissionState> {
         return "granted";
       }
       if (result.display === "denied") {
-        // Guard 1: if we have a previously-confirmed "granted" in cache, trust it.
-        // checkPermissions() can transiently return "denied" on some Android
-        // versions even after the user explicitly granted — don't let a stale
-        // check wipe out a genuine grant or reset the UI back to "Enable".
-        const cached = localStorage.getItem("noor-cap-notif-perm");
-        if (cached === "granted") return "granted";
-
-        // Guard 2: On Android 13+, checkPermissions() returns "denied" BEFORE
-        // the user has ever been shown the POST_NOTIFICATIONS dialog.  Only cache
-        // "denied" if the user explicitly denied (DENIAL_STORED_KEY set by
-        // requestPermission()).  Otherwise treat as "default" so the Enable
+        // On Android 13+, checkPermissions() returns "denied" BEFORE the user
+        // has ever been shown the POST_NOTIFICATIONS dialog.  Only cache "denied"
+        // here if the user explicitly denied at some point (DENIAL_STORED_KEY set
+        // by requestPermission()).  Otherwise treat as "default" so the Enable
         // button remains visible.
         const explicitDenial = localStorage.getItem(DENIAL_STORED_KEY) === "1";
         if (explicitDenial) {
