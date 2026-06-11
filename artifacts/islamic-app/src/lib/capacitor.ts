@@ -248,25 +248,29 @@ export interface ShareOptions {
  * Never throws — all errors are swallowed so call sites stay clean.
  */
 export async function nativeShare(opts: ShareOptions): Promise<boolean> {
-  // 1. Prefer @capacitor/share on native Android.
-  //    Using the statically-imported Share avoids any async gap that would
-  //    break Android's user-gesture requirement for the native share sheet.
-  if (isCapacitorApp()) {
-    try {
-      await Share.share({
-        title:       opts.title,
-        text:        opts.text,
-        url:         opts.url,
-        dialogTitle: opts.dialogTitle ?? opts.title,
-      });
-      return true;
-    } catch (e) {
-      const msg = String((e as {message?: string})?.message ?? "").toLowerCase();
-      if (msg.includes("cancel") || msg.includes("abort") || msg.includes("dismiss")) {
-        return false;
-      }
-      // Plugin error — fall through to navigator.share
+  // 1. Always try @capacitor/share first — it opens the native Android share
+  //    sheet without blocking the JS thread.
+  //
+  //    The isCapacitorApp() guard is intentionally REMOVED here because:
+  //    • On some Capacitor builds the Capacitor bridge initialises slightly
+  //      after the first user interaction, causing isCapacitorApp() to return
+  //      false even when running inside the native APK.
+  //    • The Share plugin is statically imported and will throw a predictable
+  //      "not implemented" error on plain web — we catch that below.
+  try {
+    await Share.share({
+      title:       opts.title,
+      text:        opts.text,
+      url:         opts.url,
+      dialogTitle: opts.dialogTitle ?? opts.title,
+    });
+    return true;
+  } catch (e) {
+    const msg = String((e as {message?: string})?.message ?? "").toLowerCase();
+    if (msg.includes("cancel") || msg.includes("abort") || msg.includes("dismiss")) {
+      return false;
     }
+    // Plugin not available (web) or unexpected error — fall through to navigator.share
   }
 
   // 2. Web Share API (desktop Chrome, Safari, some Android browsers)
