@@ -3,23 +3,64 @@ package com.sj64noorquran;
 import android.app.Application;
 import android.app.NotificationChannel;
 import android.app.NotificationManager;
+import android.content.Context;
+import android.content.Intent;
+import android.content.SharedPreferences;
 import android.graphics.Color;
 import android.os.Build;
-import com.getcapacitor.BridgeActivity;
 
-/**
- * Application class — creates the notification channel on Android 8+ at startup
- * so notifications can be delivered before the user opens the app.
- */
 public class MainApplication extends Application {
 
     public static final String NOTIF_CHANNEL_ID   = "noor-islamic";
     public static final String NOTIF_CHANNEL_NAME = "Islamic Reminders";
 
+    // ── Earliest possible hook ────────────────────────────────────────────────
+
+    @Override
+    protected void attachBaseContext(Context base) {
+        super.attachBaseContext(base);
+        crumb(base, "A1_attachBaseContext_done");
+
+        Thread.UncaughtExceptionHandler prev = Thread.getDefaultUncaughtExceptionHandler();
+        Thread.setDefaultUncaughtExceptionHandler(new CrashHandler(base, prev));
+        crumb(base, "A2_crashHandler_installed");
+    }
+
     @Override
     public void onCreate() {
+        crumb(this, "A3_app_onCreate_start");
+
+        // ── Check for crash saved from the PREVIOUS launch ────────────────────
+        SharedPreferences prefs = getSharedPreferences("noor_debug", MODE_PRIVATE);
+        String savedCrash = prefs.getString("crash", null);
+        if (savedCrash != null) {
+            prefs.edit().remove("crash").apply();
+            Intent intent = new Intent(this, CrashActivity.class);
+            intent.putExtra("trace", savedCrash);
+            intent.addFlags(
+                Intent.FLAG_ACTIVITY_NEW_TASK |
+                Intent.FLAG_ACTIVITY_CLEAR_TASK |
+                Intent.FLAG_ACTIVITY_EXCLUDE_FROM_RECENTS
+            );
+            startActivity(intent);
+            return;
+        }
+
+        crumb(this, "A4_super_onCreate_start");
         super.onCreate();
+        crumb(this, "A5_super_onCreate_done");
+
         createNotificationChannel();
+        crumb(this, "A6_app_onCreate_done");
+    }
+
+    /** Write a startup breadcrumb — tells us exactly how far startup got. */
+    static void crumb(Context ctx, String tag) {
+        try {
+            ctx.getSharedPreferences("noor_debug", Context.MODE_PRIVATE)
+               .edit().putString("last_crumb", tag).commit();
+            android.util.Log.d("NoorCrash", "CRUMB: " + tag);
+        } catch (Throwable ignored) {}
     }
 
     private void createNotificationChannel() {
