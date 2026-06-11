@@ -200,13 +200,25 @@ export async function requestPermission(): Promise<PermissionState> {
     try {
       const { LocalNotifications } = await import("@capacitor/local-notifications");
       const result = await LocalNotifications.requestPermissions();
-      const state: PermissionState = result.display === "granted" ? "granted" : "denied";
-      localStorage.setItem("noor-cap-notif-perm", state);
-      if (state === "denied") localStorage.setItem(DENIAL_STORED_KEY, "1");
-      else                    localStorage.removeItem(DENIAL_STORED_KEY);
-      return state;
+      const display = result.display;
+      if (display === "granted") {
+        localStorage.setItem("noor-cap-notif-perm", "granted");
+        localStorage.removeItem(DENIAL_STORED_KEY);
+        return "granted";
+      } else if (display === "denied") {
+        localStorage.setItem("noor-cap-notif-perm", "denied");
+        localStorage.setItem(DENIAL_STORED_KEY, "1");
+        return "denied";
+      } else {
+        // "prompt" — dialog was shown but not yet answered (e.g. dismissed by
+        // tapping outside). Do NOT mark as denied; let the user try again.
+        return "default";
+      }
     } catch {
-      // Plugin unavailable — fall through to web Notification API
+      // Plugin error on native Capacitor — do NOT fall through to Web
+      // Notification API: it cannot trigger the Android runtime permission
+      // dialog and may silently return "default" or "denied".
+      return "default";
     }
   }
 

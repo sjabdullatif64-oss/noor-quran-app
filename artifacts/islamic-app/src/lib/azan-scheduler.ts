@@ -27,6 +27,50 @@ interface RawTimings {
   [k: string]: string;
 }
 
+// ── Prayer-time cache (offline fallback) ──────────────────────────────────────
+// Stores today+tomorrow timings keyed by date+location so offline launches
+// can still schedule alarms from the last successful fetch.
+
+const TIMINGS_CACHE_KEY = "noor-azan-timings-v1";
+
+interface TimingsCache {
+  todayDate:   string;         // "DD-MM-YYYY"
+  locationKey: string;         // city:city:country  OR  gps:lat,lng
+  today:       RawTimings | null;
+  tomorrow:    RawTimings | null;
+}
+
+function makeCacheKey(): string {
+  const src    = getLocationSource();
+  const coords = getGpsCoords();
+  if (src === "gps" && coords) {
+    return `gps:${coords.lat.toFixed(2)},${coords.lng.toFixed(2)}`;
+  }
+  return `city:${getCity()}:${getCountry()}`;
+}
+
+function loadTimingsCache(todayStr: string, locationKey: string): TimingsCache | null {
+  try {
+    const raw = localStorage.getItem(TIMINGS_CACHE_KEY);
+    if (!raw) return null;
+    const c = JSON.parse(raw) as TimingsCache;
+    return (c.todayDate === todayStr && c.locationKey === locationKey) ? c : null;
+  } catch {
+    return null;
+  }
+}
+
+function saveTimingsCache(
+  todayStr: string,
+  locationKey: string,
+  today: RawTimings | null,
+  tomorrow: RawTimings | null,
+): void {
+  try {
+    localStorage.setItem(TIMINGS_CACHE_KEY, JSON.stringify({ todayDate: todayStr, locationKey, today, tomorrow }));
+  } catch { /* storage full — skip */ }
+}
+
 interface AladhanDayData {
   timings: RawTimings;
 }
@@ -120,12 +164,31 @@ export async function scheduleAzan(): Promise<void> {
     const tomorrow = new Date(today);
     tomorrow.setDate(tomorrow.getDate() + 1);
 
-    const [todayTimings, tomorrowTimings] = await Promise.all([
+    const todayStr    = dateStr(today);
+    const locationKey = makeCacheKey();
+
+    // Fetch fresh timings from the network
+    const [netToday, netTomorrow] = await Promise.all([
       fetchTimings(today),
       fetchTimings(tomorrow),
     ]);
 
-    if (!todayTimings && !tomorrowTimings) return; // no internet / no location
+    let todayTimings    = netToday;
+    let tomorrowTimings = netTomorrow;
+
+    if (netToday || netTomorrow) {
+      // Persist for offline use
+      saveTimingsCache(todayStr, locationKey, netToday, netTomorrow);
+    } else {
+      // Network failed — try offline cache (valid for the same date+location)
+      const cached = loadTimingsCache(todayStr, locationKey);
+      if (cached) {
+        todayTimings    = cached.today;
+        tomorrowTimings = cached.tomorrow;
+      }
+    }
+
+    if (!todayTimings && !tomorrowTimings) return; // no internet / no cache / no location
 
     await azanCancelAll();
 

@@ -256,9 +256,15 @@ export async function nativeShare(opts: ShareOptions): Promise<boolean> {
         dialogTitle: opts.dialogTitle ?? opts.title,
       });
       return true;
-    } catch {
-      // AbortError = user cancelled — not an error we need to surface
-      return false;
+    } catch (e) {
+      // On Android, user-cancel resolves (doesn't throw), so reaching here means
+      // a genuine plugin error (unavailable, misconfigured, etc.).
+      // Check anyway: if the error message looks like an explicit cancel, stop.
+      const msg = String((e as {message?: string})?.message ?? "").toLowerCase();
+      if (msg.includes("cancel") || msg.includes("abort") || msg.includes("dismiss")) {
+        return false;
+      }
+      // Plugin error — fall through to navigator.share below
     }
   }
 

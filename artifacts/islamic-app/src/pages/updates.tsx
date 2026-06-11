@@ -13,6 +13,7 @@ import {
   generateId, mergeItems, scriptSync, APPS_SCRIPT_TEMPLATE,
 } from "@/lib/updates-data";
 import { openUrl as openExternalUrl } from "@/lib/capacitor";
+import { useToast } from "@/hooks/use-toast";
 
 // ── TanStack Query ─────────────────────────────────────────────────────────────
 function useSheetUpdates() {
@@ -292,11 +293,12 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
   );
 }
 
-function AdminFormModal({ item, mode, onSave, onClose }: {
+function AdminFormModal({ item, mode, onSave, onClose, submitting = false }: {
   item: UpdateItem | null;
   mode: "create" | "edit";
   onSave: (data: Omit<UpdateItem, "id">) => void;
   onClose: () => void;
+  submitting?: boolean;
 }) {
   const [form, setForm] = useState<Omit<UpdateItem, "id">>(
     item ? { ...item } : { ...EMPTY_ITEM }
@@ -411,13 +413,16 @@ function AdminFormModal({ item, mode, onSave, onClose }: {
         </Field>
       </div>
 
-      <div className="px-5 py-4 border-t border-emerald-900/40">
+      <div className="px-5 py-4 border-t border-emerald-900/40"
+        style={{ paddingBottom: "max(1rem, env(safe-area-inset-bottom))" }}>
         <button onClick={handleSave}
-          disabled={!form.title.trim()}
+          disabled={!form.title.trim() || submitting}
           className="w-full py-3.5 rounded-2xl font-bold text-white text-base flex items-center justify-center gap-2 transition-all active:scale-[0.98] disabled:opacity-40"
           style={{ background: "linear-gradient(135deg, #1a5c38 0%, #16a34a 100%)" }}>
-          <Save className="w-4 h-4" />
-          {mode === "create" ? "Create Item" : "Save Changes"}
+          {submitting
+            ? <Loader2 className="w-4 h-4 animate-spin" />
+            : <Save className="w-4 h-4" />}
+          {submitting ? "Saving…" : mode === "create" ? "Create Item" : "Save Changes"}
         </button>
       </div>
     </div>
@@ -593,10 +598,13 @@ function AdminPanel({ sheetItems, onClose }: {
   const [deletedIds,  setDeleted]   = useState<string[]>(() => adminData.loadDeleted());
   const [overrides,   setOverrides] = useState<OverrideEntry[]>(() => adminData.loadOverrides());
 
+  const { toast } = useToast();
+
   const [formState, setFormState] = useState<{
     open: boolean; mode: "create" | "edit"; item: UpdateItem | null;
   }>({ open: false, mode: "create", item: null });
 
+  const [submitting, setSubmitting] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState<string | null>(null);
   const [syncStatus, setSyncStatus] = useState<SyncStatus>("idle");
   const [syncError,  setSyncError]  = useState<string | undefined>(undefined);
@@ -654,42 +662,40 @@ function AdminPanel({ sheetItems, onClose }: {
     }
   }
 
-  // ── Create ───────────────────────────────────────────────────────────────────
+  // ── Create / Edit ────────────────────────────────────────────────────────────
   async function handleSave(data: Omit<UpdateItem, "id">) {
-    if (formState.mode === "create") {
-      const tempId = generateId();
-      const newItem: LocalAdminItem = {
-        ...data, id: tempId, _local: true, _ts: Date.now(),
-      };
-      // Optimistic: add to local list immediately
-      persistLocal([newItem, ...localItems], deletedIds, overrides);
-      setFormState({ open: false, mode: "create", item: null });
-      // Write to Sheet — include tempId so the Sheet row gets the same ID.
-      // When GViz eventually re-fetches, mergeItems will deduplicate by ID.
-      // The local placeholder is intentionally NOT cleared after sync — see
-      // refreshFromSheet() for the explanation.
-      await doSync(
-        "create",
-        { item: { ...data, id: tempId } },
-      );
-    } else if (formState.item) {
-      const id = formState.item.id;
-      const isLocal = localItems.some((it) => it.id === id);
-      if (isLocal) {
-        const updated = localItems.map((it) => it.id === id ? { ...it, ...data } : it);
-        persistLocal(updated, deletedIds, overrides);
-      } else {
-        // Optimistic override for Sheet items
-        const newOvr = overrides.filter((o) => o.id !== id).concat({ id, data });
-        persistLocal(localItems, deletedIds, newOvr);
+    if (submitting) return; // guard against double-tap
+    setSubmitting(true);
+    try {
+      if (formState.mode === "create") {
+        const tempId = generateId();
+        const newItem: LocalAdminItem = {
+          ...data, id: tempId, _local: true, _ts: Date.now(),
+        };
+        // Optimistic: add to local list immediately
+        persistLocal([newItem, ...localItems], deletedIds, overrides);
+        setFormState({ open: false, mode: "create", item: null });
+        toast({ title: "✓ Item saved locally", description: "Syncing to Sheet in background…" });
+        await doSync("create", { item: { ...data, id: tempId } });
+      } else if (formState.item) {
+        const id = formState.item.id;
+        const isLocal = localItems.some((it) => it.id === id);
+        if (isLocal) {
+          const updated = localItems.map((it) => it.id === id ? { ...it, ...data } : it);
+          persistLocal(updated, deletedIds, overrides);
+        } else {
+          const newOvr = overrides.filter((o) => o.id !== id).concat({ id, data });
+          persistLocal(localItems, deletedIds, newOvr);
+        }
+        setFormState({ open: false, mode: "create", item: null });
+        toast({ title: "✓ Changes saved", description: "Syncing to Sheet in background…" });
+        await doSync("edit", { id, item: { ...data } });
       }
-      setFormState({ open: false, mode: "create", item: null });
-      // Write edit to Sheet. The local override is intentionally kept — see
-      // refreshFromSheet() for the explanation.
-      await doSync(
-        "edit",
-        { id, item: { ...data } },
-      );
+    } catch (err) {
+      const msg = (err as Error)?.message ?? "Unknown error";
+      toast({ title: "Save error", description: msg, variant: "destructive" });
+    } finally {
+      setSubmitting(false);
     }
   }
 
@@ -845,6 +851,7 @@ function AdminPanel({ sheetItems, onClose }: {
           mode={formState.mode}
           onSave={handleSave}
           onClose={() => setFormState({ open: false, mode: "create", item: null })}
+          submitting={submitting}
         />
       )}
     </div>

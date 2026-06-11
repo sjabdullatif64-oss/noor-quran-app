@@ -59,6 +59,7 @@ export function Qibla() {
   const recentReadingsRef = useRef<number[]>([]);          // for stability check
   const listenerRef = useRef<((e: DeviceOrientationEvent) => void) | null>(null);
   const absoluteListenerRef = useRef<((e: Event) => void) | null>(null);
+  const lastAbsoluteMsRef = useRef(0);                     // timestamp of last absolute event
   const rafRef = useRef<number | null>(null);
   const pendingRotationRef = useRef<number | null>(null);   // batches RAF updates
 
@@ -136,15 +137,17 @@ export function Qibla() {
 
       // Prefer `deviceorientationabsolute` (Android Chrome) — gives true North
       const absoluteHandler = (e: Event) => {
+        lastAbsoluteMsRef.current = Date.now();
         handleOrientation(e as DeviceOrientationEvent);
       };
       window.addEventListener("deviceorientationabsolute", absoluteHandler, true);
       absoluteListenerRef.current = absoluteHandler;
 
-      // Also listen to regular deviceorientation (iOS uses this)
+      // Also listen to regular `deviceorientation` (iOS, and Android fallback).
+      // ONLY process this event if no absolute event has fired in the last 500 ms —
+      // prevents double-handling on Android where both events fire simultaneously.
       const handler = (e: DeviceOrientationEvent) => {
-        // Only use this if absolute event isn't firing
-        if (absoluteListenerRef.current) {
+        if (Date.now() - lastAbsoluteMsRef.current > 500) {
           handleOrientation(e);
         }
       };

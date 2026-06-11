@@ -7,7 +7,6 @@ import { I18nProvider } from "@/lib/i18n-context";
 import { NotificationPrompt } from "@/components/notification-prompt";
 import NotFound from "@/pages/not-found";
 import { Layout } from "@/components/layout";
-import { useAndroidBack } from "@/hooks/useAndroidBack";
 
 import { Home } from "@/pages/home";
 import { Quran } from "@/pages/quran";
@@ -40,9 +39,6 @@ const queryClient = new QueryClient({
 });
 
 function Router() {
-  // Android hardware back-button — no-ops in browser
-  useAndroidBack();
-
   return (
     <Switch>
       <Route path="/" component={Home} />
