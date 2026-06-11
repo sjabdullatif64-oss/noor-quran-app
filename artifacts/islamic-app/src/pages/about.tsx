@@ -5,7 +5,7 @@ import {
   Calculator, ExternalLink,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { nativeShare, openUrl } from "@/lib/capacitor";
+import { nativeShare, openUrl, isNative } from "@/lib/capacitor";
 import { BUILD_INFO } from "@/lib/buildInfo";
 
 const APP_SHARE_URL = "https://play.google.com/store/apps/details?id=com.sj64noorquran";
@@ -136,7 +136,10 @@ async function shareApp(toast: ReturnType<typeof useToast>["toast"]) {
     url:         APP_SHARE_URL,
     dialogTitle: "Share Noor Quran",
   });
-  if (!shared) {
+  if (!shared && !isNative()) {
+    // Clipboard fallback — web environments only.
+    // On native, nativeShare() returning false means the sheet was shown but
+    // dismissed — don't silently copy to clipboard in that case.
     const fullText = `${APP_SHARE_MSG}\n\n${APP_SHARE_URL}`;
     try {
       await navigator.clipboard.writeText(fullText);
