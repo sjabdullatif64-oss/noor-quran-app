@@ -1,69 +1,117 @@
 package com.sj64noorquran;
 
+import android.content.Intent;
+import android.content.SharedPreferences;
+import android.graphics.Color;
 import android.os.Bundle;
 import android.view.Window;
 import android.view.WindowManager;
-import android.graphics.Color;
 import androidx.activity.OnBackPressedCallback;
 import androidx.core.view.WindowCompat;
 import androidx.core.view.WindowInsetsControllerCompat;
 import com.getcapacitor.BridgeActivity;
 
+import java.io.PrintWriter;
+import java.io.StringWriter;
+
 public class MainActivity extends BridgeActivity {
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
-        // ── Register custom local Capacitor plugins ────────────────────────────────
-        // @CapacitorPlugin auto-discovery applies only to npm-installed plugins.
-        // Project-local Kotlin plugins MUST be registered here BEFORE super.onCreate().
+        MainApplication.crumb(this, "M1_mainActivity_onCreate_start");
+
+        // ── Register custom plugins BEFORE super.onCreate() ──────────────────
+        MainApplication.crumb(this, "M2_registerPlugin_NativeTTS");
         registerPlugin(NativeTTSPlugin.class);
 
-        super.onCreate(savedInstanceState);
+        MainApplication.crumb(this, "M3_registerPlugin_Azan");
+        registerPlugin(AzanPlugin.class);
 
-        // ── Back-button override ───────────────────────────────────────────────────
-        // Capacitor's BridgeActivity (via super) registers an OnBackPressedCallback
-        // that fires the JS "backButton" event AND ALSO calls webView.goBack() /
-        // finish().  That double-action means our JS window.history.back() + the
-        // native goBack() each pop one history entry, exhausting the stack and
-        // closing the app immediately on any non-root screen.
-        //
-        // Fix: add our own callback AFTER super.onCreate() — LIFO dispatch means
-        // ours runs first. We fire ONLY the JS event; useAndroidBack.ts owns every
-        // navigation decision. Capacitor's default callback is never reached.
+        // ── BridgeActivity.onCreate() — initialises Bridge, WebView, plugins ─
+        // This is where nearly all startup crashes occur.
+        // The try-catch logs the crash AND saves a breadcrumb for next launch.
+        MainApplication.crumb(this, "M4_super_onCreate_start");
+        try {
+            super.onCreate(savedInstanceState);
+        } catch (Throwable t) {
+            MainApplication.crumb(this, "M5_super_onCreate_CRASHED");
+            saveCrashAndShow(t, "BridgeActivity.onCreate()");
+            return;
+        }
+        MainApplication.crumb(this, "M6_super_onCreate_done");
+
+        // ── Back-button: navigate WebView history, then close app ────────────
         getOnBackPressedDispatcher().addCallback(this, new OnBackPressedCallback(true) {
             @Override
             public void handleOnBackPressed() {
-                if (bridge != null) {
-                    boolean canGoBack = bridge.getWebView().canGoBack();
-                    bridge.triggerJSEvent(
-                        "backButton",
-                        "window",
-                        "{\"canGoBack\":" + canGoBack + "}"
-                    );
+                if (bridge != null && bridge.getWebView() != null
+                        && bridge.getWebView().canGoBack()) {
+                    bridge.getWebView().goBack();
+                } else {
+                    finish();
                 }
-                // No super / default call — JS handler manages all navigation.
             }
         });
 
-        Window window = getWindow();
+        // ── System bar styling ────────────────────────────────────────────────
+        MainApplication.crumb(this, "M7_windowStyling_start");
+        try {
+            Window window = getWindow();
+            WindowCompat.setDecorFitsSystemWindows(window, false);
+            window.clearFlags(WindowManager.LayoutParams.FLAG_TRANSLUCENT_STATUS);
+            window.clearFlags(WindowManager.LayoutParams.FLAG_TRANSLUCENT_NAVIGATION);
+            window.addFlags(WindowManager.LayoutParams.FLAG_DRAWS_SYSTEM_BAR_BACKGROUNDS);
+            window.setStatusBarColor(Color.parseColor("#071a0e"));
+            window.setNavigationBarColor(Color.parseColor("#071a0e"));
 
-        // Full edge-to-edge: app draws behind status bar and nav bar
-        WindowCompat.setDecorFitsSystemWindows(window, false);
+            WindowInsetsControllerCompat controller =
+                new WindowInsetsControllerCompat(window, window.getDecorView());
+            controller.setAppearanceLightStatusBars(false);
+            controller.setAppearanceLightNavigationBars(false);
 
-        // Transparent system bars
-        window.clearFlags(WindowManager.LayoutParams.FLAG_TRANSLUCENT_STATUS);
-        window.clearFlags(WindowManager.LayoutParams.FLAG_TRANSLUCENT_NAVIGATION);
-        window.addFlags(WindowManager.LayoutParams.FLAG_DRAWS_SYSTEM_BAR_BACKGROUNDS);
-        window.setStatusBarColor(Color.parseColor("#071a0e"));
-        window.setNavigationBarColor(Color.parseColor("#071a0e"));
+            window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
+        } catch (Throwable t) {
+            MainApplication.crumb(this, "M8_windowStyling_CRASHED");
+            // non-critical — log but continue
+            android.util.Log.w("NoorCrash", "Window styling failed", t);
+        }
 
-        // White icons on dark background
-        WindowInsetsControllerCompat controller =
-            new WindowInsetsControllerCompat(window, window.getDecorView());
-        controller.setAppearanceLightStatusBars(false);
-        controller.setAppearanceLightNavigationBars(false);
+        MainApplication.crumb(this, "M9_onCreate_complete");
+    }
 
-        // Keep screen on during Quran recitation / prayer times
-        window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
+    private void saveCrashAndShow(Throwable t, String context) {
+        StringWriter sw = new StringWriter(4096);
+        t.printStackTrace(new PrintWriter(sw));
+
+        // Read last breadcrumb so we know how far startup got
+        String crumb = "(unknown)";
+        try {
+            crumb = getSharedPreferences("noor_debug", MODE_PRIVATE)
+                        .getString("last_crumb", "(none)");
+        } catch (Throwable ignored) {}
+
+        String report = "=== NOOR QURAN CRASH REPORT ===\n"
+            + "Context  : " + context + "\n"
+            + "Last crumb: " + crumb + "\n"
+            + "Exception: " + t.getClass().getName() + "\n"
+            + "Message  : " + t.getMessage() + "\n\n"
+            + "Full stack trace:\n"
+            + sw.toString();
+
+        // Persist synchronously — process dies immediately after
+        getSharedPreferences("noor_debug", MODE_PRIVATE)
+            .edit().putString("crash", report).commit();
+
+        // Write to external file so user can read via file manager
+        CrashHandler.writeCrashFile(this, report);
+
+        // Launch CrashActivity — it shows the report on-screen
+        try {
+            Intent intent = new Intent(this, CrashActivity.class);
+            intent.putExtra("trace", report);
+            intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP);
+            startActivity(intent);
+        } catch (Throwable ignored) {}
+        finish();
     }
 }
