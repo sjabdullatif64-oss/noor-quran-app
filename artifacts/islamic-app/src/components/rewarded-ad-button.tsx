@@ -2,8 +2,8 @@
  * RewardedAdButton — "Support Noor Quran" button with native AdMob Rewarded Interstitial Ad.
  *
  * AdMob App ID              : ca-app-pub-1852283311826362~9656395130  (AndroidManifest.xml)
- * Banner Ad Unit            : ca-app-pub-1852283311826362/7603275962
- * Rewarded Interstitial Unit: ca-app-pub-1852283311826362/1463723119
+ * Banner Ad Unit            : ca-app-pub-1852283311826362/1463723119
+ * Rewarded Interstitial Unit: ca-app-pub-1852283311826362/7603275962
  *
  * Flow (native APK with a real Rewarded unit):
  *  1. User taps button → prepareRewardVideoAd() starts loading
@@ -20,7 +20,7 @@ import { useToast } from "@/hooks/use-toast";
 import type { PluginListenerHandle } from "@capacitor/core";
 
 // ── Ad Unit IDs ───────────────────────────────────────────────────────────────
-const REWARDED_AD_UNIT = "ca-app-pub-1852283311826362/1463723119";
+const REWARDED_AD_UNIT = "ca-app-pub-1852283311826362/7603275962";
 
 const JAZAK_TITLE     = "JazakAllah Khair 🌙";
 const JAZAK_MSG       = "JazakAllah for supporting Noor Quran 🌙";
