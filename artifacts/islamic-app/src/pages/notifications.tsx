@@ -92,13 +92,17 @@ export function Notifications() {
 
   // Background poll — safety net for environments where focus/visibility events
   // may not fire reliably (some Android WebViews).
+  // Guard: skip the poll tick while a permission request is in flight so that
+  // a concurrent checkPermissions() bridge call does not interfere with the
+  // requestPermissions() call that is waiting for the Android system dialog.
   useEffect(() => {
     const id = setInterval(async () => {
+      if (requesting) return;
       const current = await getPermissionStateAsync();
       if (current !== permission) setPermission(current);
     }, 4000);
     return () => clearInterval(id);
-  }, [permission]);
+  }, [permission, requesting]);
 
   // ── Permission request ──────────────────────────────────────────────────────
   // MUST be called directly from a button onClick — never from setTimeout/useEffect.
