@@ -18,29 +18,62 @@ public class MainActivity extends BridgeActivity {
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
-        MainApplication.crumb(this, "M1_mainActivity_onCreate_start");
+        StartupLog.step("MAIN_ACTIVITY_ON_CREATE_START");
+
+        // ── Show log viewer if previous launch crashed ───────────────────────
+        // Check BEFORE doing anything that could crash (super, plugins, etc.)
+        SharedPreferences diag =
+            getSharedPreferences(MainApplication.PREF_DIAG, MODE_PRIVATE);
+        if (diag.contains(MainApplication.KEY_PREV_LOG)) {
+            StartupLog.step("MAIN_ACTIVITY_REDIRECTING_TO_LOG_VIEWER");
+            Intent i = new Intent(this, LogViewerActivity.class);
+            i.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
+            startActivity(i);
+            finish();
+            return;
+        }
 
         // ── Register custom plugins BEFORE super.onCreate() ──────────────────
-        MainApplication.crumb(this, "M2_registerPlugin_NativeTTS");
+        StartupLog.step("REGISTER_PLUGIN_NativeTTS_START");
         registerPlugin(NativeTTSPlugin.class);
+        StartupLog.step("REGISTER_PLUGIN_NativeTTS_DONE");
 
-        MainApplication.crumb(this, "M3_registerPlugin_Azan");
+        StartupLog.step("REGISTER_PLUGIN_AzanPlugin_START");
         registerPlugin(AzanPlugin.class);
+        StartupLog.step("REGISTER_PLUGIN_AzanPlugin_DONE");
 
-        // ── BridgeActivity.onCreate() — initialises Bridge, WebView, plugins ─
-        // This is where nearly all startup crashes occur.
-        // The try-catch logs the crash AND saves a breadcrumb for next launch.
-        MainApplication.crumb(this, "M4_super_onCreate_start");
+        // ── BridgeActivity.onCreate() ─────────────────────────────────────────
+        // Initialises Capacitor Bridge, WebView, and all plugins.
+        // Wrapped in try-catch: if this crashes we save the log and show it.
+        StartupLog.step("SUPER_ON_CREATE_START");
         try {
             super.onCreate(savedInstanceState);
         } catch (Throwable t) {
-            MainApplication.crumb(this, "M5_super_onCreate_CRASHED");
-            saveCrashAndShow(t, "BridgeActivity.onCreate()");
+            StringWriter sw = new StringWriter(4096);
+            t.printStackTrace(new PrintWriter(sw));
+            StartupLog.step("SUPER_ON_CREATE_CRASHED: "
+                + t.getClass().getSimpleName() + ": " + t.getMessage());
+            // Truncate stack to fit in one log line
+            String stack = sw.toString().replace("\n", " | ");
+            StartupLog.step("STACK: " + stack.substring(0, Math.min(800, stack.length())));
+
+            // Save log and redirect to LogViewerActivity
+            String log = StartupLog.read();
+            if (log != null) {
+                getSharedPreferences(MainApplication.PREF_DIAG, MODE_PRIVATE)
+                    .edit().putString(MainApplication.KEY_PREV_LOG, log).commit();
+            }
+            try {
+                Intent i = new Intent(this, LogViewerActivity.class);
+                i.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_NEW_TASK);
+                startActivity(i);
+            } catch (Throwable ignored) {}
+            finish();
             return;
         }
-        MainApplication.crumb(this, "M6_super_onCreate_done");
+        StartupLog.step("SUPER_ON_CREATE_DONE");
 
-        // ── Back-button: navigate WebView history, then close app ────────────
+        // ── Back button: WebView history → then close ─────────────────────────
         getOnBackPressedDispatcher().addCallback(this, new OnBackPressedCallback(true) {
             @Override
             public void handleOnBackPressed() {
@@ -54,64 +87,25 @@ public class MainActivity extends BridgeActivity {
         });
 
         // ── System bar styling ────────────────────────────────────────────────
-        MainApplication.crumb(this, "M7_windowStyling_start");
+        StartupLog.step("WINDOW_STYLING_START");
         try {
-            Window window = getWindow();
-            WindowCompat.setDecorFitsSystemWindows(window, false);
-            window.clearFlags(WindowManager.LayoutParams.FLAG_TRANSLUCENT_STATUS);
-            window.clearFlags(WindowManager.LayoutParams.FLAG_TRANSLUCENT_NAVIGATION);
-            window.addFlags(WindowManager.LayoutParams.FLAG_DRAWS_SYSTEM_BAR_BACKGROUNDS);
-            window.setStatusBarColor(Color.parseColor("#071a0e"));
-            window.setNavigationBarColor(Color.parseColor("#071a0e"));
-
-            WindowInsetsControllerCompat controller =
-                new WindowInsetsControllerCompat(window, window.getDecorView());
-            controller.setAppearanceLightStatusBars(false);
-            controller.setAppearanceLightNavigationBars(false);
-
-            window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
+            Window w = getWindow();
+            WindowCompat.setDecorFitsSystemWindows(w, false);
+            w.clearFlags(WindowManager.LayoutParams.FLAG_TRANSLUCENT_STATUS);
+            w.clearFlags(WindowManager.LayoutParams.FLAG_TRANSLUCENT_NAVIGATION);
+            w.addFlags(WindowManager.LayoutParams.FLAG_DRAWS_SYSTEM_BAR_BACKGROUNDS);
+            w.setStatusBarColor(Color.parseColor("#071a0e"));
+            w.setNavigationBarColor(Color.parseColor("#071a0e"));
+            WindowInsetsControllerCompat ctrl =
+                new WindowInsetsControllerCompat(w, w.getDecorView());
+            ctrl.setAppearanceLightStatusBars(false);
+            ctrl.setAppearanceLightNavigationBars(false);
+            w.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
         } catch (Throwable t) {
-            MainApplication.crumb(this, "M8_windowStyling_CRASHED");
-            // non-critical — log but continue
-            android.util.Log.w("NoorCrash", "Window styling failed", t);
+            StartupLog.step("WINDOW_STYLING_FAILED: " + t.getMessage());
         }
 
-        MainApplication.crumb(this, "M9_onCreate_complete");
-    }
-
-    private void saveCrashAndShow(Throwable t, String context) {
-        StringWriter sw = new StringWriter(4096);
-        t.printStackTrace(new PrintWriter(sw));
-
-        // Read last breadcrumb so we know how far startup got
-        String crumb = "(unknown)";
-        try {
-            crumb = getSharedPreferences("noor_debug", MODE_PRIVATE)
-                        .getString("last_crumb", "(none)");
-        } catch (Throwable ignored) {}
-
-        String report = "=== NOOR QURAN CRASH REPORT ===\n"
-            + "Context  : " + context + "\n"
-            + "Last crumb: " + crumb + "\n"
-            + "Exception: " + t.getClass().getName() + "\n"
-            + "Message  : " + t.getMessage() + "\n\n"
-            + "Full stack trace:\n"
-            + sw.toString();
-
-        // Persist synchronously — process dies immediately after
-        getSharedPreferences("noor_debug", MODE_PRIVATE)
-            .edit().putString("crash", report).commit();
-
-        // Write to external file so user can read via file manager
-        CrashHandler.writeCrashFile(this, report);
-
-        // Launch CrashActivity — it shows the report on-screen
-        try {
-            Intent intent = new Intent(this, CrashActivity.class);
-            intent.putExtra("trace", report);
-            intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP);
-            startActivity(intent);
-        } catch (Throwable ignored) {}
-        finish();
+        StartupLog.step("MAIN_ACTIVITY_ON_CREATE_COMPLETE");
+        StartupLog.markOK();
     }
 }
