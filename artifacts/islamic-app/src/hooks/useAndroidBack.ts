@@ -1,104 +1,117 @@
-// Noor Quran — Android hardware back-button handling.
-
 import { useEffect, useRef } from "react";
 import { useLocation } from "wouter";
 import { App } from "@capacitor/app";
-import type { BackButtonListenerEvent } from "@capacitor/app";
 
 function showExitToast() {
-  const TOAST_ID = "noor-exit-toast";
-  document.getElementById(TOAST_ID)?.remove();
+  const id = "noor-exit-toast";
+  document.getElementById(id)?.remove();
 
   const el = document.createElement("div");
-  el.id = TOAST_ID;
-  el.textContent = "Press back again to exit Noor Quran";
+  el.id = id;
+  el.textContent = "Press back again to exit";
 
   Object.assign(el.style, {
     position: "fixed",
-    bottom: "100px",
+    bottom: "95px",
     left: "50%",
     transform: "translateX(-50%)",
-    background: "rgba(7,26,14,0.96)",
-    color: "#86efac",
-    padding: "13px 24px",
+    background: "rgba(0,0,0,0.85)",
+    color: "#ffffff",
+    padding: "12px 18px",
     borderRadius: "999px",
     fontSize: "14px",
-    fontFamily: "system-ui, -apple-system, sans-serif",
-    fontWeight: "600",
     zIndex: "2147483647",
     pointerEvents: "none",
-    whiteSpace: "nowrap",
-    border: "1px solid rgba(26,92,56,0.7)",
-    boxShadow: "0 6px 32px rgba(0,0,0,0.7)",
-    opacity: "0",
-    transition: "opacity 0.18s ease",
   });
 
   document.body.appendChild(el);
-  requestAnimationFrame(() => {
-    el.style.opacity = "1";
-  });
-
-  setTimeout(() => {
-    el.style.opacity = "0";
-    el.addEventListener("transitionend", () => el.remove(), { once: true });
-  }, 2000);
+  setTimeout(() => el.remove(), 2000);
 }
 
-const ROOT_ROUTES = new Set(["/", "/quran", "/prayer-times", "/more"]);
+const HOME_ROUTE = "/";
 
 export function useAndroidBack() {
   const [location, navigate] = useLocation();
-  const locationRef = useRef(location);
-  const lastBackTime = useRef(0);
+
+  const locationRef = useRef(location || HOME_ROUTE);
+  const routeStackRef = useRef<string[]>([location || HOME_ROUTE]);
+  const isProgrammaticBackRef = useRef(false);
+  const lastBackRef = useRef(0);
 
   useEffect(() => {
-    locationRef.current = location;
+    const nextLocation = location || HOME_ROUTE;
+    const currentLocation = locationRef.current;
+
+    if (nextLocation === currentLocation) return;
+
+    if (isProgrammaticBackRef.current) {
+      isProgrammaticBackRef.current = false;
+      locationRef.current = nextLocation;
+      return;
+    }
+
+    const stack = routeStackRef.current;
+    const last = stack[stack.length - 1];
+
+    if (last !== nextLocation) {
+      stack.push(nextLocation);
+    }
+
+    locationRef.current = nextLocation;
   }, [location]);
 
   useEffect(() => {
     let handle: { remove: () => void } | null = null;
     let unmounted = false;
 
-    const goBack = (event?: BackButtonListenerEvent) => {
-      const current = locationRef.current || "/";
+    App.addListener("backButton", () => {
+      // ── TEMP DIAGNOSTIC (remove before release) ──────────────────
+      // Shows a red toast on-screen so we can confirm the event fires.
+      const _dbg = document.createElement("div");
+      _dbg.textContent = `⬅ backButton fired | ${locationRef.current}`;
+      Object.assign(_dbg.style, {
+        position: "fixed", top: "60px", left: "50%",
+        transform: "translateX(-50%)",
+        background: "rgba(180,0,0,0.92)", color: "#fff",
+        padding: "8px 18px", borderRadius: "8px",
+        fontSize: "13px", fontWeight: "600",
+        zIndex: "2147483647", pointerEvents: "none",
+      });
+      document.body.appendChild(_dbg);
+      setTimeout(() => _dbg.remove(), 2500);
+      // ── END TEMP DIAGNOSTIC ──────────────────────────────────────
 
-      // If user is on a main bottom-tab route:
-      // - If Home, double-back exits.
-      // - If Quran/Prayers/More, go Home first.
-      if (ROOT_ROUTES.has(current)) {
-        if (current !== "/") {
-          navigate("/");
-          return;
-        }
+      const current = locationRef.current || HOME_ROUTE;
+      const stack = routeStackRef.current;
 
-        const now = Date.now();
-        if (now - lastBackTime.current < 2000) {
-          App.exitApp().catch(() => {});
-          return;
-        }
+      if (current !== HOME_ROUTE && stack.length > 1) {
+        stack.pop();
 
-        lastBackTime.current = now;
-        showExitToast();
+        const previous = stack[stack.length - 1] || HOME_ROUTE;
+        isProgrammaticBackRef.current = true;
+        locationRef.current = previous;
+        navigate(previous);
         return;
       }
 
-      // Any sub-screen: go back in WebView history.
-      // Use canGoBack from the App plugin event (authoritative Android side answer).
-      // Fallback to window.history.length for safety in non-Capacitor environments.
-      const canGoBack = event?.canGoBack ?? (window.history.length > 1);
-      if (canGoBack) {
-        window.history.back();
-        // Dispatch popstate so Wouter re-evaluates location in Capacitor WebView.
-        setTimeout(() => {
-          window.dispatchEvent(new PopStateEvent("popstate"));
-        }, 50);
-      } else {
-        navigate("/");
+      if (current !== HOME_ROUTE) {
+        routeStackRef.current = [HOME_ROUTE];
+        isProgrammaticBackRef.current = true;
+        locationRef.current = HOME_ROUTE;
+        navigate(HOME_ROUTE);
+        return;
       }
-    };
 
-    App.addListener("backButton", goBack)
+      const now = Date.now();
+
+      if (now - lastBackRef.current < 2000) {
+        App.exitApp().catch(() => {});
+        return;
+      }
+
+      lastBackRef.current = now;
+      showExitToast();
+    })
       .then((h) => {
         if (unmounted) h.remove();
         else handle = h;
