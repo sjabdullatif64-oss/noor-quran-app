@@ -156,8 +156,10 @@ export function generateId(): string {
 }
 
 // Merge sheet items with local admin items, applying deletions + overrides.
-// Local items take priority: if a local item has the same ID as a Sheet item,
-// the Sheet item is excluded (prevents duplicates after create goes through).
+// Local items take priority: if a local item has the same ID OR the same
+// normalised title as a Sheet item, the Sheet item is excluded — this prevents
+// a locally-created item from appearing twice after it has been synced to the
+// Google Sheet and received a new Sheet-assigned ID.
 export function mergeItems(
   sheetItems: UpdateItem[],
   localItems: LocalAdminItem[],
@@ -166,12 +168,29 @@ export function mergeItems(
 ): UpdateItem[] {
   const dead     = new Set(deletedIds);
   const ovrMap   = new Map(overrides.map((o) => [o.id, o.data]));
+
+  const liveLocals = localItems.filter((it) => !dead.has(it.id));
+
   // IDs already covered by local items — exclude matching Sheet rows
-  const localIds = new Set(localItems.filter((it) => !dead.has(it.id)).map((it) => it.id));
+  const localIds = new Set(liveLocals.map((it) => it.id));
+
+  // Normalised titles of local items — catches post-sync duplicates where the
+  // Sheet assigns a new row-ID to an item that already exists locally.
+  const localTitles = new Set(
+    liveLocals
+      .map((it) => it.title?.trim().toLowerCase())
+      .filter(Boolean)
+  );
+
   const filtered = sheetItems
-    .filter((it) => !dead.has(it.id) && !localIds.has(it.id))
-    .map((it)    => { const o = ovrMap.get(it.id); return o ? { ...it, ...o } : it; });
-  return [...localItems.filter((it) => !dead.has(it.id)), ...filtered];
+    .filter((it) =>
+      !dead.has(it.id) &&
+      !localIds.has(it.id) &&
+      !localTitles.has(it.title?.trim().toLowerCase())
+    )
+    .map((it) => { const o = ovrMap.get(it.id); return o ? { ...it, ...o } : it; });
+
+  return [...liveLocals, ...filtered];
 }
 
 // ── Google Apps Script sync (write) ───────────────────────────────────────────

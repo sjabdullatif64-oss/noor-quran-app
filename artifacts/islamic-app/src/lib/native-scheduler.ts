@@ -74,6 +74,19 @@ export async function scheduleNativeNotifications(
   try {
     const { LocalNotifications } = await import("@capacitor/local-notifications");
 
+    // Ensure the notification channel exists (required on Android 8+ / API 26+).
+    // createChannel() is idempotent — safe to call on every reschedule.
+    // Without a channel, Android silently drops all notifications.
+    await LocalNotifications.createChannel({
+      id:          "noor-islamic",
+      name:        "Islamic Reminders",
+      description: "Prayer times, Quran ayah, and dhikr reminders",
+      importance:  4,
+      vibration:   true,
+      lights:      true,
+      lightColor:  "#1a5c38",
+    }).catch(() => { /* channel may already exist — ignore */ });
+
     // Cancel every known notification ID first (clean slate)
     const allIds = [...Object.values(NOTIF_IDS), 999].map((id) => ({ id }));
     await LocalNotifications.cancel({ notifications: allIds }).catch(() => {});

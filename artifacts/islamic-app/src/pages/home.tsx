@@ -7,13 +7,20 @@ import { Link } from "wouter";
 import { getCity, getCountry } from "@/lib/settings";
 import { useI18n } from "@/lib/i18n-context";
 import { useQuery } from "@tanstack/react-query";
-import { fetchUpdates, resolveImageUrl, UpdateItem } from "@/lib/updates-data";
+import { fetchUpdates, resolveImageUrl, UpdateItem, adminData, mergeItems } from "@/lib/updates-data";
 
 // ── Islamic Updates preview strip ─────────────────────────────────────────────
 function useUpdatesPreview() {
   return useQuery({
-    queryKey: ["updates"],
-    queryFn: fetchUpdates,
+    queryKey: ["updates-home"],
+    queryFn: async (): Promise<UpdateItem[]> => {
+      let sheetItems: UpdateItem[] = [];
+      try { sheetItems = await fetchUpdates(); } catch { /* offline — local items still show */ }
+      const localItems = adminData.loadLocal();
+      const deletedIds = adminData.loadDeleted();
+      const overrides  = adminData.loadOverrides();
+      return mergeItems(sheetItems, localItems, deletedIds, overrides);
+    },
     staleTime: 60_000,
     retry: 1,
   });

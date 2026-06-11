@@ -242,11 +242,14 @@ export interface ShareOptions {
  * Never throws — all errors are swallowed so call sites stay clean.
  */
 export async function nativeShare(opts: ShareOptions): Promise<boolean> {
-  // 1. Prefer @capacitor/share on native Android (non-blocking bridge)
-  const sharePlugin = getPlugin<SharePlugin>("Share");
-  if (sharePlugin) {
+  // 1. Prefer @capacitor/share on native Android (non-blocking IPC bridge).
+  //    Must use the direct npm import — window.Capacitor.Plugins does NOT
+  //    expose @capacitor/share because it registers via its own module, not
+  //    the legacy plugin-registry window object.
+  if (isCapacitorApp()) {
     try {
-      await sharePlugin.share({
+      const { Share } = await import("@capacitor/share");
+      await Share.share({
         title:       opts.title,
         text:        opts.text,
         url:         opts.url,

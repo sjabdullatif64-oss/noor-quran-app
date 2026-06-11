@@ -108,6 +108,46 @@ const PRESETS: DhikrPreset[] = [
     target: 33,
     color: "#86efac",
   },
+  {
+    id: "la-hawla",
+    arabic: "لَا حَوْلَ وَلَا قُوَّةَ إِلَّا بِاللّٰهِ",
+    transliteration: "La hawla wa la quwwata illa billah",
+    translation: "There is no might nor power except with Allah",
+    target: 100,
+    color: "#c084fc",
+  },
+  {
+    id: "ya-hayyu-ya-qayyum",
+    arabic: "يَا حَيُّ يَا قَيُّومُ",
+    transliteration: "Ya Hayyu Ya Qayyum",
+    translation: "O The Ever-Living, O The Self-Subsisting",
+    target: 100,
+    color: "#f97316",
+  },
+  {
+    id: "subhanallahil-adheem",
+    arabic: "سُبْحَانَ اللّٰهِ الْعَظِيمِ",
+    transliteration: "SubhanAllahil Adheem",
+    translation: "Glory be to Allah, The Magnificent",
+    target: 100,
+    color: "#2dd4bf",
+  },
+  {
+    id: "rabbighfirli",
+    arabic: "رَبِّ اغْفِرْ لِي وَتُبْ عَلَيَّ",
+    transliteration: "Rabbighfir li wa tub alaiyya",
+    translation: "My Lord, forgive me and accept my repentance",
+    target: 100,
+    color: "#fb7185",
+  },
+  {
+    id: "allahumma-anta-salam",
+    arabic: "اللّٰهُمَّ أَنْتَ السَّلَامُ وَمِنْكَ السَّلَامُ",
+    transliteration: "Allahumma Anta al-Salam wa minka al-Salam",
+    translation: "O Allah, You are Peace and from You comes peace",
+    target: 33,
+    color: "#a3e635",
+  },
 ];
 
 export function Tasbeeh() {
