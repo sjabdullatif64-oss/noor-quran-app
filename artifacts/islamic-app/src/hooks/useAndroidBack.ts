@@ -12,14 +12,19 @@ function showExitToast() {
 
   Object.assign(el.style, {
     position: "fixed",
-    bottom: "95px",
+    bottom: "100px",
     left: "50%",
     transform: "translateX(-50%)",
-    background: "rgba(0,0,0,0.85)",
-    color: "#ffffff",
-    padding: "12px 18px",
+    background: "rgba(26,92,56,0.95)",
+    color: "#86efac",
+    padding: "13px 24px",
     borderRadius: "999px",
     fontSize: "14px",
+    fontFamily: "system-ui, -apple-system, sans-serif",
+    fontWeight: "600",
+    whiteSpace: "nowrap",
+    border: "1px solid rgba(134,239,172,0.25)",
+    boxShadow: "0 4px 24px rgba(0,0,0,0.55)",
     zIndex: "2147483647",
     pointerEvents: "none",
   });
@@ -65,22 +70,6 @@ export function useAndroidBack() {
     let unmounted = false;
 
     App.addListener("backButton", () => {
-      // ── TEMP DIAGNOSTIC (remove before release) ──────────────────
-      // Shows a red toast on-screen so we can confirm the event fires.
-      const _dbg = document.createElement("div");
-      _dbg.textContent = `⬅ backButton fired | ${locationRef.current}`;
-      Object.assign(_dbg.style, {
-        position: "fixed", top: "60px", left: "50%",
-        transform: "translateX(-50%)",
-        background: "rgba(180,0,0,0.92)", color: "#fff",
-        padding: "8px 18px", borderRadius: "8px",
-        fontSize: "13px", fontWeight: "600",
-        zIndex: "2147483647", pointerEvents: "none",
-      });
-      document.body.appendChild(_dbg);
-      setTimeout(() => _dbg.remove(), 2500);
-      // ── END TEMP DIAGNOSTIC ──────────────────────────────────────
-
       const current = locationRef.current || HOME_ROUTE;
       const stack = routeStackRef.current;
 
