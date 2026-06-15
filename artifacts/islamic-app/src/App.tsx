@@ -27,6 +27,12 @@ import { Updates } from "@/pages/updates";
 import { Writing } from "@/pages/writing";
 import { IslamicCalendar } from "@/pages/islamic-calendar";
 import { AzanSettings } from "@/pages/azan-settings";
+import { Marketplace } from "@/pages/marketplace";
+import { SubmitProduct } from "@/pages/submit-product";
+import { Profile } from "@/pages/profile";
+import { AdminProducts } from "@/pages/admin-products";
+import { useEffect } from "react";
+import { ensureRegistered, doDailyCheckin, reportAyahComplete } from "@/lib/user";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -40,6 +46,28 @@ const queryClient = new QueryClient({
 
 function AndroidBackHandler() {
   useAndroidBack();
+  return null;
+}
+
+function NoorInitializer() {
+  useEffect(() => {
+    // Register device, then immediately attempt daily check-in
+    // ensureRegistered is idempotent — safe to call on every app open
+    ensureRegistered().then(() => {
+      doDailyCheckin().catch(() => {});
+    }).catch(() => {});
+
+    // Listen for ayah-both-done events dispatched by surah reader
+    // Awards 1 coin per unique ayah when BOTH arabic + translation audio complete
+    function onAyahDone(e: Event) {
+      const detail = (e as CustomEvent<{ surahNumber: number; ayahNumber: number }>).detail;
+      if (detail?.surahNumber && detail?.ayahNumber) {
+        reportAyahComplete(detail.surahNumber, detail.ayahNumber).catch(() => {});
+      }
+    }
+    window.addEventListener("noor:ayah-both-done", onAyahDone);
+    return () => window.removeEventListener("noor:ayah-both-done", onAyahDone);
+  }, []);
   return null;
 }
 
@@ -65,6 +93,10 @@ function Router() {
       <Route path="/writing" component={Writing} />
       <Route path="/islamic-calendar" component={IslamicCalendar} />
       <Route path="/azan-settings" component={AzanSettings} />
+      <Route path="/marketplace" component={Marketplace} />
+      <Route path="/submit-product" component={SubmitProduct} />
+      <Route path="/profile" component={Profile} />
+      <Route path="/admin-products" component={AdminProducts} />
 
       <Route component={NotFound} />
     </Switch>
@@ -79,6 +111,7 @@ function App() {
           <TooltipProvider>
             <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, "")}>
               <AndroidBackHandler />
+              <NoorInitializer />
 
               <Layout>
                 <Router />

@@ -2,7 +2,7 @@ import { useLocation } from "wouter";
 import {
   Navigation, Heart, Hash, Gift, Settings, Download, Bookmark,
   ChevronRight, Bell, Info, Share2, Sparkles, PenLine, Star,
-  CalendarDays,
+  CalendarDays, ShoppingBag, User, ShieldCheck, Coins,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useI18n } from "@/lib/i18n-context";
@@ -149,6 +149,33 @@ export function More() {
       href: "/about",
       accent: "text-emerald-300",
       iconBg: "rgba(52,211,153,0.12)",
+    },
+    {
+      id: "marketplace",
+      label: "Islamic Marketplace",
+      description: "Browse & post Islamic products",
+      icon: <ShoppingBag className="w-6 h-6" />,
+      href: "/marketplace",
+      accent: "text-cyan-300",
+      iconBg: "rgba(34,211,238,0.15)",
+    },
+    {
+      id: "profile",
+      label: "My Profile & Coins",
+      description: "Coins balance, referrals & products",
+      icon: <Coins className="w-6 h-6" />,
+      href: "/profile",
+      accent: "text-amber-300",
+      iconBg: "rgba(217,119,6,0.18)",
+    },
+    {
+      id: "admin-products",
+      label: "Admin Panel",
+      description: "Approve or reject product listings",
+      icon: <ShieldCheck className="w-6 h-6" />,
+      href: "/admin-products",
+      accent: "text-violet-300",
+      iconBg: "rgba(139,92,246,0.15)",
     },
   ];
 
