@@ -8,10 +8,11 @@ const router = Router();
 
 function generateReferralCode(deviceId: string): string {
   const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+  const hex = deviceId.replace(/-/g, "");
   let code = "";
   for (let i = 0; i < 8; i++) {
-    const idx = parseInt(deviceId.replace(/-/g, "").slice(i * 2, i * 2 + 2), 16) % chars.length;
-    code += chars[idx];
+    const byte = parseInt(hex.slice(i * 2, i * 2 + 2), 16);
+    code += chars[byte % chars.length];
   }
   return code;
 }

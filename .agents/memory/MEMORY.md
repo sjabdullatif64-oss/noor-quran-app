@@ -1,4 +1,5 @@
 - [Capacitor external URL opening](capacitor-external-links.md) — window.open(_blank) is broken in Capacitor WebView; use openUrl() helper from @/lib/capacitor (wraps @capacitor/browser)
+- [Coins & Marketplace system](coins-marketplace.md) — server-side coins, marketplace, admin, referrals; key gotchas on zod and DB exports
 - [AdMob safe init pattern](admob-safe-init.md) — selective MobileAdsInitProvider removal via tools:node="merge" preserves WorkManager; full InitializationProvider removal breaks it
 - [Git push and GitHub Actions in Replit](git-push-actions.md) — git push is blocked in bash AND code_execution network ops block event loop; use GitHub REST API (fetch) for workflow_dispatch; push happens via spawnSync in code_execution notebook
 - [Rebase conflict strategy](rebase-conflict-strategy.md) — when rebasing local fixes onto origin diagnostic commits, always keep HEAD (ours) for Android config files; diagnostic commits are older interim states

@@ -51,11 +51,11 @@ function AndroidBackHandler() {
 
 function NoorInitializer() {
   useEffect(() => {
-    // Register device on first launch — silent, fire-and-forget
-    ensureRegistered().catch(() => {});
-
-    // Daily check-in — runs once per app open; server deduplicates per calendar day
-    doDailyCheckin().catch(() => {});
+    // Register device, then immediately attempt daily check-in
+    // ensureRegistered is idempotent — safe to call on every app open
+    ensureRegistered().then(() => {
+      doDailyCheckin().catch(() => {});
+    }).catch(() => {});
 
     // Listen for ayah-both-done events dispatched by surah reader
     // Awards 1 coin per unique ayah when BOTH arabic + translation audio complete
