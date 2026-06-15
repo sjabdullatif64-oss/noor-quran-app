@@ -240,6 +240,18 @@ export function SurahReader() {
     if (!snap) { setPlayState("idle"); return; }
     const next = completedIndex + 1;
 
+    // Dispatch coin-reward event when BOTH Arabic + translation audio complete
+    if (audioModeRef.current === "both") {
+      const doneAyah = snap.ayahs[completedIndex];
+      if (doneAyah) {
+        window.dispatchEvent(
+          new CustomEvent("noor:ayah-both-done", {
+            detail: { surahNumber: number, ayahNumber: doneAyah.numberInSurah },
+          })
+        );
+      }
+    }
+
     if (mode === "continuous" && next < snap.ayahs.length) {
       // Smooth 400 ms silence between ayahs — natural breathing room
       setTimeout(() => {
