@@ -144,7 +144,7 @@ export function Quran() {
                     <BookOpen className="w-3.5 h-3.5 text-primary/60 shrink-0" />
                     <p className="font-semibold text-foreground text-sm">{juz.surahName}</p>
                   </div>
-                  <p className="text-xs text-muted-foreground mt-0.5">Starts at Ayah {juz.startAyah}</p>
+                  <p className="text-xs text-muted-foreground mt-0.5">Starts from Ayah {juz.startAyah}</p>
                 </div>
                 <p dir="rtl" className="font-arabic text-xl text-primary shrink-0">{juz.surahArabic}</p>
               </button>
