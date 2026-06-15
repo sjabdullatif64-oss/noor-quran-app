@@ -2,28 +2,32 @@ import React, { useEffect, useState } from "react";
 import { usePrayerTimes, useRandomAyah } from "@/lib/api";
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import { MapPin, Clock, BookOpen, ChevronRight, Star, Package } from "lucide-react";
-import { Link } from "wouter";
+import { MapPin, Clock, BookOpen, ChevronRight, Star, Package, ExternalLink } from "lucide-react";
+import { Link, useLocation } from "wouter";
 import { getCity, getCountry } from "@/lib/settings";
 import { useI18n } from "@/lib/i18n-context";
 import { useQuery } from "@tanstack/react-query";
 import { noorApi, type NoorProduct } from "@/lib/noor-api";
+import { openUrl } from "@/lib/capacitor";
 
 // ── Islamic Products preview strip ────────────────────────────────────────────
 function useProductsPreview() {
   return useQuery({
     queryKey: ["products-home"],
     queryFn: async (): Promise<{ featured: NoorProduct[]; rest: NoorProduct[] }> => {
+      const now = new Date().toISOString();
       const [f, a] = await Promise.all([
         noorApi.getFeaturedProducts(),
         noorApi.getProducts(),
       ]);
       const featuredIds = new Set(f.products.map((p) => p.id));
-      const now = new Date().toISOString();
+      // Client-side safety filter: hide anything past its expiry
       const activeFeatured = f.products.filter(
         (p) => p.promotionExpiry && p.promotionExpiry > now,
       );
-      const rest = a.products.filter((p) => !featuredIds.has(p.id));
+      const rest = a.products.filter(
+        (p) => !featuredIds.has(p.id) && (!p.promotionExpiry || p.promotionExpiry > now),
+      );
       return { featured: activeFeatured, rest };
     },
     staleTime: 60_000,
@@ -32,9 +36,11 @@ function useProductsPreview() {
 }
 
 function ProductPreviewCard({ p, featured }: { p: NoorProduct; featured?: boolean }) {
+  const [, navigate] = useLocation();
+  const hasLink = !!p.productLink?.trim();
+
   return (
-    <Link
-      href="/marketplace"
+    <div
       className="shrink-0 w-44 rounded-2xl overflow-hidden border flex flex-col transition-all active:scale-[0.97]"
       style={{
         background: featured
@@ -43,38 +49,54 @@ function ProductPreviewCard({ p, featured }: { p: NoorProduct; featured?: boolea
         borderColor: featured ? "rgba(180,120,0,0.4)" : "rgba(26,92,56,0.3)",
       }}
     >
-      {p.imageUrl ? (
-        <div className="w-full overflow-hidden bg-black/20" style={{ aspectRatio: "4/3" }}>
-          <img
-            src={p.imageUrl}
-            alt={p.title}
-            className="w-full h-full object-cover"
-            onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
-            loading="lazy"
-          />
-        </div>
-      ) : (
-        <div
-          className="w-full flex items-center justify-center"
-          style={{ aspectRatio: "4/3", background: "rgba(26,92,56,0.12)" }}
-        >
-          <Package className="w-8 h-8 text-emerald-900" />
-        </div>
-      )}
-      <div className="px-3 py-2.5 flex-1 flex flex-col justify-between gap-1">
-        {featured && (
-          <div className="flex items-center gap-1 text-amber-400 text-[10px] font-bold">
-            <Star className="w-3 h-3 fill-amber-400" /> Featured
+      {/* Card body — tap to open marketplace */}
+      <button
+        className="flex-1 flex flex-col text-left w-full"
+        onClick={() => navigate("/marketplace")}
+      >
+        {p.imageUrl ? (
+          <div className="w-full overflow-hidden bg-black/20" style={{ aspectRatio: "4/3" }}>
+            <img
+              src={p.imageUrl}
+              alt={p.title}
+              className="w-full h-full object-cover"
+              onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
+              loading="lazy"
+            />
+          </div>
+        ) : (
+          <div
+            className="w-full flex items-center justify-center"
+            style={{ aspectRatio: "4/3", background: "rgba(26,92,56,0.12)" }}
+          >
+            <Package className="w-8 h-8 text-emerald-900" />
           </div>
         )}
-        <p className="text-white text-xs font-semibold leading-snug line-clamp-2">{p.title}</p>
-        {p.category && (
-          <p className="text-emerald-700 text-[10px] font-medium capitalize">
-            {p.category.replace("_", " ")}
-          </p>
-        )}
-      </div>
-    </Link>
+        <div className="px-3 pt-2.5 pb-1 flex flex-col gap-1">
+          {featured && (
+            <div className="flex items-center gap-1 text-amber-400 text-[10px] font-bold">
+              <Star className="w-3 h-3 fill-amber-400" /> Featured
+            </div>
+          )}
+          <p className="text-white text-xs font-semibold leading-snug line-clamp-2">{p.title}</p>
+          {p.category && (
+            <p className="text-emerald-700 text-[10px] font-medium capitalize">
+              {p.category.replace("_", " ")}
+            </p>
+          )}
+        </div>
+      </button>
+
+      {/* Visit Product button — only when productLink exists */}
+      {hasLink && (
+        <button
+          onClick={() => openUrl(p.productLink!)}
+          className="mx-3 mb-2.5 flex items-center justify-center gap-1.5 py-1.5 rounded-lg bg-emerald-800/40 border border-emerald-700/40 text-emerald-300 text-[11px] font-semibold active:scale-95 transition-transform"
+        >
+          <ExternalLink className="w-3 h-3" /> Visit
+        </button>
+      )}
+    </div>
   );
 }
 

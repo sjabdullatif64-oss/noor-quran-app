@@ -1,9 +1,9 @@
 import { useState, useEffect } from "react";
 import { Link } from "wouter";
 import { noorApi, type NoorProduct } from "@/lib/noor-api";
-import { Star, Tag, Phone, Calendar, Loader2, Plus, Sparkles, Package } from "lucide-react";
+import { openUrl } from "@/lib/capacitor";
+import { Star, Tag, Phone, Calendar, Loader2, Plus, Sparkles, Package, ExternalLink } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 
 const CATEGORY_LABELS: Record<string, string> = {
   tasbeeh: "Tasbeeh",
@@ -29,6 +29,8 @@ function isActiveFeatured(p: NoorProduct) {
 }
 
 function ProductCard({ p, featured }: { p: NoorProduct; featured?: boolean }) {
+  const hasLink = !!p.productLink?.trim();
+
   return (
     <div
       className={`relative rounded-2xl border overflow-hidden transition-all ${
@@ -90,6 +92,16 @@ function ProductCard({ p, featured }: { p: NoorProduct; featured?: boolean }) {
             </span>
           )}
         </div>
+
+        {hasLink && (
+          <button
+            onClick={() => openUrl(p.productLink!)}
+            className="mt-1 w-full flex items-center justify-center gap-2 py-2 rounded-xl border border-emerald-700/50 bg-emerald-800/30 text-emerald-300 text-sm font-semibold active:scale-[0.97] transition-transform"
+          >
+            <ExternalLink className="w-4 h-4" />
+            Visit Product
+          </button>
+        )}
       </div>
     </div>
   );
