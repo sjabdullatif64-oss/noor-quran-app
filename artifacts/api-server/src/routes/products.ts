@@ -21,7 +21,7 @@ const submitSchema = z.object({
   contactInfo:   z.string().min(2).max(500),
   productLink:   z.string().url().optional().or(z.literal("")),
   category:      z.enum(["tasbeeh", "prayer_mat", "books", "attar", "courses", "other"]),
-  promotionType: z.enum(["none", "1day", "7day"]).default("none"),
+  promotionType: z.enum(["1day", "7day"]).default("1day"),
   submittedBy:   z.string().max(100).optional(),
 });
 
