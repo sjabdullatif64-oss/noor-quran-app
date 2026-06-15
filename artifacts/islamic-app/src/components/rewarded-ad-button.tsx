@@ -311,12 +311,12 @@ export function RewardedAdButton() {
           ) : isLoading ? (
             <>
               <p className="text-white text-sm font-semibold">🤍 Support Noor Quran</p>
-              <p className="text-pink-600 text-xs mt-0.5">Loading ad, please wait…</p>
+              <p className="text-pink-600 text-xs mt-0.5">Loading, please wait…</p>
             </>
           ) : (
             <>
               <p className="text-white text-sm font-semibold">🤍 Support Noor Quran</p>
-              <p className="text-pink-600 text-xs mt-0.5">Watch a short ad to support us</p>
+              <p className="text-pink-600 text-xs mt-0.5">Tap to support this free Islamic app</p>
             </>
           )}
         </div>
