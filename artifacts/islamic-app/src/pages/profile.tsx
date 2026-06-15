@@ -4,7 +4,7 @@ import { noorApi, type NoorUser, type CoinTransaction, type ProfileStats } from 
 import { getDeviceId, ensureRegistered, doDailyCheckin } from "@/lib/user";
 import {
   Coins, Users, TrendingUp, Package, Clock, Star, XCircle,
-  Loader2, Copy, CheckCheck, Zap,
+  Loader2, Copy, CheckCheck, Zap, Share2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
@@ -46,9 +46,7 @@ function TxRow({ tx }: { tx: CoinTransaction }) {
           {new Date(tx.createdAt).toLocaleDateString()}
         </p>
       </div>
-      <span
-        className={`font-bold text-sm shrink-0 ${isEarn ? "text-emerald-400" : "text-red-400"}`}
-      >
+      <span className={`font-bold text-sm shrink-0 ${isEarn ? "text-emerald-400" : "text-red-400"}`}>
         {isEarn ? "+" : ""}{tx.amount}
       </span>
     </div>
@@ -71,7 +69,7 @@ export function Profile() {
     (async () => {
       setLoading(true);
       const deviceId = getDeviceId();
-      let u = await ensureRegistered();
+      const u = await ensureRegistered();
       try {
         const profile = await noorApi.getProfile(deviceId);
         if (alive) {
@@ -100,13 +98,36 @@ export function Profile() {
     setCheckingIn(false);
   }
 
+  function getReferralLink(userId: string) {
+    return `${window.location.origin}/?ref=${userId}`;
+  }
+
   function copyReferral() {
-    if (!user?.referralCode) return;
-    navigator.clipboard.writeText(user.referralCode).then(() => {
+    if (!user) return;
+    const link = getReferralLink(user.id);
+    navigator.clipboard.writeText(link).then(() => {
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
-      toast({ title: "Referral code copied!", description: "Share it to earn 100 coins per referral." });
+      toast({ title: "Referral link copied!", description: "Share it to earn 100 coins per referral." });
     });
+  }
+
+  async function shareReferral() {
+    if (!user) return;
+    const link = getReferralLink(user.id);
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: "Join Noor Quran",
+          text: "Read the Quran with beautiful translations & earn rewards. Join using my referral link!",
+          url: link,
+        });
+      } catch {
+        // user cancelled share
+      }
+    } else {
+      copyReferral();
+    }
   }
 
   if (loading) {
@@ -133,7 +154,8 @@ export function Profile() {
       {user && (
         <>
           {/* Coins Balance Hero */}
-          <div className="mx-4 mb-5 rounded-2xl p-5 border border-amber-700/40"
+          <div
+            className="mx-4 mb-5 rounded-2xl p-5 border border-amber-700/40"
             style={{ background: "linear-gradient(135deg, rgba(120,80,0,0.3) 0%, rgba(60,30,0,0.3) 100%)" }}
           >
             <div className="flex items-center justify-between">
@@ -151,30 +173,44 @@ export function Profile() {
                 disabled={checkingIn}
                 className="bg-amber-700 hover:bg-amber-600 text-white rounded-xl px-4"
               >
-                {checkingIn ? <Loader2 className="w-4 h-4 animate-spin" /> : <><Zap className="w-4 h-4 mr-1" /> Check In</>}
+                {checkingIn
+                  ? <Loader2 className="w-4 h-4 animate-spin" />
+                  : <><Zap className="w-4 h-4 mr-1" /> Check In</>}
               </Button>
             </div>
           </div>
 
-          {/* Referral Code */}
-          <div className="mx-4 mb-5 rounded-2xl p-4 border border-emerald-800/40"
+          {/* Referral Link */}
+          <div
+            className="mx-4 mb-5 rounded-2xl p-4 border border-emerald-800/40"
             style={{ background: "rgba(10,30,18,0.6)" }}
           >
-            <p className="text-emerald-400 text-sm font-semibold mb-2">Your Referral Code</p>
-            <div className="flex items-center gap-3">
-              <code className="flex-1 font-mono text-lg font-bold text-emerald-300 bg-emerald-950/60 px-3 py-2 rounded-xl border border-emerald-900/50">
-                {user.referralCode}
-              </code>
+            <p className="text-emerald-400 text-sm font-semibold mb-1">Your Referral Link</p>
+            <p className="text-emerald-700 text-xs mb-3">
+              Earn <span className="text-amber-400 font-bold">100 coins</span> for each friend — they get{" "}
+              <span className="text-amber-400 font-bold">20 coins</span> too!
+            </p>
+            <div
+              className="font-mono text-xs text-emerald-300 bg-emerald-950/60 px-3 py-2 rounded-xl border border-emerald-900/50 mb-3 break-all"
+            >
+              {getReferralLink(user.id)}
+            </div>
+            <div className="flex gap-2">
               <button
                 onClick={copyReferral}
-                className="w-10 h-10 rounded-xl bg-emerald-800/40 border border-emerald-800/50 flex items-center justify-center text-emerald-400"
+                className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl bg-emerald-800/40 border border-emerald-800/50 text-emerald-300 text-sm font-medium"
               >
-                {copied ? <CheckCheck className="w-4 h-4 text-emerald-300" /> : <Copy className="w-4 h-4" />}
+                {copied
+                  ? <><CheckCheck className="w-4 h-4 text-emerald-300" /> Copied!</>
+                  : <><Copy className="w-4 h-4" /> Copy Link</>}
+              </button>
+              <button
+                onClick={shareReferral}
+                className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl bg-emerald-700/40 border border-emerald-700/50 text-emerald-200 text-sm font-medium"
+              >
+                <Share2 className="w-4 h-4" /> Share Link
               </button>
             </div>
-            <p className="text-emerald-700 text-xs mt-2">
-              Earn <span className="text-amber-400 font-bold">100 coins</span> for every friend you refer!
-            </p>
           </div>
 
           {/* Stats Grid */}
@@ -236,7 +272,8 @@ export function Profile() {
 
           {/* Recent Transactions */}
           {txs.length > 0 && (
-            <div className="mx-4 rounded-2xl border border-emerald-900/40 overflow-hidden"
+            <div
+              className="mx-4 rounded-2xl border border-emerald-900/40 overflow-hidden"
               style={{ background: "rgba(10,30,18,0.6)" }}
             >
               <p className="text-emerald-400 text-sm font-semibold px-4 py-3 border-b border-emerald-900/30">
@@ -249,15 +286,17 @@ export function Profile() {
           )}
 
           {/* Coin earning guide */}
-          <div className="mx-4 mt-5 rounded-2xl border border-emerald-900/40 p-4 space-y-2"
+          <div
+            className="mx-4 mt-5 rounded-2xl border border-emerald-900/40 p-4 space-y-2"
             style={{ background: "rgba(10,30,18,0.5)" }}
           >
             <p className="text-emerald-400 text-sm font-semibold">How to Earn Coins</p>
             <div className="space-y-1.5 text-xs text-emerald-600">
               <div className="flex justify-between"><span>🌙 New account bonus</span><span className="text-amber-400">+20 coins</span></div>
               <div className="flex justify-between"><span>📅 Daily check-in</span><span className="text-amber-400">+5 coins/day</span></div>
-              <div className="flex justify-between"><span>🎙 Listen to ayah (both audio)</span><span className="text-amber-400">+1 coin/ayah</span></div>
+              <div className="flex justify-between"><span>🎙 Listen to ayah (audio)</span><span className="text-amber-400">+1 coin/ayah</span></div>
               <div className="flex justify-between"><span>👥 Refer a friend</span><span className="text-amber-400">+100 coins</span></div>
+              <div className="flex justify-between"><span>🤝 Join via referral link</span><span className="text-amber-400">+20 coins</span></div>
             </div>
           </div>
         </>

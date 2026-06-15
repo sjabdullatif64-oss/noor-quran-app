@@ -1,58 +1,23 @@
 import { Router } from "express";
-import { db } from "@workspace/db";
-import { usersTable, coinTransactionsTable, ayahRewardsTable } from "@workspace/db";
-import { eq, and, gte, count } from "drizzle-orm";
 import { z } from "zod";
+import {
+  findUserByDeviceId,
+  addCoins,
+  hasCheckedInToday,
+  recordCheckin,
+  hasAyahReward,
+  countTodayAyahRewards,
+  addAyahReward,
+} from "../lib/sheets";
 
 const router = Router();
 
 const DAILY_CHECKIN_COINS = 5;
-const AYAH_REWARD_COINS = 1;
-const DAILY_AYAH_LIMIT = 20;
+const AYAH_REWARD_COINS   = 1;
+const DAILY_AYAH_LIMIT    = 20;
 
-function todayKey(): string {
+function todayStr(): string {
   return new Date().toISOString().slice(0, 10);
-}
-
-async function getUser(deviceId: string) {
-  const [user] = await db
-    .select()
-    .from(usersTable)
-    .where(eq(usersTable.deviceId, deviceId))
-    .limit(1);
-  return user ?? null;
-}
-
-async function addCoins(
-  userId: string,
-  amount: number,
-  reason: string,
-  eventKey?: string
-) {
-  const [user] = await db
-    .select({ coinsBalance: usersTable.coinsBalance, totalEarned: usersTable.totalCoinsEarned })
-    .from(usersTable)
-    .where(eq(usersTable.id, userId))
-    .limit(1);
-
-  if (!user) throw new Error("User not found");
-
-  const newBalance = Math.max(0, user.coinsBalance + amount);
-  const newEarned = amount > 0 ? user.totalEarned + amount : user.totalEarned;
-
-  await db
-    .update(usersTable)
-    .set({ coinsBalance: newBalance, totalCoinsEarned: newEarned })
-    .where(eq(usersTable.id, userId));
-
-  await db.insert(coinTransactionsTable).values({
-    userId,
-    amount,
-    reason,
-    eventKey: eventKey ?? null,
-  });
-
-  return newBalance;
 }
 
 router.post("/daily-checkin", async (req, res) => {
@@ -62,108 +27,69 @@ router.post("/daily-checkin", async (req, res) => {
     return;
   }
 
-  const user = await getUser(deviceId);
+  const user = await findUserByDeviceId(deviceId as string);
   if (!user) {
     res.status(404).json({ error: "User not found — register first" });
     return;
   }
 
-  const todayEventKey = `daily_checkin_${todayKey()}`;
-  const alreadyCheckedIn = await db
-    .select({ id: coinTransactionsTable.id })
-    .from(coinTransactionsTable)
-    .where(
-      and(
-        eq(coinTransactionsTable.userId, user.id),
-        eq(coinTransactionsTable.eventKey, todayEventKey)
-      )
-    )
-    .limit(1);
-
-  if (alreadyCheckedIn.length > 0) {
+  const today = todayStr();
+  const alreadyDone = await hasCheckedInToday(user.id, today);
+  if (alreadyDone) {
     res.json({ awarded: false, coins: user.coinsBalance, message: "Already checked in today" });
     return;
   }
 
+  await recordCheckin(user.id, today);
   const newBalance = await addCoins(
     user.id,
     DAILY_CHECKIN_COINS,
     "Daily check-in",
-    todayEventKey
+    `daily_checkin_${today}`,
   );
-
   res.json({ awarded: true, coins: newBalance, amount: DAILY_CHECKIN_COINS });
 });
 
-const ayahRewardSchema = z.object({
-  deviceId: z.string().min(1),
+const ayahSchema = z.object({
+  deviceId:    z.string().min(1),
   surahNumber: z.coerce.number().int().min(1).max(114),
-  ayahNumber: z.coerce.number().int().min(1),
+  ayahNumber:  z.coerce.number().int().min(1),
 });
 
 router.post("/ayah-reward", async (req, res) => {
-  const parsed = ayahRewardSchema.safeParse(req.body);
+  const parsed = ayahSchema.safeParse(req.body);
   if (!parsed.success) {
     res.status(400).json({ error: "Invalid request" });
     return;
   }
   const { deviceId, surahNumber, ayahNumber } = parsed.data;
 
-  const user = await getUser(deviceId);
+  const user = await findUserByDeviceId(deviceId);
   if (!user) {
     res.status(404).json({ error: "User not found" });
     return;
   }
 
-  const alreadyRewarded = await db
-    .select({ id: ayahRewardsTable.id })
-    .from(ayahRewardsTable)
-    .where(
-      and(
-        eq(ayahRewardsTable.userId, user.id),
-        eq(ayahRewardsTable.surahNumber, surahNumber),
-        eq(ayahRewardsTable.ayahNumber, ayahNumber)
-      )
-    )
-    .limit(1);
-
-  if (alreadyRewarded.length > 0) {
+  const already = await hasAyahReward(user.id, surahNumber, ayahNumber);
+  if (already) {
     res.json({ awarded: false, coins: user.coinsBalance, message: "Ayah already rewarded" });
     return;
   }
 
-  // Enforce 20-ayah-per-calendar-day reward cap
-  const todayStart = new Date();
-  todayStart.setHours(0, 0, 0, 0);
-
-  const [{ todayCount }] = await db
-    .select({ todayCount: count() })
-    .from(ayahRewardsTable)
-    .where(
-      and(
-        eq(ayahRewardsTable.userId, user.id),
-        gte(ayahRewardsTable.createdAt, todayStart)
-      )
-    );
-
-  if (Number(todayCount) >= DAILY_AYAH_LIMIT) {
+  const today = todayStr();
+  const todayCount = await countTodayAyahRewards(user.id, today);
+  if (todayCount >= DAILY_AYAH_LIMIT) {
     res.json({ awarded: false, coins: user.coinsBalance, message: "Daily ayah reward limit reached (20/day)" });
     return;
   }
 
-  await db.insert(ayahRewardsTable).values({
-    userId: user.id,
-    surahNumber,
-    ayahNumber,
-  });
-
+  await addAyahReward(user.id, surahNumber, ayahNumber, today);
   const newBalance = await addCoins(
     user.id,
     AYAH_REWARD_COINS,
     `Quran listening reward — ${surahNumber}:${ayahNumber}`,
-    `ayah_${surahNumber}_${ayahNumber}`
+    `ayah_${surahNumber}_${ayahNumber}`,
   );
-
   res.json({ awarded: true, coins: newBalance, amount: AYAH_REWARD_COINS });
 });
 

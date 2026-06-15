@@ -19,17 +19,27 @@ export function getDeviceId(): string {
   return id;
 }
 
+function getReferredByIdFromUrl(): string | undefined {
+  try {
+    const params = new URLSearchParams(window.location.search);
+    const ref = params.get("ref");
+    if (ref && /^[0-9a-f-]{36}$/.test(ref)) return ref;
+  } catch {
+    // not in a browser context
+  }
+  return undefined;
+}
+
 let _registrationPromise: Promise<NoorUser | null> | null = null;
 
-export async function ensureRegistered(
-  referralCode?: string
-): Promise<NoorUser | null> {
+export async function ensureRegistered(): Promise<NoorUser | null> {
   if (_registrationPromise) return _registrationPromise;
 
   _registrationPromise = (async () => {
     const deviceId = getDeviceId();
+    const referredById = getReferredByIdFromUrl();
     try {
-      const { user } = await noorApi.register(deviceId, referralCode);
+      const { user } = await noorApi.register(deviceId, referredById);
       return user;
     } catch (err) {
       console.warn("[Noor] User registration failed:", err);
@@ -67,7 +77,7 @@ export async function doDailyCheckin(): Promise<{
 
 export async function reportAyahComplete(
   surahNumber: number,
-  ayahNumber: number
+  ayahNumber: number,
 ): Promise<void> {
   const deviceId = getDeviceId();
   try {
