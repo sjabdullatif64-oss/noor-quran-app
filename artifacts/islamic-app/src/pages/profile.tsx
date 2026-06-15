@@ -2,7 +2,6 @@ import { useState, useEffect } from "react";
 import { useLocation } from "wouter";
 import { noorApi, type NoorUser, type CoinTransaction, type ProfileStats, type NoorProduct } from "@/lib/noor-api";
 import { getDeviceId, ensureRegistered, doDailyCheckin } from "@/lib/user";
-import { Capacitor } from "@capacitor/core";
 import {
   Coins, Users, TrendingUp, Package, Clock, Star, XCircle,
   Loader2, Copy, CheckCheck, Zap, Share2, RefreshCw,
@@ -168,14 +167,8 @@ export function Profile() {
     setCheckingIn(false);
   }
 
-  const APP_DOMAIN = "https://noor-quran-app.replit.app";
   function getReferralLink(userId: string) {
-    const origin = Capacitor.isNativePlatform()
-      ? APP_DOMAIN
-      : (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1"
-        ? APP_DOMAIN
-        : window.location.origin);
-    return `${origin}/?ref=${userId}`;
+    return `https://noor-quran-app.replit.app/?ref=${userId}`;
   }
 
   function copyReferral() {
