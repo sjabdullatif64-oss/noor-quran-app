@@ -1,6 +1,7 @@
 - [Capacitor external URL opening](capacitor-external-links.md) — window.open(_blank) is broken in Capacitor WebView; use openUrl() helper from @/lib/capacitor (wraps @capacitor/browser)
 - [Coins & Marketplace system](coins-marketplace.md) — server-side coins, marketplace, admin, referrals; key gotchas on zod and DB exports
 - [AdMob safe init pattern](admob-safe-init.md) — selective MobileAdsInitProvider removal via tools:node="merge" preserves WorkManager; full InitializationProvider removal breaks it
-- [Git push and GitHub Actions in Replit](git-push-actions.md) — git push is blocked in bash AND code_execution network ops block event loop; use GitHub REST API (fetch) for workflow_dispatch; push happens via spawnSync in code_execution notebook
+- [Git push and GitHub Actions in Replit](git-push-actions.md) — git push is blocked in bash; use GitHub REST API (blob→tree→commit→ref PATCH) in code_execution to push; workflow auto-triggers on push to main
 - [Rebase conflict strategy](rebase-conflict-strategy.md) — when rebasing local fixes onto origin diagnostic commits, always keep HEAD (ours) for Android config files; diagnostic commits are older interim states
 - [Android feature bug root causes](android-feature-bugs.md) — root causes for 7 Android issues: back button duplicate hook, notification prompt vs denied, share plugin fallthrough, qibla double-firing, admin safe-area, azan offline cache
+- [Daily ayah reward cap](ayah-reward-cap.md) — 20 ayahs/day cap counts rows in ayah_rewards WHERE createdAt >= today_start; skip insert on cap so ayah stays rewardable tomorrow

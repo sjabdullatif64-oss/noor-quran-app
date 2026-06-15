@@ -1,13 +1,14 @@
 import { Router } from "express";
 import { db } from "@workspace/db";
 import { usersTable, coinTransactionsTable, ayahRewardsTable } from "@workspace/db";
-import { eq, and, gte } from "drizzle-orm";
+import { eq, and, gte, count } from "drizzle-orm";
 import { z } from "zod";
 
 const router = Router();
 
 const DAILY_CHECKIN_COINS = 5;
 const AYAH_REWARD_COINS = 1;
+const DAILY_AYAH_LIMIT = 20;
 
 function todayKey(): string {
   return new Date().toISOString().slice(0, 10);
@@ -128,6 +129,25 @@ router.post("/ayah-reward", async (req, res) => {
 
   if (alreadyRewarded.length > 0) {
     res.json({ awarded: false, coins: user.coinsBalance, message: "Ayah already rewarded" });
+    return;
+  }
+
+  // Enforce 20-ayah-per-calendar-day reward cap
+  const todayStart = new Date();
+  todayStart.setHours(0, 0, 0, 0);
+
+  const [{ todayCount }] = await db
+    .select({ todayCount: count() })
+    .from(ayahRewardsTable)
+    .where(
+      and(
+        eq(ayahRewardsTable.userId, user.id),
+        gte(ayahRewardsTable.createdAt, todayStart)
+      )
+    );
+
+  if (Number(todayCount) >= DAILY_AYAH_LIMIT) {
+    res.json({ awarded: false, coins: user.coinsBalance, message: "Daily ayah reward limit reached (20/day)" });
     return;
   }
 
