@@ -1,8 +1,6 @@
 import { noorApi, type NoorUser } from "./noor-api";
 
 const DEVICE_ID_KEY = "noor-device-id";
-const USER_CACHE_KEY = "noor-user-cache";
-const COINS_CACHE_KEY = "noor-coins-v1";
 
 function generateDeviceId(): string {
   return "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, (c) => {
@@ -21,25 +19,6 @@ export function getDeviceId(): string {
   return id;
 }
 
-export function getCachedUser(): NoorUser | null {
-  try {
-    const raw = localStorage.getItem(USER_CACHE_KEY);
-    return raw ? (JSON.parse(raw) as NoorUser) : null;
-  } catch {
-    return null;
-  }
-}
-
-export function setCachedUser(user: NoorUser) {
-  try {
-    localStorage.setItem(USER_CACHE_KEY, JSON.stringify(user));
-    localStorage.setItem(
-      COINS_CACHE_KEY,
-      JSON.stringify({ total: user.coinsBalance, today: "", todayEvents: [] })
-    );
-  } catch {}
-}
-
 let _registrationPromise: Promise<NoorUser | null> | null = null;
 
 export async function ensureRegistered(
@@ -51,11 +30,10 @@ export async function ensureRegistered(
     const deviceId = getDeviceId();
     try {
       const { user } = await noorApi.register(deviceId, referralCode);
-      setCachedUser(user);
       return user;
     } catch (err) {
       console.warn("[Noor] User registration failed:", err);
-      return getCachedUser();
+      return null;
     }
   })();
 
@@ -66,10 +44,9 @@ export async function refreshProfile(): Promise<NoorUser | null> {
   const deviceId = getDeviceId();
   try {
     const { user } = await noorApi.getProfile(deviceId);
-    setCachedUser(user);
     return user;
   } catch {
-    return getCachedUser();
+    return null;
   }
 }
 
@@ -81,12 +58,7 @@ export async function doDailyCheckin(): Promise<{
 }> {
   const deviceId = getDeviceId();
   try {
-    const result = await noorApi.dailyCheckin(deviceId);
-    if (result.awarded) {
-      const cached = getCachedUser();
-      if (cached) setCachedUser({ ...cached, coinsBalance: result.coins });
-    }
-    return result;
+    return await noorApi.dailyCheckin(deviceId);
   } catch (err) {
     console.warn("[Noor] Daily checkin failed:", err);
     return { awarded: false, coins: 0 };
@@ -99,22 +71,8 @@ export async function reportAyahComplete(
 ): Promise<void> {
   const deviceId = getDeviceId();
   try {
-    const result = await noorApi.ayahReward(deviceId, surahNumber, ayahNumber);
-    if (result.awarded) {
-      const cached = getCachedUser();
-      if (cached) setCachedUser({ ...cached, coinsBalance: result.coins });
-    }
+    await noorApi.ayahReward(deviceId, surahNumber, ayahNumber);
   } catch {
     // Silent — rewards are optional
-  }
-}
-
-export function getCachedCoins(): number {
-  try {
-    const raw = localStorage.getItem(COINS_CACHE_KEY);
-    const store = raw ? JSON.parse(raw) : null;
-    return (store as { total?: number })?.total ?? 0;
-  } catch {
-    return 0;
   }
 }

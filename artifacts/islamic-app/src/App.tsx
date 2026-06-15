@@ -31,8 +31,9 @@ import { Marketplace } from "@/pages/marketplace";
 import { SubmitProduct } from "@/pages/submit-product";
 import { Profile } from "@/pages/profile";
 import { AdminProducts } from "@/pages/admin-products";
+import { JuzReader } from "@/pages/juz-reader";
 import { useEffect } from "react";
-import { ensureRegistered, doDailyCheckin, reportAyahComplete } from "@/lib/user";
+import { ensureRegistered, reportAyahComplete } from "@/lib/user";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -51,11 +52,8 @@ function AndroidBackHandler() {
 
 function NoorInitializer() {
   useEffect(() => {
-    // Register device, then immediately attempt daily check-in
-    // ensureRegistered is idempotent — safe to call on every app open
-    ensureRegistered().then(() => {
-      doDailyCheckin().catch(() => {});
-    }).catch(() => {});
+    // Register device silently on first open — idempotent
+    ensureRegistered().catch(() => {});
 
     // Listen for ayah-both-done events dispatched by surah reader
     // Awards 1 coin per unique ayah when BOTH arabic + translation audio complete
@@ -97,6 +95,7 @@ function Router() {
       <Route path="/submit-product" component={SubmitProduct} />
       <Route path="/profile" component={Profile} />
       <Route path="/admin-products" component={AdminProducts} />
+      <Route path="/juz/:number" component={JuzReader} />
 
       <Route component={NotFound} />
     </Switch>

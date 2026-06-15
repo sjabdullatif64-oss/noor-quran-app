@@ -41,6 +41,7 @@ export interface NoorProduct {
   description: string;
   imageUrl: string | null;
   contactInfo: string;
+  productLink: string | null;
   category: string;
   status: "pending" | "approved" | "rejected";
   promotionType: "none" | "1day" | "7day";
@@ -128,6 +129,7 @@ export const noorApi = {
     description: string;
     imageUrl?: string;
     contactInfo: string;
+    productLink?: string;
     category: string;
     promotionType: "none" | "1day" | "7day";
     submittedBy?: string;

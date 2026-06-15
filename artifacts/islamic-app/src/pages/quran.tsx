@@ -131,7 +131,7 @@ export function Quran() {
             {JUZ_DATA.map((juz) => (
               <button
                 key={juz.juz}
-                onClick={() => navigate(`/quran/${juz.surahNumber}?ayah=${juz.startAyah}`)}
+                onClick={() => navigate(`/juz/${juz.juz}`)}
                 className="flex items-center gap-4 p-4 bg-card rounded-xl border border-border hover:border-primary/50 hover:shadow-md transition-all text-left w-full"
                 data-testid={`juz-card-${juz.juz}`}
               >
