@@ -2,7 +2,7 @@ import { Link } from "wouter";
 import {
   ChevronLeft, Share2, Shield, Mail, BookOpen, Clock, Heart,
   Bookmark, Download, Hash, Bell, Compass, Sparkles, Globe, Volume2, Gift, PenLine, Star,
-  Calculator, ExternalLink,
+  Calculator, ExternalLink, ShoppingBag, Coins, Users, Zap,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { nativeShare, openUrl } from "@/lib/capacitor";
@@ -86,11 +86,39 @@ const FEATURES: Feature[] = [
     bg: "rgba(132,204,22,0.12)",
   },
   {
-    icon: <Sparkles className="w-5 h-5" />,
-    label: "Updates System",
-    description: "Live news & announcements",
+    icon: <ShoppingBag className="w-5 h-5" />,
+    label: "Islamic Marketplace",
+    description: "Buy & sell Islamic products in the community",
+    accent: "text-teal-300",
+    bg: "rgba(20,184,166,0.12)",
+  },
+  {
+    icon: <Coins className="w-5 h-5" />,
+    label: "Noor Coins",
+    description: "Earn coins by reading Quran, check-in & referrals",
     accent: "text-amber-300",
     bg: "rgba(217,119,6,0.12)",
+  },
+  {
+    icon: <Users className="w-5 h-5" />,
+    label: "Referral System",
+    description: "Earn 100 coins for every friend you invite",
+    accent: "text-violet-300",
+    bg: "rgba(139,92,246,0.12)",
+  },
+  {
+    icon: <Zap className="w-5 h-5" />,
+    label: "Daily Check-in",
+    description: "Earn 5 coins every day just for opening the app",
+    accent: "text-orange-300",
+    bg: "rgba(249,115,22,0.12)",
+  },
+  {
+    icon: <BookOpen className="w-5 h-5" />,
+    label: "Juz Navigator",
+    description: "Browse all 30 Juz with ayah-level navigation",
+    accent: "text-indigo-300",
+    bg: "rgba(99,102,241,0.12)",
   },
   {
     icon: <Globe className="w-5 h-5" />,

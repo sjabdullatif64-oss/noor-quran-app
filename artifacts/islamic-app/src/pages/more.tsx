@@ -29,15 +29,18 @@ export function More() {
 
   const handleFooterTap = useCallback(() => {
     if (tapResetTimer.current) clearTimeout(tapResetTimer.current);
+    tapResetTimer.current = null;
+
     setTapCount((prev) => {
       const next = prev + 1;
       if (next >= ADMIN_TAPS_REQUIRED) {
         setShowAdminDialog(true);
         return 0;
       }
-      tapResetTimer.current = setTimeout(() => setTapCount(0), 3000);
       return next;
     });
+
+    tapResetTimer.current = setTimeout(() => setTapCount(0), 3000);
   }, []);
 
   function handleAdminLogin() {

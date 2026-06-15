@@ -1,7 +1,8 @@
 import { useState, useEffect } from "react";
 import { useLocation } from "wouter";
-import { noorApi, type NoorUser, type CoinTransaction, type ProfileStats } from "@/lib/noor-api";
+import { noorApi, type NoorUser, type CoinTransaction, type ProfileStats, type NoorProduct } from "@/lib/noor-api";
 import { getDeviceId, ensureRegistered, doDailyCheckin } from "@/lib/user";
+import { Capacitor } from "@capacitor/core";
 import {
   Coins, Users, TrendingUp, Package, Clock, Star, XCircle,
   Loader2, Copy, CheckCheck, Zap, Share2, RefreshCw,
@@ -64,6 +65,7 @@ export function Profile() {
   const [error,      setError]      = useState(false);
   const [copied,     setCopied]     = useState(false);
   const [checkingIn, setCheckingIn] = useState(false);
+  const [myProducts, setMyProducts] = useState<NoorProduct[]>([]);
 
   async function loadProfile() {
     setLoading(true);
@@ -71,10 +73,14 @@ export function Profile() {
     const deviceId = getDeviceId();
     const u = await ensureRegistered();
     try {
-      const profile = await noorApi.getProfile(deviceId);
+      const [profile, myProds] = await Promise.all([
+        noorApi.getProfile(deviceId),
+        noorApi.getMyProducts(deviceId).catch(() => ({ products: [] as NoorProduct[] })),
+      ]);
       setUser(profile.user);
       setStats(profile.stats);
       setTxs(profile.recentTransactions);
+      setMyProducts(myProds.products);
     } catch {
       if (u) {
         setUser(u);

@@ -347,7 +347,14 @@ export async function getApprovedProducts(): Promise<Product[]> {
         // hide expired promoted listings; legacy null-expiry products remain visible
         (!p.promotionExpiry || p.promotionExpiry > now),
     )
-    .sort((a, b) => (b.approvedAt ?? "").localeCompare(a.approvedAt ?? ""));
+    .sort((a, b) => {
+      // Active featured products always first, then newest approved
+      const aFeatured = a.promotionType !== "none" && !!a.promotionExpiry && a.promotionExpiry > now;
+      const bFeatured = b.promotionType !== "none" && !!b.promotionExpiry && b.promotionExpiry > now;
+      if (aFeatured && !bFeatured) return -1;
+      if (!aFeatured && bFeatured) return 1;
+      return (b.approvedAt ?? b.createdAt).localeCompare(a.approvedAt ?? a.createdAt);
+    });
 }
 
 export async function getFeaturedProducts(): Promise<Product[]> {
