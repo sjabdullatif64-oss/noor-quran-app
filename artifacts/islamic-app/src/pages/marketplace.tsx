@@ -23,11 +23,6 @@ function timeAgo(dateStr: string) {
   return "Just now";
 }
 
-function isActiveFeatured(p: NoorProduct) {
-  if (!p.promotionExpiry) return false;
-  return new Date(p.promotionExpiry) > new Date();
-}
-
 function ProductCard({ p, featured }: { p: NoorProduct; featured?: boolean }) {
   const hasLink = !!p.productLink?.trim();
 
@@ -120,14 +115,14 @@ export function Marketplace() {
       .then(([f, a]) => {
         if (!alive) return;
         setFeatured(f.products);
-        setAll(a.products.filter((p) => !isActiveFeatured(p)));
+        setAll(a.products);
       })
       .catch(console.warn)
       .finally(() => { if (alive) setLoading(false); });
     return () => { alive = false; };
   }, []);
 
-  const nonFeatured = all.filter((p) => !featured.some((f) => f.id === p.id));
+  const nonFeatured = all;
 
   return (
     <div

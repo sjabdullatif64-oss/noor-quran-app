@@ -1,12 +1,11 @@
 import { useState, useEffect, useCallback } from "react";
 import { noorApi, type NoorProduct } from "@/lib/noor-api";
 import {
-  CheckCircle, XCircle, Trash2, Loader2, ShieldCheck, Eye, RefreshCw, Package,
+  CheckCircle, XCircle, Trash2, Loader2, ShieldCheck, Eye, RefreshCw, Package, Pencil, Save, X,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
-import { Badge } from "@/components/ui/badge";
 
 const CATEGORY_LABELS: Record<string, string> = {
   tasbeeh: "Tasbeeh",
@@ -17,11 +16,14 @@ const CATEGORY_LABELS: Record<string, string> = {
   other: "Other",
 };
 
-function statusColor(status: string) {
-  if (status === "approved") return "text-emerald-400";
-  if (status === "rejected") return "text-red-400";
-  return "text-yellow-400";
-}
+const CATEGORY_OPTIONS = [
+  { value: "tasbeeh",    label: "Tasbeeh" },
+  { value: "prayer_mat", label: "Prayer Mat" },
+  { value: "books",      label: "Books" },
+  { value: "attar",      label: "Attar" },
+  { value: "courses",    label: "Courses" },
+  { value: "other",      label: "Other" },
+];
 
 function StatusBadge({ status }: { status: string }) {
   return (
@@ -40,15 +42,23 @@ type AdminRow = {
 
 export function AdminProducts() {
   const { toast } = useToast();
-  const [token, setToken] = useState(localStorage.getItem("noor-admin-token") ?? "");
-  const [authed, setAuthed] = useState(false);
-  const [tokenInput, setTokenInput] = useState("");
-  const [loading, setLoading] = useState(false);
-  const [rows, setRows] = useState<AdminRow[]>([]);
-  const [tab, setTab] = useState<"pending" | "all">("pending");
+  const [token,       setToken]       = useState(localStorage.getItem("noor-admin-token") ?? "");
+  const [authed,      setAuthed]      = useState(false);
+  const [tokenInput,  setTokenInput]  = useState("");
+  const [loading,     setLoading]     = useState(false);
+  const [rows,        setRows]        = useState<AdminRow[]>([]);
+  const [tab,         setTab]         = useState<"pending" | "all">("pending");
   const [rejectReason, setRejectReason] = useState<Record<string, string>>({});
-  const [acting, setActing] = useState<Record<string, boolean>>({});
-  const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [acting,      setActing]      = useState<Record<string, boolean>>({});
+  const [expandedId,  setExpandedId]  = useState<string | null>(null);
+
+  const [editingId,   setEditingId]   = useState<string | null>(null);
+  const [editTitle,   setEditTitle]   = useState("");
+  const [editDesc,    setEditDesc]    = useState("");
+  const [editContact, setEditContact] = useState("");
+  const [editLink,    setEditLink]    = useState("");
+  const [editCategory, setEditCategory] = useState("");
+  const [editName,    setEditName]    = useState("");
 
   const load = useCallback(async (adminToken: string, mode: "pending" | "all") => {
     setLoading(true);
@@ -90,12 +100,6 @@ export function AdminProducts() {
     try {
       await noorApi.adminApprove(token, id);
       toast({ title: "Product approved!", description: "Promotion timer started." });
-      setRows((r) => r.filter((x) => x.product.id !== id || tab === "all"
-        ? x.product.id === id
-          ? { ...x, product: { ...x.product, status: "approved" } }
-          : x
-        : false
-      ).filter(Boolean) as AdminRow[]);
       load(token, tab);
     } catch (err: unknown) {
       toast({ title: "Error", description: err instanceof Error ? err.message : String(err), variant: "destructive" });
@@ -128,6 +132,42 @@ export function AdminProducts() {
       await noorApi.adminDelete(token, id);
       toast({ title: "Product deleted" });
       setRows((r) => r.filter((x) => x.product.id !== id));
+    } catch (err: unknown) {
+      toast({ title: "Error", description: err instanceof Error ? err.message : String(err), variant: "destructive" });
+    } finally {
+      setActing((a) => ({ ...a, [id]: false }));
+    }
+  }
+
+  function startEdit(p: NoorProduct) {
+    setEditTitle(p.title);
+    setEditDesc(p.description);
+    setEditContact(p.contactInfo);
+    setEditLink(p.productLink ?? "");
+    setEditCategory(p.category);
+    setEditName(p.submittedBy ?? "");
+    setExpandedId(p.id);
+    setEditingId(p.id);
+  }
+
+  function cancelEdit() {
+    setEditingId(null);
+  }
+
+  async function saveEdit(id: string) {
+    setActing((a) => ({ ...a, [id]: true }));
+    try {
+      await noorApi.adminEditProduct(token, id, {
+        title:       editTitle.trim() || undefined,
+        description: editDesc.trim() || undefined,
+        contactInfo: editContact.trim() || undefined,
+        productLink: editLink.trim() || undefined,
+        category:    editCategory || undefined,
+        submittedBy: editName.trim() || undefined,
+      });
+      toast({ title: "Product updated" });
+      setEditingId(null);
+      load(token, tab);
     } catch (err: unknown) {
       toast({ title: "Error", description: err instanceof Error ? err.message : String(err), variant: "destructive" });
     } finally {
@@ -217,25 +257,73 @@ export function AdminProducts() {
                 <p className="text-emerald-500 text-xs">{CATEGORY_LABELS[p.category] ?? p.category}</p>
 
                 {expandedId === p.id && (
-                  <>
-                    <p className="text-emerald-400 text-sm">{p.description}</p>
-                    <p className="text-emerald-600 text-xs">📞 {p.contactInfo}</p>
-                    {p.submittedBy && <p className="text-emerald-600 text-xs">👤 {p.submittedBy}</p>}
-                    {u && <p className="text-emerald-800 text-xs">Device: {u.deviceId.slice(0, 16)}… | Coins: {u.coinsBalance}</p>}
-                    <div className="flex flex-wrap gap-2 text-xs">
-                      <span className="text-emerald-700">Submitted: {new Date(p.createdAt).toLocaleString()}</span>
-                      {p.promotionType !== "none" && (
-                        <span className="text-amber-500 font-semibold">⭐ Promo: {p.promotionType} ({p.coinsSpent} coins)</span>
-                      )}
-                      {p.rejectionReason && <span className="text-red-400">Reason: {p.rejectionReason}</span>}
-                      {p.approvedAt && <span className="text-emerald-500">Approved: {new Date(p.approvedAt).toLocaleString()}</span>}
-                      {p.promotionExpiry && (
-                        <span className={new Date(p.promotionExpiry) > new Date() ? "text-amber-400" : "text-emerald-800"}>
-                          Promo expires: {new Date(p.promotionExpiry).toLocaleString()}
-                        </span>
-                      )}
+                  editingId === p.id ? (
+                    <div className="space-y-2 pt-1">
+                      <Input
+                        value={editTitle}
+                        onChange={(e) => setEditTitle(e.target.value)}
+                        placeholder="Title"
+                        className="bg-emerald-950/60 border-emerald-800/60 text-white placeholder:text-emerald-800 h-9 text-sm"
+                      />
+                      <textarea
+                        value={editDesc}
+                        onChange={(e) => setEditDesc(e.target.value)}
+                        placeholder="Description"
+                        rows={3}
+                        className="w-full px-3 py-2 rounded-xl bg-emerald-950/60 border border-emerald-800/60 text-white placeholder:text-emerald-800 text-sm resize-none focus:outline-none focus:ring-1 focus:ring-emerald-700"
+                      />
+                      <Input
+                        value={editContact}
+                        onChange={(e) => setEditContact(e.target.value)}
+                        placeholder="Contact info"
+                        className="bg-emerald-950/60 border-emerald-800/60 text-white placeholder:text-emerald-800 h-9 text-sm"
+                      />
+                      <Input
+                        value={editLink}
+                        onChange={(e) => setEditLink(e.target.value)}
+                        placeholder="Product link (optional)"
+                        className="bg-emerald-950/60 border-emerald-800/60 text-white placeholder:text-emerald-800 h-9 text-sm"
+                      />
+                      <select
+                        value={editCategory}
+                        onChange={(e) => setEditCategory(e.target.value)}
+                        className="w-full px-3 py-2 rounded-xl bg-emerald-950/60 border border-emerald-800/60 text-white text-sm focus:outline-none focus:ring-1 focus:ring-emerald-700"
+                      >
+                        {CATEGORY_OPTIONS.map((c) => (
+                          <option key={c.value} value={c.value}>{c.label}</option>
+                        ))}
+                      </select>
+                      <Input
+                        value={editName}
+                        onChange={(e) => setEditName(e.target.value)}
+                        placeholder="Seller name (optional)"
+                        className="bg-emerald-950/60 border-emerald-800/60 text-white placeholder:text-emerald-800 h-9 text-sm"
+                      />
                     </div>
-                  </>
+                  ) : (
+                    <>
+                      <p className="text-emerald-400 text-sm">{p.description}</p>
+                      <p className="text-emerald-600 text-xs">📞 {p.contactInfo}</p>
+                      {p.productLink && (
+                        <p className="text-emerald-600 text-xs">🔗 {p.productLink}</p>
+                      )}
+                      {p.submittedBy && <p className="text-emerald-600 text-xs">👤 {p.submittedBy}</p>}
+                      {u && <p className="text-emerald-800 text-xs">Device: {u.deviceId.slice(0, 16)}… | Coins: {u.coinsBalance}</p>}
+                      <div className="flex flex-wrap gap-2 text-xs">
+                        <span className="text-emerald-700">Submitted: {new Date(p.createdAt).toLocaleString()}</span>
+                        {p.promotionType !== "none" && (
+                          <span className="text-amber-500 font-semibold">⭐ Promo: {p.promotionType} ({p.coinsSpent} coins)</span>
+                        )}
+                        {p.rejectionReason && <span className="text-red-400">Reason: {p.rejectionReason}</span>}
+                        {p.approvedAt && <span className="text-emerald-500">Approved: {new Date(p.approvedAt).toLocaleString()}</span>}
+                        {p.promotionExpiry && (
+                          <span className={new Date(p.promotionExpiry) > new Date() ? "text-amber-400" : "text-emerald-800"}>
+                            Promo expires: {new Date(p.promotionExpiry).toLocaleString()}
+                          </span>
+                        )}
+                      </div>
+                    </>
+                  )
                 )}
 
                 <button
@@ -248,53 +336,118 @@ export function AdminProducts() {
 
               {p.status === "pending" && (
                 <div className="px-4 pb-4 space-y-2">
-                  <Input
-                    value={rejectReason[p.id] ?? ""}
-                    onChange={(e) => setRejectReason((r) => ({ ...r, [p.id]: e.target.value }))}
-                    placeholder="Rejection reason (optional)"
-                    className="bg-emerald-950/50 border-emerald-900/50 text-white placeholder:text-emerald-800 h-9 text-sm"
-                  />
-                  <div className="flex gap-2">
-                    <Button
-                      size="sm"
-                      onClick={() => approve(p.id)}
-                      disabled={acting[p.id]}
-                      className="flex-1 bg-emerald-700 hover:bg-emerald-600 text-white rounded-xl gap-1"
-                    >
-                      {acting[p.id] ? <Loader2 className="w-4 h-4 animate-spin" /> : <><CheckCircle className="w-4 h-4" /> Approve</>}
-                    </Button>
-                    <Button
-                      size="sm"
-                      onClick={() => reject(p.id)}
-                      disabled={acting[p.id]}
-                      variant="destructive"
-                      className="flex-1 rounded-xl gap-1"
-                    >
-                      {acting[p.id] ? <Loader2 className="w-4 h-4 animate-spin" /> : <><XCircle className="w-4 h-4" /> Reject</>}
-                    </Button>
-                    <Button
-                      size="sm"
-                      onClick={() => remove(p.id)}
-                      disabled={acting[p.id]}
-                      variant="ghost"
-                      className="text-red-400 hover:text-red-300 rounded-xl"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </Button>
-                  </div>
+                  {editingId === p.id ? (
+                    <div className="flex gap-2">
+                      <Button
+                        size="sm"
+                        onClick={() => saveEdit(p.id)}
+                        disabled={acting[p.id]}
+                        className="flex-1 bg-emerald-700 hover:bg-emerald-600 text-white rounded-xl gap-1"
+                      >
+                        {acting[p.id] ? <Loader2 className="w-4 h-4 animate-spin" /> : <><Save className="w-4 h-4" /> Save</>}
+                      </Button>
+                      <Button
+                        size="sm"
+                        onClick={cancelEdit}
+                        variant="ghost"
+                        className="text-emerald-500 rounded-xl"
+                      >
+                        <X className="w-4 h-4" />
+                      </Button>
+                    </div>
+                  ) : (
+                    <>
+                      <Input
+                        value={rejectReason[p.id] ?? ""}
+                        onChange={(e) => setRejectReason((r) => ({ ...r, [p.id]: e.target.value }))}
+                        placeholder="Rejection reason (optional)"
+                        className="bg-emerald-950/50 border-emerald-900/50 text-white placeholder:text-emerald-800 h-9 text-sm"
+                      />
+                      <div className="flex gap-2">
+                        <Button
+                          size="sm"
+                          onClick={() => approve(p.id)}
+                          disabled={acting[p.id]}
+                          className="flex-1 bg-emerald-700 hover:bg-emerald-600 text-white rounded-xl gap-1"
+                        >
+                          {acting[p.id] ? <Loader2 className="w-4 h-4 animate-spin" /> : <><CheckCircle className="w-4 h-4" /> Approve</>}
+                        </Button>
+                        <Button
+                          size="sm"
+                          onClick={() => reject(p.id)}
+                          disabled={acting[p.id]}
+                          variant="destructive"
+                          className="flex-1 rounded-xl gap-1"
+                        >
+                          {acting[p.id] ? <Loader2 className="w-4 h-4 animate-spin" /> : <><XCircle className="w-4 h-4" /> Reject</>}
+                        </Button>
+                        <Button
+                          size="sm"
+                          onClick={() => startEdit(p)}
+                          disabled={acting[p.id]}
+                          variant="ghost"
+                          className="text-sky-400 hover:text-sky-300 rounded-xl"
+                        >
+                          <Pencil className="w-4 h-4" />
+                        </Button>
+                        <Button
+                          size="sm"
+                          onClick={() => remove(p.id)}
+                          disabled={acting[p.id]}
+                          variant="ghost"
+                          className="text-red-400 hover:text-red-300 rounded-xl"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
+                      </div>
+                    </>
+                  )}
                 </div>
               )}
+
               {p.status !== "pending" && (
-                <div className="px-4 pb-3 flex justify-end">
-                  <Button
-                    size="sm"
-                    onClick={() => remove(p.id)}
-                    disabled={acting[p.id]}
-                    variant="ghost"
-                    className="text-red-400/60 hover:text-red-400 rounded-xl gap-1 text-xs"
-                  >
-                    <Trash2 className="w-3.5 h-3.5" /> Delete
-                  </Button>
+                <div className="px-4 pb-3">
+                  {editingId === p.id ? (
+                    <div className="flex gap-2">
+                      <Button
+                        size="sm"
+                        onClick={() => saveEdit(p.id)}
+                        disabled={acting[p.id]}
+                        className="flex-1 bg-emerald-700 hover:bg-emerald-600 text-white rounded-xl gap-1"
+                      >
+                        {acting[p.id] ? <Loader2 className="w-4 h-4 animate-spin" /> : <><Save className="w-4 h-4" /> Save</>}
+                      </Button>
+                      <Button
+                        size="sm"
+                        onClick={cancelEdit}
+                        variant="ghost"
+                        className="text-emerald-500 rounded-xl"
+                      >
+                        <X className="w-4 h-4" />
+                      </Button>
+                    </div>
+                  ) : (
+                    <div className="flex justify-between items-center">
+                      <Button
+                        size="sm"
+                        onClick={() => startEdit(p)}
+                        disabled={acting[p.id]}
+                        variant="ghost"
+                        className="text-sky-400/80 hover:text-sky-400 rounded-xl gap-1 text-xs"
+                      >
+                        <Pencil className="w-3.5 h-3.5" /> Edit
+                      </Button>
+                      <Button
+                        size="sm"
+                        onClick={() => remove(p.id)}
+                        disabled={acting[p.id]}
+                        variant="ghost"
+                        className="text-red-400/60 hover:text-red-400 rounded-xl gap-1 text-xs"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" /> Delete
+                      </Button>
+                    </div>
+                  )}
                 </div>
               )}
             </div>

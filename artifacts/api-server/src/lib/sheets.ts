@@ -341,26 +341,28 @@ export async function getApprovedProducts(): Promise<Product[]> {
   const rows = await readAllRows("Products");
   return rows
     .map(rowToProduct)
-    .filter(
-      (p) =>
-        p.status === "approved" &&
-        // hide expired promoted listings; legacy null-expiry products remain visible
-        (!p.promotionExpiry || p.promotionExpiry > now),
+    .filter((p) =>
+      p.status === "approved" &&
+      // Exclude featured listings — those are served by getFeaturedProducts only
+      p.promotionType !== "7day" &&
+      // Exclude expired listings; legacy null-expiry products (promotionType "none") remain visible
+      (!p.promotionExpiry || p.promotionExpiry > now),
     )
-    .sort((a, b) => {
-      // Active featured products always first, then newest approved
-      const aFeatured = a.promotionType !== "none" && !!a.promotionExpiry && a.promotionExpiry > now;
-      const bFeatured = b.promotionType !== "none" && !!b.promotionExpiry && b.promotionExpiry > now;
-      if (aFeatured && !bFeatured) return -1;
-      if (!aFeatured && bFeatured) return 1;
-      return (b.approvedAt ?? b.createdAt).localeCompare(a.approvedAt ?? a.createdAt);
-    });
+    .sort((a, b) => (b.approvedAt ?? b.createdAt).localeCompare(a.approvedAt ?? a.createdAt));
 }
 
 export async function getFeaturedProducts(): Promise<Product[]> {
   const now = new Date().toISOString();
   const rows = await readAllRows("Products");
-  return rows.map(rowToProduct).filter((p) => p.status === "approved" && p.promotionType !== "none" && !!p.promotionExpiry && p.promotionExpiry > now).sort((a, b) => (b.promotionExpiry ?? "").localeCompare(a.promotionExpiry ?? ""));
+  return rows
+    .map(rowToProduct)
+    .filter((p) =>
+      p.status === "approved" &&
+      p.promotionType === "7day" &&
+      !!p.promotionExpiry &&
+      p.promotionExpiry > now,
+    )
+    .sort((a, b) => (b.promotionExpiry ?? "").localeCompare(a.promotionExpiry ?? ""));
 }
 
 export async function getPendingProducts(): Promise<Product[]> {

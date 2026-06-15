@@ -117,4 +117,33 @@ router.delete("/products/:id", async (req, res) => {
   res.json({ deleted: true });
 });
 
+const adminEditSchema = z.object({
+  title:       z.string().min(2).max(200).optional(),
+  description: z.string().min(5).max(2000).optional(),
+  imageUrl:    z.string().max(2_000_000).optional().or(z.literal("")),
+  contactInfo: z.string().min(2).max(500).optional(),
+  productLink: z.string().url().optional().or(z.literal("")),
+  category:    z.enum(["tasbeeh", "prayer_mat", "books", "attar", "courses", "other"]).optional(),
+  submittedBy: z.string().max(100).optional(),
+});
+
+router.patch("/products/:id", async (req, res) => {
+  const product = await getProductById(req.params.id);
+  if (!product) {
+    res.status(404).json({ error: "Product not found" });
+    return;
+  }
+  const parsed = adminEditSchema.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ error: "Invalid request", details: parsed.error.issues });
+    return;
+  }
+  const { imageUrl, productLink, ...fields } = parsed.data;
+  const updates: Parameters<typeof updateProduct>[1] = { ...fields };
+  if (imageUrl !== undefined) updates.imageUrl = imageUrl || null;
+  if (productLink !== undefined) updates.productLink = productLink || null;
+  const updated = await updateProduct(product.id, updates);
+  res.json({ product: updated });
+});
+
 export default router;

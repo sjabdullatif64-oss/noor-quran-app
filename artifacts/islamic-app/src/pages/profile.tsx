@@ -4,7 +4,7 @@ import { noorApi, type NoorUser, type CoinTransaction, type ProfileStats, type N
 import { getDeviceId, ensureRegistered, doDailyCheckin } from "@/lib/user";
 import {
   Coins, Users, TrendingUp, Package, Clock, Star, XCircle,
-  Loader2, Copy, CheckCheck, Zap, Share2, RefreshCw,
+  Loader2, Copy, CheckCheck, Zap, Share2, RefreshCw, Pencil,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
@@ -54,8 +54,10 @@ function TxRow({ tx }: { tx: CoinTransaction }) {
 }
 
 function ProductHistoryRow({ p }: { p: NoorProduct }) {
+  const [, navigate] = useLocation();
   const isExpired =
     p.status === "approved" && !!p.promotionExpiry && p.promotionExpiry < new Date().toISOString();
+  const canEdit = !isExpired && (p.status === "pending" || p.status === "approved");
   const badge = isExpired
     ? { label: "Expired",  cls: "text-gray-400 border-gray-800/50" }
     : p.status === "pending"
@@ -80,6 +82,14 @@ function ProductHistoryRow({ p }: { p: NoorProduct }) {
           <p className="text-red-500/70 text-xs mt-1 italic">Reason: {p.rejectionReason}</p>
         )}
       </div>
+      {canEdit && (
+        <button
+          onClick={() => navigate(`/edit-product/${p.id}`)}
+          className="shrink-0 flex items-center gap-1 px-2 py-1 rounded-lg border border-emerald-800/50 text-emerald-500 text-xs active:scale-95 transition-transform"
+        >
+          <Pencil className="w-3 h-3" /> Edit
+        </button>
+      )}
     </div>
   );
 }
@@ -168,7 +178,7 @@ export function Profile() {
   }
 
   function getReferralLink(userId: string) {
-    return `https://noor-quran-app.replit.app/?ref=${userId}`;
+    return `https://noor-quran.replit.app/?ref=${userId}`;
   }
 
   function copyReferral() {

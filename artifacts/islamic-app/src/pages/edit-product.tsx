@@ -1,8 +1,8 @@
 import { useState, useEffect, useRef } from "react";
 import { useLocation } from "wouter";
 import { noorApi } from "@/lib/noor-api";
-import { getDeviceId, refreshProfile } from "@/lib/user";
-import { ArrowLeft, Loader2, Coins, Star, ImagePlus, X } from "lucide-react";
+import { getDeviceId } from "@/lib/user";
+import { ArrowLeft, Loader2, ImagePlus, X, AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
@@ -15,13 +15,6 @@ const CATEGORIES = [
   { value: "courses",    label: "Islamic Courses" },
   { value: "other",      label: "Other Islamic" },
 ];
-
-const PROMOTION_PLANS = [
-  { value: "1day", label: "Normal Listing — 1 Day",   cost: 100, desc: "Listed in the marketplace for 24 hours" },
-  { value: "7day", label: "Featured Listing — 1 Day", cost: 200, desc: "Pinned at the top for 24 hours ⭐" },
-] as const;
-
-type PromotionType = "1day" | "7day";
 
 function resizeImageToBase64(file: File): Promise<string> {
   return new Promise((resolve, reject) => {
@@ -49,33 +42,38 @@ function resizeImageToBase64(file: File): Promise<string> {
   });
 }
 
-export function SubmitProduct() {
+export function EditProduct({ params }: { params: { id: string } }) {
   const [, navigate] = useLocation();
   const { toast } = useToast();
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const { id } = params;
+
+  const [loadError, setLoadError]       = useState(false);
+  const [loading,   setLoading]         = useState(true);
+  const [submitting, setSubmitting]     = useState(false);
 
   const [title,          setTitle]          = useState("");
   const [description,    setDescription]    = useState("");
   const [imageUrl,       setImageUrl]       = useState("");
   const [imageIsGallery, setImageIsGallery] = useState(false);
   const [contactInfo,    setContactInfo]    = useState("");
-  const [submittedBy,    setSubmittedBy]    = useState("");
   const [productLink,    setProductLink]    = useState("");
-  const [category,       setCategory]       = useState<string>("tasbeeh");
-  const [promotionType,  setPromotionType]  = useState<PromotionType>("1day");
-  const [submitting,     setSubmitting]     = useState(false);
-  const [coins,          setCoins]          = useState(0);
-  const [loading,        setLoading]        = useState(true);
+  const [category,       setCategory]       = useState("tasbeeh");
 
   useEffect(() => {
     setLoading(true);
-    refreshProfile()
-      .then((user) => { if (user) setCoins(user.coinsBalance); })
+    noorApi.getProduct(id)
+      .then(({ product: p }) => {
+        setTitle(p.title);
+        setDescription(p.description);
+        setImageUrl(p.imageUrl ?? "");
+        setContactInfo(p.contactInfo);
+        setProductLink(p.productLink ?? "");
+        setCategory(p.category);
+      })
+      .catch(() => setLoadError(true))
       .finally(() => setLoading(false));
-  }, []);
-
-  const selectedPlan = PROMOTION_PLANS.find((p) => p.value === promotionType)!;
-  const canAfford    = coins >= selectedPlan.cost;
+  }, [id]);
 
   async function handleImageFile(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
@@ -101,40 +99,57 @@ export function SubmitProduct() {
       toast({ title: "Please fill all required fields", variant: "destructive" });
       return;
     }
-    if (!canAfford) {
-      toast({
-        title: "Insufficient Coins",
-        description: `You need ${selectedPlan.cost} coins. You have ${coins}.`,
-        variant: "destructive",
-      });
-      return;
-    }
-
     setSubmitting(true);
     try {
       const deviceId = getDeviceId();
-      await noorApi.submitProduct({
-        deviceId,
-        title:        title.trim(),
-        description:  description.trim(),
-        imageUrl:     imageUrl || undefined,
-        contactInfo:  contactInfo.trim(),
-        productLink:  productLink.trim() || undefined,
+      await noorApi.editProduct(id, deviceId, {
+        title:       title.trim(),
+        description: description.trim(),
+        imageUrl:    imageUrl || undefined,
+        contactInfo: contactInfo.trim(),
+        productLink: productLink.trim() || undefined,
         category,
-        promotionType,
-        submittedBy:  submittedBy.trim() || undefined,
       });
       toast({
-        title: "Product Submitted!",
-        description: "Pending admin approval. It will appear in the marketplace once approved.",
+        title: "Product updated!",
+        description: "Pending admin re-approval before it shows publicly.",
       });
-      navigate("/marketplace");
+      navigate("/profile");
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : "Submission failed";
-      toast({ title: "Submission Failed", description: msg, variant: "destructive" });
+      const msg = err instanceof Error ? err.message : "Update failed";
+      toast({ title: "Edit Failed", description: msg, variant: "destructive" });
     } finally {
       setSubmitting(false);
     }
+  }
+
+  if (loading) {
+    return (
+      <div
+        className="min-h-screen flex items-center justify-center"
+        style={{ background: "linear-gradient(150deg, #071a0e 0%, #0a1f12 50%, #061610 100%)" }}
+      >
+        <Loader2 className="w-8 h-8 animate-spin text-emerald-600" />
+      </div>
+    );
+  }
+
+  if (loadError) {
+    return (
+      <div
+        className="min-h-screen flex flex-col items-center justify-center gap-4 px-8 text-center"
+        style={{ background: "linear-gradient(150deg, #071a0e 0%, #0a1f12 50%, #061610 100%)" }}
+      >
+        <AlertCircle className="w-12 h-12 text-red-600" />
+        <p className="text-red-400 font-semibold">Product not found</p>
+        <button
+          onClick={() => navigate("/profile")}
+          className="px-5 py-2.5 rounded-xl bg-emerald-800/40 border border-emerald-800/50 text-emerald-400 text-sm font-medium"
+        >
+          Back to Profile
+        </button>
+      </div>
+    );
   }
 
   return (
@@ -144,24 +159,26 @@ export function SubmitProduct() {
     >
       <div className="px-4 pt-8 pb-4 flex items-center gap-3">
         <button
-          onClick={() => navigate("/marketplace")}
+          onClick={() => navigate("/profile")}
           className="w-9 h-9 rounded-full flex items-center justify-center border border-emerald-900/50 text-emerald-400"
         >
           <ArrowLeft className="w-4 h-4" />
         </button>
         <div>
-          <h1 className="text-xl font-serif font-bold text-emerald-300">Post a Product</h1>
+          <h1 className="text-xl font-serif font-bold text-emerald-300">Edit Product</h1>
           <p className="text-emerald-700 text-xs">Islamic Marketplace</p>
         </div>
-        <div className="ml-auto flex items-center gap-1 px-3 py-1 rounded-full bg-amber-900/30 border border-amber-800/40">
-          <Coins className="w-4 h-4 text-amber-400" />
-          <span className="text-amber-300 font-bold text-sm">{loading ? "…" : coins}</span>
-        </div>
+      </div>
+
+      <div className="mx-4 mb-5 rounded-xl p-3 bg-yellow-900/20 border border-yellow-800/40 flex items-start gap-2">
+        <AlertCircle className="w-4 h-4 text-yellow-500 shrink-0 mt-0.5" />
+        <p className="text-yellow-500/90 text-xs leading-relaxed">
+          After editing, your product goes back to <strong>Pending</strong> and won't show publicly until admin approves it again.
+        </p>
       </div>
 
       <form onSubmit={handleSubmit} className="px-4 space-y-5">
 
-        {/* Title */}
         <div className="space-y-1.5">
           <label className="text-emerald-400 text-sm font-medium">Product Title *</label>
           <Input
@@ -173,29 +190,21 @@ export function SubmitProduct() {
           />
         </div>
 
-        {/* Description */}
         <div className="space-y-1.5">
           <label className="text-emerald-400 text-sm font-medium">Description *</label>
           <textarea
             value={description}
             onChange={(e) => setDescription(e.target.value)}
-            placeholder="Describe your product, materials, features…"
+            placeholder="Describe your product…"
             rows={4}
             maxLength={2000}
             className="w-full px-3 py-2 rounded-xl bg-emerald-950/40 border border-emerald-800/50 text-white placeholder:text-emerald-800 text-sm resize-none focus:outline-none focus:ring-1 focus:ring-emerald-600"
           />
         </div>
 
-        {/* Image — gallery picker or URL */}
         <div className="space-y-1.5">
           <label className="text-emerald-400 text-sm font-medium">Product Image</label>
-          <input
-            ref={fileInputRef}
-            type="file"
-            accept="image/*"
-            onChange={handleImageFile}
-            className="hidden"
-          />
+          <input ref={fileInputRef} type="file" accept="image/*" onChange={handleImageFile} className="hidden" />
           {!imageIsGallery && (
             <div className="flex gap-2">
               <Input
@@ -209,8 +218,7 @@ export function SubmitProduct() {
                 onClick={() => fileInputRef.current?.click()}
                 className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-emerald-800/40 border border-emerald-700/50 text-emerald-400 text-sm font-medium whitespace-nowrap active:scale-95 transition-transform shrink-0"
               >
-                <ImagePlus className="w-4 h-4" />
-                Gallery
+                <ImagePlus className="w-4 h-4" /> Gallery
               </button>
             </div>
           )}
@@ -237,17 +245,12 @@ export function SubmitProduct() {
             </div>
           )}
           {imageIsGallery && (
-            <button
-              type="button"
-              onClick={() => fileInputRef.current?.click()}
-              className="text-xs text-emerald-600 underline"
-            >
+            <button type="button" onClick={() => fileInputRef.current?.click()} className="text-xs text-emerald-600 underline">
               Pick a different image
             </button>
           )}
         </div>
 
-        {/* Contact Info */}
         <div className="space-y-1.5">
           <label className="text-emerald-400 text-sm font-medium">Contact Info *</label>
           <Input
@@ -258,9 +261,10 @@ export function SubmitProduct() {
           />
         </div>
 
-        {/* Product Link */}
         <div className="space-y-1.5">
-          <label className="text-emerald-400 text-sm font-medium">Product Link <span className="text-emerald-700">(optional)</span></label>
+          <label className="text-emerald-400 text-sm font-medium">
+            Product Link <span className="text-emerald-700">(optional)</span>
+          </label>
           <Input
             value={productLink}
             onChange={(e) => setProductLink(e.target.value)}
@@ -270,18 +274,6 @@ export function SubmitProduct() {
           />
         </div>
 
-        {/* Seller Name */}
-        <div className="space-y-1.5">
-          <label className="text-emerald-400 text-sm font-medium">Your Name <span className="text-emerald-700">(optional)</span></label>
-          <Input
-            value={submittedBy}
-            onChange={(e) => setSubmittedBy(e.target.value)}
-            placeholder="Your name or shop name"
-            className="bg-emerald-950/40 border-emerald-800/50 text-white placeholder:text-emerald-800"
-          />
-        </div>
-
-        {/* Category */}
         <div className="space-y-2">
           <label className="text-emerald-400 text-sm font-medium">Category *</label>
           <div className="grid grid-cols-2 gap-2">
@@ -302,69 +294,14 @@ export function SubmitProduct() {
           </div>
         </div>
 
-        {/* Promotion Plans */}
-        <div className="space-y-2">
-          <label className="text-emerald-400 text-sm font-medium flex items-center gap-2">
-            <Star className="w-4 h-4 text-amber-400" /> Choose a Plan
-          </label>
-          <p className="text-emerald-700 text-xs">All listings require coins. Earn coins via daily check-in, listening to Quran, and referrals.</p>
-          <div className="space-y-2">
-            {PROMOTION_PLANS.map((plan) => {
-              const afford = coins >= plan.cost;
-              return (
-                <button
-                  key={plan.value}
-                  type="button"
-                  onClick={() => { if (afford) setPromotionType(plan.value); }}
-                  disabled={!afford}
-                  className={`w-full flex items-center justify-between p-3 rounded-xl border text-left transition-all ${
-                    promotionType === plan.value
-                      ? plan.value === "7day"
-                        ? "bg-amber-900/30 border-amber-700/60 text-white"
-                        : "bg-emerald-800/30 border-emerald-700/60 text-white"
-                      : "bg-emerald-950/30 border-emerald-900/50 text-emerald-500"
-                  } ${!afford ? "opacity-40 cursor-not-allowed" : ""}`}
-                >
-                  <div>
-                    <p className="font-semibold text-sm">{plan.label}</p>
-                    <p className="text-xs opacity-70 mt-0.5">{plan.desc}</p>
-                    {!afford && (
-                      <p className="text-xs text-red-400/80 mt-0.5">Need {plan.cost - coins} more coins</p>
-                    )}
-                  </div>
-                  <div className="flex items-center gap-1 px-2 py-1 rounded-full bg-amber-900/40 border border-amber-800/40 shrink-0">
-                    <Coins className="w-3.5 h-3.5 text-amber-400" />
-                    <span className="text-amber-300 font-bold text-sm">{plan.cost}</span>
-                  </div>
-                </button>
-              );
-            })}
-          </div>
-        </div>
-
-        <div
-          className="rounded-xl p-3 border border-emerald-900/40 text-emerald-600 text-xs leading-relaxed"
-          style={{ background: "rgba(10,30,18,0.5)" }}
-        >
-          <p className="font-semibold text-emerald-500 mb-1">ℹ️ Important</p>
-          <p>• Product stays pending until admin approves it.</p>
-          <p>• Coins are deducted at submission.</p>
-          <p>• Promotion timer starts only after admin approval.</p>
-          <p>• Coins are refunded if your product is rejected.</p>
-        </div>
-
         <Button
           type="submit"
-          disabled={submitting || loading || !canAfford}
+          disabled={submitting}
           className="w-full h-12 bg-emerald-700 hover:bg-emerald-600 text-white font-bold rounded-xl text-base disabled:opacity-50"
         >
-          {submitting ? (
-            <><Loader2 className="w-4 h-4 animate-spin mr-2" /> Submitting…</>
-          ) : !canAfford ? (
-            `Need ${selectedPlan.cost - coins} more coins`
-          ) : (
-            `Submit & Spend ${selectedPlan.cost} Coins`
-          )}
+          {submitting
+            ? <><Loader2 className="w-4 h-4 animate-spin mr-2" /> Saving…</>
+            : "Save & Resubmit for Approval"}
         </Button>
       </form>
     </div>
