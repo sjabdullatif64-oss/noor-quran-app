@@ -17,12 +17,11 @@ const CATEGORIES = [
 ];
 
 const PROMOTION_PLANS = [
-  { value: "none", label: "No Promotion",      cost: 0,   desc: "Free listing (admin approval required)" },
-  { value: "1day", label: "1 Day Featured",    cost: 100, desc: "24 hours at the top — after admin approval" },
-  { value: "7day", label: "7 Days Featured",   cost: 250, desc: "7 days at the top — after admin approval" },
+  { value: "1day", label: "Standard Listing — 1 Day",  cost: 100, desc: "Listed in the marketplace for 24 hours" },
+  { value: "7day", label: "Featured Listing — 1 Day",  cost: 200, desc: "Pinned at the top for 24 hours ⭐" },
 ] as const;
 
-type PromotionType = "none" | "1day" | "7day";
+type PromotionType = "1day" | "7day";
 
 function resizeImageToBase64(file: File): Promise<string> {
   return new Promise((resolve, reject) => {
@@ -55,18 +54,18 @@ export function SubmitProduct() {
   const { toast } = useToast();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const [title,         setTitle]         = useState("");
-  const [description,   setDescription]   = useState("");
-  const [imageUrl,      setImageUrl]       = useState("");
+  const [title,          setTitle]          = useState("");
+  const [description,    setDescription]    = useState("");
+  const [imageUrl,       setImageUrl]       = useState("");
   const [imageIsGallery, setImageIsGallery] = useState(false);
-  const [contactInfo,   setContactInfo]   = useState("");
-  const [submittedBy,   setSubmittedBy]   = useState("");
-  const [productLink,   setProductLink]   = useState("");
-  const [category,      setCategory]      = useState<string>("tasbeeh");
-  const [promotionType, setPromotionType] = useState<PromotionType>("none");
-  const [submitting,    setSubmitting]    = useState(false);
-  const [coins,         setCoins]         = useState(0);
-  const [loading,       setLoading]       = useState(true);
+  const [contactInfo,    setContactInfo]    = useState("");
+  const [submittedBy,    setSubmittedBy]    = useState("");
+  const [productLink,    setProductLink]    = useState("");
+  const [category,       setCategory]       = useState<string>("tasbeeh");
+  const [promotionType,  setPromotionType]  = useState<PromotionType>("1day");
+  const [submitting,     setSubmitting]     = useState(false);
+  const [coins,          setCoins]          = useState(0);
+  const [loading,        setLoading]        = useState(true);
 
   useEffect(() => {
     setLoading(true);
@@ -102,7 +101,7 @@ export function SubmitProduct() {
       toast({ title: "Please fill all required fields", variant: "destructive" });
       return;
     }
-    if (selectedPlan.cost > 0 && !canAfford) {
+    if (!canAfford) {
       toast({
         title: "Insufficient Coins",
         description: `You need ${selectedPlan.cost} coins. You have ${coins}.`,
@@ -237,7 +236,6 @@ export function SubmitProduct() {
               )}
             </div>
           )}
-          {imageIsGallery && !imageUrl && null}
           {imageIsGallery && (
             <button
               type="button"
@@ -307,8 +305,9 @@ export function SubmitProduct() {
         {/* Promotion Plans */}
         <div className="space-y-2">
           <label className="text-emerald-400 text-sm font-medium flex items-center gap-2">
-            <Star className="w-4 h-4 text-amber-400" /> Promotion Plan
+            <Star className="w-4 h-4 text-amber-400" /> Choose a Plan
           </label>
+          <p className="text-emerald-700 text-xs">All listings require coins. Earn coins via daily check-in, listening to Quran, and referrals.</p>
           <div className="space-y-2">
             {PROMOTION_PLANS.map((plan) => {
               const afford = coins >= plan.cost;
@@ -316,28 +315,27 @@ export function SubmitProduct() {
                 <button
                   key={plan.value}
                   type="button"
-                  onClick={() => setPromotionType(plan.value)}
-                  disabled={plan.cost > 0 && !afford}
+                  onClick={() => { if (afford) setPromotionType(plan.value); }}
+                  disabled={!afford}
                   className={`w-full flex items-center justify-between p-3 rounded-xl border text-left transition-all ${
                     promotionType === plan.value
-                      ? plan.cost > 0
+                      ? plan.value === "7day"
                         ? "bg-amber-900/30 border-amber-700/60 text-white"
                         : "bg-emerald-800/30 border-emerald-700/60 text-white"
                       : "bg-emerald-950/30 border-emerald-900/50 text-emerald-500"
-                  } ${plan.cost > 0 && !afford ? "opacity-40 cursor-not-allowed" : ""}`}
+                  } ${!afford ? "opacity-40 cursor-not-allowed" : ""}`}
                 >
                   <div>
                     <p className="font-semibold text-sm">{plan.label}</p>
                     <p className="text-xs opacity-70 mt-0.5">{plan.desc}</p>
+                    {!afford && (
+                      <p className="text-xs text-red-400/80 mt-0.5">Need {plan.cost - coins} more coins</p>
+                    )}
                   </div>
-                  {plan.cost > 0 ? (
-                    <div className="flex items-center gap-1 px-2 py-1 rounded-full bg-amber-900/40 border border-amber-800/40 shrink-0">
-                      <Coins className="w-3.5 h-3.5 text-amber-400" />
-                      <span className="text-amber-300 font-bold text-sm">{plan.cost}</span>
-                    </div>
-                  ) : (
-                    <span className="text-emerald-500 text-xs">Free</span>
-                  )}
+                  <div className="flex items-center gap-1 px-2 py-1 rounded-full bg-amber-900/40 border border-amber-800/40 shrink-0">
+                    <Coins className="w-3.5 h-3.5 text-amber-400" />
+                    <span className="text-amber-300 font-bold text-sm">{plan.cost}</span>
+                  </div>
                 </button>
               );
             })}
@@ -350,22 +348,22 @@ export function SubmitProduct() {
         >
           <p className="font-semibold text-emerald-500 mb-1">ℹ️ Important</p>
           <p>• Product stays pending until admin approves it.</p>
-          <p>• Promotion coins are deducted at submission.</p>
+          <p>• Coins are deducted at submission.</p>
           <p>• Promotion timer starts only after admin approval.</p>
           <p>• Coins are refunded if your product is rejected.</p>
         </div>
 
         <Button
           type="submit"
-          disabled={submitting || loading}
-          className="w-full h-12 bg-emerald-700 hover:bg-emerald-600 text-white font-bold rounded-xl text-base"
+          disabled={submitting || loading || !canAfford}
+          className="w-full h-12 bg-emerald-700 hover:bg-emerald-600 text-white font-bold rounded-xl text-base disabled:opacity-50"
         >
           {submitting ? (
             <><Loader2 className="w-4 h-4 animate-spin mr-2" /> Submitting…</>
-          ) : selectedPlan.cost > 0 ? (
-            `Submit & Spend ${selectedPlan.cost} Coins`
+          ) : !canAfford ? (
+            `Need ${selectedPlan.cost - coins} more coins`
           ) : (
-            "Submit Product"
+            `Submit & Spend ${selectedPlan.cost} Coins`
           )}
         </Button>
       </form>

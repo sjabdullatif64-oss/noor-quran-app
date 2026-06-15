@@ -2,102 +2,99 @@ import React, { useEffect, useState } from "react";
 import { usePrayerTimes, useRandomAyah } from "@/lib/api";
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import { MapPin, Clock, BookOpen, ImageOff, ChevronRight, Play } from "lucide-react";
+import { MapPin, Clock, BookOpen, ChevronRight, Star, Package } from "lucide-react";
 import { Link } from "wouter";
 import { getCity, getCountry } from "@/lib/settings";
 import { useI18n } from "@/lib/i18n-context";
 import { useQuery } from "@tanstack/react-query";
-import { fetchUpdates, resolveImageUrl, UpdateItem, adminData, mergeItems } from "@/lib/updates-data";
+import { noorApi, type NoorProduct } from "@/lib/noor-api";
 
-// ── Islamic Updates preview strip ─────────────────────────────────────────────
-function useUpdatesPreview() {
+// ── Islamic Products preview strip ────────────────────────────────────────────
+function useProductsPreview() {
   return useQuery({
-    queryKey: ["updates-home"],
-    queryFn: async (): Promise<UpdateItem[]> => {
-      let sheetItems: UpdateItem[] = [];
-      try { sheetItems = await fetchUpdates(); } catch { /* offline — local items still show */ }
-      const localItems = adminData.loadLocal();
-      const deletedIds = adminData.loadDeleted();
-      const overrides  = adminData.loadOverrides();
-      return mergeItems(sheetItems, localItems, deletedIds, overrides);
+    queryKey: ["products-home"],
+    queryFn: async (): Promise<{ featured: NoorProduct[]; rest: NoorProduct[] }> => {
+      const [f, a] = await Promise.all([
+        noorApi.getFeaturedProducts(),
+        noorApi.getProducts(),
+      ]);
+      const featuredIds = new Set(f.products.map((p) => p.id));
+      const now = new Date().toISOString();
+      const activeFeatured = f.products.filter(
+        (p) => p.promotionExpiry && p.promotionExpiry > now,
+      );
+      const rest = a.products.filter((p) => !featuredIds.has(p.id));
+      return { featured: activeFeatured, rest };
     },
     staleTime: 60_000,
     retry: 1,
   });
 }
 
-function UpdatePreviewCard({ item }: { item: UpdateItem }) {
-  const [imgStatus, setImgStatus] = useState<"loading" | "ok" | "error">("loading");
-  const resolved = resolveImageUrl(item.image_url);
-  const hasVideo = !!item.video_url?.trim();
-
+function ProductPreviewCard({ p, featured }: { p: NoorProduct; featured?: boolean }) {
   return (
-    <Link href="/updates"
-      className="shrink-0 w-48 rounded-2xl overflow-hidden border border-emerald-900/30 flex flex-col transition-all active:scale-[0.97]"
-      style={{ background: "rgba(255,255,255,0.03)" }}>
-      {/* Image */}
-      <div className="relative w-full overflow-hidden" style={{ aspectRatio: "16/9" }}>
-        {imgStatus === "loading" && item.image_url && (
-          <div className="absolute inset-0 animate-pulse" style={{ background: "rgba(26,92,56,0.15)" }} />
-        )}
-        {item.image_url && imgStatus !== "error" ? (
+    <Link
+      href="/marketplace"
+      className="shrink-0 w-44 rounded-2xl overflow-hidden border flex flex-col transition-all active:scale-[0.97]"
+      style={{
+        background: featured
+          ? "linear-gradient(135deg, rgba(120,80,0,0.3) 0%, rgba(50,30,0,0.25) 100%)"
+          : "rgba(255,255,255,0.03)",
+        borderColor: featured ? "rgba(180,120,0,0.4)" : "rgba(26,92,56,0.3)",
+      }}
+    >
+      {p.imageUrl ? (
+        <div className="w-full overflow-hidden bg-black/20" style={{ aspectRatio: "4/3" }}>
           <img
-            src={resolved}
-            alt={item.title}
+            src={p.imageUrl}
+            alt={p.title}
             className="w-full h-full object-cover"
-            style={{ opacity: imgStatus === "ok" ? 1 : 0, transition: "opacity 0.3s" }}
-            onLoad={() => {
-              console.log(`[Noor/Home] Image loaded ✓ url="${resolved}"`);
-              setImgStatus("ok");
-            }}
-            onError={() => {
-              console.error(
-                `[Noor/Home] Image FAILED — resolved="${resolved}"\n` +
-                `  → Make sure the Drive file is shared as "Anyone with the link can view"`
-              );
-              setImgStatus("error");
-            }}
+            onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
             loading="lazy"
           />
-        ) : (
-          <div className="w-full h-full flex items-center justify-center"
-            style={{ background: "rgba(26,92,56,0.12)" }}>
-            <ImageOff className="w-6 h-6 text-emerald-900" />
+        </div>
+      ) : (
+        <div
+          className="w-full flex items-center justify-center"
+          style={{ aspectRatio: "4/3", background: "rgba(26,92,56,0.12)" }}
+        >
+          <Package className="w-8 h-8 text-emerald-900" />
+        </div>
+      )}
+      <div className="px-3 py-2.5 flex-1 flex flex-col justify-between gap-1">
+        {featured && (
+          <div className="flex items-center gap-1 text-amber-400 text-[10px] font-bold">
+            <Star className="w-3 h-3 fill-amber-400" /> Featured
           </div>
         )}
-        {hasVideo && imgStatus === "ok" && (
-          <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-            <div className="w-8 h-8 rounded-full flex items-center justify-center"
-              style={{ background: "rgba(0,0,0,0.5)" }}>
-              <Play className="w-3.5 h-3.5 text-white ml-0.5" />
-            </div>
-          </div>
-        )}
-        <div className="absolute inset-0" style={{ background: "linear-gradient(to bottom, transparent 40%, rgba(6,22,16,0.7) 100%)" }} />
-      </div>
-      {/* Title */}
-      <div className="px-3 py-2.5 flex-1 flex flex-col justify-between">
-        <p className="text-white text-xs font-semibold leading-snug line-clamp-2">{item.title}</p>
-        {item.category && (
-          <p className="text-emerald-700 text-[10px] mt-1 font-medium">{item.category}</p>
+        <p className="text-white text-xs font-semibold leading-snug line-clamp-2">{p.title}</p>
+        {p.category && (
+          <p className="text-emerald-700 text-[10px] font-medium capitalize">
+            {p.category.replace("_", " ")}
+          </p>
         )}
       </div>
     </Link>
   );
 }
 
-function IslamicUpdatesStrip() {
-  const { data: items = [], isLoading } = useUpdatesPreview();
-  const visible = items.filter((it) => it.image_url).slice(0, 6);
+function IslamicProductsStrip() {
+  const { data, isLoading } = useProductsPreview();
+
+  const featured = data?.featured ?? [];
+  const rest = data?.rest ?? [];
+  const visible = [...featured, ...rest].slice(0, 6);
 
   if (!isLoading && visible.length === 0) return null;
 
   return (
     <div className="space-y-3">
       <div className="flex items-center justify-between">
-        <h2 className="text-base font-bold text-foreground">Latest Updates</h2>
-        <Link href="/updates"
-          className="flex items-center gap-0.5 text-sm text-primary hover:underline font-medium">
+        <h2 className="text-base font-bold text-foreground">Islamic Products</h2>
+        <Link
+          href="/marketplace"
+          className="flex items-center gap-0.5 text-sm text-primary hover:underline font-medium"
+        >
           View all <ChevronRight className="w-4 h-4" />
         </Link>
       </div>
@@ -105,19 +102,28 @@ function IslamicUpdatesStrip() {
       <div className="flex gap-3 overflow-x-auto pb-1 scrollbar-hide -mx-1 px-1">
         {isLoading
           ? Array.from({ length: 3 }).map((_, i) => (
-              <div key={i} className="shrink-0 w-48 rounded-2xl overflow-hidden border border-border"
-                style={{ background: "var(--card)" }}>
-                <div className="w-full animate-pulse" style={{ aspectRatio: "16/9", background: "rgba(26,92,56,0.1)" }} />
+              <div
+                key={i}
+                className="shrink-0 w-44 rounded-2xl overflow-hidden border border-border"
+                style={{ background: "var(--card)" }}
+              >
+                <div
+                  className="w-full animate-pulse"
+                  style={{ aspectRatio: "4/3", background: "rgba(26,92,56,0.1)" }}
+                />
                 <div className="p-3 space-y-2">
                   <Skeleton className="h-3 w-full" />
                   <Skeleton className="h-3 w-3/4" />
                 </div>
               </div>
             ))
-          : visible.map((item) => (
-              <UpdatePreviewCard key={item.id || item.title} item={item} />
-            ))
-        }
+          : visible.map((p) => (
+              <ProductPreviewCard
+                key={p.id}
+                p={p}
+                featured={featured.some((f) => f.id === p.id)}
+              />
+            ))}
       </div>
     </div>
   );
@@ -275,8 +281,8 @@ export function Home() {
         </Card>
       </div>
 
-      {/* Islamic Updates strip */}
-      <IslamicUpdatesStrip />
+      {/* Islamic Products strip */}
+      <IslamicProductsStrip />
 
       {/* Quick links */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">

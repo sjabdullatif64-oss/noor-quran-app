@@ -1,8 +1,9 @@
+import { useState, useRef, useCallback } from "react";
 import { useLocation } from "wouter";
 import {
   Navigation, Heart, Hash, Gift, Settings, Download, Bookmark,
   ChevronRight, Bell, Info, Share2, Sparkles, PenLine, Star,
-  CalendarDays, ShoppingBag, Coins,
+  CalendarDays, ShoppingBag, Coins, X, Eye, EyeOff,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useI18n } from "@/lib/i18n-context";
@@ -13,10 +14,50 @@ const APP_SHARE_URL = "https://play.google.com/store/apps/details?id=com.sj64noo
 const APP_SHARE_MSG =
   "Download Noor Quran - Quran, Prayer Times, Islamic Features & More.\nA beautiful Islamic app for daily Muslim life.";
 
+const ADMIN_TAPS_REQUIRED = 20;
+
 export function More() {
   const [, navigate] = useLocation();
   const { toast }    = useToast();
   const { t }        = useI18n();
+
+  const [tapCount,         setTapCount]         = useState(0);
+  const [showAdminDialog,  setShowAdminDialog]  = useState(false);
+  const [adminTokenInput,  setAdminTokenInput]  = useState("");
+  const [showAdminPw,      setShowAdminPw]      = useState(false);
+  const tapResetTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const handleFooterTap = useCallback(() => {
+    if (tapResetTimer.current) clearTimeout(tapResetTimer.current);
+    setTapCount((prev) => {
+      const next = prev + 1;
+      if (next >= ADMIN_TAPS_REQUIRED) {
+        setShowAdminDialog(true);
+        return 0;
+      }
+      tapResetTimer.current = setTimeout(() => setTapCount(0), 3000);
+      return next;
+    });
+  }, []);
+
+  function handleAdminLogin() {
+    const tok = adminTokenInput.trim();
+    if (!tok) {
+      toast({ title: "Enter admin token", variant: "destructive" });
+      return;
+    }
+    localStorage.setItem("noor-admin-token", tok);
+    setShowAdminDialog(false);
+    setAdminTokenInput("");
+    setTapCount(0);
+    navigate("/admin-products");
+  }
+
+  function closeAdminDialog() {
+    setShowAdminDialog(false);
+    setAdminTokenInput("");
+    setTapCount(0);
+  }
 
   async function handleShare() {
     const shared = await nativeShare({
@@ -26,7 +67,6 @@ export function More() {
       dialogTitle: "Share Noor Quran",
     });
     if (!shared) {
-      // Clipboard fallback — only reached on environments with no share API
       const fullText = `${APP_SHARE_MSG}\n\n${APP_SHARE_URL}`;
       try {
         await navigator.clipboard.writeText(fullText);
@@ -52,13 +92,13 @@ export function More() {
       iconBg: "rgba(45,212,191,0.18)",
     },
     {
-      id: "updates",
-      label: t("more_updates"),
-      description: t("more_updates_sub"),
-      icon: <Sparkles className="w-6 h-6" />,
-      href: "/updates",
-      accent: "text-amber-300",
-      iconBg: "rgba(217,119,6,0.18)",
+      id: "marketplace",
+      label: "Islamic Marketplace",
+      description: "Browse & post Islamic products",
+      icon: <ShoppingBag className="w-6 h-6" />,
+      href: "/marketplace",
+      accent: "text-cyan-300",
+      iconBg: "rgba(34,211,238,0.15)",
     },
     {
       id: "writing",
@@ -151,15 +191,6 @@ export function More() {
       iconBg: "rgba(52,211,153,0.12)",
     },
     {
-      id: "marketplace",
-      label: "Islamic Marketplace",
-      description: "Browse & post Islamic products",
-      icon: <ShoppingBag className="w-6 h-6" />,
-      href: "/marketplace",
-      accent: "text-cyan-300",
-      iconBg: "rgba(34,211,238,0.15)",
-    },
-    {
       id: "profile",
       label: "My Profile & Coins",
       description: "Coins balance, referrals & products",
@@ -181,7 +212,7 @@ export function More() {
         <p className="text-emerald-600 text-sm mt-1">{t("more_subtitle")}</p>
       </div>
 
-      {/* Share App + Rate App — side by side prominent cards */}
+      {/* Share App + Rate App */}
       <div className="px-4 mb-4 flex flex-col gap-3">
         <button
           onClick={handleShare}
@@ -207,7 +238,6 @@ export function More() {
           </span>
         </button>
 
-        {/* Rate App */}
         <button
           onClick={() => openUrl("https://play.google.com/store/apps/details?id=com.sj64noorquran&reviewId=0")}
           className="w-full flex items-center gap-4 p-5 rounded-2xl border border-amber-700/40 text-left transition-all active:scale-[0.98] hover:border-amber-600/60"
@@ -268,13 +298,61 @@ export function More() {
         ))}
       </div>
 
-      {/* Footer — tap to open admin panel */}
+      {/* Footer — 20-tap admin access */}
       <button
-        onClick={() => navigate("/admin-products")}
-        className="w-full text-center text-emerald-900 text-xs mt-6 pb-4 active:text-emerald-700 transition-colors"
+        onClick={handleFooterTap}
+        className="w-full text-center text-emerald-900 text-xs mt-6 pb-4 active:text-emerald-700 transition-colors select-none"
       >
         {t("more_footer")}
       </button>
+
+      {/* Admin Token Dialog */}
+      {showAdminDialog && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center px-6"
+          style={{ background: "rgba(0,0,0,0.75)", backdropFilter: "blur(4px)" }}
+        >
+          <div
+            className="w-full max-w-sm rounded-2xl border border-emerald-800/50 p-6 space-y-4"
+            style={{ background: "linear-gradient(150deg, #071a0e 0%, #0d2618 100%)" }}
+          >
+            <div className="flex items-center justify-between">
+              <p className="text-emerald-300 font-bold text-base">Admin Access</p>
+              <button
+                onClick={closeAdminDialog}
+                className="w-8 h-8 flex items-center justify-center rounded-full border border-emerald-900/50 text-emerald-600 active:scale-90 transition-transform"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+            <p className="text-emerald-600 text-xs">Enter the admin token to continue.</p>
+            <div className="relative">
+              <input
+                type={showAdminPw ? "text" : "password"}
+                value={adminTokenInput}
+                onChange={(e) => setAdminTokenInput(e.target.value)}
+                onKeyDown={(e) => { if (e.key === "Enter") handleAdminLogin(); }}
+                placeholder="Admin token…"
+                autoFocus
+                className="w-full px-3 py-2.5 pr-10 rounded-xl bg-emerald-950/60 border border-emerald-800/50 text-white placeholder:text-emerald-800 text-sm focus:outline-none focus:ring-1 focus:ring-emerald-600"
+              />
+              <button
+                type="button"
+                onClick={() => setShowAdminPw((v) => !v)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-emerald-700"
+              >
+                {showAdminPw ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+              </button>
+            </div>
+            <button
+              onClick={handleAdminLogin}
+              className="w-full py-2.5 rounded-xl bg-emerald-700 hover:bg-emerald-600 text-white font-bold text-sm transition-colors active:scale-[0.98]"
+            >
+              Enter Admin Panel
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
