@@ -337,8 +337,17 @@ function productToRow(p: Product): string[] {
 }
 
 export async function getApprovedProducts(): Promise<Product[]> {
+  const now = new Date().toISOString();
   const rows = await readAllRows("Products");
-  return rows.map(rowToProduct).filter((p) => p.status === "approved").sort((a, b) => (b.approvedAt ?? "").localeCompare(a.approvedAt ?? ""));
+  return rows
+    .map(rowToProduct)
+    .filter(
+      (p) =>
+        p.status === "approved" &&
+        // hide expired promoted listings; legacy null-expiry products remain visible
+        (!p.promotionExpiry || p.promotionExpiry > now),
+    )
+    .sort((a, b) => (b.approvedAt ?? "").localeCompare(a.approvedAt ?? ""));
 }
 
 export async function getFeaturedProducts(): Promise<Product[]> {
