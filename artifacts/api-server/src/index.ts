@@ -1,12 +1,11 @@
 import app from "./app";
 import { logger } from "./lib/logger";
+import { initSheets } from "./lib/sheets";
 
 const rawPort = process.env["PORT"];
 
 if (!rawPort) {
-  throw new Error(
-    "PORT environment variable is required but was not provided.",
-  );
+  throw new Error("PORT environment variable is required but was not provided.");
 }
 
 const port = Number(rawPort);
@@ -15,11 +14,26 @@ if (Number.isNaN(port) || port <= 0) {
   throw new Error(`Invalid PORT value: "${rawPort}"`);
 }
 
-app.listen(port, (err) => {
-  if (err) {
-    logger.error({ err }, "Error listening on port");
+async function main() {
+  logger.info("Initializing Google Sheets data layer...");
+  try {
+    await initSheets();
+    logger.info("Google Sheets ready — all sheet tabs verified");
+  } catch (err) {
+    logger.error({ err }, "Google Sheets init failed — check connector binding");
     process.exit(1);
   }
 
-  logger.info({ port }, "Server listening");
+  app.listen(port, (err?: Error) => {
+    if (err) {
+      logger.error({ err }, "Error listening on port");
+      process.exit(1);
+    }
+    logger.info({ port }, "Server listening");
+  });
+}
+
+main().catch((err) => {
+  logger.error({ err }, "Fatal startup error");
+  process.exit(1);
 });
