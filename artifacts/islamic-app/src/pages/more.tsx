@@ -86,13 +86,13 @@ export function More() {
 
   const ITEMS = [
     {
-      id: "islamic-calendar",
-      label: t("more_islamic_calendar"),
-      description: t("more_islamic_calendar_sub"),
-      icon: <CalendarDays className="w-6 h-6" />,
-      href: "/islamic-calendar",
-      accent: "text-teal-300",
-      iconBg: "rgba(45,212,191,0.18)",
+      id: "profile",
+      label: "My Profile & Coins",
+      description: "Coins balance, referrals & products",
+      icon: <Coins className="w-6 h-6" />,
+      href: "/profile",
+      accent: "text-amber-300",
+      iconBg: "rgba(217,119,6,0.18)",
     },
     {
       id: "marketplace",
@@ -102,6 +102,15 @@ export function More() {
       href: "/marketplace",
       accent: "text-cyan-300",
       iconBg: "rgba(34,211,238,0.15)",
+    },
+    {
+      id: "islamic-calendar",
+      label: t("more_islamic_calendar"),
+      description: t("more_islamic_calendar_sub"),
+      icon: <CalendarDays className="w-6 h-6" />,
+      href: "/islamic-calendar",
+      accent: "text-teal-300",
+      iconBg: "rgba(45,212,191,0.18)",
     },
     {
       id: "writing",
@@ -192,15 +201,6 @@ export function More() {
       href: "/about",
       accent: "text-emerald-300",
       iconBg: "rgba(52,211,153,0.12)",
-    },
-    {
-      id: "profile",
-      label: "My Profile & Coins",
-      description: "Coins balance, referrals & products",
-      icon: <Coins className="w-6 h-6" />,
-      href: "/profile",
-      accent: "text-amber-300",
-      iconBg: "rgba(217,119,6,0.18)",
     },
   ];
 

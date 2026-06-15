@@ -54,6 +54,37 @@ function TxRow({ tx }: { tx: CoinTransaction }) {
   );
 }
 
+function ProductHistoryRow({ p }: { p: NoorProduct }) {
+  const isExpired =
+    p.status === "approved" && !!p.promotionExpiry && p.promotionExpiry < new Date().toISOString();
+  const badge = isExpired
+    ? { label: "Expired",  cls: "text-gray-400 border-gray-800/50" }
+    : p.status === "pending"
+    ? { label: "Pending",  cls: "text-yellow-400 border-yellow-800/50" }
+    : p.status === "approved"
+    ? { label: "Live",     cls: "text-emerald-400 border-emerald-800/50" }
+    : { label: "Rejected", cls: "text-red-400 border-red-800/50" };
+  return (
+    <div className="flex items-start gap-3 py-3 border-b border-emerald-900/30 last:border-0">
+      <span className={`mt-0.5 shrink-0 px-2 py-0.5 rounded-full border text-[10px] font-bold ${badge.cls}`}>
+        {badge.label}
+      </span>
+      <div className="flex-1 min-w-0">
+        <p className="text-white text-sm font-semibold leading-tight line-clamp-1">{p.title}</p>
+        <p className="text-emerald-700 text-xs mt-0.5">
+          {p.category.replace("_", " ")} · {new Date(p.createdAt).toLocaleDateString()}
+          {p.coinsSpent > 0 && (
+            <> · <span className="text-amber-600">{p.coinsSpent} coins</span></>
+          )}
+        </p>
+        {p.status === "rejected" && p.rejectionReason && (
+          <p className="text-red-500/70 text-xs mt-1 italic">Reason: {p.rejectionReason}</p>
+        )}
+      </div>
+    </div>
+  );
+}
+
 export function Profile() {
   const [, navigate] = useLocation();
   const { toast } = useToast();
@@ -100,11 +131,15 @@ export function Profile() {
       const deviceId = getDeviceId();
       const u = await ensureRegistered();
       try {
-        const profile = await noorApi.getProfile(deviceId);
+        const [profile, myProds] = await Promise.all([
+          noorApi.getProfile(deviceId),
+          noorApi.getMyProducts(deviceId).catch(() => ({ products: [] as NoorProduct[] })),
+        ]);
         if (alive) {
           setUser(profile.user);
           setStats(profile.stats);
           setTxs(profile.recentTransactions);
+          setMyProducts(myProds.products);
         }
       } catch {
         if (alive) {
@@ -133,8 +168,14 @@ export function Profile() {
     setCheckingIn(false);
   }
 
+  const APP_DOMAIN = "https://noor-quran-app.replit.app";
   function getReferralLink(userId: string) {
-    return `${window.location.origin}/?ref=${userId}`;
+    const origin = Capacitor.isNativePlatform()
+      ? APP_DOMAIN
+      : (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1"
+        ? APP_DOMAIN
+        : window.location.origin);
+    return `${origin}/?ref=${userId}`;
   }
 
   function copyReferral() {
@@ -340,6 +381,21 @@ export function Profile() {
         </div>
       )}
 
+      {/* My Products History */}
+      {myProducts.length > 0 && (
+        <div
+          className="mx-4 mt-5 rounded-2xl border border-emerald-900/40 overflow-hidden"
+          style={{ background: "rgba(10,30,18,0.6)" }}
+        >
+          <p className="text-emerald-400 text-sm font-semibold px-4 py-3 border-b border-emerald-900/30">
+            My Products ({myProducts.length})
+          </p>
+          <div className="px-4">
+            {myProducts.map((p) => <ProductHistoryRow key={p.id} p={p} />)}
+          </div>
+        </div>
+      )}
+
       {/* Coin earning guide */}
       <div
         className="mx-4 mt-5 rounded-2xl border border-emerald-900/40 p-4 space-y-2"
@@ -349,7 +405,6 @@ export function Profile() {
         <div className="space-y-1.5 text-xs text-emerald-600">
           <div className="flex justify-between"><span>🌙 New account bonus</span><span className="text-amber-400">+20 coins</span></div>
           <div className="flex justify-between"><span>📅 Daily check-in</span><span className="text-amber-400">+5 coins/day</span></div>
-          <div className="flex justify-between"><span>🎙 Listen to ayah (audio)</span><span className="text-amber-400">+1 coin/ayah</span></div>
           <div className="flex justify-between"><span>👥 Refer a friend</span><span className="text-amber-400">+100 coins</span></div>
           <div className="flex justify-between"><span>🤝 Join via referral link</span><span className="text-amber-400">+20 coins</span></div>
         </div>
