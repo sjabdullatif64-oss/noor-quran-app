@@ -2,7 +2,7 @@ import { useLocation } from "wouter";
 import {
   Navigation, Heart, Hash, Gift, Settings, Download, Bookmark,
   ChevronRight, Bell, Info, Share2, Sparkles, PenLine, Star,
-  CalendarDays, ShoppingBag, User, ShieldCheck, Coins,
+  CalendarDays, ShoppingBag, Coins,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useI18n } from "@/lib/i18n-context";
@@ -168,15 +168,6 @@ export function More() {
       accent: "text-amber-300",
       iconBg: "rgba(217,119,6,0.18)",
     },
-    {
-      id: "admin-products",
-      label: "Admin Panel",
-      description: "Approve or reject product listings",
-      icon: <ShieldCheck className="w-6 h-6" />,
-      href: "/admin-products",
-      accent: "text-violet-300",
-      iconBg: "rgba(139,92,246,0.15)",
-    },
   ];
 
   return (
@@ -277,10 +268,13 @@ export function More() {
         ))}
       </div>
 
-      {/* Footer */}
-      <p className="text-center text-emerald-900 text-xs mt-6 pb-4">
+      {/* Footer — tap to open admin panel */}
+      <button
+        onClick={() => navigate("/admin-products")}
+        className="w-full text-center text-emerald-900 text-xs mt-6 pb-4 active:text-emerald-700 transition-colors"
+      >
         {t("more_footer")}
-      </p>
+      </button>
     </div>
   );
 }

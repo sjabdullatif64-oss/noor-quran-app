@@ -40,6 +40,7 @@ export const productsTable = pgTable("products", {
   description: text("description").notNull(),
   imageUrl: text("image_url"),
   contactInfo: text("contact_info").notNull(),
+  productLink: text("product_link"),
   category: text("category").notNull(),
   status: text("status").notNull().default("pending"),
   promotionType: text("promotion_type").notNull().default("none"),

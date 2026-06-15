@@ -5,7 +5,6 @@ import {
   productsTable,
   coinTransactionsTable,
   PROMOTION_COINS,
-  PROMOTION_TYPES,
 } from "@workspace/db";
 import { eq, and, gt, desc } from "drizzle-orm";
 import { z } from "zod";
@@ -13,18 +12,18 @@ import { z } from "zod";
 const router = Router();
 
 const submitProductSchema = z.object({
-  deviceId: z.string().min(1),
-  title: z.string().min(2).max(200),
-  description: z.string().min(5).max(2000),
-  imageUrl: z.string().url().optional().or(z.literal("")),
-  contactInfo: z.string().min(2).max(500),
-  category: z.enum(["tasbeeh", "prayer_mat", "books", "attar", "courses", "other"]),
+  deviceId:      z.string().min(1),
+  title:         z.string().min(2).max(200),
+  description:   z.string().min(5).max(2000),
+  imageUrl:      z.string().max(2_000_000).optional().or(z.literal("")),
+  contactInfo:   z.string().min(2).max(500),
+  productLink:   z.string().url().optional().or(z.literal("")),
+  category:      z.enum(["tasbeeh", "prayer_mat", "books", "attar", "courses", "other"]),
   promotionType: z.enum(["none", "1day", "7day"]).default("none"),
-  submittedBy: z.string().max(100).optional(),
+  submittedBy:   z.string().max(100).optional(),
 });
 
 router.get("/", async (_req, res) => {
-  const now = new Date();
   const products = await db
     .select()
     .from(productsTable)
@@ -106,9 +105,9 @@ router.post("/", async (req, res) => {
       .where(eq(usersTable.id, user.id));
 
     await db.insert(coinTransactionsTable).values({
-      userId: user.id,
-      amount: -coinsNeeded,
-      reason: `Promotion purchase — ${promotionType} plan`,
+      userId:   user.id,
+      amount:   -coinsNeeded,
+      reason:   `Promotion purchase — ${promotionType} plan`,
       eventKey: `promo_purchase_${Date.now()}`,
     });
   }
@@ -116,16 +115,17 @@ router.post("/", async (req, res) => {
   const [product] = await db
     .insert(productsTable)
     .values({
-      userId: user.id,
-      title: fields.title,
-      description: fields.description,
-      imageUrl: fields.imageUrl || null,
-      contactInfo: fields.contactInfo,
-      category: fields.category,
-      status: "pending",
+      userId:       user.id,
+      title:        fields.title,
+      description:  fields.description,
+      imageUrl:     fields.imageUrl || null,
+      contactInfo:  fields.contactInfo,
+      productLink:  fields.productLink || null,
+      category:     fields.category,
+      status:       "pending",
       promotionType,
-      coinsSpent: coinsNeeded,
-      submittedBy: fields.submittedBy ?? null,
+      coinsSpent:   coinsNeeded,
+      submittedBy:  fields.submittedBy ?? null,
     })
     .returning();
 
