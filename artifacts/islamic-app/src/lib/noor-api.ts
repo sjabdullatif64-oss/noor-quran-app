@@ -2,7 +2,7 @@ import { Capacitor } from "@capacitor/core";
 
 const REPLIT_DOMAIN =
   import.meta.env.VITE_API_DOMAIN ||
-  "bd238ef0-1b86-4eea-96d7-950cea5f63f3-00-6n461hg694xp.pike.replit.dev";
+  "noor-quran.replit.app";
 
 export const API_BASE = Capacitor.isNativePlatform()
   ? `https://${REPLIT_DOMAIN}/api`
@@ -118,6 +118,10 @@ export const noorApi = {
     return noorFetch(`/products/my/${deviceId}`);
   },
 
+  async getProduct(productId: string): Promise<{ product: NoorProduct }> {
+    return noorFetch(`/products/${productId}`);
+  },
+
   async submitProduct(data: {
     deviceId: string;
     title: string;
@@ -126,12 +130,30 @@ export const noorApi = {
     contactInfo: string;
     productLink?: string;
     category: string;
-    promotionType: "none" | "1day" | "7day";
+    promotionType: "1day" | "7day";
     submittedBy?: string;
   }): Promise<{ product: NoorProduct }> {
     return noorFetch("/products", {
       method: "POST",
       body: JSON.stringify(data),
+    });
+  },
+
+  async editProduct(
+    productId: string,
+    deviceId: string,
+    data: {
+      title?: string;
+      description?: string;
+      imageUrl?: string;
+      contactInfo?: string;
+      productLink?: string;
+      category?: string;
+    },
+  ): Promise<{ product: NoorProduct }> {
+    return noorFetch(`/products/${productId}`, {
+      method: "PATCH",
+      body: JSON.stringify({ deviceId, ...data }),
     });
   },
 
@@ -180,6 +202,26 @@ export const noorApi = {
     return noorFetch(`/admin/products/${productId}`, {
       method: "DELETE",
       headers: { "x-admin-token": adminToken },
+    });
+  },
+
+  async adminEditProduct(
+    adminToken: string,
+    productId: string,
+    data: {
+      title?: string;
+      description?: string;
+      imageUrl?: string;
+      contactInfo?: string;
+      productLink?: string;
+      category?: string;
+      submittedBy?: string;
+    },
+  ): Promise<{ product: NoorProduct }> {
+    return noorFetch(`/admin/products/${productId}`, {
+      method: "PATCH",
+      headers: { "x-admin-token": adminToken },
+      body: JSON.stringify(data),
     });
   },
 };
