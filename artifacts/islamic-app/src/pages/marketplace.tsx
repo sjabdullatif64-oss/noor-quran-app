@@ -1,9 +1,7 @@
 import { useState, useEffect } from "react";
-import { Link } from "wouter";
 import { noorApi, type NoorProduct } from "@/lib/noor-api";
 import { openUrl, nativeShare } from "@/lib/capacitor";
-import { Star, Tag, Phone, Calendar, Loader2, Plus, Sparkles, Package, ExternalLink, Share2 } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { Star, Tag, Phone, Calendar, Loader2, Sparkles, Package, ExternalLink, Share2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 const CATEGORY_LABELS: Record<string, string> = {
@@ -167,16 +165,9 @@ export function Marketplace() {
       className="min-h-screen pb-28 animate-in fade-in duration-500"
       style={{ background: "linear-gradient(150deg, #071a0e 0%, #0a1f12 50%, #061610 100%)" }}
     >
-      <div className="px-4 pt-8 pb-4 flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-serif font-bold text-emerald-300">Islamic Marketplace</h1>
-          <p className="text-emerald-700 text-sm mt-0.5">Discover Islamic products</p>
-        </div>
-        <Link href="/submit-product">
-          <Button size="sm" className="bg-emerald-700 hover:bg-emerald-600 text-white rounded-xl gap-1">
-            <Plus className="w-4 h-4" /> Post
-          </Button>
-        </Link>
+      <div className="px-4 pt-8 pb-4">
+        <h1 className="text-2xl font-serif font-bold text-emerald-300">Islamic Marketplace</h1>
+        <p className="text-emerald-700 text-sm mt-0.5">Discover Islamic products</p>
       </div>
 
       <div className="px-4 flex gap-2 mb-5">
@@ -205,7 +196,6 @@ export function Marketplace() {
             <div className="text-center py-16 text-emerald-700">
               <Sparkles className="w-10 h-10 mx-auto mb-3 opacity-40" />
               <p>No featured products yet.</p>
-              <p className="text-xs mt-1">Promote your product to appear here!</p>
             </div>
           ) : (
             featured.map((p) => <ProductCard key={p.id} p={p} featured />)
@@ -229,8 +219,7 @@ export function Marketplace() {
           {nonFeatured.length === 0 && featured.length === 0 ? (
             <div className="text-center py-16 text-emerald-700">
               <Package className="w-10 h-10 mx-auto mb-3 opacity-40" />
-              <p>No products yet.</p>
-              <p className="text-xs mt-1">Be the first to post an Islamic product!</p>
+              <p>No products available yet.</p>
             </div>
           ) : (
             nonFeatured.map((p) => <ProductCard key={p.id} p={p} />)

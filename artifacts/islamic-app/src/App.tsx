@@ -28,10 +28,7 @@ import { Writing } from "@/pages/writing";
 import { IslamicCalendar } from "@/pages/islamic-calendar";
 import { AzanSettings } from "@/pages/azan-settings";
 import { Marketplace } from "@/pages/marketplace";
-import { SubmitProduct } from "@/pages/submit-product";
-import { Profile } from "@/pages/profile";
 import { AdminProducts } from "@/pages/admin-products";
-import { EditProduct } from "@/pages/edit-product";
 import { JuzReader } from "@/pages/juz-reader";
 import { useEffect } from "react";
 import { ensureRegistered, reportAyahComplete } from "@/lib/user";
@@ -93,10 +90,7 @@ function Router() {
       <Route path="/islamic-calendar" component={IslamicCalendar} />
       <Route path="/azan-settings" component={AzanSettings} />
       <Route path="/marketplace" component={Marketplace} />
-      <Route path="/submit-product" component={SubmitProduct} />
-      <Route path="/profile" component={Profile} />
       <Route path="/admin-products" component={AdminProducts} />
-      <Route path="/edit-product/:id" component={EditProduct} />
       <Route path="/juz/:number" component={JuzReader} />
 
       <Route component={NotFound} />
