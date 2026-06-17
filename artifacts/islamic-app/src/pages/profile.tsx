@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useLocation } from "wouter";
 import { noorApi, type NoorUser, type CoinTransaction, type ProfileStats, type NoorProduct } from "@/lib/noor-api";
 import { getDeviceId, ensureRegistered, doDailyCheckin } from "@/lib/user";
+import { nativeShare } from "@/lib/capacitor";
 import {
   Coins, Users, TrendingUp, Package, Clock, Star, XCircle,
   Loader2, Copy, CheckCheck, Zap, Share2, RefreshCw, Pencil,
@@ -194,17 +195,14 @@ export function Profile() {
   async function shareReferral() {
     if (!user) return;
     const link = getReferralLink(user.id);
-    if (navigator.share) {
-      try {
-        await navigator.share({
-          title: "Join Noor Quran",
-          text: "Read the Quran with beautiful translations & earn rewards. Join using my referral link!",
-          url: link,
-        });
-      } catch {
-        // user cancelled share
-      }
-    } else {
+    const shared = await nativeShare({
+      title: "Join Noor Quran",
+      text: "Read the Quran with beautiful translations & earn coins. Join using my referral link!",
+      url: link,
+      dialogTitle: "Share Referral Link",
+    });
+    if (!shared) {
+      // nativeShare returned false (cancelled or unsupported) — fall back to clipboard
       copyReferral();
     }
   }

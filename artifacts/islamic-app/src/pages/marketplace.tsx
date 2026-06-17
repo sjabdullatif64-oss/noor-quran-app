@@ -1,9 +1,10 @@
 import { useState, useEffect } from "react";
 import { Link } from "wouter";
 import { noorApi, type NoorProduct } from "@/lib/noor-api";
-import { openUrl } from "@/lib/capacitor";
-import { Star, Tag, Phone, Calendar, Loader2, Plus, Sparkles, Package, ExternalLink } from "lucide-react";
+import { openUrl, nativeShare } from "@/lib/capacitor";
+import { Star, Tag, Phone, Calendar, Loader2, Plus, Sparkles, Package, ExternalLink, Share2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { useToast } from "@/hooks/use-toast";
 
 const CATEGORY_LABELS: Record<string, string> = {
   tasbeeh: "Tasbeeh",
@@ -24,7 +25,35 @@ function timeAgo(dateStr: string) {
 }
 
 function ProductCard({ p, featured }: { p: NoorProduct; featured?: boolean }) {
+  const { toast } = useToast();
   const hasLink = !!p.productLink?.trim();
+
+  async function handleShare() {
+    const lines = [p.description, `Contact: ${p.contactInfo}`];
+    if (p.submittedBy) lines.push(`By ${p.submittedBy}`);
+    lines.push("— Shared via Noor Quran Islamic Marketplace");
+
+    const productUrl = p.productLink?.startsWith("http") ? p.productLink : undefined;
+
+    const shared = await nativeShare({
+      title: p.title,
+      text: lines.join("\n"),
+      url: productUrl,
+      dialogTitle: "Share Product",
+    });
+
+    if (!shared) {
+      const clipText = productUrl
+        ? `${p.title}\n${lines.join("\n")}\n\n${productUrl}`
+        : `${p.title}\n${lines.join("\n")}`;
+      try {
+        await navigator.clipboard.writeText(clipText);
+        toast({ title: "Copied!", description: "Product details copied to clipboard." });
+      } catch {
+        toast({ title: "Share unavailable", description: "Please try again.", variant: "destructive" });
+      }
+    }
+  }
 
   return (
     <div
@@ -88,15 +117,24 @@ function ProductCard({ p, featured }: { p: NoorProduct; featured?: boolean }) {
           )}
         </div>
 
-        {hasLink && (
+        <div className="flex gap-2 mt-1">
+          {hasLink && (
+            <button
+              onClick={() => openUrl(p.productLink!)}
+              className="flex-1 flex items-center justify-center gap-2 py-2 rounded-xl border border-emerald-700/50 bg-emerald-800/30 text-emerald-300 text-sm font-semibold active:scale-[0.97] transition-transform"
+            >
+              <ExternalLink className="w-4 h-4" />
+              Visit Product
+            </button>
+          )}
           <button
-            onClick={() => openUrl(p.productLink!)}
-            className="mt-1 w-full flex items-center justify-center gap-2 py-2 rounded-xl border border-emerald-700/50 bg-emerald-800/30 text-emerald-300 text-sm font-semibold active:scale-[0.97] transition-transform"
+            onClick={handleShare}
+            className={`${hasLink ? "px-4" : "flex-1"} flex items-center justify-center gap-2 py-2 rounded-xl border border-emerald-900/50 bg-emerald-950/40 text-emerald-400 text-sm font-semibold active:scale-[0.97] transition-transform`}
           >
-            <ExternalLink className="w-4 h-4" />
-            Visit Product
+            <Share2 className="w-4 h-4" />
+            {!hasLink && "Share"}
           </button>
-        )}
+        </div>
       </div>
     </div>
   );
