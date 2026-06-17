@@ -2,7 +2,7 @@ import { Capacitor } from "@capacitor/core";
 
 const REPLIT_DOMAIN =
   import.meta.env.VITE_API_DOMAIN ||
-  "bd238ef0-1b86-4eea-96d7-950cea5f63f3-00-6n461hg694xp.pike.replit.dev";
+  "noor-quran.replit.app";
 
 export const API_BASE = Capacitor.isNativePlatform()
   ? `https://${REPLIT_DOMAIN}/api`

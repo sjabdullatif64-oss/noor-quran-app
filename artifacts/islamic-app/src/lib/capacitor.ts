@@ -34,6 +34,10 @@ interface AppPlugin {
     event: "backButton",
     handler: (data: { canGoBack: boolean }) => void
   ): { remove: () => void };
+  addListener(
+    event: "appUrlOpen",
+    handler: (data: { url: string }) => void
+  ): { remove: () => void };
   exitApp(): Promise<void>;
   getInfo(): Promise<{ name: string; id: string; build: string; version: string }>;
   getLaunchUrl(): Promise<{ url: string } | null>;
