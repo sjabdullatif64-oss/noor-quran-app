@@ -116,31 +116,6 @@ export async function ensureRegistered(): Promise<NoorUser | null> {
   return _registrationPromise;
 }
 
-export async function refreshProfile(): Promise<NoorUser | null> {
-  const deviceId = getDeviceId();
-  try {
-    const { user } = await noorApi.getProfile(deviceId);
-    return user;
-  } catch {
-    return null;
-  }
-}
-
-export async function doDailyCheckin(): Promise<{
-  awarded: boolean;
-  coins: number;
-  amount?: number;
-  message?: string;
-}> {
-  const deviceId = getDeviceId();
-  try {
-    return await noorApi.dailyCheckin(deviceId);
-  } catch (err) {
-    console.warn("[Noor] Daily checkin failed:", err);
-    return { awarded: false, coins: 0 };
-  }
-}
-
 export async function reportAyahComplete(
   surahNumber: number,
   ayahNumber: number,
