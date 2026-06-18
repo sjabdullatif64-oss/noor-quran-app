@@ -99,6 +99,26 @@ export const noorApi = {
     });
   },
 
+  async adminCreateProduct(
+    adminToken: string,
+    data: {
+      title: string;
+      description: string;
+      imageUrl?: string;
+      contactInfo: string;
+      productLink?: string;
+      category: string;
+      submittedBy?: string;
+      featured?: boolean;
+    },
+  ): Promise<{ product: NoorProduct }> {
+    return noorFetch("/admin/products", {
+      method: "POST",
+      headers: { "x-admin-token": adminToken },
+      body: JSON.stringify(data),
+    });
+  },
+
   async adminApprove(
     adminToken: string,
     productId: string,
@@ -118,6 +138,18 @@ export const noorApi = {
       method: "POST",
       headers: { "x-admin-token": adminToken },
       body: JSON.stringify({ rejectionReason }),
+    });
+  },
+
+  async adminSetFeatured(
+    adminToken: string,
+    productId: string,
+    featured: boolean,
+  ): Promise<{ product: NoorProduct }> {
+    return noorFetch(`/admin/products/${productId}/feature`, {
+      method: "POST",
+      headers: { "x-admin-token": adminToken },
+      body: JSON.stringify({ featured }),
     });
   },
 

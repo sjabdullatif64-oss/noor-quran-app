@@ -56,9 +56,7 @@ function ProductCard({ p, featured }: { p: NoorProduct; featured?: boolean }) {
   return (
     <div
       className={`relative rounded-2xl border overflow-hidden transition-all ${
-        featured
-          ? "border-amber-600/40"
-          : "border-emerald-900/50"
+        featured ? "border-amber-600/40" : "border-emerald-900/50"
       }`}
       style={{
         background: featured
@@ -67,13 +65,13 @@ function ProductCard({ p, featured }: { p: NoorProduct; featured?: boolean }) {
       }}
     >
       {featured && (
-        <div className="absolute top-2 right-2 flex items-center gap-1 px-2 py-0.5 rounded-full bg-amber-600/80 text-amber-100 text-xs font-bold">
-          <Star className="w-3 h-3 fill-amber-200" /> Featured
+        <div className="absolute top-2 right-2 flex items-center gap-1 px-2 py-0.5 rounded-full bg-amber-600/80 text-amber-100 text-[10px] font-bold z-10">
+          <Star className="w-2.5 h-2.5 fill-amber-200" /> Featured
         </div>
       )}
 
       {p.imageUrl && (
-        <div className="w-full h-44 overflow-hidden bg-black/20">
+        <div className="w-full h-28 overflow-hidden bg-black/20">
           <img
             src={p.imageUrl}
             alt={p.title}
@@ -83,53 +81,53 @@ function ProductCard({ p, featured }: { p: NoorProduct; featured?: boolean }) {
         </div>
       )}
 
-      <div className="p-4 space-y-2">
+      <div className="p-3 space-y-1.5">
         <div className="flex items-start justify-between gap-2">
-          <h3 className="font-bold text-white text-base leading-tight">{p.title}</h3>
-          <span className="shrink-0 text-xs text-emerald-500 px-2 py-0.5 rounded-full border border-emerald-900/60 bg-emerald-950/40">
+          <h3 className="font-bold text-white text-sm leading-tight">{p.title}</h3>
+          <span className="shrink-0 text-[10px] text-emerald-500 px-1.5 py-0.5 rounded-full border border-emerald-900/60 bg-emerald-950/40">
             {CATEGORY_LABELS[p.category] ?? p.category}
           </span>
         </div>
 
-        <p className="text-emerald-400 text-sm leading-relaxed line-clamp-3">{p.description}</p>
+        <p className="text-emerald-400 text-xs leading-relaxed line-clamp-2">{p.description}</p>
 
-        <div className="flex items-center gap-2 text-emerald-600 text-xs">
-          <Phone className="w-3.5 h-3.5" />
+        <div className="flex items-center gap-1.5 text-emerald-600 text-[10px]">
+          <Phone className="w-3 h-3" />
           <span className="truncate">{p.contactInfo}</span>
         </div>
 
         {p.submittedBy && (
-          <div className="flex items-center gap-2 text-emerald-700 text-xs">
-            <Tag className="w-3.5 h-3.5" />
+          <div className="flex items-center gap-1.5 text-emerald-700 text-[10px]">
+            <Tag className="w-3 h-3" />
             <span>By {p.submittedBy}</span>
           </div>
         )}
 
-        <div className="flex items-center gap-2 text-emerald-800 text-xs">
-          <Calendar className="w-3.5 h-3.5" />
+        <div className="flex items-center gap-1.5 text-emerald-800 text-[10px]">
+          <Calendar className="w-3 h-3" />
           <span>{timeAgo(p.createdAt)}</span>
           {featured && p.promotionExpiry && (
             <span className="ml-auto text-amber-600">
-              Featured until {new Date(p.promotionExpiry).toLocaleDateString()}
+              Until {new Date(p.promotionExpiry).toLocaleDateString()}
             </span>
           )}
         </div>
 
-        <div className="flex gap-2 mt-1">
+        <div className="flex gap-2 pt-0.5">
           {hasLink && (
             <button
               onClick={() => openUrl(p.productLink!)}
-              className="flex-1 flex items-center justify-center gap-2 py-2 rounded-xl border border-emerald-700/50 bg-emerald-800/30 text-emerald-300 text-sm font-semibold active:scale-[0.97] transition-transform"
+              className="flex-1 flex items-center justify-center gap-1.5 py-1.5 rounded-xl border border-emerald-700/50 bg-emerald-800/30 text-emerald-300 text-xs font-semibold active:scale-[0.97] transition-transform"
             >
-              <ExternalLink className="w-4 h-4" />
-              Visit Product
+              <ExternalLink className="w-3.5 h-3.5" />
+              Visit
             </button>
           )}
           <button
             onClick={handleShare}
-            className={`${hasLink ? "px-4" : "flex-1"} flex items-center justify-center gap-2 py-2 rounded-xl border border-emerald-900/50 bg-emerald-950/40 text-emerald-400 text-sm font-semibold active:scale-[0.97] transition-transform`}
+            className={`${hasLink ? "px-4" : "flex-1"} flex items-center justify-center gap-1.5 py-1.5 rounded-xl border border-emerald-900/50 bg-emerald-950/40 text-emerald-400 text-xs font-semibold active:scale-[0.97] transition-transform`}
           >
-            <Share2 className="w-4 h-4" />
+            <Share2 className="w-3.5 h-3.5" />
             {!hasLink && "Share"}
           </button>
         </div>
@@ -191,7 +189,7 @@ export function Marketplace() {
           <Loader2 className="w-8 h-8 animate-spin text-emerald-600" />
         </div>
       ) : tab === "featured" ? (
-        <div className="px-4 space-y-4">
+        <div className="px-4 space-y-2.5">
           {featured.length === 0 ? (
             <div className="text-center py-16 text-emerald-700">
               <Sparkles className="w-10 h-10 mx-auto mb-3 opacity-40" />
@@ -202,7 +200,7 @@ export function Marketplace() {
           )}
         </div>
       ) : (
-        <div className="px-4 space-y-4">
+        <div className="px-4 space-y-2.5">
           {featured.length > 0 && (
             <>
               <p className="text-amber-500 text-xs font-semibold uppercase tracking-wider flex items-center gap-1">

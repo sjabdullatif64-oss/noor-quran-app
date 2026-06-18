@@ -10,6 +10,7 @@ import {
   getProductById,
   updateProduct,
   deleteProduct,
+  createProduct,
 } from "../lib/sheets";
 import { PROMOTION_HOURS } from "../lib/constants";
 
@@ -44,6 +45,78 @@ router.get("/products/all", async (_req, res) => {
     }),
   );
   res.json({ products: withUsers });
+});
+
+const adminCreateSchema = z.object({
+  title:       z.string().min(2).max(200),
+  description: z.string().min(5).max(2000),
+  imageUrl:    z.string().max(2_000_000).optional().or(z.literal("")),
+  contactInfo: z.string().min(2).max(500),
+  productLink: z.string().url().optional().or(z.literal("")),
+  category:    z.enum(["tasbeeh", "prayer_mat", "books", "attar", "courses", "other"]),
+  submittedBy: z.string().max(100).optional(),
+  featured:    z.boolean().default(false),
+});
+
+router.post("/products", async (req, res) => {
+  const parsed = adminCreateSchema.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ error: "Invalid request", details: parsed.error.issues });
+    return;
+  }
+  const { imageUrl, productLink, featured, submittedBy, ...fields } = parsed.data;
+  const now = new Date();
+  const promotionType = featured ? "7day" : "none";
+  const promotionExpiry = featured
+    ? new Date(now.getTime() + 365 * 24 * 3600 * 1000).toISOString()
+    : null;
+  const product = await createProduct({
+    userId:          "admin",
+    title:           fields.title,
+    description:     fields.description,
+    imageUrl:        imageUrl || null,
+    contactInfo:     fields.contactInfo,
+    productLink:     productLink || null,
+    category:        fields.category,
+    status:          "approved",
+    promotionType,
+    coinsSpent:      0,
+    submittedBy:     submittedBy ?? null,
+    approvedAt:      now.toISOString(),
+    rejectedAt:      null,
+    rejectionReason: null,
+    promotionExpiry,
+  });
+  res.status(201).json({ product });
+});
+
+const featureSchema = z.object({ featured: z.boolean() });
+
+router.post("/products/:id/feature", async (req, res) => {
+  const product = await getProductById(req.params.id);
+  if (!product) {
+    res.status(404).json({ error: "Product not found" });
+    return;
+  }
+  const parsed = featureSchema.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ error: "Invalid request" });
+    return;
+  }
+  const { featured } = parsed.data;
+  const now = new Date();
+  const promotionType = featured ? "7day" : "none";
+  const promotionExpiry = featured
+    ? new Date(now.getTime() + 30 * 24 * 3600 * 1000).toISOString()
+    : null;
+  const updated = await updateProduct(product.id, {
+    promotionType,
+    promotionExpiry,
+    ...(product.status !== "approved"
+      ? { status: "approved", approvedAt: now.toISOString() }
+      : {}),
+  });
+  res.json({ product: updated });
 });
 
 const rejectSchema = z.object({ rejectionReason: z.string().optional() });
