@@ -3,7 +3,7 @@ import { useLocation } from "wouter";
 import {
   Navigation, Heart, Hash, Gift, Settings, Download, Bookmark,
   ChevronRight, Bell, Info, Share2, Sparkles, PenLine, Star,
-  CalendarDays, ShoppingBag, Coins, X, Eye, EyeOff,
+  CalendarDays, ShoppingBag, X, Eye, EyeOff,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useI18n } from "@/lib/i18n-context";
@@ -86,18 +86,9 @@ export function More() {
 
   const ITEMS = [
     {
-      id: "profile",
-      label: "My Profile & Coins",
-      description: "Coins balance, referrals & products",
-      icon: <Coins className="w-6 h-6" />,
-      href: "/profile",
-      accent: "text-amber-300",
-      iconBg: "rgba(217,119,6,0.18)",
-    },
-    {
       id: "marketplace",
       label: "Islamic Marketplace",
-      description: "Browse & post Islamic products",
+      description: "Browse Islamic products",
       icon: <ShoppingBag className="w-6 h-6" />,
       href: "/marketplace",
       accent: "text-cyan-300",

@@ -53,22 +53,6 @@ export interface NoorProduct {
   rejectionReason: string | null;
 }
 
-export interface CoinTransaction {
-  id: string;
-  userId: string;
-  amount: number;
-  reason: string;
-  eventKey: string | null;
-  createdAt: string;
-}
-
-export interface ProfileStats {
-  totalProducts: number;
-  pendingProducts: number;
-  rejectedProducts: number;
-  activePromotions: number;
-}
-
 export const noorApi = {
   async register(
     deviceId: string,
@@ -77,21 +61,6 @@ export const noorApi = {
     return noorFetch("/users/register", {
       method: "POST",
       body: JSON.stringify({ deviceId, referredById }),
-    });
-  },
-
-  async getProfile(
-    deviceId: string,
-  ): Promise<{ user: NoorUser; stats: ProfileStats; recentTransactions: CoinTransaction[] }> {
-    return noorFetch(`/users/${deviceId}/profile`);
-  },
-
-  async dailyCheckin(
-    deviceId: string,
-  ): Promise<{ awarded: boolean; coins: number; amount?: number; message?: string }> {
-    return noorFetch("/coins/daily-checkin", {
-      method: "POST",
-      body: JSON.stringify({ deviceId }),
     });
   },
 
@@ -112,49 +81,6 @@ export const noorApi = {
 
   async getFeaturedProducts(): Promise<{ products: NoorProduct[] }> {
     return noorFetch("/products/featured");
-  },
-
-  async getMyProducts(deviceId: string): Promise<{ products: NoorProduct[] }> {
-    return noorFetch(`/products/my/${deviceId}`);
-  },
-
-  async getProduct(productId: string): Promise<{ product: NoorProduct }> {
-    return noorFetch(`/products/${productId}`);
-  },
-
-  async submitProduct(data: {
-    deviceId: string;
-    title: string;
-    description: string;
-    imageUrl?: string;
-    contactInfo: string;
-    productLink?: string;
-    category: string;
-    promotionType: "1day" | "7day";
-    submittedBy?: string;
-  }): Promise<{ product: NoorProduct }> {
-    return noorFetch("/products", {
-      method: "POST",
-      body: JSON.stringify(data),
-    });
-  },
-
-  async editProduct(
-    productId: string,
-    deviceId: string,
-    data: {
-      title?: string;
-      description?: string;
-      imageUrl?: string;
-      contactInfo?: string;
-      productLink?: string;
-      category?: string;
-    },
-  ): Promise<{ product: NoorProduct }> {
-    return noorFetch(`/products/${productId}`, {
-      method: "PATCH",
-      body: JSON.stringify({ deviceId, ...data }),
-    });
   },
 
   async adminGetPending(
