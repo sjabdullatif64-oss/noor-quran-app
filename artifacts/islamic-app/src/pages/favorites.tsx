@@ -14,6 +14,13 @@ import { sanitizeUrduText } from "@/lib/api";
 
 type Tab = "surahs" | "ayahs";
 
+function ayahHref(ayah: FavoriteAyah): string {
+  if (ayah.juzNumber) {
+    return `/juz/${ayah.juzNumber}?surah=${ayah.surahNumber}&ayah=${ayah.ayahNumber}`;
+  }
+  return `/quran/${ayah.surahNumber}?ayah=${ayah.ayahNumber}`;
+}
+
 export function Favorites() {
   const [tab, setTab] = useState<Tab>("surahs");
   const [surahs, setSurahs] = useState<FavoriteSurah[]>([]);
@@ -142,12 +149,15 @@ export function Favorites() {
               style={{ background: "rgba(255,255,255,0.04)" }}
               data-testid={`fav-ayah-${ayah.surahNumber}-${ayah.ayahNumber}`}
             >
-              <Link href={`/quran/${ayah.surahNumber}`} className="flex-1 min-w-0 space-y-2">
-                <div className="flex items-center gap-2">
+              <Link href={ayahHref(ayah)} className="flex-1 min-w-0 space-y-2">
+                <div className="flex items-center gap-2 flex-wrap">
                   <span className="text-xs font-bold bg-rose-900/30 text-rose-300 rounded-full px-2.5 py-0.5 border border-rose-800/30">
                     {ayah.surahEnglishName}
                   </span>
                   <span className="text-xs text-emerald-700">Verse {ayah.ayahNumber}</span>
+                  {ayah.juzNumber && (
+                    <span className="text-xs text-emerald-900">Juz {ayah.juzNumber}</span>
+                  )}
                 </div>
                 <p dir="rtl" className="font-arabic text-xl leading-loose text-white text-right">
                   {ayah.textAr}

@@ -9,6 +9,7 @@ export interface Bookmark {
   textAr: string;
   textTranslation: string;
   savedAt: number;
+  juzNumber?: number;
 }
 
 export function getBookmarks(): Bookmark[] {

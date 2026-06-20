@@ -19,6 +19,7 @@ export interface FavoriteAyah {
   textAr: string;
   textTranslation: string;
   savedAt: number;
+  juzNumber?: number;
 }
 
 function load<T>(key: string): T[] {
