@@ -8,6 +8,13 @@ import { Input } from "@/components/ui/input";
 
 type Tab = "surahs" | "ayahs";
 
+function ayahHref(bm: BookmarkType): string {
+  if (bm.juzNumber) {
+    return `/juz/${bm.juzNumber}?surah=${bm.surahNumber}&ayah=${bm.ayahNumber}`;
+  }
+  return `/quran/${bm.surahNumber}?ayah=${bm.ayahNumber}`;
+}
+
 export function Bookmarks() {
   const [tab, setTab] = useState<Tab>("surahs");
   const [surahs, setSurahs] = useState<FavoriteSurah[]>([]);
@@ -127,7 +134,7 @@ export function Bookmarks() {
             >
               <div className="flex items-start justify-between gap-4">
                 <Link
-                  href={`/quran/${bm.surahNumber}`}
+                  href={ayahHref(bm)}
                   className="flex-1 space-y-2 hover:opacity-80 transition-opacity"
                   data-testid={`link-bm-surah-${bm.surahNumber}`}
                 >
@@ -136,6 +143,9 @@ export function Bookmarks() {
                       {bm.surahEnglishName}
                     </span>
                     <span className="text-xs text-muted-foreground">Verse {bm.ayahNumber}</span>
+                    {bm.juzNumber && (
+                      <span className="text-xs text-muted-foreground/60">Juz {bm.juzNumber}</span>
+                    )}
                   </div>
                   <p dir="rtl" className="text-2xl font-arabic leading-loose text-foreground text-right">
                     {bm.textAr}
