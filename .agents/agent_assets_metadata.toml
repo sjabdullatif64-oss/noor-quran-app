@@ -180,3 +180,9 @@ id = "9juJHA8aSYgD6q-viUpzr"
 uri = "file://attached_assets/noor-quran-1.0.16-debug-apk.zip"
 type = "unspecified"
 title = "Noor Quran v1.0.16 (debug) — Share fix test build (.apk inside zip)"
+
+[[outputs]]
+id = "-FXQRcLyF6PrawEI1LfDN"
+uri = "file://attached_assets/noor-quran-1.0.17-release-apk.zip"
+type = "unspecified"
+title = "Noor Quran v1.0.17 (release, signed) — Share fix"
