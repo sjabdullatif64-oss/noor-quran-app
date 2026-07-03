@@ -10,6 +10,7 @@ package com.sj64noorquran;
   import com.getcapacitor.BridgeActivity;
   import com.capacitorjs.plugins.app.AppPlugin;
   import com.capacitorjs.plugins.localnotifications.LocalNotificationsPlugin;
+  import com.capacitorjs.plugins.share.SharePlugin;
 
   public class MainActivity extends BridgeActivity {
 
@@ -29,6 +30,16 @@ package com.sj64noorquran;
           // the OnBackPressedCallback) would never run → back button closes the app.
           registerPlugin(AppPlugin.class);
           registerPlugin(LocalNotificationsPlugin.class);
+          // Share is explicitly registered as defense-in-depth: a single bad
+          // entry anywhere in capacitor.plugins.json (e.g. a devDependency
+          // plugin whose native module isn't actually compiled in, such as
+          // AdMob when its gradle module is disabled) makes
+          // PluginManager.loadPluginClasses() throw on Class.forName() and
+          // silently discards the ENTIRE auto-discovered plugin list —
+          // breaking Share along with every other non-explicitly-registered
+          // plugin. See capacitor.config.ts includePlugins for the primary
+          // fix (keeping the JSON in sync with what's actually compiled).
+          registerPlugin(SharePlugin.class);
           // Project-local Kotlin plugins also registered here (not in plugins.json).
           registerPlugin(NativeTTSPlugin.class);
 
