@@ -210,3 +210,9 @@ id = "rU_W-TmGVUfLTqxgxrAMh"
 uri = "file://attached_assets/release/noor-quran-1.0.20.zip"
 type = "unspecified"
 title = "Noor Quran v1.0.20 (Three Dots menu fix)"
+
+[[outputs]]
+id = "oBggOfWp_QV9SNLjYQW8i"
+uri = "file://attached_assets/release/noor-quran-1.0.2-aab.zip"
+type = "unspecified"
+title = "Noor Quran v1.0.2 — Production AAB (Google Play upload)"
