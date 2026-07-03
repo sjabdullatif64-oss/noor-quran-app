@@ -325,6 +325,38 @@ export async function openUrl(url: string): Promise<void> {
   window.open(url, "_blank", "noopener,noreferrer");
 }
 
+// ── Clipboard ──────────────────────────────────────────────────────────────────
+//
+// navigator.clipboard works inside the Capacitor Android WebView because the
+// app runs under the secure "https://localhost" scheme. We keep a legacy
+// execCommand("copy") fallback for older WebViews / non-secure contexts.
+
+export async function copyToClipboard(text: string): Promise<boolean> {
+  try {
+    if (typeof navigator !== "undefined" && navigator.clipboard && window.isSecureContext) {
+      await navigator.clipboard.writeText(text);
+      return true;
+    }
+  } catch {
+    // fall through to legacy fallback
+  }
+  try {
+    const ta = document.createElement("textarea");
+    ta.value = text;
+    ta.style.position = "fixed";
+    ta.style.opacity = "0";
+    ta.style.pointerEvents = "none";
+    document.body.appendChild(ta);
+    ta.focus();
+    ta.select();
+    const ok = document.execCommand("copy");
+    document.body.removeChild(ta);
+    return ok;
+  } catch {
+    return false;
+  }
+}
+
 // ── Network ────────────────────────────────────────────────────────────────────
 
 interface NetworkPlugin {
