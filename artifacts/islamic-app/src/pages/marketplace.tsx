@@ -33,23 +33,15 @@ function ProductCard({ p, featured }: { p: NoorProduct; featured?: boolean }) {
 
     const productUrl = p.productLink?.startsWith("http") ? p.productLink : undefined;
 
-    const shared = await nativeShare({
+    const result = await nativeShare({
       title: p.title,
       text: lines.join("\n"),
       url: productUrl,
       dialogTitle: "Share Product",
     });
 
-    if (!shared) {
-      const clipText = productUrl
-        ? `${p.title}\n${lines.join("\n")}\n\n${productUrl}`
-        : `${p.title}\n${lines.join("\n")}`;
-      try {
-        await navigator.clipboard.writeText(clipText);
-        toast({ title: "Copied!", description: "Product details copied to clipboard." });
-      } catch {
-        toast({ title: "Share unavailable", description: "Please try again.", variant: "destructive" });
-      }
+    if (result === "failed") {
+      toast({ title: "Share unavailable", description: "Please try again.", variant: "destructive" });
     }
   }
 

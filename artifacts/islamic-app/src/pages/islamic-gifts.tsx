@@ -218,25 +218,17 @@ export function IslamicGifts() {
   const handleShare = async (card: GiftCard) => {
     const text = `${card.arabic}\n${card.title}\n${card.subtitle}\n\n— Shared via Noor Quran`;
     const APP_SHARE_URL = "https://play.google.com/store/apps/details?id=com.sj64noorquran";
-    const shared = await nativeShare({
+    const result = await nativeShare({
       title:       card.title,
       text,
       url:         APP_SHARE_URL,
       dialogTitle: "Share via",
     });
-    if (shared) {
+    if (result === "shared") {
       setShared(true);
       setTimeout(() => setShared(false), 2000);
-    } else {
-      // Clipboard fallback
-      try {
-        await navigator.clipboard.writeText(`${text}\n\n${APP_SHARE_URL}`);
-        setShared(true);
-        setTimeout(() => setShared(false), 2000);
-        toast({ title: "Copied!", description: "Card text copied to clipboard." });
-      } catch {
-        toast({ title: "Share unavailable", description: "Please try again.", variant: "destructive" });
-      }
+    } else if (result === "failed") {
+      toast({ title: "Share unavailable", description: "Please try again.", variant: "destructive" });
     }
   };
 
