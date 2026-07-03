@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback, useMemo } from "react";
+import { useState, useEffect, useRef, useCallback, useMemo, type CSSProperties } from "react";
 import { useParams, useLocation } from "wouter";
 import {
   ArrowLeft, Loader2, AlertCircle, BookOpen,
@@ -23,6 +23,9 @@ import { getFavAyahs, toggleAyahFav } from "@/lib/favorites";
 import { NativeTTS } from "@/lib/native-tts";
 import { useToast } from "@/hooks/use-toast";
 import { useWakeLock } from "@/hooks/useWakeLock";
+import { AyahActionsMenu } from "@/components/ayah-actions-menu";
+import { useAyahDisplaySettings, applyExplanatorySetting } from "@/lib/ayah-display";
+import { usePinchZoom } from "@/hooks/use-pinch-zoom";
 
 // ── Types ──────────────────────────────────────────────────────────────────────
 type AudioMode = "arabic" | "translation" | "both";
@@ -277,6 +280,11 @@ export function JuzReader() {
   const { toast } = useToast();
   const toastRef  = useRef(toast);
   useEffect(() => { toastRef.current = toast; }, [toast]);
+
+  // Pinch-to-zoom is local, in-memory-only per reader visit — never persisted,
+  // always resets to default when this page is reopened or the app restarts.
+  const [pinchZoomEnabled, setPinchZoomEnabled] = useState(false);
+  const { containerRef: pinchZoomRef, scale: ayahScale } = usePinchZoom<HTMLDivElement>(pinchZoomEnabled);
 
   // Sync mutable refs
   useEffect(() => { playingIndexRef.current = playingIndex; }, [playingIndex]);
@@ -788,7 +796,7 @@ export function JuzReader() {
                 <p dir="rtl" className="font-arabic text-2xl text-emerald-400">{section.surahName}</p>
               </div>
 
-              <div className="space-y-3">
+              <div ref={pinchZoomRef} className="space-y-3" style={{ "--ayah-scale": ayahScale } as CSSProperties}>
                 {section.ayahs.map((ayah, ayahIdx) => {
                   const flatIdx      = sectionOffsets[sectionIdx] + ayahIdx;
                   const cardKey      = `${section.surahNumber}-${ayah.numberInSurah}`;
@@ -883,24 +891,36 @@ export function JuzReader() {
                               ? <BookmarkCheck className="w-4 h-4" />
                               : <Bookmark      className="w-4 h-4" />}
                           </button>
+
+                          <AyahActionsMenu
+                            surahEnglishName={section.surahEnglishName}
+                            surahName={section.surahName}
+                            ayahNumber={ayah.numberInSurah}
+                            textAr={ayah.textAr}
+                            displayedTranslation={applyExplanatorySetting(ayah.textTranslation ?? "")}
+                            pinchZoomEnabled={pinchZoomEnabled}
+                            onTogglePinchZoom={() => setPinchZoomEnabled((v) => !v)}
+                            triggerClassName="w-8 h-8 rounded-full flex items-center justify-center text-emerald-700 hover:text-emerald-400 transition-colors active:scale-95"
+                            testId={`button-more-ayah-${ayah.numberInSurah}`}
+                          />
                         </div>
                       </div>
 
                       {/* Arabic text */}
                       <p dir="rtl"
-                        className="font-arabic text-xl text-right text-emerald-100 leading-loose mb-3">
+                        className="font-arabic text-[calc(1.25rem*var(--ayah-scale))] text-right text-emerald-100 leading-loose mb-3">
                         {ayah.textAr}
-                        <span className="text-emerald-500 text-base mr-2"> ﴿{ayah.numberInSurah}﴾</span>
+                        <span className="text-emerald-500 mr-2"> ﴿{ayah.numberInSurah}﴾</span>
                       </p>
 
                       {/* Translation */}
                       {ayah.textTranslation && (
                         <p
-                          className={`text-emerald-400 text-sm leading-relaxed pt-2 border-t border-emerald-900/30 ${
+                          className={`text-emerald-400 text-[calc(0.875rem*var(--ayah-scale))] leading-relaxed pt-2 border-t border-emerald-900/30 ${
                             isRTL ? "text-right" : "text-left"
                           }`}
                           dir={isRTL ? "rtl" : "ltr"}>
-                          {ayah.textTranslation}
+                          {applyExplanatorySetting(ayah.textTranslation)}
                         </p>
                       )}
 

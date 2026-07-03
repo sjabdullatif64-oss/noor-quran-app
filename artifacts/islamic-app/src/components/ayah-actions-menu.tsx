@@ -1,14 +1,12 @@
-import { MoreVertical, Share2, Copy, Minus, Plus, Eye, EyeOff } from "lucide-react";
+import { MoreVertical, Share2, Copy, ZoomIn, Eye, EyeOff } from "lucide-react";
 import {
   DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem,
   DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuRadioGroup, DropdownMenuRadioItem,
+  DropdownMenuCheckboxItem,
 } from "@/components/ui/dropdown-menu";
 import { nativeShare, copyToClipboard, getLastShareError } from "@/lib/capacitor";
 import { useToast } from "@/hooks/use-toast";
-import {
-  TEXT_SCALE_STEPS, useAyahDisplaySettings,
-  increaseTextScale, decreaseTextScale, setShowExplanatory,
-} from "@/lib/ayah-display";
+import { useAyahDisplaySettings, setShowExplanatory } from "@/lib/ayah-display";
 
 interface AyahActionsMenuProps {
   surahEnglishName: string;
@@ -17,6 +15,10 @@ interface AyahActionsMenuProps {
   textAr: string;
   /** The translation text exactly as currently displayed (post explanatory-word setting) — used for Share/Copy so output matches what the user sees. */
   displayedTranslation: string;
+  /** Whether two-finger pinch-to-zoom is currently enabled for the reading content. */
+  pinchZoomEnabled: boolean;
+  /** Toggles pinch-to-zoom on/off. Lifted up to the reader page since zoom applies to the whole ayah list, not a single card. */
+  onTogglePinchZoom: () => void;
   triggerClassName?: string;
   testId?: string;
 }
@@ -36,7 +38,7 @@ function buildAyahText(props: AyahActionsMenuProps): string {
 
 export function AyahActionsMenu(props: AyahActionsMenuProps) {
   const { toast } = useToast();
-  const { scale, showExplanatory } = useAyahDisplaySettings();
+  const { showExplanatory } = useAyahDisplaySettings();
 
   const handleShare = async () => {
     const text = buildAyahText(props);
@@ -59,10 +61,6 @@ export function AyahActionsMenu(props: AyahActionsMenuProps) {
         : { title: "Copy failed", description: "Please try again.", variant: "destructive" }
     );
   };
-
-  const scaleIdx = TEXT_SCALE_STEPS.indexOf(scale);
-  const atMin = scaleIdx <= 0;
-  const atMax = scaleIdx >= TEXT_SCALE_STEPS.length - 1;
 
   return (
     <DropdownMenu>
@@ -90,51 +88,28 @@ export function AyahActionsMenu(props: AyahActionsMenuProps) {
 
         <DropdownMenuSeparator />
 
-        <DropdownMenuLabel className="text-xs font-medium text-muted-foreground">
-          Text Size
-        </DropdownMenuLabel>
-        <div className="flex items-center justify-between px-2 py-1.5">
-          <button
-            type="button"
-            disabled={atMin}
-            onClick={decreaseTextScale}
-            className="w-8 h-8 rounded-md flex items-center justify-center border border-border text-foreground disabled:opacity-30 active:scale-95 transition-transform"
-            data-testid="button-text-size-decrease"
-            aria-label="Decrease text size"
-          >
-            <Minus className="w-3.5 h-3.5" />
-          </button>
-          <span className="text-sm text-muted-foreground tabular-nums">
-            {Math.round(scale * 100)}%
-          </span>
-          <button
-            type="button"
-            disabled={atMax}
-            onClick={increaseTextScale}
-            className="w-8 h-8 rounded-md flex items-center justify-center border border-border text-foreground disabled:opacity-30 active:scale-95 transition-transform"
-            data-testid="button-text-size-increase"
-            aria-label="Increase text size"
-          >
-            <Plus className="w-3.5 h-3.5" />
-          </button>
-        </div>
+        <DropdownMenuCheckboxItem
+          checked={props.pinchZoomEnabled}
+          onCheckedChange={props.onTogglePinchZoom}
+          data-testid="menu-pinch-zoom"
+        >
+          <ZoomIn className="w-4 h-4 mr-2 inline-block align-text-bottom" />
+          Enable Pinch-to-Zoom
+        </DropdownMenuCheckboxItem>
 
         <DropdownMenuSeparator />
 
-        <DropdownMenuLabel className="text-xs font-medium text-muted-foreground">
-          Explanatory Words
-        </DropdownMenuLabel>
         <DropdownMenuRadioGroup
           value={showExplanatory ? "show" : "hide"}
           onValueChange={(v) => setShowExplanatory(v === "show")}
         >
           <DropdownMenuRadioItem value="show" data-testid="menu-show-explanatory">
             <Eye className="w-4 h-4 mr-2" />
-            Show explanatory words
+            Show Explanatory Words
           </DropdownMenuRadioItem>
           <DropdownMenuRadioItem value="hide" data-testid="menu-hide-explanatory">
             <EyeOff className="w-4 h-4 mr-2" />
-            Hide explanatory words
+            Hide Explanatory Words
           </DropdownMenuRadioItem>
         </DropdownMenuRadioGroup>
       </DropdownMenuContent>

@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef, useCallback, type CSSProperties } from "react";
 import { useWakeLock } from "@/hooks/useWakeLock";
 import {
   useSurah, ALL_LANGUAGES, TRANSLATION_LABELS, TRANSLATION_ENGLISH_NAMES,
@@ -17,6 +17,9 @@ import { getFavAyahs, toggleAyahFav } from "@/lib/favorites";
 import { getLang } from "@/lib/settings";
 import { useToast } from "@/hooks/use-toast";
 import { NativeTTS } from "@/lib/native-tts";
+import { AyahActionsMenu } from "@/components/ayah-actions-menu";
+import { useAyahDisplaySettings, applyExplanatorySetting } from "@/lib/ayah-display";
+import { usePinchZoom } from "@/hooks/use-pinch-zoom";
 
 // ── Types ──────────────────────────────────────────────────────────────────────
 type AudioMode  = "arabic" | "translation" | "both";
@@ -147,6 +150,14 @@ export function SurahReader() {
   const toastRef  = useRef(toast);
   useEffect(() => { toastRef.current = toast; }, [toast]);
 
+  // Ayah display settings — show/hide explanatory words (persisted)
+  const { showExplanatory } = useAyahDisplaySettings();
+
+  // Pinch-to-zoom is local, in-memory-only per reader visit — never persisted,
+  // always resets to default when this page is reopened or the app restarts.
+  const [pinchZoomEnabled, setPinchZoomEnabled] = useState(false);
+  const { containerRef: pinchZoomRef, scale: ayahScale } = usePinchZoom<HTMLDivElement>(pinchZoomEnabled);
+
   // Sync all refs
   useEffect(() => { playingIndexRef.current = playingIndex; }, [playingIndex]);
   useEffect(() => { playModeRef.current     = playMode;     }, [playMode]);
@@ -239,6 +250,18 @@ export function SurahReader() {
     const snap = surahRef.current;
     if (!snap) { setPlayState("idle"); return; }
     const next = completedIndex + 1;
+
+    // Dispatch coin-reward event when BOTH Arabic + translation audio complete
+    if (audioModeRef.current === "both") {
+      const doneAyah = snap.ayahs[completedIndex];
+      if (doneAyah) {
+        window.dispatchEvent(
+          new CustomEvent("noor:ayah-both-done", {
+            detail: { surahNumber: number, ayahNumber: doneAyah.numberInSurah },
+          })
+        );
+      }
+    }
 
     if (mode === "continuous" && next < snap.ayahs.length) {
       // Smooth 400 ms silence between ayahs — natural breathing room
@@ -656,7 +679,7 @@ export function SurahReader() {
       )}
 
       {/* ── Ayah list ─────────────────────────────────────────────────── */}
-      <div className="space-y-0 mt-6">
+      <div ref={pinchZoomRef} className="space-y-0 mt-6" style={{ "--ayah-scale": ayahScale } as CSSProperties}>
         {isLoading
           ? Array.from({ length: 5 }).map((_, i) => (
               <div key={i} className="py-8 border-b border-border/40 space-y-4">
@@ -757,17 +780,29 @@ export function SurahReader() {
                       >
                         {bm ? <BookmarkCheck className="w-4 h-4" /> : <Bookmark className="w-4 h-4" />}
                       </Button>
+
+                      <AyahActionsMenu
+                        surahEnglishName={surah?.englishName ?? ""}
+                        surahName={surah?.name ?? ""}
+                        ayahNumber={ayah.numberInSurah}
+                        textAr={ayah.textAr}
+                        displayedTranslation={applyExplanatorySetting(ayah.textTranslation)}
+                        pinchZoomEnabled={pinchZoomEnabled}
+                        onTogglePinchZoom={() => setPinchZoomEnabled((v) => !v)}
+                        triggerClassName="w-8 h-8 rounded-full flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors"
+                        testId={`button-more-ayah-${ayah.numberInSurah}`}
+                      />
                     </div>
                   </div>
 
                   {/* Arabic text */}
-                  <p dir="rtl" className="text-3xl md:text-4xl font-arabic leading-[2.2] text-foreground text-right">
+                  <p dir="rtl" className="text-[calc(1.875rem*var(--ayah-scale))] md:text-[calc(2.25rem*var(--ayah-scale))] font-arabic leading-[2.2] text-foreground text-right">
                     {ayah.textAr}
                   </p>
 
                   {/* Transliteration (Roman script) — shown when available */}
                   {ayah.textTranslit && (
-                    <p className="text-sm text-muted-foreground/70 italic leading-relaxed tracking-wide">
+                    <p className="text-[calc(0.875rem*var(--ayah-scale))] text-muted-foreground/70 italic leading-relaxed tracking-wide">
                       {ayah.textTranslit}
                     </p>
                   )}
@@ -776,11 +811,11 @@ export function SurahReader() {
                   {ayah.textTranslation ? (
                     <p
                       dir={isRtl ? "rtl" : "ltr"}
-                      className={`text-lg md:text-xl leading-relaxed font-serif transition-colors duration-300 ${
+                      className={`text-[calc(1.125rem*var(--ayah-scale))] md:text-[calc(1.25rem*var(--ayah-scale))] leading-relaxed font-serif transition-colors duration-300 ${
                         isRtl ? "text-right" : "text-left"
                       } ${isCurrent ? "text-foreground/80" : "text-muted-foreground"}`}
                     >
-                      {ayah.textTranslation}
+                      {applyExplanatorySetting(ayah.textTranslation)}
                     </p>
                   ) : (
                     <p className="text-sm text-muted-foreground/50 italic">
