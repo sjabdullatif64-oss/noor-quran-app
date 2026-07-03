@@ -265,12 +265,29 @@ function isCancelError(e: unknown): boolean {
   return msg.includes("cancel") || msg.includes("abort") || msg.includes("dismiss");
 }
 
+function errorMessage(e: unknown): string {
+  if (e instanceof Error) return e.message;
+  const msg = (e as { message?: string })?.message;
+  return typeof msg === "string" && msg ? msg : String(e);
+}
+
+// Last real error from a failed nativeShare() call — for diagnostic toasts only.
+// Never used to decide behavior; nativeShare() itself never reads this.
+let lastShareError: string | null = null;
+
+/** Returns the underlying error from the most recent failed nativeShare() call, if any. */
+export function getLastShareError(): string | null {
+  return lastShareError;
+}
+
 /**
  * Opens the native share sheet without blocking the UI thread.
  * Never throws — all errors are swallowed and reported via the return value.
  * Never copies to the clipboard — that is exclusively a Copy-button action.
  */
 export async function nativeShare(opts: ShareOptions): Promise<ShareResult> {
+  lastShareError = null;
+
   // 1. Always try @capacitor/share first — it opens the native Android share
   //    sheet without blocking the JS thread.
   //
@@ -291,18 +308,23 @@ export async function nativeShare(opts: ShareOptions): Promise<ShareResult> {
   } catch (e) {
     if (isCancelError(e)) return "cancelled";
     // Plugin not available (web) or unexpected error — fall through to navigator.share
+    lastShareError = errorMessage(e);
   }
 
   // 2. Web Share API (desktop Chrome, Safari, some Android browsers)
   if (typeof navigator !== "undefined" && navigator.share) {
     try {
       await navigator.share({ title: opts.title, text: opts.text, url: opts.url });
+      lastShareError = null;
       return "shared";
     } catch (e) {
-      return isCancelError(e) ? "cancelled" : "failed";
+      if (isCancelError(e)) return "cancelled";
+      lastShareError = errorMessage(e);
+      return "failed";
     }
   }
 
+  if (!lastShareError) lastShareError = "No share target available on this device.";
   return "failed";
 }
 
