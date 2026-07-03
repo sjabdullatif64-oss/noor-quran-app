@@ -19,6 +19,7 @@ import { useToast } from "@/hooks/use-toast";
 import { NativeTTS } from "@/lib/native-tts";
 import { AyahActionsMenu } from "@/components/ayah-actions-menu";
 import { useAyahDisplaySettings, applyExplanatorySetting } from "@/lib/ayah-display";
+import { usePinchZoom } from "@/hooks/use-pinch-zoom";
 
 // ── Types ──────────────────────────────────────────────────────────────────────
 type AudioMode  = "arabic" | "translation" | "both";
@@ -149,8 +150,13 @@ export function SurahReader() {
   const toastRef  = useRef(toast);
   useEffect(() => { toastRef.current = toast; }, [toast]);
 
-  // Ayah display settings — text zoom + show/hide explanatory words (persisted)
-  const { scale: ayahScale, showExplanatory } = useAyahDisplaySettings();
+  // Ayah display settings — show/hide explanatory words (persisted)
+  const { showExplanatory } = useAyahDisplaySettings();
+
+  // Pinch-to-zoom is local, in-memory-only per reader visit — never persisted,
+  // always resets to default when this page is reopened or the app restarts.
+  const [pinchZoomEnabled, setPinchZoomEnabled] = useState(false);
+  const { containerRef: pinchZoomRef, scale: ayahScale } = usePinchZoom<HTMLDivElement>(pinchZoomEnabled);
 
   // Sync all refs
   useEffect(() => { playingIndexRef.current = playingIndex; }, [playingIndex]);
@@ -673,7 +679,7 @@ export function SurahReader() {
       )}
 
       {/* ── Ayah list ─────────────────────────────────────────────────── */}
-      <div className="space-y-0 mt-6" style={{ "--ayah-scale": ayahScale } as CSSProperties}>
+      <div ref={pinchZoomRef} className="space-y-0 mt-6" style={{ "--ayah-scale": ayahScale } as CSSProperties}>
         {isLoading
           ? Array.from({ length: 5 }).map((_, i) => (
               <div key={i} className="py-8 border-b border-border/40 space-y-4">
@@ -781,6 +787,8 @@ export function SurahReader() {
                         ayahNumber={ayah.numberInSurah}
                         textAr={ayah.textAr}
                         displayedTranslation={applyExplanatorySetting(ayah.textTranslation)}
+                        pinchZoomEnabled={pinchZoomEnabled}
+                        onTogglePinchZoom={() => setPinchZoomEnabled((v) => !v)}
                         triggerClassName="w-8 h-8 rounded-full flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors"
                         testId={`button-more-ayah-${ayah.numberInSurah}`}
                       />

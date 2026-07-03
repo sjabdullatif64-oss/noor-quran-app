@@ -204,3 +204,9 @@ id = "OYxwlu-TtR9iPJ-4Uv4kL"
 uri = "file://attached_assets/release/noor-quran-1.0.19.zip"
 type = "unspecified"
 title = "Noor Quran v1.0.19 (Share fix)"
+
+[[outputs]]
+id = "rU_W-TmGVUfLTqxgxrAMh"
+uri = "file://attached_assets/release/noor-quran-1.0.20.zip"
+type = "unspecified"
+title = "Noor Quran v1.0.20 (Three Dots menu fix)"

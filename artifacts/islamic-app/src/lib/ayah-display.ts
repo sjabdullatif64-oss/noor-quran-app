@@ -1,12 +1,7 @@
 import { useSyncExternalStore } from "react";
 
 // ── Storage keys ──────────────────────────────────────────────────────────────
-const SCALE_KEY       = "noor-ayah-scale";
 const EXPLANATORY_KEY = "noor-show-explanatory";
-
-// ── Text zoom steps (100% = default) ───────────────────────────────────────────
-export const TEXT_SCALE_STEPS = [0.85, 1, 1.15, 1.3, 1.45, 1.6];
-const DEFAULT_SCALE = 1;
 
 // ── Tiny pub/sub so both readers + the menu re-render instantly on change ─────
 type Listener = () => void;
@@ -19,30 +14,6 @@ function emit(): void {
 export function subscribeAyahDisplay(fn: Listener): () => void {
   listeners.push(fn);
   return () => { listeners = listeners.filter((l) => l !== fn); };
-}
-
-// ── Text scale (zoom) ──────────────────────────────────────────────────────────
-export function getTextScale(): number {
-  const raw = localStorage.getItem(SCALE_KEY);
-  const n = raw ? parseFloat(raw) : NaN;
-  return TEXT_SCALE_STEPS.includes(n) ? n : DEFAULT_SCALE;
-}
-
-export function setTextScale(scale: number): void {
-  localStorage.setItem(SCALE_KEY, String(scale));
-  emit();
-}
-
-export function increaseTextScale(): void {
-  const cur = getTextScale();
-  const idx = TEXT_SCALE_STEPS.indexOf(cur);
-  setTextScale(TEXT_SCALE_STEPS[Math.min(idx + 1, TEXT_SCALE_STEPS.length - 1)]);
-}
-
-export function decreaseTextScale(): void {
-  const cur = getTextScale();
-  const idx = TEXT_SCALE_STEPS.indexOf(cur);
-  setTextScale(TEXT_SCALE_STEPS[Math.max(idx - 1, 0)]);
 }
 
 // ── Show / Hide explanatory (bracketed) words in translation ──────────────────
@@ -75,8 +46,11 @@ export function applyExplanatorySetting(text: string): string {
 }
 
 // ── React hook — live-updates both readers when the menu changes a setting ────
-export function useAyahDisplaySettings(): { scale: number; showExplanatory: boolean } {
-  const scale = useSyncExternalStore(subscribeAyahDisplay, getTextScale, getTextScale);
+// Note: text zoom is intentionally NOT part of this shared/persisted store —
+// see `useAyahPinchZoom` (src/hooks/use-pinch-zoom.ts), which is local,
+// in-memory-only state per reader page so it never persists and always
+// resets to default when the reader/app is reopened.
+export function useAyahDisplaySettings(): { showExplanatory: boolean } {
   const showExplanatory = useSyncExternalStore(subscribeAyahDisplay, getShowExplanatory, getShowExplanatory);
-  return { scale, showExplanatory };
+  return { showExplanatory };
 }
