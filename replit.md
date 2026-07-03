@@ -60,6 +60,8 @@ A full-featured Islamic mobile web app for reading the Holy Quran with Urdu & En
 - Sindhi edition is `sd.amroti` — do NOT use `sd.mewati` (that returns raw Arabic Quran text)
 - Audio downloads use IndexedDB; text uses localStorage keys prefixed `noor-dl-text-{packId}`
 - The `getLang()` / `getCity()` functions in `src/lib/settings.ts` are the single source of truth for user preferences
+- Ayah card text zoom (`noor-ayah-scale`) and show/hide explanatory-words (`noor-show-explanatory`) settings live in `src/lib/ayah-display.ts` — a pub/sub store shared by Surah and Juz readers via `useAyahDisplaySettings()`. `stripExplanatory()`/`applyExplanatorySetting()` are display-layer only — never call them on data that feeds TTS audio or gets saved to bookmarks/favorites
+- Shared `<AyahActionsMenu>` (`src/components/ayah-actions-menu.tsx`) renders the three-dot "More" menu (Share, Copy, Zoom, Show/Hide explanatory words) used identically in both readers — extend it there rather than duplicating menu logic per page
 
 ## Pointers
 

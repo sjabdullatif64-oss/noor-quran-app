@@ -5,3 +5,4 @@
 - [Rebase conflict strategy](rebase-conflict-strategy.md) — when rebasing local fixes onto origin diagnostic commits, always keep HEAD (ours) for Android config files; diagnostic commits are older interim states
 - [Android feature bug root causes](android-feature-bugs.md) — root causes for 7 Android issues: back button duplicate hook, notification prompt vs denied, share plugin fallthrough, qibla double-firing, admin safe-area, azan offline cache
 - [Daily ayah reward cap](ayah-reward-cap.md) — 20 ayahs/day cap counts rows in ayah_rewards WHERE createdAt >= today_start; skip insert on cap so ayah stays rewardable tomorrow
+- [Ayah display scaling pattern](ayah-display-scaling.md) — use per-page CSS var `--ayah-scale` + Tailwind arbitrary calc() classes, not flat inline fontSize, to preserve responsive breakpoints across readers
