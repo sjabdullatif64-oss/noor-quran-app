@@ -40,14 +40,13 @@ export function AyahActionsMenu(props: AyahActionsMenuProps) {
 
   const handleShare = async () => {
     const text = buildAyahText(props);
-    const ok = await nativeShare({
+    const result = await nativeShare({
       title: "Noor Quran",
       text,
       dialogTitle: "Share Ayah",
     });
-    if (!ok) {
-      const copied = await copyToClipboard(text);
-      if (copied) toast({ title: "Ayah copied", description: "Sharing wasn't available, so it was copied instead." });
+    if (result === "failed") {
+      toast({ title: "Share unavailable", description: "Please try again.", variant: "destructive" });
     }
   };
 

@@ -228,7 +228,11 @@ export async function hapticSuccess(): Promise<void> {
 // Strategy:
 //   1. Native Android → Capacitor Share plugin (non-blocking, instant sheet)
 //   2. Web / fallback → navigator.share if available (non-blocking on desktop)
-//   3. Last resort     → clipboard copy (always works)
+//
+// IMPORTANT: Share must NEVER silently fall back to copying to the clipboard.
+// Copy is a separate, explicit user action (a dedicated Copy button). If the
+// share sheet genuinely cannot be opened, callers show an error toast instead
+// — see the `ShareResult` union below.
 
 interface SharePlugin {
   share(opts: {
@@ -247,11 +251,26 @@ export interface ShareOptions {
 }
 
 /**
- * Opens the native share sheet without blocking the UI thread.
- * Returns true if sharing succeeded, false if the user cancelled or it failed.
- * Never throws — all errors are swallowed so call sites stay clean.
+ * - "shared"    → the native share sheet opened and the user completed a share.
+ * - "cancelled" → the user opened the share sheet and dismissed it — this is
+ *                 not an error and callers should stay silent (no toast, no copy).
+ * - "failed"    → the share sheet could not be opened at all (no Capacitor
+ *                 bridge, no Web Share API support, or a genuine plugin error).
+ *                 Callers should show an error toast — never copy to clipboard.
  */
-export async function nativeShare(opts: ShareOptions): Promise<boolean> {
+export type ShareResult = "shared" | "cancelled" | "failed";
+
+function isCancelError(e: unknown): boolean {
+  const msg = String((e as { message?: string })?.message ?? "").toLowerCase();
+  return msg.includes("cancel") || msg.includes("abort") || msg.includes("dismiss");
+}
+
+/**
+ * Opens the native share sheet without blocking the UI thread.
+ * Never throws — all errors are swallowed and reported via the return value.
+ * Never copies to the clipboard — that is exclusively a Copy-button action.
+ */
+export async function nativeShare(opts: ShareOptions): Promise<ShareResult> {
   // 1. Always try @capacitor/share first — it opens the native Android share
   //    sheet without blocking the JS thread.
   //
@@ -268,12 +287,9 @@ export async function nativeShare(opts: ShareOptions): Promise<boolean> {
       url:         opts.url,
       dialogTitle: opts.dialogTitle ?? opts.title,
     });
-    return true;
+    return "shared";
   } catch (e) {
-    const msg = String((e as {message?: string})?.message ?? "").toLowerCase();
-    if (msg.includes("cancel") || msg.includes("abort") || msg.includes("dismiss")) {
-      return false;
-    }
+    if (isCancelError(e)) return "cancelled";
     // Plugin not available (web) or unexpected error — fall through to navigator.share
   }
 
@@ -281,14 +297,13 @@ export async function nativeShare(opts: ShareOptions): Promise<boolean> {
   if (typeof navigator !== "undefined" && navigator.share) {
     try {
       await navigator.share({ title: opts.title, text: opts.text, url: opts.url });
-      return true;
-    } catch {
-      return false;
+      return "shared";
+    } catch (e) {
+      return isCancelError(e) ? "cancelled" : "failed";
     }
   }
 
-  // 3. Clipboard fallback — caller handles
-  return false;
+  return "failed";
 }
 
 // ── External URL opener ────────────────────────────────────────────────────────

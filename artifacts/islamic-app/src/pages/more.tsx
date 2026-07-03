@@ -63,24 +63,18 @@ export function More() {
   }
 
   async function handleShare() {
-    const shared = await nativeShare({
+    const result = await nativeShare({
       title:       "Noor Quran",
       text:        APP_SHARE_MSG,
       url:         APP_SHARE_URL,
       dialogTitle: "Share Noor Quran",
     });
-    if (!shared) {
-      const fullText = `${APP_SHARE_MSG}\n\n${APP_SHARE_URL}`;
-      try {
-        await navigator.clipboard.writeText(fullText);
-        toast({ title: "Link copied!", description: "Share Noor Quran with your family & friends." });
-      } catch {
-        toast({
-          title: "Share unavailable",
-          description: "Please try again or copy the Play Store link manually.",
-          variant: "destructive",
-        });
-      }
+    if (result === "failed") {
+      toast({
+        title: "Share unavailable",
+        description: "Please try again.",
+        variant: "destructive",
+      });
     }
   }
 

@@ -137,18 +137,14 @@ const SUPPORTED_LANGS = [
 ];
 
 async function shareApp(toast: ReturnType<typeof useToast>["toast"]) {
-  const shared = await nativeShare({
+  const result = await nativeShare({
     title:       "Noor Quran",
     text:        APP_SHARE_MSG,
     url:         APP_SHARE_URL,
     dialogTitle: "Share Noor Quran",
   });
-  if (!shared) {
-    const fullText = `${APP_SHARE_MSG}\n\n${APP_SHARE_URL}`;
-    try {
-      await navigator.clipboard.writeText(fullText);
-      toast({ title: "Link copied!", description: "Share it with your friends and family." });
-    } catch { /* clipboard unavailable — silent */ }
+  if (result === "failed") {
+    toast({ title: "Share unavailable", description: "Please try again.", variant: "destructive" });
   }
 }
 
