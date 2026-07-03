@@ -186,3 +186,9 @@ id = "-FXQRcLyF6PrawEI1LfDN"
 uri = "file://attached_assets/noor-quran-1.0.17-release-apk.zip"
 type = "unspecified"
 title = "Noor Quran v1.0.17 (release, signed) — Share fix"
+
+[[outputs]]
+id = "AyUeWRlLnRZzvEn3L4ysX"
+uri = "file://attached_assets/noor-quran-1.0.18.apk.tar.gz"
+type = "unspecified"
+title = "Noor Quran v1.0.18 (release APK, signed)"

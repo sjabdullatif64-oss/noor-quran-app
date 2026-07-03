@@ -3,7 +3,7 @@ import {
   DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem,
   DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuRadioGroup, DropdownMenuRadioItem,
 } from "@/components/ui/dropdown-menu";
-import { nativeShare, copyToClipboard } from "@/lib/capacitor";
+import { nativeShare, copyToClipboard, getLastShareError } from "@/lib/capacitor";
 import { useToast } from "@/hooks/use-toast";
 import {
   TEXT_SCALE_STEPS, useAyahDisplaySettings,
@@ -46,7 +46,7 @@ export function AyahActionsMenu(props: AyahActionsMenuProps) {
       dialogTitle: "Share Ayah",
     });
     if (result === "failed") {
-      toast({ title: "Share unavailable", description: "Please try again.", variant: "destructive" });
+      toast({ title: "Share unavailable", description: getLastShareError() ?? "Please try again.", variant: "destructive" });
     }
   };
 

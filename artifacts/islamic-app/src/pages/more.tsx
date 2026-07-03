@@ -8,7 +8,7 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import { useI18n } from "@/lib/i18n-context";
 import { RewardedAdButton } from "@/components/rewarded-ad-button";
-import { nativeShare, openUrl } from "@/lib/capacitor";
+import { nativeShare, openUrl, getLastShareError } from "@/lib/capacitor";
 
 const APP_SHARE_URL = "https://play.google.com/store/apps/details?id=com.sj64noorquran";
 const APP_SHARE_MSG =
@@ -72,7 +72,7 @@ export function More() {
     if (result === "failed") {
       toast({
         title: "Share unavailable",
-        description: "Please try again.",
+        description: getLastShareError() ?? "Please try again.",
         variant: "destructive",
       });
     }

@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { noorApi, type NoorProduct } from "@/lib/noor-api";
-import { openUrl, nativeShare } from "@/lib/capacitor";
+import { openUrl, nativeShare, getLastShareError } from "@/lib/capacitor";
 import { Star, Tag, Phone, Calendar, Loader2, Sparkles, Package, ExternalLink, Share2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
@@ -41,7 +41,7 @@ function ProductCard({ p, featured }: { p: NoorProduct; featured?: boolean }) {
     });
 
     if (result === "failed") {
-      toast({ title: "Share unavailable", description: "Please try again.", variant: "destructive" });
+      toast({ title: "Share unavailable", description: getLastShareError() ?? "Please try again.", variant: "destructive" });
     }
   }
 

@@ -2,7 +2,7 @@ import { useState, useRef, useCallback } from "react";
 import { ChevronLeft, Gift, Share2, Download, X, Check } from "lucide-react";
 import { Link } from "wouter";
 import { useToast } from "@/hooks/use-toast";
-import { nativeShare } from "@/lib/capacitor";
+import { nativeShare, getLastShareError } from "@/lib/capacitor";
 
 interface GiftCard {
   id: string;
@@ -228,7 +228,7 @@ export function IslamicGifts() {
       setShared(true);
       setTimeout(() => setShared(false), 2000);
     } else if (result === "failed") {
-      toast({ title: "Share unavailable", description: "Please try again.", variant: "destructive" });
+      toast({ title: "Share unavailable", description: getLastShareError() ?? "Please try again.", variant: "destructive" });
     }
   };
 

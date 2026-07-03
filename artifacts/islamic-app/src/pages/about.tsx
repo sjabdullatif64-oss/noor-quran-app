@@ -5,7 +5,7 @@ import {
   Calculator, ExternalLink, ShoppingBag,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { nativeShare, openUrl } from "@/lib/capacitor";
+import { nativeShare, openUrl, getLastShareError } from "@/lib/capacitor";
 import { BUILD_INFO } from "@/lib/buildInfo";
 
 const APP_SHARE_URL = "https://play.google.com/store/apps/details?id=com.sj64noorquran";
@@ -144,7 +144,7 @@ async function shareApp(toast: ReturnType<typeof useToast>["toast"]) {
     dialogTitle: "Share Noor Quran",
   });
   if (result === "failed") {
-    toast({ title: "Share unavailable", description: "Please try again.", variant: "destructive" });
+    toast({ title: "Share unavailable", description: getLastShareError() ?? "Please try again.", variant: "destructive" });
   }
 }
 
