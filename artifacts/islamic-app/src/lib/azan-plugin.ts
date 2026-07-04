@@ -13,8 +13,9 @@ export interface PrayerScheduleItem {
 }
 
 export interface AzanPermissions {
-  notificationGranted: boolean;
-  canScheduleExact:    boolean;
+  notificationGranted:       boolean;
+  canScheduleExact:          boolean;
+  batteryOptimizationsIgnored: boolean;
 }
 
 export type AzanSound = "default" | "makkah" | "madinah" | "mishary";
@@ -27,6 +28,7 @@ interface AzanNative {
   cancelAll():                                  Promise<void>;
   checkPermissions():                           Promise<AzanPermissions>;
   openAlarmSettings():                          Promise<void>;
+  requestBatteryOptimizationExemption():        Promise<void>;
   savePrayerTimes(options: { prayers: PrayerScheduleItem[] }): Promise<void>;
 }
 
@@ -57,12 +59,20 @@ export async function azanCheckPermissions(): Promise<AzanPermissions> {
   try {
     return await _native.checkPermissions();
   } catch {
-    return { notificationGranted: false, canScheduleExact: false };
+    return { 
+      notificationGranted: false, 
+      canScheduleExact: false,
+      batteryOptimizationsIgnored: false 
+    };
   }
 }
 
 export async function azanOpenAlarmSettings(): Promise<void> {
   try { await _native.openAlarmSettings(); } catch { /* */ }
+}
+
+export async function azanRequestBatteryOptimizationExemption(): Promise<void> {
+  try { await _native.requestBatteryOptimizationExemption(); } catch { /* */ }
 }
 
 export async function azanSavePrayerTimes(prayers: PrayerScheduleItem[]): Promise<void> {
