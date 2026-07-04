@@ -139,7 +139,8 @@ public class AzanPlugin extends Plugin {
         }
 
         PowerManager pm = (PowerManager) ctx.getSystemService(Context.POWER_SERVICE);
-        ret.put("batteryOptimizationsIgnored", pm != null && pm.isIgnoringBatteryOptimizations());
+        ret.put("batteryOptimizationsIgnored",
+            pm != null && pm.isIgnoringBatteryOptimizations(ctx.getPackageName()));
         
         call.resolve(ret);
     }
