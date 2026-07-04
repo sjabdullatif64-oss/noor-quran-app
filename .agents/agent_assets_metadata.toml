@@ -222,3 +222,15 @@ id = "MktE7qmUouCCTtvGj6YOh"
 uri = "file://attached_assets/release/noor-quran-1.0.3-azan-fix.zip"
 type = "unspecified"
 title = "Noor Quran v1.0.3 - Azan Fix (APK + AAB)"
+
+[[outputs]]
+id = "tFhabi3Q-kz2FH5i6dm2y"
+uri = "file://build_outputs/noor-quran-1.0.1-apk.tar.gz"
+type = "unspecified"
+title = "Noor Quran APK (v1.0.1, versionCode 79117719)"
+
+[[outputs]]
+id = "uRAaZefd3zuwEUptBEtsM"
+uri = "file://build_outputs/noor-quran-1.0.1-aab.tar.gz"
+type = "unspecified"
+title = "Noor Quran AAB (v1.0.1, versionCode 79117719)"
