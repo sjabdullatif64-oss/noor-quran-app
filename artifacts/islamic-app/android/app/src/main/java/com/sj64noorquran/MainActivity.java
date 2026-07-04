@@ -40,8 +40,13 @@ package com.sj64noorquran;
           // plugin. See capacitor.config.ts includePlugins for the primary
           // fix (keeping the JSON in sync with what's actually compiled).
           registerPlugin(SharePlugin.class);
-          // Project-local Kotlin plugins also registered here (not in plugins.json).
+          // Project-local Kotlin/Java plugins also registered here (not in plugins.json).
+          // AzanPlugin is a project-local native plugin (android/app/src, not an npm
+          // package), so cap sync never discovers it — without this explicit call every
+          // Azan.* JS bridge call silently falls back to a no-op web stub and no prayer
+          // alarms are ever scheduled natively.
           registerPlugin(NativeTTSPlugin.class);
+          registerPlugin(AzanPlugin.class);
 
           super.onCreate(savedInstanceState);
 

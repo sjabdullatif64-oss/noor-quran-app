@@ -8,6 +8,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.net.Uri;
 import android.os.Build;
+import android.os.PowerManager;
 import android.provider.Settings;
 import androidx.core.app.NotificationManagerCompat;
 import com.getcapacitor.JSArray;
@@ -129,13 +130,31 @@ public class AzanPlugin extends Plugin {
         JSObject ret = new JSObject();
         ret.put("notificationGranted",
             NotificationManagerCompat.from(ctx).areNotificationsEnabled());
+        
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
             AlarmManager am = (AlarmManager) ctx.getSystemService(Context.ALARM_SERVICE);
             ret.put("canScheduleExact", am != null && am.canScheduleExactAlarms());
         } else {
             ret.put("canScheduleExact", true);
         }
+
+        PowerManager pm = (PowerManager) ctx.getSystemService(Context.POWER_SERVICE);
+        ret.put("batteryOptimizationsIgnored", pm != null && pm.isIgnoringBatteryOptimizations());
+        
         call.resolve(ret);
+    }
+
+    /** Open battery optimization settings. */
+    @PluginMethod
+    public void requestBatteryOptimizationExemption(PluginCall call) {
+        Context ctx = getContext();
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            Intent intent = new Intent(Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS);
+            intent.setData(Uri.parse("package:" + ctx.getPackageName()));
+            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+            ctx.startActivity(intent);
+        }
+        call.resolve();
     }
 
     /** Open Android 12+ exact-alarm settings screen. */

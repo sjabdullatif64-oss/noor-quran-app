@@ -1,7 +1,8 @@
-import { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback } from "react";
+import { App } from "@capacitor/app";
 import {
   ChevronLeft, Volume2, Bell, BellOff, CheckCircle2, AlertCircle,
-  Settings2, RefreshCw, Loader2,
+  RefreshCw, Loader2,
 } from "lucide-react";
 import { Link } from "wouter";
 import {
@@ -12,8 +13,13 @@ import {
   type AzanSettings,
 } from "@/lib/azan-settings";
 import { scheduleAzan, cancelAzan } from "@/lib/azan-scheduler";
-import { azanCheckPermissions, azanOpenAlarmSettings } from "@/lib/azan-plugin";
-import { isCapacitorApp } from "@/lib/notifications";
+import { 
+  azanCheckPermissions, 
+  azanOpenAlarmSettings,
+  azanRequestBatteryOptimizationExemption,
+  type AzanPermissions
+} from "@/lib/azan-plugin";
+import { isCapacitorApp, requestPermission } from "@/lib/notifications";
 import { useToast } from "@/hooks/use-toast";
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -56,17 +62,49 @@ function Toggle({
 export function AzanSettings() {
   const { toast } = useToast();
   const [settings,   setSettings]   = useState<AzanSettings>(getAzanSettings);
-  const [perms,      setPerms]      = useState<{ notificationGranted: boolean; canScheduleExact: boolean } | null>(null);
+  const [perms,      setPerms]      = useState<AzanPermissions | null>(null);
   const [saving,     setSaving]     = useState(false);
   const isNative = isCapacitorApp();
 
-  // Load permission state
-  useEffect(() => {
+  const refreshPerms = useCallback(async () => {
     if (!isNative) return;
-    azanCheckPermissions().then(setPerms);
+    const p = await azanCheckPermissions();
+    setPerms(p);
   }, [isNative]);
 
+  // Load permission state and listen for app resume
+  useEffect(() => {
+    refreshPerms();
+
+    if (!isNative) return;
+    const sub = App.addListener("appStateChange", ({ isActive }) => {
+      if (isActive) refreshPerms();
+    });
+    return () => { sub.then(s => s.remove()); };
+  }, [isNative, refreshPerms]);
+
   const persist = useCallback(async (next: AzanSettings) => {
+    if (next.enabled && isNative) {
+      // Proactively check/request notifications if enabling
+      const p = await azanCheckPermissions();
+      if (!p.notificationGranted) {
+        const result = await requestPermission();
+        if (result !== "granted") {
+          toast({
+            title: "Permission Required",
+            description: "Notifications must be enabled to play the Azan.",
+            variant: "destructive",
+          });
+          // Still save settings but it won't fire effectively
+        }
+      }
+      // Battery exemption uses a single native system dialog (not a full
+      // Settings screen), so it's low-friction enough to ask proactively too.
+      if (!p.batteryOptimizationsIgnored) {
+        await azanRequestBatteryOptimizationExemption();
+      }
+    }
+
     setSettings(next);
     saveAzanSettings(next);
     setSaving(true);
@@ -82,8 +120,9 @@ export function AzanSettings() {
       toast({ title: "Error", description: "Failed to update Azan alarms.", variant: "destructive" });
     } finally {
       setSaving(false);
+      refreshPerms();
     }
-  }, [toast]);
+  }, [toast, isNative, refreshPerms]);
 
   const toggleEnabled = () => persist({ ...settings, enabled: !settings.enabled });
 
@@ -99,7 +138,7 @@ export function AzanSettings() {
     persist({ ...settings, sound });
   };
 
-  const missingPerms = perms && (!perms.notificationGranted || !perms.canScheduleExact);
+  const missingPerms = perms && (!perms.notificationGranted || !perms.canScheduleExact || !perms.batteryOptimizationsIgnored);
 
   return (
     <div className="min-h-[100dvh] bg-gradient-to-b from-[#071a0e] to-[#0a2415] text-white">
@@ -134,26 +173,64 @@ export function AzanSettings() {
 
         {/* Permission warnings */}
         {isNative && missingPerms && (
-          <div className="rounded-2xl bg-red-500/10 border border-red-500/30 p-4 space-y-3">
+          <div className="rounded-2xl bg-red-500/10 border border-red-500/30 p-4 space-y-4">
             <div className="flex gap-3">
               <AlertCircle className="w-5 h-5 text-red-400 shrink-0 mt-0.5" />
               <div className="space-y-1">
                 <p className="text-sm font-semibold text-red-300">Permissions needed</p>
-                {perms && !perms.notificationGranted && (
-                  <p className="text-xs text-red-200">Notification permission is not granted.</p>
-                )}
-                {perms && !perms.canScheduleExact && (
-                  <p className="text-xs text-red-200">Exact alarm permission is required for accurate Azan timing.</p>
-                )}
+                <p className="text-xs text-red-200/70">Reliable Azan delivery requires the following permissions:</p>
               </div>
             </div>
-            <button
-              onClick={() => azanOpenAlarmSettings()}
-              className="w-full flex items-center justify-center gap-2 rounded-xl bg-red-500/20 border border-red-500/40 py-2.5 text-sm font-medium text-red-200 hover:bg-red-500/30 transition-colors"
-            >
-              <Settings2 className="w-4 h-4" />
-              Open Alarm Settings
-            </button>
+
+            <div className="space-y-2">
+              {perms && !perms.notificationGranted && (
+                <div className="flex items-center justify-between gap-4 p-3 rounded-xl bg-white/5 border border-white/5">
+                  <div className="space-y-0.5">
+                    <p className="text-xs font-medium text-red-200">Notifications</p>
+                    <p className="text-[10px] text-red-200/50">Required to play the Azan audio and show stop controls.</p>
+                  </div>
+                  <button
+                    onClick={async () => {
+                      await requestPermission();
+                      refreshPerms();
+                    }}
+                    className="shrink-0 px-3 py-1.5 rounded-lg bg-red-500/20 text-[11px] font-bold text-red-300 border border-red-500/30"
+                  >
+                    Enable
+                  </button>
+                </div>
+              )}
+
+              {perms && !perms.canScheduleExact && (
+                <div className="flex items-center justify-between gap-4 p-3 rounded-xl bg-white/5 border border-white/5">
+                  <div className="space-y-0.5">
+                    <p className="text-xs font-medium text-red-200">Exact Alarms</p>
+                    <p className="text-[10px] text-red-200/50">Required for the Azan to fire exactly on time.</p>
+                  </div>
+                  <button
+                    onClick={() => azanOpenAlarmSettings()}
+                    className="shrink-0 px-3 py-1.5 rounded-lg bg-red-500/20 text-[11px] font-bold text-red-300 border border-red-500/30"
+                  >
+                    Settings
+                  </button>
+                </div>
+              )}
+
+              {perms && !perms.batteryOptimizationsIgnored && (
+                <div className="flex items-center justify-between gap-4 p-3 rounded-xl bg-white/5 border border-white/5">
+                  <div className="space-y-0.5">
+                    <p className="text-xs font-medium text-red-200">Battery Exemption</p>
+                    <p className="text-[10px] text-red-200/50">Prevents Android from killing the Azan service in the background.</p>
+                  </div>
+                  <button
+                    onClick={() => azanRequestBatteryOptimizationExemption()}
+                    className="shrink-0 px-3 py-1.5 rounded-lg bg-red-500/20 text-[11px] font-bold text-red-300 border border-red-500/30"
+                  >
+                    Exempt
+                  </button>
+                </div>
+              )}
+            </div>
           </div>
         )}
 
