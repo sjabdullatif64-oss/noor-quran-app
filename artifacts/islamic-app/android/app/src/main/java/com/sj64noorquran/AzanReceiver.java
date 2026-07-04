@@ -21,6 +21,10 @@ public class AzanReceiver extends BroadcastReceiver {
         if (prayerName == null) prayerName = "Prayer";
         if (sound      == null) sound      = "default";
 
+        AzanDiagnostics.log(context, "RECEIVER_FIRED id=" + prayerId
+            + " name=" + prayerName + " sound=" + sound
+            + " sdk=" + Build.VERSION.SDK_INT);
+
         // Ensure the notification channel exists before the service tries to show
         AzanPlugin.ensureChannel(context);
 
@@ -29,10 +33,15 @@ public class AzanReceiver extends BroadcastReceiver {
         serviceIntent.putExtra("prayer_name",  prayerName);
         serviceIntent.putExtra("prayer_sound", sound);
 
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            context.startForegroundService(serviceIntent);
-        } else {
-            context.startService(serviceIntent);
+        try {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                context.startForegroundService(serviceIntent);
+            } else {
+                context.startService(serviceIntent);
+            }
+            AzanDiagnostics.log(context, "START_SERVICE_CALL_OK");
+        } catch (Throwable t) {
+            AzanDiagnostics.log(context, "START_SERVICE_CALL_FAILED: " + t);
         }
     }
 }

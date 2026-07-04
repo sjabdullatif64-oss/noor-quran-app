@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback } from "react";
 import { App } from "@capacitor/app";
 import {
   ChevronLeft, Volume2, Bell, BellOff, CheckCircle2, AlertCircle,
-  RefreshCw, Loader2,
+  RefreshCw, Loader2, Bug, Copy, Trash2,
 } from "lucide-react";
 import { Link } from "wouter";
 import {
@@ -17,6 +17,8 @@ import {
   azanCheckPermissions, 
   azanOpenAlarmSettings,
   azanRequestBatteryOptimizationExemption,
+  azanGetDiagnosticLog,
+  azanClearDiagnosticLog,
   type AzanPermissions
 } from "@/lib/azan-plugin";
 import { isCapacitorApp, requestPermission } from "@/lib/notifications";
@@ -64,6 +66,9 @@ export function AzanSettings() {
   const [settings,   setSettings]   = useState<AzanSettings>(getAzanSettings);
   const [perms,      setPerms]      = useState<AzanPermissions | null>(null);
   const [saving,     setSaving]     = useState(false);
+  const [diagLog,    setDiagLog]    = useState<string | null>(null);
+  const [diagLoading, setDiagLoading] = useState(false);
+  const [diagOpen,   setDiagOpen]   = useState(false);
   const isNative = isCapacitorApp();
 
   const refreshPerms = useCallback(async () => {
@@ -136,6 +141,38 @@ export function AzanSettings() {
 
   const setSound = (sound: AzanSettings["sound"]) => {
     persist({ ...settings, sound });
+  };
+
+  const loadDiagLog = useCallback(async () => {
+    setDiagLoading(true);
+    try {
+      const log = await azanGetDiagnosticLog();
+      setDiagLog(log);
+    } finally {
+      setDiagLoading(false);
+    }
+  }, []);
+
+  const toggleDiagnostics = () => {
+    const next = !diagOpen;
+    setDiagOpen(next);
+    if (next) loadDiagLog();
+  };
+
+  const copyDiagLog = async () => {
+    if (!diagLog) return;
+    try {
+      await navigator.clipboard.writeText(diagLog);
+      toast({ title: "Copied", description: "Diagnostic log copied to clipboard." });
+    } catch {
+      toast({ title: "Error", description: "Could not copy the log.", variant: "destructive" });
+    }
+  };
+
+  const clearDiagLog = async () => {
+    await azanClearDiagnosticLog();
+    setDiagLog(null);
+    toast({ title: "Cleared", description: "Diagnostic log has been cleared." });
   };
 
   const missingPerms = perms && (!perms.notificationGranted || !perms.canScheduleExact || !perms.batteryOptimizationsIgnored);
@@ -361,6 +398,65 @@ export function AzanSettings() {
             <p className="text-xs text-white/30 text-center mt-2">
               Tap after changing your city or prayer method to update the prayer times.
             </p>
+          </section>
+        )}
+
+        {/* Diagnostics (troubleshooting Azan audio without adb) */}
+        {isNative && (
+          <section className="rounded-2xl bg-white/5 border border-white/10 overflow-hidden">
+            <button
+              onClick={toggleDiagnostics}
+              className="w-full flex items-center justify-between px-5 py-4 text-left hover:bg-white/5 transition-colors"
+            >
+              <div className="flex items-center gap-3">
+                <div className="rounded-xl bg-emerald-500/20 p-2.5">
+                  <Bug className="w-4 h-4 text-emerald-400" />
+                </div>
+                <div>
+                  <p className="font-semibold text-sm">Azan Diagnostics</p>
+                  <p className="text-xs text-white/40">View what happened the last time an Azan fired</p>
+                </div>
+              </div>
+              {diagLoading
+                ? <Loader2 className="w-4 h-4 animate-spin text-white/40 shrink-0" />
+                : <ChevronLeft className={["w-4 h-4 text-white/40 shrink-0 transition-transform", diagOpen ? "rotate-90" : "-rotate-90"].join(" ")} />}
+            </button>
+
+            {diagOpen && (
+              <div className="border-t border-white/10 p-4 space-y-3">
+                {diagLog ? (
+                  <pre className="max-h-64 overflow-y-auto whitespace-pre-wrap break-words rounded-xl bg-black/40 border border-white/10 p-3 text-[10px] leading-relaxed text-emerald-200/90 font-mono">
+                    {diagLog}
+                  </pre>
+                ) : (
+                  <p className="text-xs text-white/40 px-1">
+                    No log yet. It will fill in automatically the next time a prayer alarm fires.
+                  </p>
+                )}
+                <div className="flex gap-2">
+                  <button
+                    onClick={loadDiagLog}
+                    className="flex-1 flex items-center justify-center gap-1.5 rounded-xl bg-white/10 py-2.5 text-xs font-medium text-white/70 hover:bg-white/15 transition-colors"
+                  >
+                    <RefreshCw className="w-3.5 h-3.5" /> Refresh
+                  </button>
+                  <button
+                    onClick={copyDiagLog}
+                    disabled={!diagLog}
+                    className="flex-1 flex items-center justify-center gap-1.5 rounded-xl bg-white/10 py-2.5 text-xs font-medium text-white/70 hover:bg-white/15 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+                  >
+                    <Copy className="w-3.5 h-3.5" /> Copy
+                  </button>
+                  <button
+                    onClick={clearDiagLog}
+                    disabled={!diagLog}
+                    className="flex-1 flex items-center justify-center gap-1.5 rounded-xl bg-red-500/10 py-2.5 text-xs font-medium text-red-300 hover:bg-red-500/20 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" /> Clear
+                  </button>
+                </div>
+              </div>
+            )}
           </section>
         )}
 
