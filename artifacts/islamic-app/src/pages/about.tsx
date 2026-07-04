@@ -308,6 +308,49 @@ export function About() {
           </div>
         </div>
 
+        {/* ── Audio credits ── */}
+        <div
+          className="rounded-2xl border border-emerald-900/40 overflow-hidden"
+          style={{ background: "rgba(255,255,255,0.03)" }}
+        >
+          <div className="px-4 py-2.5 border-b border-emerald-900/30">
+            <p className="text-emerald-500 text-xs font-semibold uppercase tracking-wider">Audio Credits</p>
+          </div>
+          <div className="p-4 space-y-2 text-xs text-emerald-700 leading-relaxed">
+            <p>
+              "Makkah Azan" — recorded at Masjid al-Haram, Makkah (Wikimedia Commons),
+              licensed under{" "}
+              <button
+                onClick={() => openUrl("https://creativecommons.org/licenses/by/3.0")}
+                className="underline text-emerald-500"
+              >
+                CC BY 3.0
+              </button>.
+            </p>
+            <p>
+              "Traditional Azan" — "Islamic call to worship" (Wikimedia Commons), licensed
+              under{" "}
+              <button
+                onClick={() => openUrl("https://creativecommons.org/licenses/by-sa/4.0")}
+                className="underline text-emerald-500"
+              >
+                CC BY-SA 4.0
+              </button>.
+            </p>
+            <p>
+              "Community Azan" — recording by Aaqib Azeez (Wikimedia Commons), licensed
+              under{" "}
+              <button
+                onClick={() => openUrl("https://creativecommons.org/licenses/by-sa/4.0")}
+                className="underline text-emerald-500"
+              >
+                CC BY-SA 4.0
+              </button>.
+            </p>
+            <p>"Default Adhan" — recording by Sabah Fakhry, public domain.</p>
+          </div>
+        </div>
+
         {/* ── Try Our Other App ── */}
         <div>
           <div className="flex items-center gap-2 mb-4">

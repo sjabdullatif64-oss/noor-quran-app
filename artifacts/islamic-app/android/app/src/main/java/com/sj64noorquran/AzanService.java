@@ -5,23 +5,32 @@ import android.app.PendingIntent;
 import android.app.Service;
 import android.content.Intent;
 import android.media.AudioAttributes;
+import android.media.AudioFocusRequest;
+import android.media.AudioManager;
 import android.media.MediaPlayer;
+import android.os.Build;
 import android.os.IBinder;
 import android.os.PowerManager;
 import androidx.core.app.NotificationCompat;
 
-import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 
 /**
  * Foreground service that plays the Azan audio at prayer time.
  *
+ * Audio is played from LOCAL bundled files in res/raw only — no network
+ * streaming. This guarantees playback works fully offline, with the app
+ * closed, and with the screen locked (previous versions streamed the audio
+ * from an external URL that went permanently offline, so no sound ever
+ * played even though the notification appeared correctly).
+ *
  * Lifecycle:
  *   1. AzanReceiver starts this service via startForegroundService().
  *   2. We immediately call startForeground() with a prayer notification.
- *   3. MediaPlayer streams the Azan audio.
- *   4. When audio completes (or on error) we call stopSelf().
+ *   3. We request audio focus (so any other playing audio ducks/stops)
+ *      and play the selected local Azan audio file.
+ *   4. When audio completes (or on error) we release focus and stopSelf().
  *   5. A "Stop Azan" action in the notification sends a STOP_AZAN intent.
  */
 public class AzanService extends Service {
@@ -29,17 +38,20 @@ public class AzanService extends Service {
     private static final int NOTIFICATION_ID = 7001;
     static final String ACTION_STOP = "com.sj64noorquran.STOP_AZAN";
 
-    // Full-Azan streaming URLs — tried in order; fallback handled gracefully
-    private static final Map<String, String> AZAN_URLS = new HashMap<>();
+    // Local bundled Azan audio — the only playback source (no streaming).
+    private static final Map<String, Integer> AZAN_RAW = new HashMap<>();
     static {
-        AZAN_URLS.put("default",  "https://www.islamicfinder.us/islamicplayer/azan/adhan_hussary.mp3");
-        AZAN_URLS.put("makkah",   "https://www.islamicfinder.us/islamicplayer/azan/adhan_makkah.mp3");
-        AZAN_URLS.put("madinah",  "https://www.islamicfinder.us/islamicplayer/azan/adhan_madinah.mp3");
-        AZAN_URLS.put("mishary",  "https://www.islamicfinder.us/islamicplayer/azan/adhan_mishary.mp3");
+        AZAN_RAW.put("default",  R.raw.azan_default);
+        AZAN_RAW.put("makkah",   R.raw.azan_makkah);
+        AZAN_RAW.put("madinah",  R.raw.azan_madinah);
+        AZAN_RAW.put("mishary",  R.raw.azan_mishary);
     }
 
-    private MediaPlayer           mediaPlayer;
-    private PowerManager.WakeLock wakeLock;
+    private MediaPlayer            mediaPlayer;
+    private PowerManager.WakeLock  wakeLock;
+    private AudioManager           audioManager;
+    private AudioFocusRequest      audioFocusRequest; // API 26+
+    private AudioManager.OnAudioFocusChangeListener focusListener = change -> { /* no-op: alarm plays through */ };
 
     // ── Service lifecycle ────────────────────────────────────────────────────
 
@@ -85,28 +97,72 @@ public class AzanService extends Service {
 
     private void playAzan(String soundKey) {
         stopMedia();
-        String url = AZAN_URLS.containsKey(soundKey)
-            ? AZAN_URLS.get(soundKey)
-            : AZAN_URLS.get("default");
-        if (url == null) { stopSelf(); return; }
+        requestAudioFocus();
 
+        Integer resId = AZAN_RAW.containsKey(soundKey) ? AZAN_RAW.get(soundKey) : AZAN_RAW.get("default");
+        if (resId == null) resId = R.raw.azan_short; // absolute last-resort local asset
+
+        if (!tryPlay(resId) && resId != R.raw.azan_short) {
+            // Bundled reciter file failed to load for some reason — fall back to
+            // the guaranteed-present short local tone so something always plays.
+            tryPlay(R.raw.azan_short);
+        }
+    }
+
+    /** Attempts to play a local raw resource. Returns true if playback started. */
+    private boolean tryPlay(int resId) {
         try {
-            mediaPlayer = new MediaPlayer();
+            mediaPlayer = MediaPlayer.create(this, resId);
+            if (mediaPlayer == null) return false;
+
             mediaPlayer.setAudioAttributes(new AudioAttributes.Builder()
                 .setContentType(AudioAttributes.CONTENT_TYPE_MUSIC)
                 .setUsage(AudioAttributes.USAGE_ALARM)
                 .build());
-            mediaPlayer.setDataSource(url);
-            mediaPlayer.setOnPreparedListener(MediaPlayer::start);
             mediaPlayer.setOnCompletionListener(mp -> stopSelf());
             mediaPlayer.setOnErrorListener((mp, what, extra) -> {
                 stopSelf();
                 return true;
             });
-            mediaPlayer.prepareAsync();
-        } catch (IOException | IllegalArgumentException | IllegalStateException e) {
-            stopSelf();
+            mediaPlayer.start();
+            return true;
+        } catch (Exception e) {
+            return false;
         }
+    }
+
+    private void requestAudioFocus() {
+        audioManager = (AudioManager) getSystemService(AUDIO_SERVICE);
+        if (audioManager == null) return;
+
+        AudioAttributes attrs = new AudioAttributes.Builder()
+            .setContentType(AudioAttributes.CONTENT_TYPE_MUSIC)
+            .setUsage(AudioAttributes.USAGE_ALARM)
+            .build();
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            audioFocusRequest = new AudioFocusRequest.Builder(AudioManager.AUDIOFOCUS_GAIN_TRANSIENT_EXCLUSIVE)
+                .setAudioAttributes(attrs)
+                .setOnAudioFocusChangeListener(focusListener)
+                .build();
+            try { audioManager.requestAudioFocus(audioFocusRequest); } catch (Exception ignored) { /* */ }
+        } else {
+            try {
+                audioManager.requestAudioFocus(
+                    focusListener, AudioManager.STREAM_ALARM, AudioManager.AUDIOFOCUS_GAIN_TRANSIENT_EXCLUSIVE);
+            } catch (Exception ignored) { /* */ }
+        }
+    }
+
+    private void abandonAudioFocus() {
+        if (audioManager == null) return;
+        try {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O && audioFocusRequest != null) {
+                audioManager.abandonAudioFocusRequest(audioFocusRequest);
+            } else {
+                audioManager.abandonAudioFocus(focusListener);
+            }
+        } catch (Exception ignored) { /* */ }
     }
 
     private void stopMedia() {
@@ -117,6 +173,7 @@ public class AzanService extends Service {
             } catch (Exception ignored) { /* */ }
             mediaPlayer = null;
         }
+        abandonAudioFocus();
     }
 
     private void releaseWakeLock() {
@@ -177,12 +234,12 @@ public class AzanService extends Service {
     }
 
     private static String getSoundLabel(String sound) {
-        if (sound == null) return "Hussary";
+        if (sound == null) return "Default Adhan";
         switch (sound) {
-            case "makkah":  return "Makkah";
-            case "madinah": return "Madinah";
-            case "mishary": return "Mishary";
-            default:        return "Hussary";
+            case "makkah":  return "Makkah Azan";
+            case "madinah": return "Traditional Azan";
+            case "mishary": return "Community Azan";
+            default:        return "Default Adhan";
         }
     }
 }

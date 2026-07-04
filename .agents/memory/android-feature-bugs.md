@@ -25,5 +25,14 @@ In `nativeShare()`, if `@capacitor/share` plugin throws (unavailable/misconfigur
 ## Azan scheduler no offline cache
 `scheduleAzan()` fetched prayer times live; if offline or city/country not set, returned null and scheduled nothing. Fix: after successful network fetch, save `{todayDate, locationKey, today, tomorrow}` to `localStorage["noor-azan-timings-v1"]`. On network failure, try loading this cache (keyed by date + city:city:country or gps:lat,lng).
 
-## Next APK version
-After these JS-only fixes, the next debug APK is v1.0.15 (build dispatched on commit f863fd99).
+## Azan audio was silently broken (dead streaming URL)
+`AzanService` played the Azan by streaming an MP3 from a domain that no longer resolves; `MediaPlayer` failed silently with no fallback, so notifications fired but no sound ever played. Fix: bundle licensed/public-domain audio files as local `res/raw/*.mp3` and play via `MediaPlayer.create()` (no network), with a last-resort bundled tone if the primary resource fails to load, plus proper `AudioFocusRequest` request/abandon around playback.
+
+**Why:** Never trust a remote media URL for a time-critical local notification sound — no connectivity or a dead host means total silent failure with no user-visible error. Bundle critical audio locally.
+
+## CI auto-stamps versionCode/versionName, ignoring build.gradle
+The Android CI workflow (`.github/workflows/android-build.yml`) always overwrites `versionCode`/`versionName` in `app/build.gradle` via `sed` before building — `versionCode = now() - epoch` (seconds) and `versionName = "1.0.1"` — unless the workflow_dispatch run is given explicit `version_name`/`version_code` inputs.
+
+**Why:** Guarantees a monotonically increasing versionCode per CI run without relying on the repo's committed value.
+
+**How to apply:** Manually bumping versionCode/versionName in `build.gradle` before pushing has no effect on the CI-built artifact unless you also pass the `version_name`/`version_code` workflow_dispatch inputs. Don't bother bumping it locally for CI-triggered builds — check the actual stamped values in the build log (`grep -E "versionCode|versionName" app/build.gradle` step) if you need to know what shipped.

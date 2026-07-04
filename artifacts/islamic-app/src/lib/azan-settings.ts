@@ -58,10 +58,10 @@ export function saveAzanSettings(s: AzanSettings): void {
 // ── Sound metadata ────────────────────────────────────────────────────────────
 
 export const AZAN_SOUND_OPTIONS: { value: AzanSound; label: string; sublabel: string }[] = [
-  { value: "default",  label: "Sheikh Hussary",  sublabel: "Classic Egyptian recitation" },
-  { value: "makkah",   label: "Makkah Azan",     sublabel: "Grand Mosque — Makkah Al-Mukarramah" },
-  { value: "madinah",  label: "Madinah Azan",    sublabel: "Prophet's Mosque — Madinah" },
-  { value: "mishary",  label: "Sheikh Mishary",  sublabel: "Mishary Rashid Alafasy" },
+  { value: "default",  label: "Default Adhan",    sublabel: "Traditional call to prayer (public domain)" },
+  { value: "makkah",   label: "Makkah Azan",      sublabel: "Grand Mosque — Masjid al-Haram, Makkah" },
+  { value: "madinah",  label: "Traditional Azan", sublabel: "Classic call to prayer (CC BY-SA)" },
+  { value: "mishary",  label: "Community Azan",   sublabel: "Reciter: Aaqib Azeez (CC BY-SA)" },
 ];
 
 // ── Prayer metadata ───────────────────────────────────────────────────────────
