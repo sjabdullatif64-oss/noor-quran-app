@@ -32,6 +32,7 @@ interface AzanNative {
   savePrayerTimes(options: { prayers: PrayerScheduleItem[] }): Promise<void>;
   getDiagnosticLog():                           Promise<{ log: string | null }>;
   clearDiagnosticLog():                         Promise<void>;
+  testAzanAudio(options: { sound: AzanSound }): Promise<void>;
 }
 
 // registerPlugin() returns a no-op web implementation automatically when
@@ -92,4 +93,18 @@ export async function azanGetDiagnosticLog(): Promise<string | null> {
 
 export async function azanClearDiagnosticLog(): Promise<void> {
   try { await _native.clearDiagnosticLog(); } catch { /* */ }
+}
+
+/**
+ * Immediately plays the Azan through the exact same native code path a real
+ * prayer-time alarm uses (AzanService.onStartCommand → playAzan → tryPlay).
+ * No scheduling/AlarmManager involved — for on-demand audio testing.
+ */
+export async function azanTestAudio(sound: AzanSound): Promise<boolean> {
+  try {
+    await _native.testAzanAudio({ sound });
+    return true;
+  } catch {
+    return false;
+  }
 }

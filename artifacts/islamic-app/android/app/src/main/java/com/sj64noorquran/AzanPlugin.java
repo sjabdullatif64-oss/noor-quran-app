@@ -192,6 +192,43 @@ public class AzanPlugin extends Plugin {
     }
 
     /**
+     * Immediately plays the Azan through the EXACT SAME code path a real
+     * prayer-time alarm uses (AzanReceiver → startForegroundService(AzanService)
+     * → onStartCommand → playAzan → tryPlay). The only difference is what
+     * triggers the service start: a real alarm broadcast vs. this direct call.
+     * No AlarmManager/scheduling is involved, so it plays right away without
+     * waiting for prayer time — useful for verifying MediaPlayer/audio-routing
+     * behavior on a real device without needing to wait or fake the clock.
+     * JS: Azan.testAzanAudio({ sound })
+     */
+    @PluginMethod
+    public void testAzanAudio(PluginCall call) {
+        String  sound = call.getString("sound", "default");
+        Context ctx   = getContext();
+
+        ensureChannel(ctx);
+        AzanDiagnostics.log(ctx, "TEST_BUTTON_PRESSED sound=" + sound);
+
+        Intent serviceIntent = new Intent(ctx, AzanService.class);
+        serviceIntent.putExtra("prayer_id",    9999);
+        serviceIntent.putExtra("prayer_name",  "Test");
+        serviceIntent.putExtra("prayer_sound", sound);
+
+        try {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                ctx.startForegroundService(serviceIntent);
+            } else {
+                ctx.startService(serviceIntent);
+            }
+            AzanDiagnostics.log(ctx, "TEST_START_SERVICE_CALL_OK");
+            call.resolve();
+        } catch (Throwable t) {
+            AzanDiagnostics.log(ctx, "TEST_START_SERVICE_CALL_FAILED: " + t);
+            call.reject("Failed to start test playback: " + t.getMessage());
+        }
+    }
+
+    /**
      * Persist entire schedule JSON to SharedPreferences for boot-time recovery.
      * JS: Azan.savePrayerTimes({ prayers: [{ id, name, timestamp, sound }] })
      */
