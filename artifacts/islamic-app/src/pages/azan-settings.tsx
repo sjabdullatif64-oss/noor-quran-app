@@ -366,9 +366,10 @@ export function AzanSettings() {
 
         {/* Info footer */}
         <section className="rounded-2xl bg-white/5 border border-white/10 p-4 text-xs text-white/40 space-y-1.5">
-          <p>Prayer times are calculated from the Aladhan API using your saved city or GPS location.</p>
+          <p>Prayer times are calculated from the Aladhan API using your current GPS location (auto-detected) or a saved city.</p>
           <p>Azan alarms are scheduled for today and tomorrow each time you open the app.</p>
-          <p>The Azan audio streams over the internet. A short chime plays if offline.</p>
+          <p>The Azan audio is bundled with the app and always plays fully offline — no internet needed at prayer time.</p>
+          <p>Audio credits for each sound are listed on the About page.</p>
         </section>
 
         <div className="h-6" />

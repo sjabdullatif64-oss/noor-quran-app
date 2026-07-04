@@ -7,7 +7,7 @@
  */
 
 import { isCapacitorApp } from "./notifications";
-import { getGpsCoords, getCity, getCountry, getLocationSource } from "./settings";
+import { getGpsCoords, getCity, getCountry, getLocationSource, saveGpsCoords } from "./settings";
 import {
   getAzanSettings,
   AZAN_PRAYER_DEFS,
@@ -125,6 +125,45 @@ async function fetchTimings(date: Date): Promise<RawTimings | null> {
   }
 }
 
+/**
+ * Battery-efficient, one-shot GPS refresh so prayer times stay accurate as
+ * the user travels, with no manual setup required.
+ *
+ * - If the user has never set a location (fresh install), this silently
+ *   attempts to auto-detect it via GPS so Azan works out of the box.
+ * - If the user is already on GPS mode, this refreshes the fix (cheap: a
+ *   single low-accuracy request, not continuous tracking/watchPosition).
+ * - If the user explicitly picked a manual city, we respect that choice and
+ *   never override it with GPS.
+ * Failures (denied permission, timeout, no GPS) are silently ignored — the
+ * scheduler falls back to whatever city/coords are already saved.
+ */
+function refreshGpsLocation(): Promise<void> {
+  return new Promise((resolve) => {
+    const src = getLocationSource();
+    if (src === "manual") { resolve(); return; } // respect explicit user choice
+    if (typeof navigator === "undefined" || !navigator.geolocation) { resolve(); return; }
+
+    const timeout = setTimeout(resolve, 8_000);
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        clearTimeout(timeout);
+        saveGpsCoords(pos.coords.latitude, pos.coords.longitude);
+        resolve();
+      },
+      () => {
+        clearTimeout(timeout);
+        resolve(); // permission denied / unavailable — keep last known location
+      },
+      {
+        enableHighAccuracy: false, // coarse fix is plenty for prayer-time calc, saves battery
+        timeout: 8_000,
+        maximumAge: 10 * 60 * 1000, // accept a fix up to 10 min old — avoids forcing a fresh GPS read
+      },
+    );
+  });
+}
+
 /** Parse "HH:MM (timezone)" → timestamp for the given calendar date */
 function parseTimestamp(timeStr: string, date: Date): number | null {
   try {
@@ -159,6 +198,10 @@ export async function scheduleAzan(): Promise<void> {
   _scheduling = true;
 
   try {
+    // Battery-efficient one-shot GPS refresh — keeps prayer times accurate
+    // with no manual setup, without any continuous background tracking.
+    await refreshGpsLocation();
+
     const now      = new Date();
     const today    = new Date(now.getFullYear(), now.getMonth(), now.getDate());
     const tomorrow = new Date(today);
