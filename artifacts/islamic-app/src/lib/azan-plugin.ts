@@ -30,6 +30,8 @@ interface AzanNative {
   openAlarmSettings():                          Promise<void>;
   requestBatteryOptimizationExemption():        Promise<void>;
   savePrayerTimes(options: { prayers: PrayerScheduleItem[] }): Promise<void>;
+  getDiagnosticLog():                           Promise<{ log: string | null }>;
+  clearDiagnosticLog():                         Promise<void>;
 }
 
 // registerPlugin() returns a no-op web implementation automatically when
@@ -77,4 +79,17 @@ export async function azanRequestBatteryOptimizationExemption(): Promise<void> {
 
 export async function azanSavePrayerTimes(prayers: PrayerScheduleItem[]): Promise<void> {
   try { await _native.savePrayerTimes({ prayers }); } catch { /* */ }
+}
+
+export async function azanGetDiagnosticLog(): Promise<string | null> {
+  try {
+    const result = await _native.getDiagnosticLog();
+    return result.log ?? null;
+  } catch {
+    return null;
+  }
+}
+
+export async function azanClearDiagnosticLog(): Promise<void> {
+  try { await _native.clearDiagnosticLog(); } catch { /* */ }
 }

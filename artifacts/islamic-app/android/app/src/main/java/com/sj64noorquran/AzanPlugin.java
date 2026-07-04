@@ -172,6 +172,26 @@ public class AzanPlugin extends Plugin {
     }
 
     /**
+     * Returns the persistent Azan diagnostic log (receiver fired, service
+     * started, MediaPlayer prepare/start results, audio focus, etc.) so the
+     * log can be inspected in-app without adb/Logcat access.
+     * JS: Azan.getDiagnosticLog() -> { log: string | null }
+     */
+    @PluginMethod
+    public void getDiagnosticLog(PluginCall call) {
+        JSObject ret = new JSObject();
+        ret.put("log", AzanDiagnostics.read(getContext()));
+        call.resolve(ret);
+    }
+
+    /** Clears the persistent Azan diagnostic log. */
+    @PluginMethod
+    public void clearDiagnosticLog(PluginCall call) {
+        AzanDiagnostics.clear(getContext());
+        call.resolve();
+    }
+
+    /**
      * Persist entire schedule JSON to SharedPreferences for boot-time recovery.
      * JS: Azan.savePrayerTimes({ prayers: [{ id, name, timestamp, sound }] })
      */

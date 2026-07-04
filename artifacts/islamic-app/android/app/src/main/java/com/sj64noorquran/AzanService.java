@@ -3,6 +3,7 @@ package com.sj64noorquran;
 import android.app.Notification;
 import android.app.PendingIntent;
 import android.app.Service;
+import android.content.res.AssetFileDescriptor;
 import android.content.Intent;
 import android.media.AudioAttributes;
 import android.media.AudioFocusRequest;
@@ -71,16 +72,26 @@ public class AzanService extends Service {
         if (prayerName == null) prayerName = "Prayer";
         if (sound      == null) sound      = "default";
 
+        AzanDiagnostics.log(this, "SERVICE_ON_START_COMMAND name=" + prayerName + " sound=" + sound);
+
         // Acquire CPU wake lock so the audio continues with screen off
         PowerManager pm = (PowerManager) getSystemService(POWER_SERVICE);
         if (pm != null) {
             wakeLock = pm.newWakeLock(
                 PowerManager.PARTIAL_WAKE_LOCK, "NoorQuran::AzanWakeLock");
             wakeLock.acquire(15 * 60 * 1000L); // max 15 min safety cap
+            AzanDiagnostics.log(this, "WAKE_LOCK_ACQUIRED");
+        } else {
+            AzanDiagnostics.log(this, "WAKE_LOCK_UNAVAILABLE (PowerManager null)");
         }
 
         // Must call startForeground() immediately (< 5 s after startForegroundService)
-        startForeground(NOTIFICATION_ID, buildNotification(prayerName, sound));
+        try {
+            startForeground(NOTIFICATION_ID, buildNotification(prayerName, sound));
+            AzanDiagnostics.log(this, "START_FOREGROUND_OK");
+        } catch (Throwable t) {
+            AzanDiagnostics.log(this, "START_FOREGROUND_FAILED: " + t);
+        }
 
         playAzan(sound);
         return START_NOT_STICKY;
@@ -102,38 +113,98 @@ public class AzanService extends Service {
         Integer resId = AZAN_RAW.containsKey(soundKey) ? AZAN_RAW.get(soundKey) : AZAN_RAW.get("default");
         if (resId == null) resId = R.raw.azan_short; // absolute last-resort local asset
 
+        AzanDiagnostics.log(this, "RESOLVED_RAW_RES_ID=" + resId + " for soundKey=" + soundKey);
+
         if (!tryPlay(resId) && resId != R.raw.azan_short) {
             // Bundled reciter file failed to load for some reason — fall back to
             // the guaranteed-present short local tone so something always plays.
+            AzanDiagnostics.log(this, "PRIMARY_TRACK_FAILED — falling back to azan_short");
             tryPlay(R.raw.azan_short);
         }
     }
 
-    /** Attempts to play a local raw resource. Returns true if playback started. */
+    /**
+     * Attempts to play a local raw resource. Returns true if playback started.
+     *
+     * IMPORTANT: we build the MediaPlayer manually (new MediaPlayer() +
+     * setDataSource() + prepare()) instead of the MediaPlayer.create(...)
+     * convenience method, and we call setAudioAttributes() BEFORE prepare().
+     *
+     * MediaPlayer.create() internally calls prepare() using the player's
+     * default audio attributes (routed to the Music/Media stream) before we
+     * ever get a chance to call setAudioAttributes(). Changing the attributes
+     * afterwards does not reliably re-route an already-prepared player on all
+     * OEM Android builds, so the Azan was actually playing on the phone's
+     * Media volume — which is very often muted, turned down, or silenced by
+     * Do Not Disturb — instead of the Alarm volume. This is why the
+     * notification always appeared on time (a separate code path) while the
+     * audio was inaudible. Setting USAGE_ALARM before prepare() ensures the
+     * playback session is created on the Alarm stream from the start.
+     */
     private boolean tryPlay(int resId) {
+        AssetFileDescriptor afd = null;
         try {
-            mediaPlayer = MediaPlayer.create(this, resId);
-            if (mediaPlayer == null) return false;
-
+            mediaPlayer = new MediaPlayer();
             mediaPlayer.setAudioAttributes(new AudioAttributes.Builder()
                 .setContentType(AudioAttributes.CONTENT_TYPE_MUSIC)
                 .setUsage(AudioAttributes.USAGE_ALARM)
                 .build());
-            mediaPlayer.setOnCompletionListener(mp -> stopSelf());
+
+            afd = getResources().openRawResourceFd(resId);
+            if (afd == null) {
+                AzanDiagnostics.log(this, "OPEN_RAW_RESOURCE_FD_NULL resId=" + resId);
+                return false;
+            }
+            mediaPlayer.setDataSource(afd.getFileDescriptor(), afd.getStartOffset(), afd.getLength());
+            AzanDiagnostics.log(this, "SET_DATA_SOURCE_OK resId=" + resId);
+
+            mediaPlayer.setOnCompletionListener(mp -> {
+                AzanDiagnostics.log(this, "PLAYBACK_COMPLETED");
+                stopSelf();
+            });
             mediaPlayer.setOnErrorListener((mp, what, extra) -> {
+                AzanDiagnostics.log(this, "MEDIAPLAYER_ERROR what=" + what + " extra=" + extra);
                 stopSelf();
                 return true;
             });
+
+            mediaPlayer.prepare(); // synchronous — local raw resource, fast
+            AzanDiagnostics.log(this, "PREPARE_OK");
+
             mediaPlayer.start();
+            AzanDiagnostics.log(this, "START_CALLED isPlaying=" + mediaPlayer.isPlaying()
+                + " volume(alarm stream)=" + currentAlarmVolumeInfo());
             return true;
         } catch (Exception e) {
+            AzanDiagnostics.log(this, "TRY_PLAY_EXCEPTION resId=" + resId + " : " + e);
             return false;
+        } finally {
+            if (afd != null) {
+                try { afd.close(); } catch (Exception ignored) { /* */ }
+            }
+        }
+    }
+
+    private String currentAlarmVolumeInfo() {
+        try {
+            AudioManager am = audioManager != null
+                ? audioManager
+                : (AudioManager) getSystemService(AUDIO_SERVICE);
+            if (am == null) return "unavailable";
+            int cur = am.getStreamVolume(AudioManager.STREAM_ALARM);
+            int max = am.getStreamMaxVolume(AudioManager.STREAM_ALARM);
+            return cur + "/" + max;
+        } catch (Exception e) {
+            return "error:" + e;
         }
     }
 
     private void requestAudioFocus() {
         audioManager = (AudioManager) getSystemService(AUDIO_SERVICE);
-        if (audioManager == null) return;
+        if (audioManager == null) {
+            AzanDiagnostics.log(this, "AUDIO_MANAGER_UNAVAILABLE");
+            return;
+        }
 
         AudioAttributes attrs = new AudioAttributes.Builder()
             .setContentType(AudioAttributes.CONTENT_TYPE_MUSIC)
@@ -145,12 +216,21 @@ public class AzanService extends Service {
                 .setAudioAttributes(attrs)
                 .setOnAudioFocusChangeListener(focusListener)
                 .build();
-            try { audioManager.requestAudioFocus(audioFocusRequest); } catch (Exception ignored) { /* */ }
+            try {
+                int result = audioManager.requestAudioFocus(audioFocusRequest);
+                AzanDiagnostics.log(this, "AUDIO_FOCUS_REQUEST_RESULT=" + result
+                    + " (1=GRANTED, 0=FAILED, 2=DELAYED)");
+            } catch (Exception e) {
+                AzanDiagnostics.log(this, "AUDIO_FOCUS_REQUEST_EXCEPTION: " + e);
+            }
         } else {
             try {
-                audioManager.requestAudioFocus(
+                int result = audioManager.requestAudioFocus(
                     focusListener, AudioManager.STREAM_ALARM, AudioManager.AUDIOFOCUS_GAIN_TRANSIENT_EXCLUSIVE);
-            } catch (Exception ignored) { /* */ }
+                AzanDiagnostics.log(this, "AUDIO_FOCUS_REQUEST_RESULT(legacy)=" + result);
+            } catch (Exception e) {
+                AzanDiagnostics.log(this, "AUDIO_FOCUS_REQUEST_EXCEPTION(legacy): " + e);
+            }
         }
     }
 
