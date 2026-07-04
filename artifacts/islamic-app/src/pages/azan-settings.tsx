@@ -19,6 +19,7 @@ import {
   azanRequestBatteryOptimizationExemption,
   azanGetDiagnosticLog,
   azanClearDiagnosticLog,
+  azanTestAudio,
   type AzanPermissions
 } from "@/lib/azan-plugin";
 import { isCapacitorApp, requestPermission } from "@/lib/notifications";
@@ -69,6 +70,7 @@ export function AzanSettings() {
   const [diagLog,    setDiagLog]    = useState<string | null>(null);
   const [diagLoading, setDiagLoading] = useState(false);
   const [diagOpen,   setDiagOpen]   = useState(false);
+  const [testing,    setTesting]    = useState(false);
   const isNative = isCapacitorApp();
 
   const refreshPerms = useCallback(async () => {
@@ -141,6 +143,20 @@ export function AzanSettings() {
 
   const setSound = (sound: AzanSettings["sound"]) => {
     persist({ ...settings, sound });
+  };
+
+  const testAzanAudioNow = async () => {
+    setTesting(true);
+    try {
+      const ok = await azanTestAudio(settings.sound);
+      if (ok) {
+        toast({ title: "Playing Azan…", description: "Same audio and code path used for real prayer alarms." });
+      } else {
+        toast({ title: "Could not start test", description: "See Azan Diagnostics below for details.", variant: "destructive" });
+      }
+    } finally {
+      setTesting(false);
+    }
   };
 
   const loadDiagLog = useCallback(async () => {
@@ -370,6 +386,24 @@ export function AzanSettings() {
               );
             })}
           </div>
+
+          {isNative && (
+            <>
+              <button
+                onClick={testAzanAudioNow}
+                disabled={testing}
+                className="w-full mt-3 flex items-center justify-center gap-2 rounded-2xl bg-emerald-600/90 hover:bg-emerald-600 py-4 text-sm font-semibold text-white transition-colors disabled:opacity-60"
+              >
+                {testing
+                  ? <Loader2 className="w-4 h-4 animate-spin" />
+                  : <Volume2 className="w-4 h-4" />}
+                {testing ? "Starting…" : "Test Azan Audio"}
+              </button>
+              <p className="text-xs text-white/30 text-center mt-2">
+                Plays the selected sound right now, through the exact same code path as a real prayer alarm — no need to wait for prayer time.
+              </p>
+            </>
+          )}
         </section>
 
         {/* Reschedule button */}
