@@ -1,5 +1,5 @@
-import { useState, useCallback } from "react";
-import { ChevronLeft, Download, Trash2, CheckCircle, Play, Pause, HardDrive, Wifi, XCircle, Search } from "lucide-react";
+import { useState, useCallback, useEffect } from "react";
+import { ChevronLeft, Download, Trash2, CheckCircle, Play, Pause, HardDrive, Wifi, XCircle, Search, Globe } from "lucide-react";
 import { Link } from "wouter";
 import {
   SURAH_PACKS,
@@ -11,10 +11,25 @@ import {
   getDownloadedAyahs,
   getAudioBlobUrl,
 } from "@/lib/downloads";
+import {
+  downloadTranslationPack,
+  deleteTranslationPack,
+  getAllDownloadedTranslations,
+  DOWNLOADABLE_TRANSLATIONS,
+  TRANSLATION_PACK_SIZE,
+} from "@/lib/offline-quran";
+import { TRANSLATION_LABELS, TRANSLATION_ENGLISH_NAMES, type TranslationLanguage } from "@/lib/api";
 import { useToast } from "@/hooks/use-toast";
 import { useRef } from "react";
 
 interface PackState {
+  status: "idle" | "downloading" | "complete" | "error";
+  progress: number;
+  total: number;
+  errorMsg?: string;
+}
+
+interface TranslState {
   status: "idle" | "downloading" | "complete" | "error";
   progress: number;
   total: number;
@@ -50,6 +65,27 @@ export function Downloads() {
   const blobUrlsRef = useRef<string[]>([]);
   const { toast }   = useToast();
 
+  // ── Translation pack state ────────────────────────────────────────────────
+  const [translStates, setTranslStates] = useState<Record<string, TranslState>>(() => {
+    const init: Record<string, TranslState> = {};
+    for (const lang of DOWNLOADABLE_TRANSLATIONS) {
+      init[lang] = { status: "idle", progress: 0, total: 0 };
+    }
+    return init;
+  });
+
+  useEffect(() => {
+    getAllDownloadedTranslations().then((langs) => {
+      setTranslStates((prev) => {
+        const next = { ...prev };
+        for (const lang of langs) {
+          if (next[lang]) next[lang] = { ...next[lang], status: "complete" };
+        }
+        return next;
+      });
+    });
+  }, []);
+
   // ── Single source of truth for refreshing both states from storage ──────────
   const refreshDownloads = useCallback(() => {
     const fresh = getDownloadedPacks();
@@ -76,6 +112,30 @@ export function Downloads() {
   const setPackStatus = useCallback((packId: string, update: Partial<PackState>) => {
     setPackStates((prev) => ({ ...prev, [packId]: { ...prev[packId], ...update } }));
   }, []);
+
+  const setTranslStatus = useCallback((lang: TranslationLanguage, update: Partial<TranslState>) => {
+    setTranslStates((prev) => ({ ...prev, [lang]: { ...prev[lang], ...update } }));
+  }, []);
+
+  const handleTranslDownload = async (lang: TranslationLanguage) => {
+    setTranslStatus(lang, { status: "downloading", progress: 0, total: 0 });
+    try {
+      await downloadTranslationPack(lang, (loaded, total) => {
+        setTranslStatus(lang, { progress: loaded, total });
+      });
+      setTranslStatus(lang, { status: "complete" });
+      toast({ title: "Downloaded!", description: `${TRANSLATION_ENGLISH_NAMES[lang]} translation saved offline.` });
+    } catch {
+      setTranslStatus(lang, { status: "error", errorMsg: "Download failed. Check your connection." });
+      toast({ title: "Download failed", description: "Please check your internet connection.", variant: "destructive" });
+    }
+  };
+
+  const handleTranslDelete = async (lang: TranslationLanguage) => {
+    await deleteTranslationPack(lang);
+    setTranslStatus(lang, { status: "idle", progress: 0, total: 0 });
+    toast({ title: "Deleted", description: `${TRANSLATION_ENGLISH_NAMES[lang]} translation removed.` });
+  };
 
   // ── Download ─────────────────────────────────────────────────────────────────
   const handleDownload = async (pack: SurahPack) => {
@@ -388,6 +448,133 @@ export function Downloads() {
           ))}
         </div>
       )}
+
+      {/* ── Translation Packs ────────────────────────────────────────────────── */}
+      <div className="px-4 mt-6 mb-6">
+        <div className="flex items-center justify-between mb-3">
+          <p className="text-emerald-500 text-xs uppercase tracking-wider font-medium">
+            Translation Packs
+          </p>
+          <p className="text-emerald-700 text-xs">Arabic & Urdu bundled</p>
+        </div>
+
+        {/* Bundled — Arabic */}
+        <div className="rounded-xl border border-emerald-900/40 overflow-hidden mb-2"
+          style={{ background: "rgba(255,255,255,0.03)" }}>
+          <div className="flex items-center gap-3 px-3 py-2.5">
+            <div className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0"
+              style={{ background: "rgba(52,211,153,0.18)", color: "#34d399", border: "1px solid rgba(52,211,153,0.25)" }}>
+              <CheckCircle className="w-4 h-4" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-white font-medium text-sm">Arabic (القرآن)</p>
+              <p className="text-emerald-800 text-xs">Bundled · Always available offline</p>
+            </div>
+            <span className="text-emerald-600 text-xs font-medium px-2 py-1 rounded-full"
+              style={{ background: "rgba(52,211,153,0.08)", border: "1px solid rgba(52,211,153,0.2)" }}>
+              Bundled
+            </span>
+          </div>
+        </div>
+
+        {/* Bundled — Urdu */}
+        <div className="rounded-xl border border-emerald-900/40 overflow-hidden mb-3"
+          style={{ background: "rgba(255,255,255,0.03)" }}>
+          <div className="flex items-center gap-3 px-3 py-2.5">
+            <div className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0"
+              style={{ background: "rgba(52,211,153,0.18)", color: "#34d399", border: "1px solid rgba(52,211,153,0.25)" }}>
+              <CheckCircle className="w-4 h-4" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-white font-medium text-sm">Urdu (اردو)</p>
+              <p className="text-emerald-800 text-xs">Bundled · Always available offline</p>
+            </div>
+            <span className="text-emerald-600 text-xs font-medium px-2 py-1 rounded-full"
+              style={{ background: "rgba(52,211,153,0.08)", border: "1px solid rgba(52,211,153,0.2)" }}>
+              Bundled
+            </span>
+          </div>
+        </div>
+
+        {/* Downloadable translations */}
+        <div className="space-y-2">
+          {DOWNLOADABLE_TRANSLATIONS.map((lang) => {
+            const ts          = translStates[lang];
+            const isComplete  = ts?.status === "complete";
+            const isDling     = ts?.status === "downloading";
+            const isError     = ts?.status === "error";
+            const pct         = ts?.total > 0 ? Math.round((ts.progress / ts.total) * 100) : 0;
+
+            return (
+              <div key={lang} className="rounded-xl border border-emerald-900/40 overflow-hidden"
+                style={{ background: "rgba(255,255,255,0.03)" }}>
+                <div className="flex items-center gap-3 px-3 py-2.5">
+                  <div className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0"
+                    style={{
+                      background: isComplete ? "rgba(52,211,153,0.18)" : "rgba(45,212,191,0.07)",
+                      color:      isComplete ? "#34d399" : "#2dd4bf",
+                      border:     isComplete ? "1px solid rgba(52,211,153,0.25)" : "1px solid rgba(45,212,191,0.15)",
+                    }}>
+                    {isComplete ? <CheckCircle className="w-4 h-4" /> : <Globe className="w-4 h-4" />}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-1.5">
+                      <p className="text-white font-medium text-sm">{TRANSLATION_ENGLISH_NAMES[lang]}</p>
+                      <span className="text-emerald-600 text-sm">{TRANSLATION_LABELS[lang]}</span>
+                    </div>
+                    <p className="text-emerald-800 text-xs">
+                      {isComplete ? "Downloaded · Saved offline" : TRANSLATION_PACK_SIZE[lang]}
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-1.5 shrink-0">
+                    {!isComplete && !isDling && !isError && (
+                      <button
+                        onClick={() => handleTranslDownload(lang)}
+                        className="flex items-center gap-1 px-2.5 py-1.5 rounded-full text-xs font-medium text-teal-300 border border-teal-800/40 hover:border-teal-600 transition-colors"
+                        style={{ background: "rgba(45,212,191,0.08)" }}>
+                        <Download className="w-3 h-3" />
+                        Save
+                      </button>
+                    )}
+                    {isComplete && (
+                      <button
+                        onClick={() => handleTranslDelete(lang)}
+                        className="w-8 h-8 rounded-full flex items-center justify-center text-red-400 hover:text-red-300 transition-colors"
+                        aria-label={`Delete ${lang} translation`}>
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    )}
+                    {isError && (
+                      <button
+                        onClick={() => handleTranslDownload(lang)}
+                        className="flex items-center gap-1 px-2.5 py-1.5 rounded-full text-xs font-medium text-red-300 border border-red-800/40">
+                        <XCircle className="w-3 h-3" />
+                        Retry
+                      </button>
+                    )}
+                    {isDling && (
+                      <span className="text-emerald-600 text-xs tabular-nums">{pct}%</span>
+                    )}
+                  </div>
+                </div>
+                {isDling && (
+                  <div className="px-3 pb-2.5">
+                    <div className="h-1 bg-emerald-900/40 rounded-full overflow-hidden">
+                      <div className="h-full bg-emerald-500 rounded-full transition-all"
+                        style={{ width: `${pct}%` }} />
+                    </div>
+                  </div>
+                )}
+                {isError && (
+                  <div className="px-3 pb-2">
+                    <p className="text-red-400 text-xs">{ts.errorMsg}</p>
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      </div>
 
       <p className="text-center text-emerald-900 text-xs mt-8 pb-4 px-4">
         Audio stored locally on your device. Delete anytime to free space.

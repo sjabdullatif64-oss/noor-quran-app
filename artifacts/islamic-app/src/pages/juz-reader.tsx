@@ -26,6 +26,8 @@ import { useWakeLock } from "@/hooks/useWakeLock";
 import { AyahActionsMenu } from "@/components/ayah-actions-menu";
 import { useAyahDisplaySettings, applyExplanatorySetting } from "@/lib/ayah-display";
 import { usePinchZoom } from "@/hooks/use-pinch-zoom";
+import { getOfflineArabic, getOfflineTranslationTexts } from "@/lib/offline-quran";
+import { useNetworkStatus } from "@/hooks/use-network";
 
 // ── Types ──────────────────────────────────────────────────────────────────────
 type AudioMode = "arabic" | "translation" | "both";
@@ -138,6 +140,48 @@ async function fetchSurahRange(
   fromAyah: number,
   toAyah: number
 ): Promise<JuzSection | null> {
+  // ── Offline-first: try bundled/downloaded data ───────────────────────────
+  const arabicData   = await getOfflineArabic();
+  const offlineSurah = arabicData?.[String(surahNumber)];
+
+  if (offlineSurah) {
+    const offlineTexts = await getOfflineTranslationTexts(lang, surahNumber);
+    let translationAyahs: string[];
+
+    if (offlineTexts) {
+      translationAyahs = offlineTexts;
+    } else {
+      // Translation not offline — try API
+      const edition = TRANSLATION_EDITIONS[lang];
+      const trData  = await safeFetch(
+        `https://api.alquran.cloud/v1/surah/${surahNumber}/${edition}`
+      );
+      translationAyahs =
+        (trData as { data?: { ayahs?: { text: string }[] } } | null)
+          ?.data?.ayahs?.map((a) => a.text) ?? [];
+    }
+
+    const ayahs: JuzAyah[] = offlineSurah.ayahs
+      .filter((a) => a.n >= fromAyah && a.n <= toAyah)
+      .map((a) => ({
+        numberInSurah:   a.n,
+        globalNumber:    a.g,
+        textAr:          a.t,
+        textTranslation: sanitizeTranslation(lang, translationAyahs[a.n - 1] ?? ""),
+      }));
+
+    if (ayahs.length === 0) return null;
+
+    return {
+      surahNumber,
+      surahName:                   offlineSurah.name,
+      surahEnglishName:            offlineSurah.englishName,
+      surahEnglishNameTranslation: offlineSurah.englishNameTranslation,
+      ayahs,
+    };
+  }
+
+  // ── API fallback (bundle unavailable) ────────────────────────────────────
   const edition = TRANSLATION_EDITIONS[lang];
   const [arData, trData] = await Promise.all([
     safeFetch(`https://api.alquran.cloud/v1/surah/${surahNumber}`),
@@ -161,9 +205,9 @@ async function fetchSurahRange(
   const ayahs: JuzAyah[] = ar.data.ayahs
     .filter((a) => a.numberInSurah >= fromAyah && a.numberInSurah <= toAyah)
     .map((a) => ({
-      numberInSurah: a.numberInSurah,
-      globalNumber: a.number,
-      textAr: a.text,
+      numberInSurah:   a.numberInSurah,
+      globalNumber:    a.number,
+      textAr:          a.text,
       textTranslation: sanitizeTranslation(lang, trAyahs[a.numberInSurah - 1]?.text ?? ""),
     }));
 
@@ -171,8 +215,8 @@ async function fetchSurahRange(
 
   return {
     surahNumber,
-    surahName: ar.data.name,
-    surahEnglishName: ar.data.englishName,
+    surahName:                   ar.data.name,
+    surahEnglishName:            ar.data.englishName,
     surahEnglishNameTranslation: ar.data.englishNameTranslation,
     ayahs,
   };
@@ -280,6 +324,8 @@ export function JuzReader() {
   const { toast } = useToast();
   const toastRef  = useRef(toast);
   useEffect(() => { toastRef.current = toast; }, [toast]);
+
+  const online = useNetworkStatus();
 
   // Pinch-to-zoom is local, in-memory-only per reader visit — never persisted,
   // always resets to default when this page is reopened or the app restarts.
@@ -762,6 +808,13 @@ export function JuzReader() {
           <BookOpen className="w-3.5 h-3.5 text-emerald-600" />
           <span className="text-emerald-600 text-xs font-medium">{juzNumber} / 30</span>
         </div>
+        {!online && (
+          <div className="flex items-center gap-1 px-2 py-1 rounded-full border border-amber-900/40 shrink-0"
+            style={{ background: "rgba(120,53,15,0.18)" }}>
+            <WifiOff className="w-3 h-3 text-amber-600" />
+            <span className="text-amber-700 text-xs">Offline</span>
+          </div>
+        )}
       </div>
 
       {/* ── Loading / error / content ──────────────────────────────────────── */}
