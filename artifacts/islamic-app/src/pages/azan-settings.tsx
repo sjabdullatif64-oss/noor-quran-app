@@ -435,8 +435,9 @@ export function AzanSettings() {
           </section>
         )}
 
-        {/* Diagnostics (troubleshooting Azan audio without adb) */}
-        {isNative && (
+        {/* Diagnostics — developer-only, hidden from public users */}
+        {/* To enable: open /azan-settings?debug=1 in the browser URL bar */}
+        {isNative && new URLSearchParams(window.location.search).get("debug") === "1" && (
           <section className="rounded-2xl bg-white/5 border border-white/10 overflow-hidden">
             <button
               onClick={toggleDiagnostics}

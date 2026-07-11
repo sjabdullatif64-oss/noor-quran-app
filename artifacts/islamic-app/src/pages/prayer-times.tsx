@@ -1,8 +1,9 @@
 import { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import {
   MapPin, Search, LocateFixed, Loader2, WifiOff,
-  ChevronDown, ChevronUp, Navigation, RefreshCw, X,
+  ChevronDown, ChevronUp, Navigation, RefreshCw, X, Bell,
 } from "lucide-react";
+import { Link } from "wouter";
 import { useQueryClient } from "@tanstack/react-query";
 import {
   usePrayerTimes,
@@ -411,6 +412,26 @@ export function PrayerTimes() {
           nextIdx={nextPrayerIdx}
           countdown={countdown}
         />
+
+        {/* ── Azan Settings shortcut ───────────────────────────────────── */}
+        <Link href="/azan-settings">
+          <button
+            className="w-full flex items-center gap-3 px-4 py-3 rounded-2xl border border-emerald-800/40 hover:border-emerald-700/60 active:scale-[0.98] transition-all"
+            style={{ background: "rgba(26,92,56,0.18)" }}
+          >
+            <div
+              className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0"
+              style={{ background: "rgba(52,211,153,0.15)" }}
+            >
+              <Bell className="w-4 h-4 text-emerald-400" />
+            </div>
+            <div className="flex-1 text-left">
+              <p className="text-emerald-200 text-sm font-semibold">Azan Settings</p>
+              <p className="text-emerald-700 text-xs">Prayer alerts &amp; notification sounds</p>
+            </div>
+            <ChevronDown className="w-4 h-4 text-emerald-700 shrink-0 -rotate-90" />
+          </button>
+        </Link>
 
         {/* ── Prayer time cards ─────────────────────────────────────────── */}
         {locState === "detecting" && !displayData ? (
