@@ -1,4 +1,11 @@
 import { useQuery } from "@tanstack/react-query";
+import {
+  getOfflineArabic,
+  getOfflineUrdu,
+  getOfflineTranslit,
+  getOfflineSurahList,
+  getOfflineTranslationTexts,
+} from "./offline-quran";
 
 /**
  * The Jalandhry Urdu translation (ur.jalandhry) uses "خدا" wherever the
@@ -186,7 +193,11 @@ export const useSurahList = () =>
   useQuery({
     queryKey: ["surahs"],
     queryFn: async () => {
-      const res = await fetch("https://api.alquran.cloud/v1/surah");
+      // Try bundled offline data first — always works even without internet
+      const offline = await getOfflineSurahList();
+      if (offline) return offline as Surah[];
+      // Online fallback
+      const res  = await fetch("https://api.alquran.cloud/v1/surah");
       const data = await res.json();
       return data.data as Surah[];
     },
@@ -216,8 +227,53 @@ export const useSurah = (number: number, translation: TranslationLanguage) => {
   return useQuery({
     queryKey: ["surah", number, translation],
     queryFn: async () => {
-      // Fetch Arabic text, selected translation, and transliteration in parallel.
-      // Translation/transliteration failures are isolated — Arabic always loads.
+      // ── Offline-first path ────────────────────────────────────────────────
+      // Load bundled Arabic + transliteration (always available offline)
+      const [arabicData, translitData] = await Promise.all([
+        getOfflineArabic(),
+        getOfflineTranslit(),
+      ]);
+
+      const offlineSurah    = arabicData?.[String(number)];
+      const translitAyahs   = translitData?.[String(number)] ?? [];
+
+      if (offlineSurah) {
+        // Get translation: bundled Urdu OR downloaded pack OR API
+        let translationTexts: string[];
+        const offlineTexts = await getOfflineTranslationTexts(translation, number);
+        if (offlineTexts) {
+          translationTexts = offlineTexts;
+        } else {
+          // Try online for non-bundled translation
+          const trData = await safeFetch(
+            `https://api.alquran.cloud/v1/surah/${number}/${edition}`
+          );
+          translationTexts =
+            (trData as { data?: { ayahs?: { text: string }[] } } | null)
+              ?.data?.ayahs?.map((a) => a.text) ?? [];
+        }
+
+        const ayahs: AyahData[] = offlineSurah.ayahs.map((ayah, index) => ({
+          numberInSurah:   ayah.n,
+          globalNumber:    ayah.g,
+          textAr:          ayah.t,
+          textTranslation: sanitizeTranslation(translation, translationTexts[index] ?? ""),
+          textTranslit:    translitAyahs[index] ?? "",
+          audioUrl:        getAudioUrl(ayah.g),
+        }));
+
+        return {
+          number,
+          name:                   offlineSurah.name,
+          englishName:            offlineSurah.englishName,
+          englishNameTranslation: offlineSurah.englishNameTranslation,
+          numberOfAyahs:          offlineSurah.ayahs.length,
+          revelationType:         offlineSurah.revelationType,
+          ayahs,
+        } as SurahDetail;
+      }
+
+      // ── Full API fallback (bundle unavailable) ────────────────────────────
       const [arData, trData, transitData] = await Promise.all([
         safeFetch(`https://api.alquran.cloud/v1/surah/${number}`),
         safeFetch(`https://api.alquran.cloud/v1/surah/${number}/${edition}`),
@@ -225,11 +281,23 @@ export const useSurah = (number: number, translation: TranslationLanguage) => {
       ]);
 
       // Arabic is required — throw so TanStack Query retries
-      const ar = arData as { data: { number: number; name: string; englishName: string; englishNameTranslation: string; numberOfAyahs: number; revelationType: string; ayahs: Ayah[] } } | null;
+      const ar = arData as {
+        data: {
+          number: number;
+          name: string;
+          englishName: string;
+          englishNameTranslation: string;
+          numberOfAyahs: number;
+          revelationType: string;
+          ayahs: Ayah[];
+        };
+      } | null;
       if (!ar?.data?.ayahs) throw new Error("Arabic surah fetch failed");
 
-      const trAyahs: { text: string }[]     = (trData     as { data?: { ayahs?: { text: string }[] } } | null)?.data?.ayahs ?? [];
-      const transitAyahs: { text: string }[] = (transitData as { data?: { ayahs?: { text: string }[] } } | null)?.data?.ayahs ?? [];
+      const trAyahs:      { text: string }[] =
+        (trData     as { data?: { ayahs?: { text: string }[] } } | null)?.data?.ayahs ?? [];
+      const transitAyahs: { text: string }[] =
+        (transitData as { data?: { ayahs?: { text: string }[] } } | null)?.data?.ayahs ?? [];
 
       const ayahs: AyahData[] = ar.data.ayahs.map((ayah, index) => ({
         numberInSurah:   ayah.numberInSurah,
@@ -369,6 +437,31 @@ export const useRandomAyah = () =>
   useQuery({
     queryKey: ["randomAyah"],
     queryFn: async () => {
+      // ── Offline-first: use bundled Arabic + Urdu data ─────────────────────
+      const [arabicData, urduData] = await Promise.all([
+        getOfflineArabic(),
+        getOfflineUrdu(),
+      ]);
+
+      if (arabicData && urduData) {
+        const randomSurahNum  = Math.floor(Math.random() * 114) + 1;
+        const surah           = arabicData[String(randomSurahNum)];
+        const urSurah         = urduData[String(randomSurahNum)];
+        const randomAyahIdx   = Math.floor(Math.random() * surah.ayahs.length);
+        const ayah            = surah.ayahs[randomAyahIdx];
+
+        return {
+          surah:         surah.englishName,
+          surahNumber:   randomSurahNum,
+          numberInSurah: ayah.n,
+          globalNumber:  ayah.g,
+          textAr:        ayah.t,
+          textUr:        sanitizeUrduText(urSurah?.[randomAyahIdx] ?? ""),
+          audioUrl:      getAudioUrl(ayah.g),
+        };
+      }
+
+      // ── API fallback ───────────────────────────────────────────────────────
       const randomSurah   = Math.floor(Math.random() * 114) + 1;
       const res           = await fetch(`https://api.alquran.cloud/v1/surah/${randomSurah}`);
       const data          = await res.json();
@@ -385,8 +478,8 @@ export const useRandomAyah = () =>
 
       return {
         surah:         data.data.englishName,
-        surahNumber:   randomSurah,                          // 1–114 numeric index for navigation
-        numberInSurah: arData.data.numberInSurah as number,  // 1-based ayah number within surah
+        surahNumber:   randomSurah,
+        numberInSurah: arData.data.numberInSurah as number,
         globalNumber:  randomAyah.number,
         textAr:        arData.data.text,
         textUr:        sanitizeUrduText(urData.data.text),

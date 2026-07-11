@@ -20,6 +20,7 @@ import { NativeTTS } from "@/lib/native-tts";
 import { AyahActionsMenu } from "@/components/ayah-actions-menu";
 import { useAyahDisplaySettings, applyExplanatorySetting } from "@/lib/ayah-display";
 import { usePinchZoom } from "@/hooks/use-pinch-zoom";
+import { useNetworkStatus } from "@/hooks/use-network";
 
 // ── Types ──────────────────────────────────────────────────────────────────────
 type AudioMode  = "arabic" | "translation" | "both";
@@ -157,6 +158,7 @@ export function SurahReader() {
   // always resets to default when this page is reopened or the app restarts.
   const [pinchZoomEnabled, setPinchZoomEnabled] = useState(false);
   const { containerRef: pinchZoomRef, scale: ayahScale } = usePinchZoom<HTMLDivElement>(pinchZoomEnabled);
+  const online = useNetworkStatus();
 
   // Sync all refs
   useEffect(() => { playingIndexRef.current = playingIndex; }, [playingIndex]);
@@ -643,6 +645,15 @@ export function SurahReader() {
               </button>
             ))}
           </div>
+
+          {/* Offline indicator — only shown when network is unavailable */}
+          {!online && (
+            <div className="flex items-center gap-1 px-2 py-1 rounded-full border border-amber-800/40 shrink-0"
+              style={{ background: "rgba(120,53,15,0.18)" }}>
+              <WifiOff className="w-3 h-3 text-amber-600" />
+              <span className="text-amber-600 text-xs font-medium">Offline</span>
+            </div>
+          )}
         </div>
 
         {isLoading ? (
