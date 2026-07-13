@@ -1,7 +1,7 @@
 import { useState, useCallback } from "react";
 import {
   ChevronLeft, Moon, Globe, MapPin, Bell, Check, Sun, ChevronRight,
-  LocateFixed, Loader2, WifiOff, RefreshCw, Languages,
+  LocateFixed, Loader2, WifiOff, RefreshCw, Languages, Calculator,
 } from "lucide-react";
 import { Link } from "wouter";
 import { useTheme } from "@/components/theme-provider";
@@ -10,6 +10,8 @@ import {
   getGpsCoords, saveGpsCoords, clearGpsCoords,
   getLocationSource, getLang, setLang as saveLang,
   PRESET_CITIES, CITY_COUNTRY_MAP,
+  CALC_METHODS, getCalcMethod, setCalcMethod as saveCalcMethod,
+  type CalcMethodSetting,
 } from "@/lib/settings";
 import {
   ALL_LANGUAGES, TRANSLATION_LABELS, TRANSLATION_ENGLISH_NAMES,
@@ -130,6 +132,25 @@ export function Settings() {
     getLocationSource() === "manual" ? getCity() : ""
   );
   const [savedCity,   setSavedCity]   = useState(false);
+
+  // ── Prayer calculation method ───────────────────────────────────────────────
+  const [calcMethod, setCalcMethodState] = useState<CalcMethodSetting>(() => getCalcMethod());
+  const [savedMethod, setSavedMethod]     = useState(false);
+
+  const handleCalcMethod = (value: string) => {
+    const method: CalcMethodSetting = value === "auto" ? "auto" : parseInt(value, 10);
+    setCalcMethodState(method);
+    saveCalcMethod(method);
+    setSavedMethod(true);
+    setTimeout(() => setSavedMethod(false), 2000);
+    // Re-schedule Azan alarms with the new method (safe no-op in browser)
+    import("@/lib/azan-scheduler").then((m) => m.scheduleAzan()).catch(() => {});
+    const label =
+      method === "auto"
+        ? "Auto — best method for your location"
+        : CALC_METHODS.find((m) => m.id === method)?.name ?? "Selected method";
+    toast({ title: "Calculation method saved", description: label });
+  };
 
   const detectGPS = useCallback(() => {
     if (!navigator.geolocation) {
@@ -452,6 +473,37 @@ export function Settings() {
               })}
             </div>
 
+          </div>
+        </Section>
+
+        {/* ── Prayer Calculation Method ─────────────────────────────────────── */}
+        <Section
+          title="Calculation Method"
+          icon={<Calculator className="w-4 h-4" />}
+          badge={savedMethod ? t("settings_saved_badge") : undefined}
+        >
+          <div className="p-4 space-y-3">
+            <p className="text-emerald-600 text-xs">
+              Auto uses the official authority for your region — Umm al-Qura in Saudi
+              Arabia, Karachi in Pakistan, Diyanet in Turkey, ISNA in North America.
+              Pick a specific method only if you follow a different authority.
+            </p>
+            <select
+              value={String(calcMethod)}
+              onChange={(e) => handleCalcMethod(e.target.value)}
+              className="w-full p-3.5 rounded-xl border border-emerald-800/40 text-white text-sm outline-none focus:border-emerald-600 transition-colors"
+              style={{ background: "rgba(255,255,255,0.03)" }}
+              data-testid="select-calc-method"
+            >
+              <option value="auto" className="bg-[#0a1f12] text-white">
+                Auto — best for my location (recommended)
+              </option>
+              {CALC_METHODS.map((m) => (
+                <option key={m.id} value={m.id} className="bg-[#0a1f12] text-white">
+                  {m.name}
+                </option>
+              ))}
+            </select>
           </div>
         </Section>
 

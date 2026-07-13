@@ -6,6 +6,7 @@ import {
   getOfflineSurahList,
   getOfflineTranslationTexts,
 } from "./offline-quran";
+import { getCalcMethod, calcMethodParam } from "./settings";
 
 /**
  * The Jalandhry Urdu translation (ur.jalandhry) uses "خدا" wherever the
@@ -324,12 +325,13 @@ export const useSurah = (number: number, translation: TranslationLanguage) => {
   });
 };
 
-export const usePrayerTimes = (city: string, country: string, enabled = true) =>
-  useQuery({
-    queryKey: ["prayerTimes", city, country],
+export const usePrayerTimes = (city: string, country: string, enabled = true) => {
+  const method = getCalcMethod(); // "auto" → Aladhan picks the regional authority
+  return useQuery({
+    queryKey: ["prayerTimes", city, country, method],
     queryFn: async () => {
       const res = await fetch(
-        `https://api.aladhan.com/v1/timingsByCity?city=${encodeURIComponent(city)}&country=${encodeURIComponent(country)}&method=2`
+        `https://api.aladhan.com/v1/timingsByCity?city=${encodeURIComponent(city)}&country=${encodeURIComponent(country)}${calcMethodParam()}`
       );
       if (!res.ok) throw new Error("City not found");
       const data = await res.json();
@@ -339,16 +341,18 @@ export const usePrayerTimes = (city: string, country: string, enabled = true) =>
     enabled: enabled && !!city && !!country,
     retry: 1,
   });
+};
 
 /** Fetch prayer times by GPS coordinates using Aladhan's coordinates endpoint. */
 export const usePrayerTimesByCoords = (lat: number | null, lng: number | null, enabled = true) => {
   const today = new Date();
   const dateStr = `${String(today.getDate()).padStart(2,"0")}-${String(today.getMonth()+1).padStart(2,"0")}-${today.getFullYear()}`;
+  const method = getCalcMethod(); // "auto" → Aladhan picks the regional authority
   return useQuery({
-    queryKey: ["prayerTimesByCoords", lat, lng, dateStr],
+    queryKey: ["prayerTimesByCoords", lat, lng, dateStr, method],
     queryFn: async () => {
       const res = await fetch(
-        `https://api.aladhan.com/v1/timings/${dateStr}?latitude=${lat}&longitude=${lng}&method=2`
+        `https://api.aladhan.com/v1/timings/${dateStr}?latitude=${lat}&longitude=${lng}${calcMethodParam()}`
       );
       if (!res.ok) throw new Error("Prayer times fetch failed");
       const data = await res.json();

@@ -14,7 +14,7 @@ import {
 import {
   getCity, getCountry, setCity as saveCity,
   getGpsCoords, saveGpsCoords, clearGpsCoords,
-  getLocationSource,
+  getLocationSource, getCalcMethod,
   CITY_COUNTRY_MAP,
 } from "@/lib/settings";
 
@@ -53,10 +53,11 @@ function makeCacheKey(
   lat: number | null, lng: number | null,
   city: string, country: string,
 ): string {
+  const method = `m:${getCalcMethod()}`; // never serve times from a different method
   if (useGPS && lat !== null && lng !== null) {
-    return `gps:${lat.toFixed(2)},${lng.toFixed(2)}`;
+    return `gps:${lat.toFixed(2)},${lng.toFixed(2)}|${method}`;
   }
-  return `city:${city},${country}`;
+  return `city:${city},${country}|${method}`;
 }
 
 // ── Prayer definitions ────────────────────────────────────────────────────────
@@ -416,7 +417,7 @@ export function PrayerTimes() {
         {/* ── Azan Settings shortcut ───────────────────────────────────── */}
         <Link href="/azan-settings">
           <button
-            className="w-full flex items-center gap-3 px-4 py-3 rounded-2xl border border-emerald-800/40 hover:border-emerald-700/60 active:scale-[0.98] transition-all"
+            className="w-full flex items-center gap-3 px-4 py-3 mb-2 rounded-2xl border border-emerald-800/40 hover:border-emerald-700/60 active:scale-[0.98] transition-all"
             style={{ background: "rgba(26,92,56,0.18)" }}
           >
             <div

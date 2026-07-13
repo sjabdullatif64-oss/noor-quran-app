@@ -97,6 +97,65 @@ export const CITY_COUNTRY_MAP: Record<string, string> = {
 
 export const PRESET_CITIES = Object.keys(CITY_COUNTRY_MAP);
 
+// ── Prayer calculation method ─────────────────────────────────────────────────
+// "auto" (default) omits the `method` param so the Aladhan API automatically
+// selects the official regional authority for the location (e.g. Umm al-Qura
+// for Saudi Arabia, University of Islamic Sciences for Pakistan, Diyanet for
+// Turkey, ISNA for North America). A numeric value is a manual user override
+// and is always respected.
+
+const CALC_METHOD_KEY = "noor-calc-method";
+
+export interface CalcMethod {
+  id:   number;
+  name: string;
+}
+
+/** Aladhan API calculation methods available for manual override. */
+export const CALC_METHODS: CalcMethod[] = [
+  { id: 4,  name: "Umm Al-Qura University, Makkah" },
+  { id: 1,  name: "University of Islamic Sciences, Karachi" },
+  { id: 2,  name: "Islamic Society of North America (ISNA)" },
+  { id: 3,  name: "Muslim World League" },
+  { id: 5,  name: "Egyptian General Authority of Survey" },
+  { id: 7,  name: "Institute of Geophysics, University of Tehran" },
+  { id: 8,  name: "Gulf Region" },
+  { id: 9,  name: "Kuwait" },
+  { id: 10, name: "Qatar" },
+  { id: 11, name: "Majlis Ugama Islam Singapura, Singapore" },
+  { id: 12, name: "Union des Organisations Islamiques de France" },
+  { id: 13, name: "Diyanet İşleri Başkanlığı, Turkey" },
+  { id: 14, name: "Spiritual Administration of Muslims of Russia" },
+  { id: 15, name: "Moonsighting Committee Worldwide" },
+  { id: 16, name: "Dubai (UAE)" },
+  { id: 17, name: "Jabatan Kemajuan Islam Malaysia (JAKIM)" },
+  { id: 20, name: "Kementerian Agama, Indonesia" },
+];
+
+export type CalcMethodSetting = "auto" | number;
+
+/** Returns the user's calculation-method preference. Default: "auto". */
+export function getCalcMethod(): CalcMethodSetting {
+  const v = localStorage.getItem(CALC_METHOD_KEY);
+  if (!v || v === "auto") return "auto";
+  const n = parseInt(v, 10);
+  return Number.isFinite(n) && CALC_METHODS.some((m) => m.id === n) ? n : "auto";
+}
+
+export function setCalcMethod(method: CalcMethodSetting): void {
+  localStorage.setItem(CALC_METHOD_KEY, String(method));
+}
+
+/**
+ * Query-string fragment appended to Aladhan API URLs.
+ * Empty string when "auto" — Aladhan then auto-selects the closest regional
+ * authority based on the location. `&method=N` when manually overridden.
+ */
+export function calcMethodParam(): string {
+  const m = getCalcMethod();
+  return m === "auto" ? "" : `&method=${m}`;
+}
+
 // ── Translation language ──────────────────────────────────────────────────────
 
 const VALID_LANGS: TranslationLanguage[] = [
