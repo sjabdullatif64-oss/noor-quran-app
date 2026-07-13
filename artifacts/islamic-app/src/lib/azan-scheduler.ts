@@ -7,7 +7,10 @@
  */
 
 import { isCapacitorApp } from "./notifications";
-import { getGpsCoords, getCity, getCountry, getLocationSource, saveGpsCoords } from "./settings";
+import {
+  getGpsCoords, getCity, getCountry, getLocationSource, saveGpsCoords,
+  getCalcMethod, calcMethodParam,
+} from "./settings";
 import {
   getAzanSettings,
   AZAN_PRAYER_DEFS,
@@ -43,10 +46,11 @@ interface TimingsCache {
 function makeCacheKey(): string {
   const src    = getLocationSource();
   const coords = getGpsCoords();
+  const method = `m:${getCalcMethod()}`; // cache invalidates when method changes
   if (src === "gps" && coords) {
-    return `gps:${coords.lat.toFixed(2)},${coords.lng.toFixed(2)}`;
+    return `gps:${coords.lat.toFixed(2)},${coords.lng.toFixed(2)}|${method}`;
   }
-  return `city:${getCity()}:${getCountry()}`;
+  return `city:${getCity()}:${getCountry()}|${method}`;
 }
 
 function loadTimingsCache(todayStr: string, locationKey: string): TimingsCache | null {
@@ -106,13 +110,15 @@ async function fetchTimings(date: Date): Promise<RawTimings | null> {
     const coords = getGpsCoords();
     let url: string;
 
+    // Same method selection as the Prayer Times screen: "auto" omits the
+    // param so Aladhan picks the regional authority; manual override adds it.
     if (src === "gps" && coords) {
-      url = `https://api.aladhan.com/v1/timings/${dateStr(date)}?latitude=${coords.lat}&longitude=${coords.lng}&method=2`;
+      url = `https://api.aladhan.com/v1/timings/${dateStr(date)}?latitude=${coords.lat}&longitude=${coords.lng}${calcMethodParam()}`;
     } else {
       const city    = getCity();
       const country = getCountry();
       if (!city || !country) return null;
-      url = `https://api.aladhan.com/v1/timingsByCity?city=${encodeURIComponent(city)}&country=${encodeURIComponent(country)}&method=2&date=${dateStr(date)}`;
+      url = `https://api.aladhan.com/v1/timingsByCity?city=${encodeURIComponent(city)}&country=${encodeURIComponent(country)}&date=${dateStr(date)}${calcMethodParam()}`;
     }
 
     const res  = await fetch(url, { signal: AbortSignal.timeout(10_000) });

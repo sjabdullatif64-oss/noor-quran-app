@@ -28,6 +28,7 @@ A full-featured Islamic mobile web app for reading the Holy Quran with Urdu & En
   - Urdu: `ur.jalandhry`, English: `en.sahih`
 - Audio CDN: `cdn.islamic.network/quran/audio/128/ar.alafasy/{globalNum}.mp3`
 - Aladhan `api.aladhan.com/v1/timingsByCity` — prayer times
+  - Calculation method: `noor-calc-method` setting, default "auto" = omit `method` param so Aladhan auto-selects the regional authority (Umm al-Qura for Saudi, Karachi for PK/IN, Diyanet for TR, ISNA for US). Manual override always wins. Single source: `calcMethodParam()` in `src/lib/settings.ts` — used by api.ts hooks AND azan-scheduler.ts; method is embedded in all query keys & offline cache keys
 
 ## Architecture decisions
 
