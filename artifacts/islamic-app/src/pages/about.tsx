@@ -429,7 +429,7 @@ export function About() {
             }
             testId="button-about-contact"
           />
-          <Link href="/privacy-policy" data-testid="button-about-privacy">
+          <Link href="/privacy-policy" className="block" data-testid="button-about-privacy">
             <ActionButton
               icon={<Shield className="w-5 h-5" />}
               label="Privacy Policy"
@@ -439,7 +439,7 @@ export function About() {
               border="border-amber-900/40"
             />
           </Link>
-          <Link href="/terms-of-service" data-testid="button-about-terms">
+          <Link href="/terms-of-service" className="block mt-3" data-testid="button-about-terms">
             <ActionButton
               icon={<ScrollText className="w-5 h-5" />}
               label="Terms of Service"
