@@ -35,9 +35,13 @@ export const WBW_AUDIO_BASE = "https://audio.qurancdn.com/wbw";
 /** Full-ayah verified recitation (Alafasy) — same CDN as the rest of the app. */
 export const AYAH_AUDIO_BASE = "https://cdn.islamic.network/quran/audio/128/ar.alafasy";
 
+/** Number of weakest lessons pulled into a Smart Revision session. */
+export const REVISION_SIZE = 5;
+
 // ── Storage keys (all Teacher data uses the noor-teacher- prefix) ────────────
 export const TEACHER_PROGRESS_KEY = "noor-teacher-progress-v1";
 export const TEACHER_CONSENT_KEY = "noor-teacher-consent";
+export const TEACHER_REVISION_KEY = "noor-teacher-revision-queue";
 
 /** Build the word-by-word MP3 URL: surah/ayah/word are 1-based. */
 export function wbwAudioUrl(surah: number, ayah: number, word: number): string {

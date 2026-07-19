@@ -8,7 +8,9 @@
  * server sync or voice-profile phase can attach to the same key.
  */
 
-import { DAILY_LIMIT, TEACHER_PROGRESS_KEY } from "./teacher-config";
+import {
+  DAILY_LIMIT, REVISION_SIZE, TEACHER_PROGRESS_KEY, TEACHER_REVISION_KEY,
+} from "./teacher-config";
 import { CURRICULUM } from "./teacher-curriculum";
 import { getDeviceId } from "./user";
 
@@ -39,6 +41,10 @@ export interface TeacherProgress {
   /** Learning-day history (most recent last). */
   history: HistoryEntry[];
   streak: { lastDate: string; count: number };
+  /** Total failed attempts across all lessons (retry counter). */
+  totalRetries?: number;
+  /** Total time spent on lesson screens, in milliseconds. */
+  timeSpentMs?: number;
 }
 
 // ── Date helpers (local time) ─────────────────────────────────────────────────
@@ -90,6 +96,8 @@ export function loadProgress(): TeacherProgress {
     if (!p.history) p.history = [];
     if (!p.streak) p.streak = { lastDate: "", count: 0 };
     if (!p.learnerId) p.learnerId = getDeviceId();
+    if (typeof p.totalRetries !== "number") p.totalRetries = 0;
+    if (typeof p.timeSpentMs !== "number") p.timeSpentMs = 0;
     return p;
   } catch {
     return emptyProgress();
@@ -186,11 +194,25 @@ export function completeLesson(
   return "counted";
 }
 
-/** Record a failed attempt (for the Review Mistakes card). */
+/** Record a failed attempt (for the Review Mistakes card + retry counter). */
 export function recordMistake(lessonId: string): void {
   const p = loadProgress();
   p.mistakes[lessonId] = (p.mistakes[lessonId] ?? 0) + 1;
+  p.totalRetries = (p.totalRetries ?? 0) + 1;
   saveProgress(p);
+}
+
+/** Accumulate time spent learning (called when leaving a lesson screen). */
+export function addStudyTime(ms: number): void {
+  if (!Number.isFinite(ms) || ms <= 0) return;
+  // Cap a single visit at 30 min so a backgrounded tab doesn't inflate stats
+  const capped = Math.min(ms, 30 * 60 * 1000);
+  const p = loadProgress();
+  p.timeSpentMs = (p.timeSpentMs ?? 0) + capped;
+  try {
+    localStorage.setItem(TEACHER_PROGRESS_KEY, JSON.stringify(p));
+  } catch { /* non-fatal */ }
+  // No notify() — time updates shouldn't force re-renders mid-lesson
 }
 
 /** Clear a lesson from the mistakes list once re-passed. */
@@ -204,7 +226,10 @@ export function clearMistake(lessonId: string): void {
 
 /** Delete ALL Teacher learning data (privacy control). */
 export function resetAllProgress(): void {
-  try { localStorage.removeItem(TEACHER_PROGRESS_KEY); } catch { /* ignore */ }
+  try {
+    localStorage.removeItem(TEACHER_PROGRESS_KEY);
+    localStorage.removeItem(TEACHER_REVISION_KEY);
+  } catch { /* ignore */ }
   notify();
 }
 
@@ -237,6 +262,10 @@ export interface TeacherStats {
   lessonsCompleted: number;
   streak: number;
   avgAccuracy: number; // 0-100
+  totalLessons: number;
+  overallPct: number; // 0-100 — completed / total curriculum
+  totalRetries: number;
+  timeSpentMs: number;
 }
 
 export function getStats(): TeacherStats {
@@ -256,6 +285,12 @@ export function getStats(): TeacherStats {
     lessonsCompleted: records.length,
     streak: active ? p.streak.count : 0,
     avgAccuracy: avg,
+    totalLessons: CURRICULUM.length,
+    overallPct: CURRICULUM.length
+      ? Math.round((records.length / CURRICULUM.length) * 100)
+      : 0,
+    totalRetries: p.totalRetries ?? 0,
+    timeSpentMs: p.timeSpentMs ?? 0,
   };
 }
 
@@ -287,4 +322,85 @@ export function getMistakeLessons(): Array<{ lessonId: string; count: number }> 
 
 export function getHistory(): HistoryEntry[] {
   return [...loadProgress().history].reverse(); // most recent first
+}
+
+// ── Smart Revision ────────────────────────────────────────────────────────────
+// A revision session is a queue of the learner's weakest lessons (most failed
+// attempts first, then lowest accuracy). Revision lessons are always already
+// completed, so they replay as reviews and never consume the daily limit.
+
+export interface RevisionQueue {
+  ids: string[];
+  /** Index of the lesson currently being revised. */
+  pos: number;
+}
+
+/** True when there is at least one weak lesson worth revising. */
+export function hasRevisableLessons(): boolean {
+  const p = loadProgress();
+  return (
+    Object.keys(p.mistakes).some((id) => p.completed[id]) ||
+    Object.values(p.completed).some((r) => !r.selfAssessed && r.accuracy < 90)
+  );
+}
+
+/** Build a fresh revision queue from mistakes + low-accuracy lessons. */
+export function startRevision(): string | null {
+  const p = loadProgress();
+  const byMistakes = Object.entries(p.mistakes)
+    .filter(([id]) => p.completed[id]) // only completed lessons can be revised
+    .sort((a, b) => b[1] - a[1])
+    .map(([id]) => id);
+  const byAccuracy = Object.entries(p.completed)
+    .filter(([, r]) => !r.selfAssessed && r.accuracy < 90)
+    .sort((a, b) => a[1].accuracy - b[1].accuracy)
+    .map(([id]) => id);
+  const ids = [...new Set([...byMistakes, ...byAccuracy])].slice(0, REVISION_SIZE);
+  if (ids.length === 0) return null;
+  try {
+    localStorage.setItem(TEACHER_REVISION_KEY, JSON.stringify({ ids, pos: 0 }));
+  } catch { return null; }
+  return ids[0];
+}
+
+function loadRevision(): RevisionQueue | null {
+  try {
+    const raw = localStorage.getItem(TEACHER_REVISION_KEY);
+    if (!raw) return null;
+    const q = JSON.parse(raw) as RevisionQueue;
+    if (!q || !Array.isArray(q.ids) || typeof q.pos !== "number") return null;
+    return q;
+  } catch {
+    return null;
+  }
+}
+
+/** Current revision session info for a lesson id, or null if not in revision. */
+export function getRevisionInfo(lessonId: string): { index: number; total: number } | null {
+  const q = loadRevision();
+  if (!q) return null;
+  const index = q.ids.indexOf(lessonId);
+  if (index === -1) return null;
+  return { index: index + 1, total: q.ids.length };
+}
+
+/** Advance the revision queue past this lesson. Returns next lesson id or null when done. */
+export function nextRevisionLesson(lessonId: string): string | null {
+  const q = loadRevision();
+  if (!q) return null;
+  const idx = q.ids.indexOf(lessonId);
+  if (idx === -1) return null;
+  const nextIdx = idx + 1;
+  if (nextIdx >= q.ids.length) {
+    endRevision();
+    return null;
+  }
+  try {
+    localStorage.setItem(TEACHER_REVISION_KEY, JSON.stringify({ ids: q.ids, pos: nextIdx }));
+  } catch { /* ignore */ }
+  return q.ids[nextIdx];
+}
+
+export function endRevision(): void {
+  try { localStorage.removeItem(TEACHER_REVISION_KEY); } catch { /* ignore */ }
 }

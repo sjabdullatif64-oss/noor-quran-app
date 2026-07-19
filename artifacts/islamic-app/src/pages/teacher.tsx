@@ -4,16 +4,17 @@
  */
 
 import { useEffect, useState } from "react";
-import { Link } from "wouter";
+import { Link, useLocation } from "wouter";
 import {
   GraduationCap, Play, Flame, Target, BookOpen, RotateCcw,
-  History, Trash2, ChevronRight, CheckCircle2, Lock,
+  History, Trash2, ChevronRight, CheckCircle2, Lock, Sparkles, Clock, TrendingUp,
 } from "lucide-react";
 import { DAILY_LIMIT } from "@/lib/teacher-config";
 import { CURRICULUM, LEVELS, getLesson, getLevelLessons } from "@/lib/teacher-curriculum";
 import {
   getDailyStatus, getStats, getNextUncompleted, getMistakeLessons,
   getHistory, loadProgress, resetAllProgress, subscribeProgress,
+  startRevision, hasRevisableLessons, endRevision,
 } from "@/lib/teacher-progress";
 
 function useTeacherState() {
@@ -35,8 +36,17 @@ function fmtCountdown(ms: number): string {
   return `${h}h ${m}m`;
 }
 
+function fmtStudyTime(ms: number): string {
+  const mins = Math.round(ms / 60000);
+  if (mins < 1) return "0m";
+  if (mins < 60) return `${mins}m`;
+  const h = Math.floor(mins / 60);
+  return `${h}h ${mins % 60}m`;
+}
+
 export function Teacher() {
   const { daily, stats, nextId, mistakes, history, progress } = useTeacherState();
+  const [, navigate] = useLocation();
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [, setClock] = useState(0);
 
@@ -48,6 +58,8 @@ export function Teacher() {
 
   useEffect(() => {
     window.scrollTo({ top: 0 });
+    // Returning to the dashboard ends any in-progress revision session
+    endRevision();
   }, []);
 
   const nextLesson = nextId ? getLesson(nextId) : undefined;
@@ -98,8 +110,8 @@ export function Teacher() {
               </div>
               {daily.limitReached ? (
                 <p className="text-emerald-500 text-xs leading-relaxed">
-                  Masha&apos;Allah — you completed all {daily.limit} lessons today! Review and
-                  listening stay open. New lessons unlock in{" "}
+                  <span className="text-emerald-300 font-semibold">You have completed today&apos;s learning goal.</span>{" "}
+                  Masha&apos;Allah! Review and listening stay open — unlimited. New lessons unlock in{" "}
                   <span className="text-emerald-300 font-medium">{fmtCountdown(daily.msUntilReset)}</span>.
                 </p>
               ) : (
@@ -156,6 +168,27 @@ export function Teacher() {
           <div className="flex items-center gap-2 mb-4">
             <BookOpen className="w-4 h-4 text-emerald-400" />
             <p className="text-emerald-300 font-semibold text-sm">Your Progress</p>
+            <p className="text-emerald-600 text-xs ml-auto">
+              {stats.lessonsCompleted} / {stats.totalLessons} lessons
+            </p>
+          </div>
+          {/* Overall curriculum progress */}
+          <div className="mb-4">
+            <div className="flex items-center justify-between mb-1.5">
+              <p className="text-emerald-600 text-[11px] flex items-center gap-1">
+                <TrendingUp className="w-3 h-3" /> Overall progress
+              </p>
+              <p className="text-emerald-300 text-xs font-semibold">{stats.overallPct}%</p>
+            </div>
+            <div className="h-2 rounded-full bg-emerald-950 overflow-hidden">
+              <div
+                className="h-full rounded-full transition-all duration-700"
+                style={{
+                  width: `${stats.overallPct}%`,
+                  background: "linear-gradient(90deg, #10b981, #34d399)",
+                }}
+              />
+            </div>
           </div>
           <div className="grid grid-cols-4 gap-2 text-center">
             <div>
@@ -177,7 +210,48 @@ export function Teacher() {
               <p className="text-emerald-700 text-[10px] leading-tight">Accuracy</p>
             </div>
           </div>
+          <div className="grid grid-cols-2 gap-2 text-center mt-3 pt-3 border-t border-emerald-900/30">
+            <div>
+              <p className="text-emerald-300 font-bold text-base flex items-center justify-center gap-1">
+                <Clock className="w-3.5 h-3.5 text-emerald-500" />{fmtStudyTime(stats.timeSpentMs)}
+              </p>
+              <p className="text-emerald-700 text-[10px] leading-tight">Time learning</p>
+            </div>
+            <div>
+              <p className="text-emerald-300 font-bold text-base">{stats.totalRetries}</p>
+              <p className="text-emerald-700 text-[10px] leading-tight">Retries (practice makes perfect)</p>
+            </div>
+          </div>
         </div>
+
+        {/* Smart Revision */}
+        {hasRevisableLessons() && (
+          <button
+            onClick={() => {
+              const first = startRevision();
+              if (first) navigate(`/teacher/lesson/${first}`);
+            }}
+            className="w-full rounded-2xl p-5 border border-violet-800/40 text-left transition-all active:scale-[0.99]"
+            style={{ background: "linear-gradient(135deg, rgba(109,40,217,0.15), rgba(6,22,16,0.4))" }}
+            data-testid="button-smart-revision"
+          >
+            <div className="flex items-center gap-4">
+              <div className="w-11 h-11 rounded-2xl flex items-center justify-center border border-violet-700/40 shrink-0"
+                style={{ background: "rgba(109,40,217,0.2)" }}>
+                <Sparkles className="w-5 h-5 text-violet-300" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-violet-200 font-semibold text-sm mb-0.5">Smart Revision</p>
+                <p className="text-violet-400/70 text-xs leading-relaxed">
+                  {mistakes.length > 0
+                    ? "A session built from the letters and words you struggle with most."
+                    : "Revise your weakest completed lessons — doesn't count toward the daily limit."}
+                </p>
+              </div>
+              <ChevronRight className="w-4 h-4 text-violet-700 shrink-0" />
+            </div>
+          </button>
+        )}
 
         {/* Levels overview */}
         <div className="space-y-2">

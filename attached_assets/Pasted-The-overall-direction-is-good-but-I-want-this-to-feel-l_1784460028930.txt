@@ -1,0 +1,69 @@
+The overall direction is good, but I want this to feel like a premium AI Quran Teacher, not just a lesson viewer.
+
+Please improve the Teacher feature with the following requirements. Do not modify or break any existing Noor Quran features outside the Teacher module.
+
+1. Learning Flow
+Replace the simple lesson flow with a complete AI learning flow:
+Listen → Read → AI Check → Correct → Retry (if needed) → Pass → Next Lesson.
+
+The user should never unlock the next lesson until the current lesson is pronounced correctly.
+
+2. AI Pronunciation Feedback
+After the user reads:
+- Detect pronunciation mistakes.
+- Highlight the incorrect Arabic letter or word.
+- Explain what was wrong.
+- Ask the user to try again.
+- Only allow "Pass & Next Lesson" after successful pronunciation.
+
+3. Lesson Screen
+Each lesson should include:
+- Listen button
+- Read button (microphone)
+- AI Check
+- Retry
+- Pass & Next Lesson
+
+The "Pass & Next Lesson" button must remain disabled until the AI confirms the lesson is correct.
+
+4. Teacher Dashboard
+Improve the dashboard by clearly showing:
+- Current lesson
+- Completed lessons
+- Locked lessons
+- Daily goal
+- Progress percentage
+- Accuracy percentage
+- Daily streak
+- Total lessons completed
+
+5. Progress System
+Track:
+- Accuracy %
+- Number of retries
+- Time spent learning
+- Difficult letters
+- Weak words that need revision
+
+6. Daily Learning Limit
+Keep the daily lesson limit (10 lessons/day), but display:
+"You have completed today's learning goal."
+Allow unlimited review of completed lessons without counting toward the daily limit.
+
+7. Smart Revision
+The AI should automatically create revision sessions using the letters and words the user struggles with the most.
+
+8. Professional UI
+Make the interface feel modern and premium:
+- Clear progress bars
+- Better spacing
+- Professional cards
+- Smooth animations
+- Clear icons
+- Better button hierarchy
+
+9. Future Ready
+Build the Teacher module with a scalable architecture so future features (Tajweed, voice scoring, certificates, advanced AI coaching, achievements, etc.) can be added without redesigning the system.
+
+10. Safety
+Do not modify, remove, or break any existing Noor Quran features including Quran Reader, Prayer Times, Azan, Bookmarks, Favorites, Offline Quran, or any other working functionality. Only improve the Teacher module.

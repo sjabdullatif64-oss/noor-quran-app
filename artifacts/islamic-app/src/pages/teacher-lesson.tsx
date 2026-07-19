@@ -20,11 +20,13 @@ import {
 import {
   completeLesson, clearMistake, recordMistake, getDailyStatus,
   isLessonCompleted, isLessonUnlocked, getNextUncompleted,
+  addStudyTime, getRevisionInfo, nextRevisionLesson,
   type CompleteResult,
 } from "@/lib/teacher-progress";
 import {
   assess, getSpeechSupport, checkSpeechPermission, requestSpeechPermission,
-  listenOnce, stopListening, type Assessment, type SpeechSupport,
+  listenOnce, stopListening, normalizeArabic,
+  type Assessment, type SpeechSupport,
 } from "@/lib/teacher-speech";
 import { isConnected } from "@/lib/capacitor";
 
@@ -82,6 +84,12 @@ export function TeacherLesson() {
     setCompletedNow(null);
     setRecordMs(0);
     window.scrollTo({ top: 0 });
+  }, [params.id]);
+
+  // Track time spent learning (per lesson visit)
+  useEffect(() => {
+    const start = Date.now();
+    return () => addStudyTime(Date.now() - start);
   }, [params.id]);
 
   useEffect(() => () => {
@@ -222,7 +230,12 @@ export function TeacherLesson() {
   const levelLessons = getLevelLessons(lesson.level);
   const next = getNextLesson(lesson.id);
   const alreadyDone = isLessonCompleted(lesson.id);
-  const passed = phase === "passed" || (alreadyDone && phase === "idle");
+  // Smart Revision session (queue of weakest lessons)
+  const revision = getRevisionInfo(lesson.id);
+  // Strict gate: "Pass & Next" unlocks only after the AI check passes THIS visit.
+  // Outside revision, an already-completed lesson may be skipped forward (review).
+  // In revision, a fresh pass is always required.
+  const passed = phase === "passed" || (!revision && alreadyDone && phase === "idle");
 
   // Highlight the target letter inside the word (letter/harakat lessons)
   const wordDisplay = lesson.highlight ? (
@@ -261,8 +274,9 @@ export function TeacherLesson() {
               Level {lesson.level}: {levelInfo.title}
             </p>
             <p className="text-emerald-700 text-[11px]">
-              Lesson {lesson.order} of {levelLessons.length}
-              {alreadyDone && " · completed"}
+              {revision
+                ? `Smart Revision · ${revision.index} of ${revision.total}`
+                : `Lesson ${lesson.order} of ${levelLessons.length}${alreadyDone ? " · completed" : ""}`}
             </p>
           </div>
           <p className="text-emerald-600 text-xs shrink-0">{lesson.order}/{levelLessons.length}</p>
@@ -373,12 +387,38 @@ export function TeacherLesson() {
         )}
 
         {phase === "feedback" && result && (
-          <div className="rounded-2xl border border-amber-800/50 p-5"
+          <div className="rounded-2xl border border-amber-800/50 p-5 animate-in fade-in slide-in-from-bottom-2 duration-300"
             style={{ background: "rgba(217,119,6,0.07)" }} data-testid="panel-feedback">
             <p className="text-amber-300 font-semibold text-sm mb-2">
               Good try — let&apos;s polish it together.
             </p>
-            <p className="text-amber-500/90 text-xs mb-1">Word match: {result.matchScore}%</p>
+            {/* Word match bar */}
+            <div className="flex items-center gap-2 mb-3">
+              <div className="flex-1 h-1.5 rounded-full bg-amber-950/60 overflow-hidden">
+                <div className="h-full rounded-full bg-amber-400 transition-all duration-500"
+                  style={{ width: `${result.matchScore}%` }} />
+              </div>
+              <p className="text-amber-400 text-xs font-semibold shrink-0">{result.matchScore}%</p>
+            </div>
+            {/* The word with problem letters highlighted */}
+            {result.missing.length > 0 && (
+              <div className="rounded-xl bg-amber-950/30 p-3 mb-2 text-center">
+                <p className="font-arabic text-3xl leading-relaxed" dir="rtl" data-testid="text-diff-word">
+                  {lesson.word.split("").map((ch, i) => {
+                    const norm = normalizeArabic(ch);
+                    const wrong = norm.length > 0 && result.missing.includes(norm);
+                    return (
+                      <span key={i} className={wrong ? "text-rose-400 underline decoration-rose-500/60 underline-offset-4" : "text-emerald-100"}>
+                        {ch}
+                      </span>
+                    );
+                  })}
+                </p>
+                <p className="text-amber-500/90 text-[11px] mt-2">
+                  The <span className="text-rose-400 font-semibold">highlighted letters</span> were not heard clearly — listen again and focus on those sounds.
+                </p>
+              </div>
+            )}
             {result.heard && (
               <p className="text-amber-500/90 text-xs mb-1">
                 I heard: <span className="font-arabic text-sm" dir="rtl">{result.heard}</span>
@@ -389,6 +429,14 @@ export function TeacherLesson() {
                 Sounds to focus on:{" "}
                 <span className="font-arabic text-base text-amber-300" dir="rtl">
                   {result.missing.join(" ، ")}
+                </span>
+              </p>
+            )}
+            {result.extra.length > 0 && (
+              <p className="text-amber-500/90 text-xs mb-1">
+                Extra sounds I heard (not in the word):{" "}
+                <span className="font-arabic text-base text-amber-300" dir="rtl">
+                  {result.extra.join(" ، ")}
                 </span>
               </p>
             )}
@@ -446,21 +494,16 @@ export function TeacherLesson() {
             <p className="text-emerald-600 text-xs leading-relaxed">
               {support === "none"
                 ? "Recitation checking isn't available in this browser — it works in the Noor Quran Android app. For now: tap Listen, repeat aloud, and compare with your own ears — it's how students have learned for centuries."
-                : "Tap Listen, repeat aloud, and continue when you feel confident. This lesson will be marked as self-practiced (not counted in your accuracy score)."}
+                : "Tap Listen and repeat aloud as many times as you like. To pass this lesson and unlock the next one, the AI needs to hear your recitation — allow the microphone when you're ready."}
             </p>
             {support !== "none" && (
               <button
-                onClick={() => {
-                  const cr = completeLesson(lesson.id, 0, { selfAssessed: true });
-                  setCompletedNow(cr);
-                  setPhase(cr === "limit-reached" ? "limit" : "passed");
-                  setResult({ verdict: "pass", matchScore: 100, confidence: -1, missing: [], extra: [], heard: "" });
-                }}
+                onClick={() => setPhase("idle")}
                 className="mt-3 w-full py-2.5 rounded-xl text-xs font-semibold text-emerald-200 border border-emerald-700/50"
                 style={{ background: "rgba(26,92,56,0.3)" }}
-                data-testid="button-listen-only-done"
+                data-testid="button-back-to-mic"
               >
-                I practiced this — mark as done
+                I&apos;m ready — try with the microphone
               </button>
             )}
           </div>
@@ -538,7 +581,28 @@ export function TeacherLesson() {
                   <RotateCcw className="w-4 h-4" /> Try Again
                 </button>
               )}
-              {next ? (
+              {revision ? (
+                <button
+                  onClick={() => {
+                    const nid = nextRevisionLesson(lesson.id);
+                    if (nid) navigate(`/teacher/lesson/${nid}`);
+                    else navigate("/teacher");
+                  }}
+                  disabled={!passed}
+                  className={`flex-1 py-3.5 rounded-2xl text-sm font-semibold flex items-center justify-center gap-2 transition-all ${
+                    passed
+                      ? "text-white active:scale-[0.98]"
+                      : "text-emerald-800 border border-emerald-900/50 cursor-not-allowed"
+                  }`}
+                  style={passed ? { background: "linear-gradient(135deg, #1a5c38, #0d3d24)" } : undefined}
+                  data-testid="button-next-revision"
+                >
+                  {revision.index >= revision.total
+                    ? (passed ? "Finish Revision" : "Pass the check to finish")
+                    : (passed ? "Pass & Next Word" : "Pass the check to continue")}
+                  <ArrowRight className="w-4 h-4" />
+                </button>
+              ) : next ? (
                 <button
                   onClick={() => navigate(`/teacher/lesson/${next.id}`)}
                   disabled={!passed}
@@ -550,7 +614,7 @@ export function TeacherLesson() {
                   style={passed ? { background: "linear-gradient(135deg, #1a5c38, #0d3d24)" } : undefined}
                   data-testid="button-next"
                 >
-                  {passed ? "Next Lesson" : "Pass to unlock next"} <ArrowRight className="w-4 h-4" />
+                  {passed ? "Pass & Next Lesson" : "Pass the AI check to unlock"} <ArrowRight className="w-4 h-4" />
                 </button>
               ) : (
                 passed && (
