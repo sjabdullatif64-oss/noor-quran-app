@@ -82,15 +82,36 @@ const SECTIONS = [
     body: (
       <>
         The <strong className="text-teal-300">Quran Teacher</strong> feature can listen to your
-        recitation to give instant feedback. Microphone access is requested{" "}
-        <strong className="text-teal-300">only when you start a speaking lesson</strong>, and only
-        after you agree on the consent screen. Your voice is processed by{" "}
-        <strong className="text-teal-300">your device&apos;s own speech recognizer</strong> (on
-        some devices this may use Google speech services). The app{" "}
-        <strong className="text-teal-300">never records, stores, or uploads raw audio</strong> —
-        only the recognized text is used, for instant feedback, then discarded. Learning progress
-        stays on your device, and you can delete all learning data at any time from the Teacher
-        screen (&quot;Delete my learning data&quot;).
+        recitation to give instant pronunciation feedback. Microphone access is requested{" "}
+        <strong className="text-teal-300">only when you tap &quot;Read Now&quot;</strong> in a
+        lesson, and only after you agree on the consent screen. Your speech is converted to text
+        by your device&apos;s <strong className="text-teal-300">speech-recognition service</strong>.
+        On most Android devices this service is provided by{" "}
+        <strong className="text-teal-300">Google</strong>, and depending on your device and
+        settings, <strong className="text-teal-300">audio may be sent to and processed on
+        Google&apos;s servers</strong> under Google&apos;s Privacy Policy. Noor Quran itself does{" "}
+        <strong className="text-teal-300">not</strong> record, save, or upload audio files, and
+        does not send your voice to our own or any other third-party servers. The recognized
+        text (transcript) is compared with the lesson text on your device to show your result,
+        and is then discarded — it is not stored or transmitted by the app.
+      </>
+    ),
+  },
+  {
+    icon: <BookOpen className="w-5 h-5" />,
+    title: "Teacher Learning Progress",
+    accent: "text-violet-400",
+    bg: "rgba(139,92,246,0.07)",
+    border: "border-violet-900/40",
+    body: (
+      <>
+        The Quran Teacher stores your learning data —{" "}
+        <strong className="text-violet-300">completed lessons, scores, daily lesson count,
+        learning streak, revision queue, and settings</strong> — in your device&apos;s local
+        storage only. There is <strong className="text-violet-300">no account and no server
+        storage</strong>; this data never leaves your device. You can permanently erase it at
+        any time using <em>&quot;Delete my learning data&quot;</em> on the Teacher screen, or by
+        clearing the app&apos;s data in Android settings.
       </>
     ),
   },
@@ -144,6 +165,43 @@ const SECTIONS = [
     ),
   },
   {
+    icon: <HardDrive className="w-5 h-5" />,
+    title: "Data Retention & Deletion",
+    accent: "text-amber-400",
+    bg: "rgba(217,119,6,0.07)",
+    border: "border-amber-900/40",
+    body: (
+      <>
+        Because Noor Quran has no accounts and no servers, we hold{" "}
+        <strong className="text-amber-300">no data about you to retain</strong>. Everything —
+        preferences, bookmarks, favorites, Tasbeeh counts, Teacher progress, downloaded surah
+        text and audio — lives on your device and is kept only until you delete it. To delete:
+        use in-app remove/delete options (including &quot;Delete my learning data&quot;), or
+        clear the app&apos;s storage in Android settings, or uninstall the app. Audio processed
+        by your device&apos;s speech-recognition service is handled under that provider&apos;s
+        (typically Google&apos;s) own retention policies.
+      </>
+    ),
+  },
+  {
+    icon: <Shield className="w-5 h-5" />,
+    title: "Your Choices & Permissions",
+    accent: "text-sky-400",
+    bg: "rgba(56,189,248,0.07)",
+    border: "border-sky-900/40",
+    body: (
+      <>
+        All permissions are optional: <strong className="text-sky-300">Microphone</strong> (only
+        for Teacher pronunciation checks — deny it and use listen-only mode),{" "}
+        <strong className="text-sky-300">Location</strong> (only for automatic prayer times and
+        Qibla — you can type your city instead), and{" "}
+        <strong className="text-sky-300">Notifications</strong> (only for Azan and reminders).
+        You can grant, deny, or revoke any permission at any time in your device&apos;s app
+        settings, and the rest of the app keeps working.
+      </>
+    ),
+  },
+  {
     icon: <Lock className="w-5 h-5" />,
     title: "Data Security & Sharing",
     accent: "text-green-400",
@@ -164,6 +222,7 @@ const THIRD_PARTY = [
   { name: "AlQuran Cloud API",       url: "https://alquran.cloud/terms" },
   { name: "Aladhan Prayer Times API", url: "https://aladhan.com/terms-and-conditions" },
   { name: "Google AdMob",             url: "https://policies.google.com/privacy" },
+  { name: "Google Speech Services",   url: "https://policies.google.com/privacy" },
   { name: "Islamic Network CDN",      url: "https://cdn.islamic.network" },
 ];
 
@@ -317,7 +376,7 @@ export function PrivacyPolicy() {
 
         {/* Effective date */}
         <p className="text-emerald-800 text-xs text-center pt-2">
-          Last updated: May 2025 &nbsp;·&nbsp; Effective immediately
+          Last updated: July 19, 2026 &nbsp;·&nbsp; Effective immediately
         </p>
 
         {/* Close button */}

@@ -23,6 +23,7 @@ import { Downloads } from "@/pages/downloads";
 import { Notifications } from "@/pages/notifications";
 import { About } from "@/pages/about";
 import { PrivacyPolicy } from "@/pages/privacy-policy";
+import { TermsOfService } from "@/pages/terms-of-service";
 import { Updates } from "@/pages/updates";
 import { Writing } from "@/pages/writing";
 import { IslamicCalendar } from "@/pages/islamic-calendar";
@@ -87,6 +88,7 @@ function Router() {
       <Route path="/notifications" component={Notifications} />
       <Route path="/about" component={About} />
       <Route path="/privacy-policy" component={PrivacyPolicy} />
+      <Route path="/terms-of-service" component={TermsOfService} />
       <Route path="/updates" component={Updates} />
       <Route path="/writing" component={Writing} />
       <Route path="/islamic-calendar" component={IslamicCalendar} />
