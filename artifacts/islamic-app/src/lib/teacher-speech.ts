@@ -12,6 +12,7 @@
  */
 
 import { Capacitor } from "@capacitor/core";
+import { SpeechRecognition as NativeSpeechRecognition } from "@capacitor-community/speech-recognition";
 import { MIN_CONFIDENCE, PASS_SCORE, SPEECH_LANG } from "./teacher-config";
 
 // ── Arabic normalization ──────────────────────────────────────────────────────
@@ -130,21 +131,15 @@ interface SpeechRecognitionPlugin {
   stop(): Promise<void>;
 }
 
-let _nativePlugin: SpeechRecognitionPlugin | null | undefined;
-
+/**
+ * Statically imported (bundled into the main chunk) so it can NEVER fail to
+ * load at runtime inside the Android WebView. A previous dynamic
+ * `import(...)` could fail on-device and the failure was cached, which made
+ * the whole Teacher flow silently fall back to listen-only mode.
+ */
 async function getNativePlugin(): Promise<SpeechRecognitionPlugin | null> {
-  if (_nativePlugin !== undefined) return _nativePlugin;
-  if (!Capacitor.isNativePlatform()) {
-    _nativePlugin = null;
-    return null;
-  }
-  try {
-    const mod = await import("@capacitor-community/speech-recognition");
-    _nativePlugin = mod.SpeechRecognition as unknown as SpeechRecognitionPlugin;
-  } catch {
-    _nativePlugin = null;
-  }
-  return _nativePlugin;
+  if (!Capacitor.isNativePlatform()) return null;
+  return NativeSpeechRecognition as unknown as SpeechRecognitionPlugin;
 }
 
 type WebSpeechRecognition = {

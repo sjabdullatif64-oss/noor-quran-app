@@ -123,7 +123,10 @@ export function TeacherLesson() {
       setPhase("consent");
       return;
     }
-    if (support === "none") {
+    // Re-check support at tap time — never trust possibly-stale initial state
+    const sup = await getSpeechSupport();
+    setSupport(sup);
+    if (sup === "none") {
       setPhase("no-mic");
       return;
     }
@@ -138,7 +141,7 @@ export function TeacherLesson() {
       setPhase("mic-denied");
       return;
     }
-    if (perm === "prompt" && support === "native") {
+    if (perm === "prompt" && sup === "native") {
       const granted = await requestSpeechPermission();
       if (granted !== "granted") {
         setPhase("mic-denied");
@@ -175,7 +178,7 @@ export function TeacherLesson() {
       recordMistake(lesson.id);
       setPhase("feedback");
     }
-  }, [lesson, support]);
+  }, [lesson]);
 
   /** Tap "Read Now" → permission (first time) → listen; auto-stops after MAX_RECORD_MS. */
   const onReadNow = useCallback(() => {
