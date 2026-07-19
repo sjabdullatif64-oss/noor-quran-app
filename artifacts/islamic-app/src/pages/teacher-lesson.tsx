@@ -337,8 +337,8 @@ export function TeacherLesson() {
               <p className="text-emerald-300 font-semibold text-sm">Before you start speaking</p>
             </div>
             <ul className="text-emerald-500 text-xs leading-relaxed space-y-2 mb-4 list-disc pl-4">
-              <li>Your recitation is processed by <strong className="text-emerald-300">your device&apos;s own speech recognizer</strong> (on some devices this uses Google speech services).</li>
-              <li>The app <strong className="text-emerald-300">never records, stores, or uploads</strong> your voice.</li>
+              <li>Your recitation is processed by <strong className="text-emerald-300">your device&apos;s speech-recognition service</strong> — on most Android devices this is provided by Google and audio may be processed on Google&apos;s servers.</li>
+              <li>Noor Quran itself <strong className="text-emerald-300">never saves or uploads</strong> audio files of your voice.</li>
               <li>Only the recognized text is used — for instant feedback — then discarded.</li>
               <li>You can delete all learning data anytime from the Teacher home screen.</li>
             </ul>
@@ -566,7 +566,9 @@ export function TeacherLesson() {
         {/* ── Mic + navigation controls ── */}
         {phase !== "limit" && phase !== "consent" && (
           <div className="pt-2 pb-4">
-            {support !== "none" && phase !== "no-mic" && phase !== "mic-denied" && (
+            {/* Read Now is ALWAYS visible (except while an error panel with its own
+                recovery actions is shown) — never hidden by recognizer availability. */}
+            {phase !== "no-mic" && phase !== "mic-denied" && (
               <div className="text-center">
                 {phase === "recording" ? (
                   <>

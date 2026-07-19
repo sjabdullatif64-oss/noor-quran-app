@@ -2,7 +2,7 @@ import { Link } from "wouter";
 import {
   ChevronLeft, Share2, Shield, Mail, BookOpen, Clock, Heart,
   Bookmark, Download, Hash, Bell, Compass, Sparkles, Globe, Volume2, Gift, PenLine, Star,
-  Calculator, ExternalLink, ShoppingBag,
+  Calculator, ExternalLink, ShoppingBag, ScrollText,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { nativeShare, openUrl, getLastShareError } from "@/lib/capacitor";
@@ -437,6 +437,16 @@ export function About() {
               accent="text-amber-400"
               bg="rgba(217,119,6,0.08)"
               border="border-amber-900/40"
+            />
+          </Link>
+          <Link href="/terms-of-service" data-testid="button-about-terms">
+            <ActionButton
+              icon={<ScrollText className="w-5 h-5" />}
+              label="Terms of Service"
+              sublabel="Rules & conditions for using the app"
+              accent="text-violet-400"
+              bg="rgba(139,92,246,0.08)"
+              border="border-violet-900/40"
             />
           </Link>
         </div>
