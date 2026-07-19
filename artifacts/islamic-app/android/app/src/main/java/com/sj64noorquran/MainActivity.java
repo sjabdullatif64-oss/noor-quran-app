@@ -11,6 +11,8 @@ package com.sj64noorquran;
   import com.capacitorjs.plugins.app.AppPlugin;
   import com.capacitorjs.plugins.localnotifications.LocalNotificationsPlugin;
   import com.capacitorjs.plugins.share.SharePlugin;
+  import com.getcapacitor.community.speechrecognition.SpeechRecognition;
+  import nl.raphael.settings.NativeSettingsPlugin;
 
   public class MainActivity extends BridgeActivity {
 
@@ -40,6 +42,13 @@ package com.sj64noorquran;
           // plugin. See capacitor.config.ts includePlugins for the primary
           // fix (keeping the JSON in sync with what's actually compiled).
           registerPlugin(SharePlugin.class);
+          // SpeechRecognition + NativeSettings — explicit registration (same
+          // defense-in-depth as Share). Their gradle modules were missing from
+          // the hand-maintained settings.gradle until v1.2.5, which left the
+          // classes out of the DEX entirely; now that they compile, register
+          // them explicitly so plugins.json drift can never break them again.
+          registerPlugin(SpeechRecognition.class);
+          registerPlugin(NativeSettingsPlugin.class);
           // Project-local Kotlin/Java plugins also registered here (not in plugins.json).
           // AzanPlugin is a project-local native plugin (android/app/src, not an npm
           // package), so cap sync never discovers it — without this explicit call every
