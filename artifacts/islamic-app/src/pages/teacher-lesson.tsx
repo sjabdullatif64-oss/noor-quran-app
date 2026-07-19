@@ -25,7 +25,7 @@ import {
 } from "@/lib/teacher-progress";
 import {
   assess, getSpeechSupport, checkSpeechPermission, requestSpeechPermission,
-  listenOnce, stopListening, normalizeArabic, openAppSettings,
+  listenOnce, stopListening, normalizeArabic, openAppSettings, getSpeechSupportReason,
   type Assessment, type SpeechSupport,
 } from "@/lib/teacher-speech";
 import { isConnected } from "@/lib/capacitor";
@@ -68,6 +68,7 @@ export function TeacherLesson() {
   const [recordMs, setRecordMs] = useState(0);
   const [completedNow, setCompletedNow] = useState<CompleteResult | null>(null);
   const [settingsFailed, setSettingsFailed] = useState(false);
+  const [noMicReason, setNoMicReason] = useState<string | null>(null);
 
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const recordTimer = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -127,6 +128,7 @@ export function TeacherLesson() {
     const sup = await getSpeechSupport();
     setSupport(sup);
     if (sup === "none") {
+      setNoMicReason(getSpeechSupportReason());
       setPhase("no-mic");
       return;
     }
@@ -523,6 +525,11 @@ export function TeacherLesson() {
                 ? "Recitation checking isn't available in this browser — it works in the Noor Quran Android app. For now: tap Listen, repeat aloud, and compare with your own ears — it's how students have learned for centuries."
                 : "Tap Listen and repeat aloud as many times as you like. To pass this lesson and unlock the next one, the AI needs to hear your recitation — allow the microphone when you're ready."}
             </p>
+            {noMicReason && (
+              <p className="text-emerald-800 text-[10px] mt-2 leading-relaxed" data-testid="text-nomic-reason">
+                Reason: {noMicReason}
+              </p>
+            )}
             {support !== "none" && (
               <button
                 onClick={() => setPhase("idle")}
