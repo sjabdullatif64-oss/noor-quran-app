@@ -30,6 +30,8 @@ import { AzanSettings } from "@/pages/azan-settings";
 import { Marketplace } from "@/pages/marketplace";
 import { AdminProducts } from "@/pages/admin-products";
 import { JuzReader } from "@/pages/juz-reader";
+import { Teacher } from "@/pages/teacher";
+import { TeacherLesson } from "@/pages/teacher-lesson";
 import { useEffect } from "react";
 import { ensureRegistered, reportAyahComplete } from "@/lib/user";
 
@@ -92,6 +94,8 @@ function Router() {
       <Route path="/marketplace" component={Marketplace} />
       <Route path="/admin-products" component={AdminProducts} />
       <Route path="/juz/:number" component={JuzReader} />
+      <Route path="/teacher" component={Teacher} />
+      <Route path="/teacher/lesson/:id" component={TeacherLesson} />
 
       <Route component={NotFound} />
     </Switch>

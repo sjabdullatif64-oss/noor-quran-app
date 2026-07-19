@@ -83,6 +83,7 @@ export interface Translations {
   nav_quran:        string;
   nav_prayers:      string;
   nav_more:         string;
+  nav_teacher:      string;
   nav_al_haram:     string;
   nav_favorites:    string;
   nav_tasbeeh:      string;
@@ -184,6 +185,7 @@ const en: Translations = {
   nav_quran:         "Quran",
   nav_prayers:       "Prayers",
   nav_more:          "More",
+  nav_teacher:       "Teacher",
   nav_al_haram:      "Al Haram",
   nav_favorites:     "Favorites",
   nav_tasbeeh:       "Tasbeeh",
@@ -280,6 +282,7 @@ const ar: Translations = {
   nav_quran:         "القرآن",
   nav_prayers:       "الصلوات",
   nav_more:          "المزيد",
+  nav_teacher:       "المعلم",
   nav_al_haram:      "الحرم",
   nav_favorites:     "المفضلة",
   nav_tasbeeh:       "التسبيح",
@@ -376,6 +379,7 @@ const ur: Translations = {
   nav_quran:         "قرآن",
   nav_prayers:       "نمازیں",
   nav_more:          "مزید",
+  nav_teacher:       "استاد",
   nav_al_haram:      "الحرم",
   nav_favorites:     "پسندیدہ",
   nav_tasbeeh:       "تسبیح",
@@ -472,6 +476,7 @@ const hi: Translations = {
   nav_quran:         "क़ुरआन",
   nav_prayers:       "नमाज़",
   nav_more:          "और",
+  nav_teacher:       "शिक्षक",
   nav_al_haram:      "अल हरम",
   nav_favorites:     "पसंदीदा",
   nav_tasbeeh:       "तस्बीह",
@@ -568,6 +573,7 @@ const bn: Translations = {
   nav_quran:         "কুরআন",
   nav_prayers:       "নামাজ",
   nav_more:          "আরও",
+  nav_teacher:       "শিক্ষক",
   nav_al_haram:      "আল হারাম",
   nav_favorites:     "প্রিয়",
   nav_tasbeeh:       "তাসবিহ",
@@ -664,6 +670,7 @@ const tr: Translations = {
   nav_quran:         "Kuran",
   nav_prayers:       "Namaz",
   nav_more:          "Daha Fazla",
+  nav_teacher:       "Öğretmen",
   nav_al_haram:      "Al Haram",
   nav_favorites:     "Favoriler",
   nav_tasbeeh:       "Tesbih",
@@ -760,6 +767,7 @@ const id: Translations = {
   nav_quran:         "Al-Quran",
   nav_prayers:       "Sholat",
   nav_more:          "Lainnya",
+  nav_teacher:       "Guru",
   nav_al_haram:      "Al Haram",
   nav_favorites:     "Favorit",
   nav_tasbeeh:       "Tasbih",
@@ -856,6 +864,7 @@ const fr: Translations = {
   nav_quran:         "Coran",
   nav_prayers:       "Prières",
   nav_more:          "Plus",
+  nav_teacher:       "Professeur",
   nav_al_haram:      "Al Haram",
   nav_favorites:     "Favoris",
   nav_tasbeeh:       "Tasbih",
@@ -952,6 +961,7 @@ const es: Translations = {
   nav_quran:         "Corán",
   nav_prayers:       "Oraciones",
   nav_more:          "Más",
+  nav_teacher:       "Maestro",
   nav_al_haram:      "Al Haram",
   nav_favorites:     "Favoritos",
   nav_tasbeeh:       "Tasbih",
@@ -1048,6 +1058,7 @@ const ms: Translations = {
   nav_quran:         "Al-Quran",
   nav_prayers:       "Solat",
   nav_more:          "Lagi",
+  nav_teacher:       "Guru",
   nav_al_haram:      "Al Haram",
   nav_favorites:     "Kegemaran",
   nav_tasbeeh:       "Tasbih",

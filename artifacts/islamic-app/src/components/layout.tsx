@@ -3,6 +3,7 @@ import { Link, useLocation } from "wouter";
 import {
   Book, Bookmark, Compass, Home as HomeIcon,
   Moon, Navigation, Sun, MoreHorizontal, Heart, Hash, Gift, Download, Settings, Bell,
+  GraduationCap,
 } from "lucide-react";
 import { useTheme } from "./theme-provider";
 import { Button } from "./ui/button";
@@ -27,7 +28,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
     "/qibla", "/more", "/favorites", "/tasbeeh", "/settings", "/islamic-gifts",
     "/downloads", "/notifications", "/azan-settings", "/about", "/privacy-policy",
     "/updates", "/writing", "/islamic-calendar", "/prayer-times",
-  ].includes(location);
+  ].includes(location) || location.startsWith("/teacher");
 
   const isMoreActive = MORE_PATHS.some((p) => location.startsWith(p));
 
@@ -93,6 +94,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
           <NavItem href="/" icon={<HomeIcon className="w-5 h-5" />} label={t("nav_home")} active={location === "/"} />
           <NavItem href="/quran" icon={<Book className="w-5 h-5" />} label={t("nav_quran")} active={location === "/quran" || location.startsWith("/quran/")} />
           <NavItem href="/prayer-times" icon={<Compass className="w-5 h-5" />} label={t("nav_prayers")} active={location === "/prayer-times"} />
+          <NavItem href="/teacher" icon={<GraduationCap className="w-5 h-5" />} label={t("nav_teacher")} active={location.startsWith("/teacher")} />
 
           <div className="mt-2 mb-1 px-2">
             <p className="text-xs text-muted-foreground/60 uppercase tracking-wider font-medium">{t("nav_more_section")}</p>
@@ -144,6 +146,8 @@ export function Layout({ children }: { children: React.ReactNode }) {
           active={location === "/quran" || location.startsWith("/quran/")} dark={isDarkPage} testId="quran" />
         <MobileNavItem href="/prayer-times" icon={<Compass className="w-5 h-5" />} label={t("nav_prayers")}
           active={location === "/prayer-times"} dark={isDarkPage} testId="prayers" />
+        <MobileNavItem href="/teacher" icon={<GraduationCap className="w-5 h-5" />} label={t("nav_teacher")}
+          active={location.startsWith("/teacher")} dark={isDarkPage} testId="teacher" />
         <MobileNavItem href="/more" icon={<MoreHorizontal className="w-5 h-5" />} label={t("nav_more")}
           active={isMoreActive} dark={isDarkPage} testId="more" />
       </div>

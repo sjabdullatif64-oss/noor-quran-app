@@ -2,7 +2,7 @@ import { useEffect, useRef } from "react";
 import { Link } from "wouter";
 import {
   ChevronLeft, Shield, Wifi, HardDrive, Bell,
-  MapPin, Volume2, DollarSign, Lock, Mail, BookOpen,
+  MapPin, Volume2, DollarSign, Lock, Mail, BookOpen, Mic,
 } from "lucide-react";
 import { openUrl } from "@/lib/capacitor";
 
@@ -70,6 +70,27 @@ const SECTIONS = [
         fetch the audio file. No account, login, or personal identifier is attached to these
         requests. Downloaded audio is saved locally in your browser&apos;s IndexedDB for
         offline use and never shared.
+      </>
+    ),
+  },
+  {
+    icon: <Mic className="w-5 h-5" />,
+    title: "Microphone & Quran Teacher",
+    accent: "text-teal-400",
+    bg: "rgba(45,212,191,0.07)",
+    border: "border-teal-900/40",
+    body: (
+      <>
+        The <strong className="text-teal-300">Quran Teacher</strong> feature can listen to your
+        recitation to give instant feedback. Microphone access is requested{" "}
+        <strong className="text-teal-300">only when you start a speaking lesson</strong>, and only
+        after you agree on the consent screen. Your voice is processed by{" "}
+        <strong className="text-teal-300">your device&apos;s own speech recognizer</strong> (on
+        some devices this may use Google speech services). The app{" "}
+        <strong className="text-teal-300">never records, stores, or uploads raw audio</strong> —
+        only the recognized text is used, for instant feedback, then discarded. Learning progress
+        stays on your device, and you can delete all learning data at any time from the Teacher
+        screen (&quot;Delete my learning data&quot;).
       </>
     ),
   },

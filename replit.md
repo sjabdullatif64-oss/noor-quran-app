@@ -36,7 +36,7 @@ A full-featured Islamic mobile web app for reading the Holy Quran with Urdu & En
 - Settings persisted in localStorage (`noor-city`, `noor-country`, `noor-lang`)
 - Bookmarks + Favorites in localStorage; Download audio in IndexedDB
 - Dark "hub" pages (More, Settings, Downloads, etc.) use a dark green gradient; light pages use the cream theme
-- Bottom nav has exactly 4 tabs on mobile: Home, Quran, Prayers, More
+- Bottom nav has exactly 5 tabs on mobile: Home, Quran, Prayers, Teacher, More (Teacher approved in AI Quran Teacher Phase 1)
 
 ## Product
 

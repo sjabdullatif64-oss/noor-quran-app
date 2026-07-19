@@ -27,6 +27,7 @@ const config: CapacitorConfig = {
     "@capacitor/share",
     "@capacitor/splash-screen",
     "@capacitor/status-bar",
+    "@capacitor-community/speech-recognition",
   ],
   server: {
     androidScheme: "https",
