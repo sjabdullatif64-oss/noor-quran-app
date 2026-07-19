@@ -28,6 +28,7 @@ const config: CapacitorConfig = {
     "@capacitor/splash-screen",
     "@capacitor/status-bar",
     "@capacitor-community/speech-recognition",
+    "capacitor-native-settings",
   ],
   server: {
     androidScheme: "https",
