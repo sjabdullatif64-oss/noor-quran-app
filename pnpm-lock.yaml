@@ -227,6 +227,9 @@ importers:
       '@capacitor/share':
         specifier: ^8.0.1
         version: 8.0.1(@capacitor/core@8.3.3)
+      capacitor-native-settings:
+        specifier: ^8.1.0
+        version: 8.1.0(@capacitor/core@8.3.3)
     devDependencies:
       '@capacitor-community/admob':
         specifier: ^8.0.0
@@ -1993,6 +1996,11 @@ packages:
 
   caniuse-lite@1.0.30001777:
     resolution: {integrity: sha512-tmN+fJxroPndC74efCdp12j+0rk0RHwV5Jwa1zWaFVyw2ZxAuPeG8ZgWC3Wz7uSjT3qMRQ5XHZ4COgQmsCMJAQ==}
+
+  capacitor-native-settings@8.1.0:
+    resolution: {integrity: sha512-bcIsKO0EBChdiG2l7RAt70cKxz0Vygfx7quN6tSoNlwziCct8f5EgT8xmwNit+7F712ojl54xNaEddu87EpkjQ==}
+    peerDependencies:
+      '@capacitor/core': '>=8.0.2'
 
   chokidar@4.0.3:
     resolution: {integrity: sha512-Qgzu8kfBvo+cA4962jnP1KkS6Dop5NS6g7R5LFYJr4b8Ub94PPQXUksCw9PvXoeXPRRddRNC5C1JQUR2SMGtnA==}
@@ -5085,6 +5093,10 @@ snapshots:
       get-intrinsic: 1.3.0
 
   caniuse-lite@1.0.30001777: {}
+
+  capacitor-native-settings@8.1.0(@capacitor/core@8.3.3):
+    dependencies:
+      '@capacitor/core': 8.3.3
 
   chokidar@4.0.3:
     dependencies:

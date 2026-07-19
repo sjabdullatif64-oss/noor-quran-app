@@ -25,7 +25,7 @@ import {
 } from "@/lib/teacher-progress";
 import {
   assess, getSpeechSupport, checkSpeechPermission, requestSpeechPermission,
-  listenOnce, stopListening, normalizeArabic,
+  listenOnce, stopListening, normalizeArabic, openAppSettings,
   type Assessment, type SpeechSupport,
 } from "@/lib/teacher-speech";
 import { isConnected } from "@/lib/capacitor";
@@ -67,10 +67,10 @@ export function TeacherLesson() {
   const [playing, setPlaying] = useState(false);
   const [recordMs, setRecordMs] = useState(0);
   const [completedNow, setCompletedNow] = useState<CompleteResult | null>(null);
+  const [settingsFailed, setSettingsFailed] = useState(false);
 
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const recordTimer = useRef<ReturnType<typeof setInterval> | null>(null);
-  const holdActive = useRef(false);
 
   useEffect(() => {
     getSpeechSupport().then(setSupport).catch(() => setSupport("none"));
@@ -132,7 +132,7 @@ export function TeacherLesson() {
       return;
     }
 
-    // Just-in-time permission
+    // Just-in-time permission: first tap shows the native Android dialog
     const perm = await checkSpeechPermission();
     if (perm === "denied") {
       setPhase("mic-denied");
@@ -145,8 +145,6 @@ export function TeacherLesson() {
         return;
       }
     }
-
-    if (!holdActive.current) return; // user already released
 
     setPhase("recording");
     setRecordMs(0);
@@ -179,13 +177,13 @@ export function TeacherLesson() {
     }
   }, [lesson, support]);
 
-  const onHoldStart = useCallback(() => {
-    holdActive.current = true;
+  /** Tap "Read Now" → permission (first time) → listen; auto-stops after MAX_RECORD_MS. */
+  const onReadNow = useCallback(() => {
     beginRecording();
   }, [beginRecording]);
 
-  const onHoldEnd = useCallback(() => {
-    holdActive.current = false;
+  /** Tap "Stop" while listening → finish early and check what was heard. */
+  const onStop = useCallback(() => {
     stopListening().catch(() => {});
   }, []);
 
@@ -346,7 +344,7 @@ export function TeacherLesson() {
             </ul>
             <div className="flex gap-2">
               <button
-                onClick={() => { grantConsent(); setPhase("idle"); }}
+                onClick={() => { grantConsent(); setPhase("idle"); beginRecording(); }}
                 className="flex-1 py-3 rounded-xl text-sm font-semibold text-white"
                 style={{ background: "linear-gradient(135deg, #1a5c38, #0d3d24)" }}
                 data-testid="button-consent-agree"
@@ -477,10 +475,36 @@ export function TeacherLesson() {
               <p className="text-rose-300 text-sm font-medium">Microphone permission needed</p>
             </div>
             <p className="text-rose-500/80 text-xs leading-relaxed">
-              To check your recitation, the app needs microphone access. Please allow it in your
-              device settings (Settings → Apps → Noor Quran → Permissions → Microphone). Until
-              then, you can keep learning in listen-only mode — tap Listen and repeat aloud.
+              To check your recitation, the app needs microphone access. Allow it under
+              Permissions → Microphone. Until then, you can keep learning in listen-only mode —
+              tap Listen and repeat aloud.
             </p>
+            <div className="flex gap-2 mt-3">
+              <button
+                onClick={async () => {
+                  const ok = await openAppSettings().catch(() => false);
+                  if (!ok) setSettingsFailed(true);
+                }}
+                className="flex-1 py-2.5 rounded-xl text-xs font-semibold text-rose-200 border border-rose-800/50"
+                style={{ background: "rgba(244,63,94,0.12)" }}
+                data-testid="button-open-settings"
+              >
+                Open Settings
+              </button>
+              <button
+                onClick={() => { setPhase("idle"); setResult(null); setSettingsFailed(false); }}
+                className="flex-1 py-2.5 rounded-xl text-xs font-semibold text-emerald-300 border border-emerald-800/50"
+                data-testid="button-denied-retry"
+              >
+                Try Again
+              </button>
+            </div>
+            {settingsFailed && (
+              <p className="text-rose-400/80 text-[11px] mt-2 leading-relaxed" data-testid="text-settings-fallback">
+                Couldn&apos;t open settings automatically. Please go to: Settings → Apps →
+                Noor Quran → Permissions → Microphone → Allow.
+              </p>
+            )}
           </div>
         )}
 
@@ -544,30 +568,48 @@ export function TeacherLesson() {
           <div className="pt-2 pb-4">
             {support !== "none" && phase !== "no-mic" && phase !== "mic-denied" && (
               <div className="text-center">
-                <button
-                  onPointerDown={onHoldStart}
-                  onPointerUp={onHoldEnd}
-                  onPointerLeave={onHoldEnd}
-                  onContextMenu={(e) => e.preventDefault()}
-                  disabled={phase === "checking"}
-                  className={`w-20 h-20 rounded-full inline-flex items-center justify-center transition-all select-none touch-none ${
-                    phase === "recording"
-                      ? "bg-rose-500 scale-110 shadow-lg shadow-rose-900/50"
-                      : "bg-emerald-500 active:scale-95 shadow-lg shadow-emerald-900/50"
-                  } ${phase === "checking" ? "opacity-60" : ""}`}
-                  data-testid="button-record"
-                >
-                  {phase === "checking"
-                    ? <Loader2 className="w-7 h-7 text-[#071a0e] animate-spin" />
-                    : <Mic className="w-7 h-7 text-[#071a0e]" />}
-                </button>
-                <p className="text-emerald-600 text-xs mt-3">
-                  {phase === "recording"
-                    ? `Listening… ${(recordMs / 1000).toFixed(1)}s — release when done`
-                    : phase === "checking"
-                      ? "Checking your recitation…"
-                      : "Press and hold, then recite"}
-                </p>
+                {phase === "recording" ? (
+                  <>
+                    <div className="w-20 h-20 rounded-full inline-flex items-center justify-center bg-rose-500 scale-110 shadow-lg shadow-rose-900/50 animate-pulse"
+                      data-testid="indicator-recording">
+                      <Mic className="w-7 h-7 text-[#071a0e]" />
+                    </div>
+                    <p className="text-rose-300 text-sm font-medium mt-3" data-testid="text-listening">
+                      Listening… Read the letter or word now.
+                    </p>
+                    <p className="text-emerald-700 text-[11px] mt-1">
+                      {(recordMs / 1000).toFixed(1)}s · stops automatically
+                    </p>
+                    <button
+                      onClick={onStop}
+                      className="mt-3 inline-flex items-center gap-2 px-6 py-2.5 rounded-xl text-xs font-semibold text-rose-200 border border-rose-700/60 active:scale-95 transition-all"
+                      style={{ background: "rgba(244,63,94,0.15)" }}
+                      data-testid="button-stop"
+                    >
+                      <span className="w-2.5 h-2.5 rounded-[3px] bg-rose-400 inline-block" /> Stop — I&apos;m done
+                    </button>
+                  </>
+                ) : phase === "checking" ? (
+                  <>
+                    <div className="w-20 h-20 rounded-full inline-flex items-center justify-center bg-emerald-500 opacity-60 shadow-lg shadow-emerald-900/50">
+                      <Loader2 className="w-7 h-7 text-[#071a0e] animate-spin" />
+                    </div>
+                    <p className="text-emerald-600 text-xs mt-3">Checking your recitation…</p>
+                  </>
+                ) : (
+                  <>
+                    <button
+                      onClick={onReadNow}
+                      className="inline-flex items-center gap-2.5 px-8 py-4 rounded-2xl text-base font-bold text-[#071a0e] bg-emerald-500 active:scale-95 shadow-lg shadow-emerald-900/50 transition-all"
+                      data-testid="button-record"
+                    >
+                      <Mic className="w-5 h-5" /> Read Now
+                    </button>
+                    <p className="text-emerald-600 text-xs mt-3">
+                      Tap, then read the {lesson.highlight ? "letter" : "word"} aloud
+                    </p>
+                  </>
+                )}
               </div>
             )}
 

@@ -167,17 +167,33 @@ function getWebRecognizerCtor(): (new () => WebSpeechRecognition) | null {
     | null;
 }
 
-/** What recognition path is available on this device? */
+/**
+ * What recognition path is available on this device?
+ * On native Android we ALWAYS report "native" when the plugin is present —
+ * the OS "recognizer availability" pre-check can report false negatives on
+ * some devices, which would hide the mic button entirely. Real failures are
+ * surfaced at listen time instead.
+ */
 export async function getSpeechSupport(): Promise<SpeechSupport> {
   const native = await getNativePlugin();
-  if (native) {
-    try {
-      const { available } = await native.available();
-      if (available) return "native";
-    } catch { /* fall through */ }
-  }
+  if (native) return "native";
   if (getWebRecognizerCtor()) return "web";
   return "none";
+}
+
+/** Open this app's Android settings page (for re-granting a denied mic permission). */
+export async function openAppSettings(): Promise<boolean> {
+  if (!Capacitor.isNativePlatform()) return false;
+  try {
+    const { NativeSettings, AndroidSettings, IOSSettings } = await import("capacitor-native-settings");
+    await NativeSettings.open({
+      optionAndroid: AndroidSettings.ApplicationDetails,
+      optionIOS: IOSSettings.App,
+    });
+    return true;
+  } catch {
+    return false;
+  }
 }
 
 export type PermissionState = "granted" | "denied" | "prompt";

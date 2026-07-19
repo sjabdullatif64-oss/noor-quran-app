@@ -88,6 +88,7 @@
   "dependencies": {
     "@capacitor-community/speech-recognition": "^7.0.1",
     "@capacitor/browser": "^8.0.3",
-    "@capacitor/share": "^8.0.1"
+    "@capacitor/share": "^8.0.1",
+    "capacitor-native-settings": "^8.1.0"
   }
 }

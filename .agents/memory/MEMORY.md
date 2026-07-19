@@ -6,3 +6,4 @@
 - [Android feature bug root causes](android-feature-bugs.md) — root causes for 7 Android issues: back button duplicate hook, notification prompt vs denied, share plugin fallthrough, qibla double-firing, admin safe-area, azan offline cache
 - [Daily ayah reward cap](ayah-reward-cap.md) — 20 ayahs/day cap counts rows in ayah_rewards WHERE createdAt >= today_start; skip insert on cap so ayah stays rewardable tomorrow
 - [Ayah display scaling pattern](ayah-display-scaling.md) — use per-page CSS var `--ayah-scale` + Tailwind arbitrary calc() classes, not flat inline fontSize, to preserve responsive breakpoints across readers
+- [Capacitor includePlugins allowlist](capacitor-plugin-allowlist.md) — new plugins silently no-op unless added to includePlugins; also don't trust SpeechRecognizer available() pre-check to gate UI
