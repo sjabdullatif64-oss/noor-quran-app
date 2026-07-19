@@ -176,6 +176,20 @@ export async function getSpeechSupport(): Promise<SpeechSupport> {
   return "none";
 }
 
+/**
+ * Debug helper: human-readable reason WHY speech support resolved the way it
+ * did. Shown in the listen-only panel so on-device fallbacks are never silent.
+ */
+export function getSpeechSupportReason(): string {
+  if (Capacitor.isNativePlatform()) {
+    return "native platform — Android SpeechRecognizer plugin (statically bundled)";
+  }
+  if (getWebRecognizerCtor()) {
+    return "browser — Web Speech API available";
+  }
+  return "not a native app build AND this browser has no Web Speech API (SpeechRecognition/webkitSpeechRecognition missing)";
+}
+
 /** Open this app's Android settings page (for re-granting a denied mic permission). */
 export async function openAppSettings(): Promise<boolean> {
   if (!Capacitor.isNativePlatform()) return false;
