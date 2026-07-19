@@ -19,4 +19,8 @@ await fetch(`https://api.github.com/repos/${repo}/actions/workflows/android-buil
 // HTTP 204 = success
 ```
 
+**Gotchas:**
+- Any push to main auto-triggers android-build.yml with default build_type=release (APK+AAB). If only a debug/test build is wanted, cancel the push-triggered run (`POST /actions/runs/{id}/cancel`) and dispatch with build_type=debug.
+- pnpm/action-setup fails with "Multiple versions of pnpm specified" if the workflow's PNPM_VERSION doesn't exactly match root package.json `packageManager` (pnpm@10.26.1).
+
 **Why:** All git write operations (config, push, rebase, commit) are intercepted by the sandbox and return exit 254 in bash. code_execution event loop blocks on synchronous network I/O longer than ~10s.

@@ -240,3 +240,9 @@ id = "kFfmgE2uRGQFtk62-ZGDw"
 uri = "file://tmp_release/noor-quran-1.0.1-azan-fix.tar.gz"
 type = "unspecified"
 title = "Noor Quran v1.0.1 — Azan audio fix (APK)"
+
+[[outputs]]
+id = "1aIScXdvgJBGFavyktC-y"
+uri = "file://attached_assets/release/noor-quran-1.1.0-debug.zip"
+type = "unspecified"
+title = "Noor Quran 1.1.0 — Test APK (debug, zipped)"
