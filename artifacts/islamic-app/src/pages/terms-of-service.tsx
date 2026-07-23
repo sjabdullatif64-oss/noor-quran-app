@@ -1,155 +1,112 @@
 import { useEffect, useRef } from "react";
 import { Link } from "wouter";
-import {
-  ChevronLeft, ScrollText, BookOpen, Shield,
-  Users, Scale, Wifi, RefreshCw, AlertTriangle, Mail, Sparkles,
-} from "lucide-react";
+import { ChevronLeft, ScrollText } from "lucide-react";
 import { openUrl } from "@/lib/capacitor";
 
 const SECTIONS = [
   {
-    icon: <ScrollText className="w-5 h-5" />,
-    title: "1. Acceptance of Terms",
-    accent: "text-primary",
-    bg: "bg-primary/10",
-    border: "border-border",
-    body: (
-      <>
-        By downloading, installing, or using <strong className="text-primary">Noor Quran</strong>{" "}
-        (package <em>com.sj64noorquran</em>), you agree to these Terms of Service. If you do not
-        agree with any part of these terms, please do not use the app. Continued use of the app
-        after changes to these terms constitutes acceptance of the updated terms.
-      </>
-    ),
+    icon: "▣",
+    title: "Purpose of the App",
+    body: [
+      "Noor Quran is provided for personal, educational, and devotional use.",
+      "Features may include Quran reading, translations, Arabic recitation, audio downloads, prayer times, Qibla direction, Islamic calendar, notifications, bookmarks, favorites, search, and digital Tasbeeh.",
+      "Features may be changed, improved, restricted, or removed in future updates.",
+    ],
   },
   {
-    icon: <Sparkles className="w-5 h-5" />,
-    title: "2. Purpose of the App",
-    accent: "text-amber-400",
-    bg: "rgba(217,119,6,0.07)",
-    border: "border-amber-900/40",
-    body: (
-      <>
-        Noor Quran is an <strong className="text-amber-300">educational and religious</strong>{" "}
-        companion app for Muslims. It provides Quran reading with translations, verified
-        recitation audio, prayer times, Qibla direction, Tasbeeh counting, Islamic reminders,
-        and learning tools. The app is offered as a free service to the Muslim community and is
-        not a substitute for formal religious instruction.
-      </>
-    ),
+    icon: "☰",
+    title: "Quran Text & Translations",
+    body: [
+      "We make reasonable efforts to provide accurate Quranic content. However, digital display, formatting, fonts, datasets, or technical errors may affect how content appears.",
+      "If you notice a possible error in the Arabic text, verify it with an authenticated Mushaf and contact us.",
+      "The Quran was revealed in Arabic. Translations are interpretations of its meaning and may differ between translators or contain mistakes, omissions, or outdated wording.",
+      "Translations may also fail to load because of internet, server, API, device, or technical problems.",
+      "Noor Quran does not guarantee the accuracy or continuous availability of every translation.",
+      "For important religious questions, consult the Arabic text, reliable Tafsir, and a qualified Islamic scholar.",
+    ],
   },
   {
-    icon: <BookOpen className="w-5 h-5" />,
-    title: "3. Quran Text, Translations & Recitations",
-    accent: "text-sky-400",
-    bg: "rgba(56,189,248,0.07)",
-    border: "border-sky-900/40",
-    body: (
-      <>
-        Quran text and translations are provided by public Islamic APIs
-        (<strong className="text-sky-300">api.alquran.cloud</strong>) and recitation audio by{" "}
-        <strong className="text-sky-300">cdn.islamic.network</strong> and Quran.com&apos;s audio
-        CDN. While these sources are widely trusted, translations are human works and may contain
-        variations between editions. The Arabic Quran text is authoritative; translations are
-        aids to understanding. If you notice an error, please report it to us.
-      </>
-    ),
+    icon: "◖",
+    title: "Quran Audio & Downloads",
+    body: [
+      "Quran recitations may be streamed or downloaded through third-party services.",
+      "Audio playback or downloads may fail because of network interruptions, server problems, storage limitations, permissions, device restrictions, or other technical issues.",
+      "Downloaded audio may be deleted if you clear app data, uninstall the app, reset your device, or use storage-cleaning tools.",
+      "We do not guarantee permanent storage or availability of downloaded audio.",
+    ],
   },
   {
-    icon: <Users className="w-5 h-5" />,
-    title: "4. User Responsibilities & Acceptable Use",
-    accent: "text-rose-400",
-    bg: "rgba(244,63,94,0.07)",
-    border: "border-rose-900/40",
-    body: (
-      <>
-        You agree to use Noor Quran only for lawful, personal, and non-commercial purposes. You
-        must not attempt to reverse-engineer, modify, redistribute, or resell the app; interfere
-        with the services it relies on; or use the app in a way that disrespects the Quran or
-        Islamic content. You are responsible for your device&apos;s security and for any data
-        charges incurred while streaming audio or fetching content.
-      </>
-    ),
+    icon: "⌖",
+    title: "Prayer Times, Qibla & Islamic Calendar",
+    body: [
+      "Prayer times, Qibla direction, and Hijri dates are provided as helpful estimates.",
+      "Results may vary because of location accuracy, calculation method, device sensors, time-zone settings, local moon sightings, or technical limitations.",
+      "For important religious observance, verify prayer times, Qibla direction, and Islamic dates with your local mosque or a recognized Islamic authority.",
+    ],
   },
   {
-    icon: <Scale className="w-5 h-5" />,
-    title: "5. Intellectual Property",
-    accent: "text-amber-400",
-    bg: "rgba(217,119,6,0.07)",
-    border: "border-amber-900/40",
-    body: (
-      <>
-        The Holy Quran is the word of Allah and is not subject to copyright. App design, code,
-        lesson structure, and original content are the property of{" "}
-        <strong className="text-amber-300">SJ64 Studios</strong>. Translations, recitations, and
-        Azan recordings belong to their respective owners and are used under their licenses
-        (credits are listed on the About screen). You may share the app link freely but may not
-        republish app content as your own.
-      </>
-    ),
+    icon: "🔔",
+    title: "Notifications & Local Data",
+    body: [
+      "Prayer reminders and other notifications may be delayed, blocked, or missed because of device settings, battery optimization, permissions, operating-system restrictions, or technical errors.",
+      "Do not rely only on app notifications for important obligations.",
+      "Bookmarks, favorites, Tasbeeh counts, settings, and downloaded content may be stored locally on your device.",
+      "This data may be lost if app data is cleared, the app is uninstalled, the device is reset, or a technical problem occurs.",
+    ],
   },
   {
-    icon: <Wifi className="w-5 h-5" />,
-    title: "6. Third-Party Services",
-    accent: "text-indigo-400",
-    bg: "rgba(99,102,241,0.07)",
-    border: "border-indigo-900/40",
-    body: (
-      <>
-        The app relies on third-party services: AlQuran Cloud (Quran text), Aladhan (prayer
-        times), Islamic Network CDN and Quran.com CDN (audio), and Google AdMob (advertising in the
-        Android app). These services have their own terms and privacy policies, and we are not
-        responsible for their availability or conduct.
-      </>
-    ),
+    icon: "$",
+    title: "Third-Party Services & Advertising",
+    body: [
+      "Noor Quran may use third-party APIs, hosting services, content providers, and Google AdMob to provide translations, audio, prayer information, and advertisements.",
+      "These services operate under their own terms and privacy policies.",
+      "We are not responsible for third-party outages, content errors, policy changes, advertisements, or service availability.",
+    ],
   },
   {
-    icon: <RefreshCw className="w-5 h-5" />,
-    title: "7. App Availability & Changes",
-    accent: "text-sky-400",
-    bg: "rgba(56,189,248,0.07)",
-    border: "border-sky-900/40",
-    body: (
-      <>
-        We strive to keep Noor Quran available and accurate, but we do not guarantee
-        uninterrupted operation. Features depend on third-party APIs that may change or become
-        unavailable. We may add, modify, or remove features at any time without prior notice,
-        including the marketplace and reward features.
-      </>
-    ),
+    icon: "✓",
+    title: "Acceptable Use",
+    body: [
+      "You agree to use Noor Quran only for lawful and personal purposes. You must not:",
+      "Misuse, damage, disrupt, or interfere with the app or its services.",
+      "Reverse engineer, copy, sell, redistribute, or commercially exploit the app without permission.",
+      "Remove copyright, attribution, trademark, or legal notices.",
+      "Use the app or its content for unlawful, deceptive, or harmful activity.",
+    ],
   },
   {
-    icon: <AlertTriangle className="w-5 h-5" />,
-    title: "8. Disclaimer of Warranties & Limitation of Liability",
-    accent: "text-rose-400",
-    bg: "rgba(244,63,94,0.07)",
-    border: "border-rose-900/40",
-    body: (
-      <>
-        Noor Quran is provided <strong className="text-rose-300">&quot;as is&quot;</strong> and{" "}
-        <strong className="text-rose-300">&quot;as available&quot;</strong>, without warranties of
-        any kind, express or implied, including accuracy of prayer times, Qibla direction,
-        and translations. To the maximum extent permitted by law, SJ64
-        Studios shall not be liable for any indirect, incidental, or consequential damages
-        arising from your use of, or inability to use, the app. Always verify prayer times with
-        your local mosque or authority.
-      </>
-    ),
+    icon: "©",
+    title: "Intellectual Property",
+    body: [
+      "The Noor Quran name, design, logo, interface, graphics, and original software are protected by applicable intellectual-property laws.",
+      "Quran text, translations, recitations, and third-party materials remain the property of their respective owners or providers.",
+    ],
   },
   {
-    icon: <Shield className="w-5 h-5" />,
-    title: "9. Changes to These Terms",
-    accent: "text-primary",
-    bg: "bg-primary/10",
-    border: "border-border",
-    body: (
-      <>
-        We may update these Terms of Service from time to time. Changes will be published on
-        this screen with a revised &quot;Last updated&quot; date. Material changes may also be
-        highlighted in app update notes. Your continued use of the app after an update means you
-        accept the revised terms.
-      </>
-    ),
+    icon: "!",
+    title: "Disclaimer of Warranties",
+    body: [
+      "Noor Quran is provided on an “AS IS” and “AS AVAILABLE” basis.",
+      "We do not guarantee that the app will always be accurate, uninterrupted, secure, compatible with every device, or free from errors.",
+      "The app is a helpful Islamic utility and is not a replacement for qualified religious guidance or official local religious authorities.",
+    ],
+  },
+  {
+    icon: "⚠",
+    title: "Limitation of Liability",
+    body: [
+      "To the maximum extent permitted by law, Noor Quran and its developer will not be liable for direct, indirect, incidental, special, or consequential loss arising from use of the app or inability to use it.",
+      "This includes translation errors, inaccurate prayer times, Qibla or calendar differences, missed notifications, unavailable services, lost bookmarks or favorites, deleted audio, data loss, and third-party service failures.",
+    ],
+  },
+  {
+    icon: "↻",
+    title: "Updates & Changes to These Terms",
+    body: [
+      "We may update the app or these Terms when necessary for new features, technical improvements, security, legal requirements, or service changes.",
+      "Updated Terms become effective when published on this page or within the app.",
+      "Continued use of Noor Quran after an update means that you accept the revised Terms.",
+    ],
   },
 ];
 
@@ -185,18 +142,27 @@ export function TermsOfService() {
       </div>
 
       <div className="px-4 space-y-4 max-w-2xl mx-auto">
-        {/* Hero card */}
+        {/* Welcome */}
         <div
           className="rounded-2xl p-5 border border-border bg-card"
         >
-          <div className="flex items-center gap-2 mb-3">
-            <ScrollText className="w-5 h-5 text-primary" />
-            <p className="text-foreground font-semibold text-base">Welcome to Noor Quran</p>
-          </div>
+          <p className="text-primary text-lg leading-none">♢</p>
+          <p className="text-primary text-lg leading-none mb-3">♢</p>
+          <p className="text-foreground font-semibold text-base mb-2">Welcome to Noor Quran</p>
           <p className="text-muted-foreground text-sm leading-relaxed">
-            These terms explain your rights and responsibilities when using Noor Quran. We wrote
-            them to be clear and honest — please take a moment to read them. Using the app means
-            you agree to these terms.
+            These Terms of Service govern your use of the Noor Quran application. By downloading, installing, or using the app, you agree to these Terms. If you do not agree, please stop using the app.
+          </p>
+        </div>
+
+        {/* Quran verse */}
+        <div
+          className="rounded-2xl p-5 border border-border bg-card text-center"
+        >
+          <p className="font-arabic text-lg text-foreground mb-1">
+            وَقُل رَّبِّ زِدْنِي عِلْمًا
+          </p>
+          <p className="text-muted-foreground text-sm">
+            “My Lord, increase me in knowledge.” — Quran 20:114
           </p>
         </div>
 
@@ -204,15 +170,31 @@ export function TermsOfService() {
         {SECTIONS.map((s) => (
           <div
             key={s.title}
-            className={`rounded-2xl border ${s.border} overflow-hidden bg-card`}
+            className="rounded-2xl border border-border overflow-hidden bg-card"
           >
             <div
               className="flex items-center gap-3 px-4 py-3 border-b border-border bg-muted"
             >
-              <span className={s.accent}>{s.icon}</span>
-              <p className={`font-semibold text-sm ${s.accent}`}>{s.title}</p>
+              <span className="text-primary text-lg">{s.icon}</span>
+              <p className="font-semibold text-sm text-primary">{s.title}</p>
             </div>
-            <p className="text-muted-foreground text-sm leading-relaxed px-4 py-4">{s.body}</p>
+            <div className="px-4 py-4 space-y-3">
+              {s.body.map((p, i) => (
+                <p
+                  key={i}
+                  className={`text-muted-foreground text-sm leading-relaxed ${
+                    p.startsWith("Misuse") ||
+                    p.startsWith("Reverse") ||
+                    p.startsWith("Remove") ||
+                    p.startsWith("Use the")
+                      ? "pl-4"
+                      : ""
+                  }`}
+                >
+                  {p}
+                </p>
+              ))}
+            </div>
           </div>
         ))}
 
@@ -221,40 +203,36 @@ export function TermsOfService() {
           className="rounded-2xl border border-border p-5 bg-card"
         >
           <div className="flex items-center gap-2 mb-3">
-            <Mail className="w-4 h-4 text-primary" />
-            <p className="text-foreground text-sm font-semibold">10. Contact Information</p>
+            <span className="text-primary text-lg">✉</span>
+            <p className="text-foreground text-sm font-semibold">Contact Us</p>
           </div>
           <p className="text-muted-foreground text-sm leading-relaxed mb-1">
-            Questions about these Terms of Service? Contact the Noor Quran Team:
+            If you have questions, suggestions, or concerns about these Terms of Service, please contact the Noor Quran Team:
           </p>
-          <p className="text-muted-foreground text-xs mb-3 font-medium">SJ64 Studios · The Noor Quran Team</p>
+          <p className="text-muted-foreground text-xs mb-3 font-medium">The Noor Quran Team</p>
           <button
-            onClick={() => openUrl("mailto:easygroupjoin@gmail.com?subject=Noor Quran Terms of Service")}
+            onClick={() =>
+              openUrl("mailto:easygroupjoin@gmail.com?subject=Noor Quran Terms of Service")
+            }
             className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium text-primary-foreground border border-border bg-primary hover:border-border transition-colors"
             data-testid="button-terms-contact"
           >
-            <Mail className="w-4 h-4" />
+            <span>✉</span>
             easygroupjoin@gmail.com
           </button>
         </div>
 
         {/* Effective date */}
-        <p className="text-muted-foreground text-xs text-center pt-2" data-testid="text-terms-updated">
-          Last updated: July 19, 2026 &nbsp;·&nbsp; Effective immediately
+        <p
+          className="text-muted-foreground text-xs text-center pt-2"
+          data-testid="text-terms-updated"
+        >
+          Last updated: 21 July 2026 · Effective immediately
         </p>
 
-        {/* Close button */}
-        <button
-          onClick={() => window.history.back()}
-          className="w-full py-4 rounded-2xl text-sm font-semibold text-primary-foreground transition-all active:scale-[0.98] bg-primary"
-          data-testid="button-terms-close"
-          
-        >
-          Close
-        </button>
-
+        {/* Copyright */}
         <p className="text-center text-muted-foreground text-xs pb-4">
-          Noor Quran © 2025–2026 · The Noor Quran Team
+          Noor Quran © 2026 · The Noor Quran Team
         </p>
       </div>
     </div>

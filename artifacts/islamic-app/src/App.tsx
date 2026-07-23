@@ -1,4 +1,4 @@
-import { Switch, Route, Router as WouterRouter } from "wouter";
+import { Switch, Route, Router as WouterRouter, useLocation } from "wouter";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -71,6 +71,12 @@ function NoorInitializer() {
   return null;
 }
 
+function RedirectHome() {
+  const [, setLocation] = useLocation();
+  useEffect(() => setLocation("/", { replace: true }), [setLocation]);
+  return null;
+}
+
 function Router() {
   return (
     <Switch>
@@ -97,10 +103,15 @@ function Router() {
       <Route path="/marketplace" component={Marketplace} />
       <Route path="/admin-products" component={AdminProducts} />
       <Route path="/juz/:number" component={JuzReader} />
-      {AI_TEACHER_ENABLED && (
+      {AI_TEACHER_ENABLED ? (
         <>
           <Route path="/teacher" component={Teacher} />
           <Route path="/teacher/lesson/:id" component={TeacherLesson} />
+        </>
+      ) : (
+        <>
+          <Route path="/teacher" component={RedirectHome} />
+          <Route path="/teacher/lesson/:id" component={RedirectHome} />
         </>
       )}
 

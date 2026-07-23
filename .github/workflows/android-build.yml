@@ -42,7 +42,7 @@ env:
   JAVA_VERSION:   '21'          # Java 21 — required by capacitor-android v8
   GRADLE_VERSION: '8.13'
   PNPM_VERSION:   '10.26.1'   # must match "packageManager" in root package.json
-  ANDROID_SDK:    '36'          # compileSdk (must be >=35 for Capacitor; targetSdk=34 in app/build.gradle)
+  ANDROID_SDK:    '36'          # compileSdk + targetSdk (both 36 in app/build.gradle)
   APP_DIR:        artifacts/islamic-app
   ANDROID_DIR:    artifacts/islamic-app/android
 
@@ -144,20 +144,25 @@ jobs:
           echo "✅ gradlew generated (Gradle ${{ env.GRADLE_VERSION }})"
 
       # ── 9. Resolve version name + code ────────────────────────────────────────
+      #    Defaults to the values already in app/build.gradle so that a plain
+      #    push to main does not change the version unless explicitly requested.
       - name: Resolve version
         id: version
+        working-directory: ${{ env.ANDROID_DIR }}
         run: |
+          EXISTING_NAME=$(grep -oP 'versionName "\K[^"]+' app/build.gradle)
+          EXISTING_CODE=$(grep -oP 'versionCode \K[0-9]+' app/build.gradle)
           if [[ "$GITHUB_REF" == refs/tags/v* ]]; then
             VER_NAME="${GITHUB_REF#refs/tags/v}"
           elif [[ -n "${{ github.event.inputs.version_name }}" ]]; then
             VER_NAME="${{ github.event.inputs.version_name }}"
           else
-            VER_NAME="1.0.1"
+            VER_NAME="$EXISTING_NAME"
           fi
           if [[ -n "${{ github.event.inputs.version_code }}" ]]; then
             VER_CODE="${{ github.event.inputs.version_code }}"
           else
-            VER_CODE=$(( $(date +%s) - 1704067200 ))
+            VER_CODE="$EXISTING_CODE"
           fi
           echo "name=$VER_NAME" >> $GITHUB_OUTPUT
           echo "code=$VER_CODE" >> $GITHUB_OUTPUT
@@ -217,23 +222,23 @@ jobs:
             --warning-mode summary
           echo "✅ Debug APK built"
 
-      # ── 12b. Release build (APK + AAB) ────────────────────────────────────────
+      # ── 12b. Release build (APK only) ────────────────────────────────────────
       #
       # -PMINIFY_RELEASE=true enables R8 minification + resource shrinking.
       # (Local builds omit this flag so the build stays under 2 min.)
-      - name: Build Release APK + AAB
+      - name: Build Release APK
         if: ${{ (github.event.inputs.build_type || 'release') == 'release' }}
         working-directory: ${{ env.ANDROID_DIR }}
         run: |
           # Clear stale Gradle transform caches (avoids jlink failure from cached android-34 jmod)
           rm -rf ~/.gradle/caches/*/transforms/ || true
-          ./gradlew assembleRelease bundleRelease \
+          ./gradlew assembleRelease \
             -PMINIFY_RELEASE=true \
             --no-daemon \
             --no-build-cache \
             --stacktrace \
             --warning-mode summary
-          echo "✅ Release APK + AAB built"
+          echo "✅ Release APK built"
         env:
           KEYSTORE_PATH:     app/upload-key.keystore
           KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
@@ -249,10 +254,7 @@ jobs:
           if [[ "$BUILD" == "release" ]]; then
             cp app/build/outputs/apk/release/app-release.apk \
                app/build/outputs/apk/release/noor-quran-${V}.apk
-            cp app/build/outputs/bundle/release/app-release.aab \
-               app/build/outputs/bundle/release/noor-quran-${V}.aab
             echo "APK: $(du -h app/build/outputs/apk/release/noor-quran-${V}.apk)"
-            echo "AAB: $(du -h app/build/outputs/bundle/release/noor-quran-${V}.aab)"
           else
             cp app/build/outputs/apk/debug/app-debug.apk \
                app/build/outputs/apk/debug/noor-quran-${V}-debug.apk
@@ -278,15 +280,6 @@ jobs:
           if-no-files-found: error
           retention-days: 90
 
-      - name: Upload Release AAB  (Play Store)
-        if: ${{ (github.event.inputs.build_type || 'release') == 'release' }}
-        uses: actions/upload-artifact@v4
-        with:
-          name: noor-quran-aab-${{ steps.version.outputs.name }}-${{ github.run_number }}
-          path: ${{ env.ANDROID_DIR }}/app/build/outputs/bundle/release/noor-quran-*.aab
-          if-no-files-found: error
-          retention-days: 90
-
       # ── 15. GitHub Release (tag pushes only) ──────────────────────────────────
       - name: Create GitHub Release
         if: startsWith(github.ref, 'refs/tags/v')
@@ -296,18 +289,16 @@ jobs:
           generate_release_notes: true
           files: |
             ${{ env.ANDROID_DIR }}/app/build/outputs/apk/release/noor-quran-*.apk
-            ${{ env.ANDROID_DIR }}/app/build/outputs/bundle/release/noor-quran-*.aab
           body: |
             ## Noor Quran ${{ steps.version.outputs.name }}
 
             | File | Use |
             |------|-----|
             | `noor-quran-${{ steps.version.outputs.name }}.apk` | Sideload directly on Android |
-            | `noor-quran-${{ steps.version.outputs.name }}.aab` | Upload to Google Play Console |
 
             **Package:** `com.sj64noorquran`
             **Version code:** ${{ steps.version.outputs.code }}
-            **Java:** 17 · **SDK:** 34 · **Gradle:** ${{ env.GRADLE_VERSION }}
+            **Java:** 17 · **SDK:** 36 · **Gradle:** ${{ env.GRADLE_VERSION }}
 
             ### What's inside
             - Native Capacitor Android shell — no browser UI, no URL bar
