@@ -43,29 +43,29 @@ const QURAN_LANG_FLAG: Record<TranslationLanguage, string> = {
 };
 
 const QURAN_LANG_ACCENT: Record<TranslationLanguage, string> = {
-  urdu:       "border-emerald-600 bg-emerald-900/30",
-  english:    "border-sky-600 bg-sky-900/20",
-  sindhi:     "border-teal-600 bg-teal-900/20",
-  hindi:      "border-orange-600 bg-orange-900/20",
-  turkish:    "border-red-600 bg-red-900/20",
-  bengali:    "border-violet-600 bg-violet-900/20",
-  indonesian: "border-rose-600 bg-rose-900/20",
-  french:     "border-blue-600 bg-blue-900/20",
-  spanish:    "border-yellow-600 bg-yellow-900/20",
-  malay:      "border-lime-600 bg-lime-900/20",
+  urdu:       "border-emerald-600 bg-emerald-100",
+  english:    "border-sky-600 bg-sky-100",
+  sindhi:     "border-teal-600 bg-teal-100",
+  hindi:      "border-orange-600 bg-orange-100",
+  turkish:    "border-red-600 bg-red-100",
+  bengali:    "border-violet-600 bg-violet-100",
+  indonesian: "border-rose-600 bg-rose-100",
+  french:     "border-blue-600 bg-blue-100",
+  spanish:    "border-yellow-600 bg-yellow-100",
+  malay:      "border-lime-600 bg-lime-100",
 };
 
 const UI_LANG_ACCENT: Record<UiLanguage, string> = {
-  english:    "border-sky-600 bg-sky-900/20",
-  arabic:     "border-emerald-600 bg-emerald-900/30",
-  urdu:       "border-emerald-600 bg-emerald-900/30",
-  hindi:      "border-orange-600 bg-orange-900/20",
-  bengali:    "border-violet-600 bg-violet-900/20",
-  turkish:    "border-red-600 bg-red-900/20",
-  indonesian: "border-rose-600 bg-rose-900/20",
-  french:     "border-blue-600 bg-blue-900/20",
-  spanish:    "border-yellow-600 bg-yellow-900/20",
-  malay:      "border-lime-600 bg-lime-900/20",
+  english:    "border-sky-600 bg-sky-100",
+  arabic:     "border-emerald-600 bg-emerald-100",
+  urdu:       "border-emerald-600 bg-emerald-100",
+  hindi:      "border-orange-600 bg-orange-100",
+  bengali:    "border-violet-600 bg-violet-100",
+  turkish:    "border-red-600 bg-red-100",
+  indonesian: "border-rose-600 bg-rose-100",
+  french:     "border-blue-600 bg-blue-100",
+  spanish:    "border-yellow-600 bg-yellow-100",
+  malay:      "border-lime-600 bg-lime-100",
 };
 
 const QURAN_INITIAL_COUNT = 4;
@@ -208,18 +208,15 @@ export function Settings() {
       : manualCity || null;
 
   return (
-    <div
-      className="min-h-screen pb-28 md:pb-10 animate-in fade-in duration-500"
-      style={{ background: "linear-gradient(150deg, #071a0e 0%, #0a1f12 50%, #061610 100%)" }}
-    >
+    <div className="min-h-screen pb-28 md:pb-10 animate-in fade-in duration-500 bg-background">
       {/* Header */}
       <div className="flex items-center gap-3 px-5 pt-6 pb-6">
-        <Link href="/more" className="text-emerald-600 hover:text-emerald-400 transition-colors" data-testid="link-back-more">
+        <Link href="/more" className="text-muted-foreground hover:text-primary transition-colors" data-testid="link-back-more">
           <ChevronLeft className="w-6 h-6" />
         </Link>
         <div className="flex-1">
-          <h1 className="text-2xl font-serif font-bold text-emerald-300">{t("settings_title")}</h1>
-          <p className="text-emerald-700 text-xs mt-0.5">{t("settings_subtitle")}</p>
+          <h1 className="text-2xl font-serif font-bold text-primary">{t("settings_title")}</h1>
+          <p className="text-muted-foreground text-xs mt-0.5">{t("settings_subtitle")}</p>
         </div>
       </div>
 
@@ -232,7 +229,7 @@ export function Settings() {
           badge={savedUiLang ? t("settings_saved_badge") : undefined}
         >
           <div className="p-4 space-y-2">
-            <p className="text-emerald-600 text-xs mb-3">{t("settings_app_language_sub")}</p>
+            <p className="text-muted-foreground text-xs mb-3">{t("settings_app_language_sub")}</p>
 
             {visibleUiLangs.map((lang) => {
               const isActive = uiLang === lang;
@@ -243,19 +240,19 @@ export function Settings() {
                   className={`w-full flex items-center gap-3 p-4 rounded-xl border transition-all ${
                     isActive
                       ? UI_LANG_ACCENT[lang]
-                      : "border-emerald-900/30 hover:border-emerald-700"
+                      : "border-border hover:border-border"
                   }`}
-                  style={isActive ? {} : { background: "rgba(255,255,255,0.02)" }}
+                  style={isActive ? {} : undefined}
                   data-testid={`setting-ui-lang-${lang}`}
                 >
                   <span className="text-xl shrink-0">{UI_LANG_FLAG[lang]}</span>
                   <div className="flex-1 min-w-0 text-left">
-                    <p className="text-white font-semibold text-sm">{UI_LANG_ENGLISH[lang]}</p>
-                    <p className="text-emerald-600 text-xs mt-0.5">{UI_LANG_NATIVE[lang]}</p>
+                    <p className="text-foreground font-semibold text-sm">{UI_LANG_ENGLISH[lang]}</p>
+                    <p className="text-muted-foreground text-xs mt-0.5">{UI_LANG_NATIVE[lang]}</p>
                   </div>
                   {isActive && (
-                    <div className="w-6 h-6 rounded-full bg-emerald-500 flex items-center justify-center shrink-0">
-                      <Check className="w-3.5 h-3.5 text-white" />
+                    <div className="w-6 h-6 rounded-full bg-primary flex items-center justify-center shrink-0">
+                      <Check className="w-3.5 h-3.5 text-foreground" />
                     </div>
                   )}
                 </button>
@@ -264,7 +261,7 @@ export function Settings() {
 
             <button
               onClick={() => setShowAllUiLangs((v) => !v)}
-              className="w-full flex items-center justify-center gap-1.5 py-2.5 text-xs text-emerald-600 hover:text-emerald-400 transition-colors"
+              className="w-full flex items-center justify-center gap-1.5 py-2.5 text-xs text-muted-foreground hover:text-primary transition-colors"
               data-testid="button-toggle-all-ui-langs"
             >
               <ChevronRight
@@ -281,24 +278,24 @@ export function Settings() {
         <Section title={t("settings_appearance")} icon={<Moon className="w-4 h-4" />}>
           <div className="px-4 py-4 flex items-center justify-between">
             <div>
-              <p className="text-white text-sm font-medium">{t("settings_dark_mode")}</p>
-              <p className="text-emerald-700 text-xs mt-0.5">
+              <p className="text-foreground text-sm font-medium">{t("settings_dark_mode")}</p>
+              <p className="text-muted-foreground text-xs mt-0.5">
                 {t("settings_dark_mode_curr")} {theme === "dark" ? t("settings_dark") : t("settings_light")}
               </p>
             </div>
             <button
               onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
               className={`relative w-14 h-7 rounded-full transition-all ${
-                theme === "dark" ? "bg-emerald-600" : "bg-emerald-900/50"
+                theme === "dark" ? "bg-primary" : "bg-muted"
               }`}
               data-testid="toggle-dark-mode"
             >
               <span
-                className="absolute top-1 w-5 h-5 rounded-full shadow-md flex items-center justify-center transition-transform bg-white"
+                className="absolute top-1 w-5 h-5 rounded-full shadow-md flex items-center justify-center transition-transform bg-foreground"
                 style={{ transform: theme === "dark" ? "translateX(32px)" : "translateX(4px)" }}
               >
                 {theme === "dark"
-                  ? <Moon className="w-3 h-3 text-emerald-700" />
+                  ? <Moon className="w-3 h-3 text-muted-foreground" />
                   : <Sun  className="w-3 h-3 text-amber-500"   />}
               </span>
             </button>
@@ -312,7 +309,7 @@ export function Settings() {
           badge={savedLang ? t("settings_saved_badge") : undefined}
         >
           <div className="p-4 space-y-2">
-            <p className="text-emerald-600 text-xs mb-3">{t("settings_quran_trans_sub")}</p>
+            <p className="text-muted-foreground text-xs mb-3">{t("settings_quran_trans_sub")}</p>
 
             {visibleLangs.map((lang) => {
               const isActive = defaultLang === lang;
@@ -323,29 +320,28 @@ export function Settings() {
                   className={`w-full flex items-center gap-3 p-4 rounded-xl border transition-all ${
                     isActive
                       ? QURAN_LANG_ACCENT[lang]
-                      : "border-emerald-900/30 hover:border-emerald-700"
+                      : "border-border hover:border-border"
                   }`}
-                  style={isActive ? {} : { background: "rgba(255,255,255,0.02)" }}
+                  style={isActive ? {} : undefined}
                   data-testid={`setting-lang-${lang}`}
                 >
                   <span className="text-xl shrink-0">{QURAN_LANG_FLAG[lang]}</span>
                   <div className="flex-1 min-w-0 text-left">
                     <div className="flex items-center gap-2">
-                      <p className="text-white font-semibold text-sm">{TRANSLATION_ENGLISH_NAMES[lang]}</p>
+                      <p className="text-foreground font-semibold text-sm">{TRANSLATION_ENGLISH_NAMES[lang]}</p>
                       {QURAN_LANG_BADGE[lang] && (
                         <span
-                          className="text-[10px] font-semibold text-teal-400 border border-teal-800/50 px-1.5 py-0.5 rounded-full"
-                          style={{ background: "rgba(45,212,191,0.08)" }}
+                          className="text-[10px] font-semibold text-primary border border-teal-800/50 px-1.5 py-0.5 rounded-full bg-muted/60"
                         >
                           {QURAN_LANG_BADGE[lang]}
                         </span>
                       )}
                     </div>
-                    <p className="text-emerald-600 text-xs mt-0.5">{TRANSLATION_LABELS[lang]}</p>
+                      <p className="text-muted-foreground text-xs mt-0.5">{TRANSLATION_LABELS[lang]}</p>
                   </div>
                   {isActive && (
-                    <div className="w-6 h-6 rounded-full bg-emerald-500 flex items-center justify-center shrink-0">
-                      <Check className="w-3.5 h-3.5 text-white" />
+                    <div className="w-6 h-6 rounded-full bg-primary flex items-center justify-center shrink-0">
+                      <Check className="w-3.5 h-3.5 text-foreground" />
                     </div>
                   )}
                 </button>
@@ -354,7 +350,7 @@ export function Settings() {
 
             <button
               onClick={() => setShowAllLangs((v) => !v)}
-              className="w-full flex items-center justify-center gap-1.5 py-2.5 text-xs text-emerald-600 hover:text-emerald-400 transition-colors"
+              className="w-full flex items-center justify-center gap-1.5 py-2.5 text-xs text-muted-foreground hover:text-primary transition-colors"
               data-testid="button-toggle-all-langs"
             >
               <ChevronRight
@@ -377,45 +373,44 @@ export function Settings() {
 
             {/* Current location display */}
             <div
-              className="rounded-xl px-4 py-3 border border-emerald-800/30"
-              style={{ background: "rgba(26,92,56,0.18)" }}
+              className="rounded-xl px-4 py-3 border border-border bg-primary/10"
             >
               {gpsStatus === "detecting" ? (
                 <div className="flex items-center gap-2.5">
-                  <Loader2 className="w-4 h-4 text-emerald-500 animate-spin shrink-0" />
-                  <p className="text-emerald-400 text-sm">{t("settings_gps_detecting")}</p>
+                  <Loader2 className="w-4 h-4 text-primary animate-spin shrink-0" />
+                  <p className="text-primary text-sm">{t("settings_gps_detecting")}</p>
                 </div>
               ) : gpsStatus === "denied" ? (
                 <div className="flex items-center gap-2.5">
                   <WifiOff className="w-4 h-4 text-amber-500 shrink-0" />
-                  <p className="text-amber-400 text-sm">{t("settings_gps_denied")}</p>
+                  <p className="text-muted-foreground text-sm">{t("settings_gps_denied")}</p>
                 </div>
               ) : gpsStatus === "error" ? (
                 <div className="flex items-center gap-2.5">
                   <WifiOff className="w-4 h-4 text-amber-500 shrink-0" />
                   <div className="flex-1">
-                    <p className="text-amber-400 text-sm">{t("settings_gps_unavailable")}</p>
+                    <p className="text-muted-foreground text-sm">{t("settings_gps_unavailable")}</p>
                   </div>
-                  <button onClick={detectGPS} className="text-amber-400 hover:text-amber-200">
+                    <button onClick={detectGPS} className="text-primary hover:text-primary">
                     <RefreshCw className="w-4 h-4" />
                   </button>
                 </div>
               ) : activeCity ? (
                 <div className="flex items-center gap-2.5">
                   {gpsStatus === "granted"
-                    ? <LocateFixed className="w-4 h-4 text-emerald-400 shrink-0" />
-                    : <MapPin className="w-4 h-4 text-emerald-600 shrink-0" />}
+                    ? <LocateFixed className="w-4 h-4 text-primary shrink-0" />
+                    : <MapPin className="w-4 h-4 text-primary shrink-0" />}
                   <div className="flex-1 min-w-0">
-                    <p className="text-emerald-200 text-sm font-semibold truncate">{activeCity}</p>
-                    <p className="text-emerald-700 text-xs">
+                    <p className="text-foreground text-sm font-semibold truncate">{activeCity}</p>
+                    <p className="text-muted-foreground text-xs">
                       {gpsStatus === "granted" ? t("settings_gps_auto") : t("settings_gps_manual")}
                     </p>
                   </div>
                 </div>
               ) : (
                 <div className="flex items-center gap-2.5">
-                  <MapPin className="w-4 h-4 text-emerald-800 shrink-0" />
-                  <p className="text-emerald-700 text-sm">{t("settings_no_location")}</p>
+                  <MapPin className="w-4 h-4 text-muted-foreground shrink-0" />
+                  <p className="text-muted-foreground text-sm">{t("settings_no_location")}</p>
                 </div>
               )}
             </div>
@@ -424,30 +419,28 @@ export function Settings() {
             <button
               onClick={detectGPS}
               disabled={gpsStatus === "detecting"}
-              className="w-full flex items-center gap-3 p-4 rounded-xl border border-emerald-700/50 transition-all active:scale-[0.98] hover:border-emerald-500/70 disabled:opacity-60"
-              style={{ background: "linear-gradient(135deg, rgba(26,92,56,0.4) 0%, rgba(5,46,22,0.4) 100%)" }}
+              className="w-full flex items-center gap-3 p-4 rounded-xl border border-border bg-primary/10 transition-all active:scale-[0.98] hover:border-border disabled:opacity-60"
               data-testid="button-use-gps-location"
             >
               <div
-                className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0 text-emerald-300"
-                style={{ background: "rgba(52,211,153,0.15)" }}
+                className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0 text-primary bg-primary/15"
               >
                 {gpsStatus === "detecting"
                   ? <Loader2 className="w-5 h-5 animate-spin" />
                   : <LocateFixed className="w-5 h-5" />}
               </div>
               <div className="text-left flex-1">
-                <p className="text-white text-sm font-semibold">{t("settings_use_location")}</p>
-                <p className="text-emerald-600 text-xs mt-0.5">{t("settings_use_location_sub")}</p>
+                <p className="text-foreground text-sm font-semibold">{t("settings_use_location")}</p>
+                <p className="text-muted-foreground text-xs mt-0.5">{t("settings_use_location_sub")}</p>
               </div>
-              <ChevronRight className="w-4 h-4 text-emerald-700 shrink-0" />
+              <ChevronRight className="w-4 h-4 text-muted-foreground shrink-0" />
             </button>
 
             {/* Divider */}
             <div className="flex items-center gap-3 py-1">
-              <div className="flex-1 border-t border-emerald-900/40" />
-              <p className="text-emerald-800 text-xs">{t("settings_or_choose")}</p>
-              <div className="flex-1 border-t border-emerald-900/40" />
+              <div className="flex-1 border-t border-border" />
+              <p className="text-muted-foreground text-xs">{t("settings_or_choose")}</p>
+              <div className="flex-1 border-t border-border" />
             </div>
 
             {/* Preset cities */}
@@ -460,13 +453,13 @@ export function Settings() {
                     onClick={() => handlePresetCity(city)}
                     className={`p-3.5 rounded-xl border text-sm font-medium transition-all ${
                       isActive
-                        ? "border-emerald-600 bg-emerald-900/30 text-white"
-                        : "border-emerald-900/30 text-emerald-600 hover:border-emerald-700 hover:text-emerald-400"
+                      ? "border-emerald-600 bg-muted text-foreground"
+                      : "border-border text-muted-foreground hover:border-border hover:text-primary"
                     }`}
-                    style={{ background: isActive ? undefined : "rgba(255,255,255,0.02)" }}
+                     style={undefined}
                     data-testid={`setting-city-${city.toLowerCase().replace(/\s+/g, "-")}`}
                   >
-                    {isActive && <span className="text-emerald-400 mr-1">✓</span>}
+                    {isActive && <span className="text-primary mr-1">✓</span>}
                     {city}
                   </button>
                 );
@@ -478,28 +471,25 @@ export function Settings() {
 
         {/* ── Prayer Calculation Method ─────────────────────────────────────── */}
         <Section
-          title="Calculation Method"
+          title={t("settings_calc_method")}
           icon={<Calculator className="w-4 h-4" />}
           badge={savedMethod ? t("settings_saved_badge") : undefined}
         >
           <div className="p-4 space-y-3">
-            <p className="text-emerald-600 text-xs">
-              Auto uses the official authority for your region — Umm al-Qura in Saudi
-              Arabia, Karachi in Pakistan, Diyanet in Turkey, ISNA in North America.
-              Pick a specific method only if you follow a different authority.
+            <p className="text-muted-foreground text-xs">
+              {t("settings_calc_method_sub")}
             </p>
             <select
               value={String(calcMethod)}
               onChange={(e) => handleCalcMethod(e.target.value)}
-              className="w-full p-3.5 rounded-xl border border-emerald-800/40 text-white text-sm outline-none focus:border-emerald-600 transition-colors"
-              style={{ background: "rgba(255,255,255,0.03)" }}
+              className="w-full p-3.5 rounded-xl border border-border text-foreground text-sm outline-none focus:border-primary transition-colors bg-card"
               data-testid="select-calc-method"
             >
-              <option value="auto" className="bg-[#0a1f12] text-white">
-                Auto — best for my location (recommended)
+              <option value="auto" className="bg-background text-foreground">
+                {t("settings_calc_method_auto")}
               </option>
               {CALC_METHODS.map((m) => (
-                <option key={m.id} value={m.id} className="bg-[#0a1f12] text-white">
+                <option key={m.id} value={m.id} className="bg-background text-foreground">
                   {m.name}
                 </option>
               ))}
@@ -512,25 +502,25 @@ export function Settings() {
           <Link href="/notifications">
             <div className="px-4 py-4 flex items-center justify-between hover:opacity-80 transition-opacity">
               <div>
-                <p className="text-white text-sm font-medium">{t("settings_reminders")}</p>
-                <p className="text-emerald-700 text-xs mt-0.5">{t("settings_reminders_sub")}</p>
+                <p className="text-foreground text-sm font-medium">{t("settings_reminders")}</p>
+                <p className="text-muted-foreground text-xs mt-0.5">{t("settings_reminders_sub")}</p>
               </div>
-              <ChevronRight className="w-5 h-5 text-emerald-700" />
+              <ChevronRight className="w-5 h-5 text-muted-foreground" />
             </div>
           </Link>
-          <div className="border-t border-emerald-900/30" />
+          <div className="border-t border-border" />
           <Link href="/azan-settings">
             <div className="px-4 py-4 flex items-center justify-between hover:opacity-80 transition-opacity">
               <div>
-                <p className="text-white text-sm font-medium">Azan Notifications</p>
-                <p className="text-emerald-700 text-xs mt-0.5">Automatic Azan at prayer times</p>
+                <p className="text-foreground text-sm font-medium">{t("settings_azan_notif")}</p>
+                <p className="text-muted-foreground text-xs mt-0.5">{t("settings_azan_notif_sub")}</p>
               </div>
-              <ChevronRight className="w-5 h-5 text-emerald-700" />
+              <ChevronRight className="w-5 h-5 text-muted-foreground" />
             </div>
           </Link>
         </Section>
 
-        <p className="text-emerald-900 text-xs text-center pt-2 pb-6">
+        <p className="text-muted-foreground text-xs text-center pt-2 pb-6">
           {t("settings_footer")}
         </p>
       </div>
@@ -546,16 +536,15 @@ function Section({
 }) {
   return (
     <div
-      className="rounded-2xl border border-emerald-900/40 overflow-hidden"
-      style={{ background: "rgba(255,255,255,0.03)" }}
+      className="rounded-2xl border border-border overflow-hidden bg-card"
     >
-      <div className="flex items-center justify-between px-4 py-3 border-b border-emerald-900/30">
+      <div className="flex items-center justify-between px-4 py-3 border-b border-border">
         <div className="flex items-center gap-2">
-          <span className="text-emerald-600">{icon}</span>
-          <span className="text-emerald-400 text-sm font-semibold uppercase tracking-wider">{title}</span>
+          <span className="text-primary">{icon}</span>
+          <span className="text-primary text-sm font-semibold uppercase tracking-wider">{title}</span>
         </div>
         {badge && (
-          <span className="text-xs text-emerald-400 font-medium animate-in fade-in duration-200">
+          <span className="text-xs text-primary font-medium animate-in fade-in duration-200">
             {badge}
           </span>
         )}

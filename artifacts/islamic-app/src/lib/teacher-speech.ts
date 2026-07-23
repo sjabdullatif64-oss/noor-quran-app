@@ -138,8 +138,15 @@ interface SpeechRecognitionPlugin {
  * the whole Teacher flow silently fall back to listen-only mode.
  */
 async function getNativePlugin(): Promise<SpeechRecognitionPlugin | null> {
-  if (!Capacitor.isNativePlatform()) return null;
-  return NativeSpeechRecognition as unknown as SpeechRecognitionPlugin;
+  const isNative = Capacitor.isNativePlatform();
+  console.log("[Noor/Speech] getNativePlugin() — isNative=" + isNative);
+  if (!isNative) {
+    console.log("[Noor/Speech] getNativePlugin() — web, returning null");
+    return null;
+  }
+  const plugin = NativeSpeechRecognition as unknown as SpeechRecognitionPlugin;
+  console.log("[Noor/Speech] getNativePlugin() — native, returning plugin object: " + (plugin ? "PRESENT" : "MISSING"));
+  return plugin;
 }
 
 type WebSpeechRecognition = {
@@ -170,9 +177,18 @@ function getWebRecognizerCtor(): (new () => WebSpeechRecognition) | null {
  * surfaced at listen time instead.
  */
 export async function getSpeechSupport(): Promise<SpeechSupport> {
+  console.log("[Noor/Speech] getSpeechSupport() — start");
   const native = await getNativePlugin();
-  if (native) return "native";
-  if (getWebRecognizerCtor()) return "web";
+  if (native) {
+    console.log("[Noor/Speech] getSpeechSupport() — native");
+    return "native";
+  }
+  const webCtor = getWebRecognizerCtor();
+  if (webCtor) {
+    console.log("[Noor/Speech] getSpeechSupport() — web");
+    return "web";
+  }
+  console.log("[Noor/Speech] getSpeechSupport() — none");
   return "none";
 }
 
@@ -207,30 +223,51 @@ export async function openAppSettings(): Promise<boolean> {
 
 export type PermissionState = "granted" | "denied" | "prompt";
 
+function logPending<T>(label: string, ms: number, promise: Promise<T>): Promise<T> {
+  const timer = setTimeout(() => {
+    console.warn("[Noor/Speech] " + label + " — STILL PENDING after " + ms + "ms");
+  }, ms);
+  return promise.finally(() => clearTimeout(timer));
+}
+
 /** Check mic/speech permission WITHOUT prompting (native only; web reports "prompt"). */
 export async function checkSpeechPermission(): Promise<PermissionState> {
+  console.log("[Noor/Speech] checkSpeechPermission() — start");
   const native = await getNativePlugin();
-  if (!native) return "prompt";
+  if (!native) {
+    console.log("[Noor/Speech] checkSpeechPermission() — no native plugin, returning prompt");
+    return "prompt";
+  }
   try {
-    const { speechRecognition } = await native.checkPermissions();
+    console.log("[Noor/Speech] checkSpeechPermission() — BEFORE native.checkPermissions()");
+    const { speechRecognition } = await logPending("native.checkPermissions()", 5000, native.checkPermissions());
+    console.log("[Noor/Speech] checkSpeechPermission() — AFTER native.checkPermissions(), speechRecognition=" + speechRecognition);
     if (speechRecognition === "granted") return "granted";
     if (speechRecognition === "denied") return "denied";
     return "prompt";
-  } catch {
+  } catch (e) {
+    console.error("[Noor/Speech] checkSpeechPermission() — native.checkPermissions() REJECTED:", e);
     return "prompt";
   }
 }
 
 /** Request mic/speech permission (shows the OS dialog). */
 export async function requestSpeechPermission(): Promise<PermissionState> {
+  console.log("[Noor/Speech] requestSpeechPermission() — start");
   const native = await getNativePlugin();
-  if (!native) return "prompt"; // web: permission is requested implicitly by start()
+  if (!native) {
+    console.log("[Noor/Speech] requestSpeechPermission() — no native plugin, returning prompt");
+    return "prompt"; // web: permission is requested implicitly by start()
+  }
   try {
-    const { speechRecognition } = await native.requestPermissions();
+    console.log("[Noor/Speech] requestSpeechPermission() — BEFORE native.requestPermissions()");
+    const { speechRecognition } = await logPending("native.requestPermissions()", 5000, native.requestPermissions());
+    console.log("[Noor/Speech] requestSpeechPermission() — AFTER native.requestPermissions(), speechRecognition=" + speechRecognition);
     if (speechRecognition === "granted") return "granted";
     if (speechRecognition === "denied") return "denied";
     return "prompt";
-  } catch {
+  } catch (e) {
+    console.error("[Noor/Speech] requestSpeechPermission() — native.requestPermissions() REJECTED:", e);
     return "denied";
   }
 }
@@ -249,23 +286,29 @@ let _nativeActive = false;
  * Resolves (never rejects) — errors come back in `error`.
  */
 export async function listenOnce(timeoutMs: number): Promise<ListenResult> {
+  console.log("[Noor/Speech] listenOnce() — start, timeoutMs=" + timeoutMs);
   const native = await getNativePlugin();
   if (native) {
+    console.log("[Noor/Speech] listenOnce() — native path");
     _nativeActive = true;
     try {
       const timer = new Promise<{ matches?: string[] }>((resolve) =>
         setTimeout(() => {
+          console.log("[Noor/Speech] listenOnce() — timer fired after " + timeoutMs + "ms, stopping recognizer");
           native.stop().catch(() => {});
           resolve({ matches: [] });
         }, timeoutMs),
       );
+      console.log("[Noor/Speech] listenOnce() — BEFORE native.start(), options=", JSON.stringify({ language: SPEECH_LANG, maxResults: 5, partialResults: false, popup: false }));
       const res = await Promise.race([
         native.start({ language: SPEECH_LANG, maxResults: 5, partialResults: false, popup: false }),
         timer,
       ]);
+      console.log("[Noor/Speech] listenOnce() — AFTER native.start() / race, res=", JSON.stringify(res));
       const matches = res?.matches ?? [];
       return { alternatives: matches, confidence: -1, error: matches.length ? undefined : "no-speech" };
     } catch (e) {
+      console.error("[Noor/Speech] listenOnce() — native.start() threw:", e);
       const msg = String((e as { message?: string })?.message ?? "").toLowerCase();
       if (msg.includes("permission") || msg.includes("denied")) {
         return { alternatives: [], confidence: -1, error: "not-allowed" };

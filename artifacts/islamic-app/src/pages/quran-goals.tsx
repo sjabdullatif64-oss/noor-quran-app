@@ -111,46 +111,41 @@ export function QuranGoals() {
   const monthLabel = new Date(goal.month + "-01").toLocaleDateString("en", { month: "long", year: "numeric" });
 
   return (
-    <div
-      className="min-h-screen pb-28 md:pb-10 animate-in fade-in duration-500"
-      style={{ background: "linear-gradient(150deg, #071a0e 0%, #0a1f12 50%, #061610 100%)" }}
-    >
+    <div className="min-h-screen pb-28 md:pb-10 animate-in fade-in duration-500 bg-background">
       <div className="flex items-center gap-3 px-5 pt-6 pb-5">
-        <Link href="/more" className="text-emerald-600 hover:text-emerald-400 transition-colors">
+        <Link href="/more" className="text-muted-foreground hover:text-foreground transition-colors">
           <ChevronLeft className="w-6 h-6" />
         </Link>
         <div className="flex-1">
-          <h1 className="text-2xl font-serif font-bold text-emerald-300">Quran Reading Goals</h1>
-          <p className="text-emerald-700 text-xs mt-0.5">{monthLabel}</p>
+          <h1 className="text-2xl font-serif font-bold text-primary">Quran Reading Goals</h1>
+          <p className="text-muted-foreground text-xs mt-0.5">{monthLabel}</p>
         </div>
         <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ background: "rgba(26,92,56,0.25)" }}>
-          <Target className="w-5 h-5 text-emerald-400" />
+          <Target className="w-5 h-5 text-primary" />
         </div>
       </div>
 
       <div className="px-4 space-y-4">
         {/* Progress card */}
-        <div className="rounded-3xl border border-emerald-900/40 overflow-hidden"
-          style={{ background: achieved ? "rgba(52,211,153,0.08)" : "rgba(255,255,255,0.04)" }}>
-          <div className="h-1 w-full"
-            style={{ background: `linear-gradient(90deg, #1a5c38, ${achieved ? "#34d399" : "#1a5c38"}, #1a5c38)` }} />
+        <div className="rounded-3xl border border-border overflow-hidden bg-card">
+          <div className="h-1 w-full bg-primary" />
 
           <div className="p-5 space-y-4">
             {achieved && (
               <div className="flex items-center gap-2 justify-center">
-                <Trophy className="w-5 h-5 text-amber-400" />
-                <p className="text-amber-300 font-bold text-sm">Monthly Goal Achieved! MashaAllah 🌟</p>
+                <Trophy className="w-5 h-5 text-primary" />
+                <p className="text-primary font-bold text-sm">Monthly Goal Achieved! MashaAllah 🌟</p>
               </div>
             )}
 
             {/* Big number */}
             <div className="text-center space-y-1">
-              <p className="text-5xl font-bold" style={{ color: "#34d399" }}>{goal.readPages}</p>
-              <p className="text-emerald-700 text-sm">of <span className="text-emerald-400 font-semibold">{goal.targetPages}</span> pages read</p>
+              <p className="text-5xl font-bold text-primary">{goal.readPages}</p>
+              <p className="text-muted-foreground text-sm">of <span className="text-primary font-semibold">{goal.targetPages}</span> pages read</p>
             </div>
 
             {/* Progress bar */}
-            <div className="rounded-full overflow-hidden" style={{ height: 10, background: "rgba(26,92,56,0.25)" }}>
+            <div className="rounded-full overflow-hidden bg-muted" style={{ height: 10 }}>
               <div
                 className="h-full rounded-full transition-all duration-700"
                 style={{
@@ -161,22 +156,20 @@ export function QuranGoals() {
                 }}
               />
             </div>
-            <p className="text-center text-emerald-500 text-sm font-semibold">{pct}% complete</p>
+            <p className="text-center text-primary text-sm font-semibold">{pct}% complete</p>
 
             {/* +/- controls */}
             <div className="flex items-center justify-center gap-3">
               {[-5, -1].map(n => (
                 <button key={n} onClick={() => addPages(n)}
-                  className="w-11 h-11 rounded-xl border border-emerald-900/40 text-emerald-400 font-bold text-base transition-all active:scale-95"
-                  style={{ background: "rgba(255,255,255,0.04)" }}>
+                  className="w-11 h-11 rounded-xl border border-border text-primary font-bold text-base transition-all active:scale-95 bg-card">
                   {n}
                 </button>
               ))}
-              <BookOpen className="w-5 h-5 text-emerald-700 mx-1" />
+              <BookOpen className="w-5 h-5 text-muted-foreground mx-1" />
               {[1, 5, 10].map(n => (
                 <button key={n} onClick={() => addPages(n)}
-                  className="w-11 h-11 rounded-xl border border-emerald-700/40 text-emerald-300 font-bold text-base transition-all active:scale-95"
-                  style={{ background: "rgba(52,211,153,0.1)" }}>
+                  className="w-11 h-11 rounded-xl border border-border text-primary font-bold text-base transition-all active:scale-95 bg-primary/10">
                   +{n}
                 </button>
               ))}
@@ -186,10 +179,9 @@ export function QuranGoals() {
 
         {/* Set target */}
         <button onClick={() => setShowTarget(!showTarget)}
-          className="w-full flex items-center justify-between px-4 py-3.5 rounded-2xl border border-emerald-900/40 transition-all active:scale-[0.98]"
-          style={{ background: "rgba(255,255,255,0.03)" }}>
-          <span className="text-emerald-400 text-sm font-semibold">📐 Change Monthly Target</span>
-          {showTarget ? <ChevronUp className="w-4 h-4 text-emerald-700" /> : <ChevronDown className="w-4 h-4 text-emerald-700" />}
+          className="w-full flex items-center justify-between px-4 py-3.5 rounded-2xl border border-border transition-all active:scale-[0.98] bg-card">
+          <span className="text-primary text-sm font-semibold">📐 Change Monthly Target</span>
+          {showTarget ? <ChevronUp className="w-4 h-4 text-muted-foreground" /> : <ChevronDown className="w-4 h-4 text-muted-foreground" />}
         </button>
 
         {showTarget && (
@@ -197,9 +189,9 @@ export function QuranGoals() {
             {PAGE_PRESETS.map(p => (
               <button key={p} onClick={() => { updateGoal({ targetPages: p }); setShowTarget(false); }}
                 className={`py-3 rounded-2xl border text-sm font-bold transition-all active:scale-95 ${
-                  goal.targetPages === p ? "border-emerald-500 text-emerald-300" : "border-emerald-900/40 text-emerald-700"
+                  goal.targetPages === p ? "border-primary text-primary" : "border-border text-muted-foreground"
                 }`}
-                style={{ background: goal.targetPages === p ? "rgba(52,211,153,0.12)" : "rgba(255,255,255,0.03)" }}>
+                style={{ background: goal.targetPages === p ? "rgba(52,211,153,0.12)" : undefined }}>
                 {p === 604 ? "Full\nQuran" : `${p} pg`}
               </button>
             ))}
@@ -208,10 +200,9 @@ export function QuranGoals() {
 
         {/* Mark surahs as read */}
         <button onClick={() => setShowSurahs(!showSurahs)}
-          className="w-full flex items-center justify-between px-4 py-3.5 rounded-2xl border border-emerald-900/40 transition-all active:scale-[0.98]"
-          style={{ background: "rgba(255,255,255,0.03)" }}>
-          <span className="text-emerald-400 text-sm font-semibold">📖 Track by Surah ({goal.readSurahs.length} done)</span>
-          {showSurahs ? <ChevronUp className="w-4 h-4 text-emerald-700" /> : <ChevronDown className="w-4 h-4 text-emerald-700" />}
+          className="w-full flex items-center justify-between px-4 py-3.5 rounded-2xl border border-border transition-all active:scale-[0.98] bg-card">
+          <span className="text-primary text-sm font-semibold">📖 Track by Surah ({goal.readSurahs.length} done)</span>
+          {showSurahs ? <ChevronUp className="w-4 h-4 text-muted-foreground" /> : <ChevronDown className="w-4 h-4 text-muted-foreground" />}
         </button>
 
         {showSurahs && (
@@ -221,15 +212,15 @@ export function QuranGoals() {
               return (
                 <button key={s.n} onClick={() => toggleSurah(s.n, s.pages)}
                   className={`w-full flex items-center gap-3 px-4 py-3 rounded-2xl border text-left transition-all active:scale-[0.98] ${
-                    done ? "border-emerald-700/50" : "border-emerald-900/40"
+                    done ? "border-border" : "border-border"
                   }`}
-                  style={{ background: done ? "rgba(52,211,153,0.08)" : "rgba(255,255,255,0.03)" }}>
-                  <span className="text-emerald-800 text-xs w-5 shrink-0">{s.n}.</span>
-                  <span className={`flex-1 text-sm font-semibold ${done ? "text-emerald-300" : "text-white"}`}>{s.name}</span>
-                  <span className="text-emerald-800 text-xs">{s.pages} pg{s.pages > 1 ? "s" : ""}</span>
+                  style={{ background: done ? "rgba(52,211,153,0.08)" : undefined }}>
+                  <span className="text-muted-foreground text-xs w-5 shrink-0">{s.n}.</span>
+                  <span className={`flex-1 text-sm font-semibold ${done ? "text-primary" : "text-foreground"}`}>{s.name}</span>
+                  <span className="text-muted-foreground text-xs">{s.pages} pg{s.pages > 1 ? "s" : ""}</span>
                   {done
-                    ? <Check className="w-5 h-5 text-emerald-400 shrink-0" />
-                    : <div className="w-5 h-5 rounded-full border border-emerald-900/40 shrink-0" />}
+                    ? <Check className="w-5 h-5 text-primary shrink-0" />
+                    : <div className="w-5 h-5 rounded-full border border-border shrink-0" />}
                 </button>
               );
             })}
@@ -237,12 +228,11 @@ export function QuranGoals() {
         )}
 
         {/* Motivational quote */}
-        <div className="rounded-2xl px-4 py-4 border border-emerald-900/30 text-center"
-          style={{ background: "rgba(26,92,56,0.06)" }}>
-          <p className="text-emerald-400 text-sm font-arabic" style={{ fontFamily: "'Amiri', serif" }}>
+        <div className="rounded-2xl px-4 py-4 border border-border text-center bg-card">
+          <p className="text-primary text-sm font-arabic" style={{ fontFamily: "'Amiri', serif" }}>
             خَيْرُكُمْ مَنْ تَعَلَّمَ الْقُرْآنَ وَعَلَّمَهُ
           </p>
-          <p className="text-emerald-700 text-xs mt-2">"The best of you are those who learn the Quran and teach it." — Prophet ﷺ</p>
+          <p className="text-muted-foreground text-xs mt-2">"The best of you are those who learn the Quran and teach it." — Prophet ﷺ</p>
         </div>
       </div>
     </div>

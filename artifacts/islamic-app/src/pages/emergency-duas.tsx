@@ -63,34 +63,32 @@ export function EmergencyDuas() {
 
   return (
     <div
-      className="min-h-screen pb-28 md:pb-10 animate-in fade-in duration-500"
-      style={{ background: "linear-gradient(150deg, #071a0e 0%, #0a1f12 50%, #061610 100%)" }}
+      className="min-h-screen pb-28 md:pb-10 animate-in fade-in duration-500 bg-background text-foreground"
     >
       {/* Header */}
       <div className="flex items-center gap-3 px-5 pt-6 pb-5">
-        <Link href="/more" className="text-emerald-600 hover:text-emerald-400 transition-colors">
+        <Link href="/more" className="text-muted-foreground hover:text-primary transition-colors">
           <ChevronLeft className="w-6 h-6" />
         </Link>
         <div className="flex-1">
-          <h1 className="text-2xl font-serif font-bold text-emerald-300">Emergency Duas</h1>
-          <p className="text-emerald-700 text-xs mt-0.5">Authentic duas for every situation</p>
+          <h1 className="text-2xl font-serif font-bold text-foreground">Emergency Duas</h1>
+          <p className="text-muted-foreground text-xs mt-0.5">Authentic duas for every situation</p>
         </div>
-        <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ background: "rgba(26,92,56,0.3)" }}>
-          <Shield className="w-5 h-5 text-emerald-400" />
+        <div className="w-10 h-10 rounded-xl flex items-center justify-center bg-muted">
+          <Shield className="w-5 h-5 text-primary" />
         </div>
       </div>
 
       {/* Search */}
       <div className="px-4 mb-4">
-        <div className="flex items-center gap-3 px-4 py-3 rounded-2xl border border-emerald-900/40"
-          style={{ background: "rgba(255,255,255,0.04)" }}>
-          <Search className="w-4 h-4 text-emerald-700 shrink-0" />
+        <div className="flex items-center gap-3 px-4 py-3 rounded-2xl border border-border bg-card">
+          <Search className="w-4 h-4 text-muted-foreground shrink-0" />
           <input
             type="text"
             placeholder="Search duas..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="flex-1 bg-transparent text-emerald-200 placeholder-emerald-800 text-sm outline-none"
+            className="flex-1 bg-transparent text-foreground placeholder:text-muted-foreground text-sm outline-none"
           />
         </div>
       </div>
@@ -103,12 +101,10 @@ export function EmergencyDuas() {
             onClick={() => setCategory(cat)}
             className={`shrink-0 px-3 py-1.5 rounded-full text-xs font-semibold border transition-all ${
               category === cat
-                ? "text-white border-emerald-600"
-                : "text-emerald-600 border-emerald-900/40 hover:border-emerald-700"
+                ? "text-primary-foreground border-primary bg-primary"
+                : "text-muted-foreground border-border hover:border-border bg-card"
             }`}
-            style={category === cat
-              ? { background: "rgba(26,92,56,0.5)" }
-              : { background: "rgba(255,255,255,0.03)" }}
+            style={undefined}
           >
             {cat}
           </button>
@@ -119,67 +115,63 @@ export function EmergencyDuas() {
       <div className="px-4 space-y-4">
         {filtered.length === 0 && (
           <div className="text-center py-12">
-            <p className="text-emerald-800 text-sm">No duas found for "{search}"</p>
+            <p className="text-muted-foreground text-sm">No duas found for "{search}"</p>
           </div>
         )}
         {filtered.map((dua) => {
           const accentColor = CAT_COLORS[dua.category] ?? "#1a5c38";
           return (
             <div key={dua.id}
-              className="rounded-3xl border border-emerald-900/40 overflow-hidden"
-              style={{ background: "rgba(255,255,255,0.04)" }}>
-              <div className="h-0.5 w-full" style={{ background: `linear-gradient(90deg, transparent, ${accentColor}, transparent)` }} />
+              className="rounded-3xl border border-border overflow-hidden bg-card">
+              <div className="h-0.5 w-full bg-primary/20" />
 
               <div className="p-5 space-y-4">
                 {/* Header row */}
                 <div className="flex items-start justify-between gap-3">
                   <div>
-                    <span className="text-xs font-bold px-2 py-0.5 rounded-full text-white/80"
-                      style={{ background: `${accentColor}33` }}>
+                    <span className="text-xs font-bold px-2 py-0.5 rounded-full text-primary-foreground bg-primary">
                       {dua.category}
                     </span>
-                    <h3 className="text-white font-bold text-base mt-2">{dua.title}</h3>
+                    <h3 className="text-foreground font-bold text-base mt-2">{dua.title}</h3>
                   </div>
                   <button
                     onClick={() => copyDua(dua)}
-                    className="shrink-0 w-9 h-9 rounded-xl flex items-center justify-center border border-emerald-900/40 transition-all active:scale-95"
-                    style={{ background: "rgba(52,211,153,0.08)" }}
+                    className="shrink-0 w-9 h-9 rounded-xl flex items-center justify-center border border-border bg-muted transition-all active:scale-95"
                     aria-label="Copy dua"
                   >
                     {copied === dua.id
-                      ? <Check className="w-4 h-4 text-emerald-400" />
-                      : <Copy className="w-4 h-4 text-emerald-600" />}
+                      ? <Check className="w-4 h-4 text-primary" />
+                      : <Copy className="w-4 h-4 text-muted-foreground" />}
                   </button>
                 </div>
 
                 {/* Arabic */}
-                <p className="text-right leading-loose text-xl"
-                  style={{ color: "#e8f5ee", fontFamily: "'Amiri', 'Scheherazade New', serif", direction: "rtl" }}>
+                <p className="text-right leading-loose text-xl text-foreground"
+                  style={{ fontFamily: "'Amiri', 'Scheherazade New', serif", direction: "rtl" }}>
                   {dua.arabic}
                 </p>
 
                 {/* Transliteration */}
-                <p className="text-emerald-500 text-sm italic leading-relaxed">
+                <p className="text-primary text-sm italic leading-relaxed">
                   {dua.transliteration}
                 </p>
 
                 {/* Translation */}
-                <div className="rounded-2xl px-4 py-3 border border-emerald-900/30"
-                  style={{ background: "rgba(26,92,56,0.08)" }}>
-                  <p className="text-sm leading-relaxed" style={{ color: "rgba(200,230,215,0.9)" }}>
+                <div className="rounded-2xl px-4 py-3 border border-border bg-muted">
+                  <p className="text-sm leading-relaxed text-foreground">
                     {dua.translation}
                   </p>
                 </div>
 
                 {/* Source */}
-                <p className="text-emerald-700 text-xs">📖 {dua.source}</p>
+                <p className="text-muted-foreground text-xs">📖 {dua.source}</p>
               </div>
             </div>
           );
         })}
       </div>
 
-      <p className="text-center text-emerald-900 text-xs mt-8 px-6 pb-4 leading-relaxed">
+      <p className="text-center text-muted-foreground text-xs mt-8 px-6 pb-4 leading-relaxed">
         All duas are sourced from authentic hadith collections and the Holy Quran.
       </p>
     </div>

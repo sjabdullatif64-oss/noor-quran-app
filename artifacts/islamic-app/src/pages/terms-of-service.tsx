@@ -10,12 +10,12 @@ const SECTIONS = [
   {
     icon: <ScrollText className="w-5 h-5" />,
     title: "1. Acceptance of Terms",
-    accent: "text-emerald-400",
-    bg: "rgba(52,211,153,0.07)",
-    border: "border-emerald-800/40",
+    accent: "text-primary",
+    bg: "bg-primary/10",
+    border: "border-border",
     body: (
       <>
-        By downloading, installing, or using <strong className="text-emerald-300">Noor Quran</strong>{" "}
+        By downloading, installing, or using <strong className="text-primary">Noor Quran</strong>{" "}
         (package <em>com.sj64noorquran</em>), you agree to these Terms of Service. If you do not
         agree with any part of these terms, please do not use the app. Continued use of the app
         after changes to these terms constitutes acceptance of the updated terms.
@@ -96,9 +96,9 @@ const SECTIONS = [
   {
     icon: <RefreshCw className="w-5 h-5" />,
     title: "6. Daily Limits & Progress Features",
-    accent: "text-emerald-400",
-    bg: "rgba(52,211,153,0.07)",
-    border: "border-emerald-800/40",
+    accent: "text-primary",
+    bg: "bg-primary/10",
+    border: "border-border",
     body: (
       <>
         The Teacher feature includes a daily new-lesson limit, streaks, revision sessions, and
@@ -194,9 +194,9 @@ const SECTIONS = [
   {
     icon: <Shield className="w-5 h-5" />,
     title: "12. Changes to These Terms",
-    accent: "text-emerald-400",
-    bg: "rgba(52,211,153,0.07)",
-    border: "border-emerald-800/40",
+    accent: "text-primary",
+    bg: "bg-primary/10",
+    border: "border-border",
     body: (
       <>
         We may update these Terms of Service from time to time. Changes will be published on
@@ -219,39 +219,36 @@ export function TermsOfService() {
   return (
     <div
       ref={topRef}
-      className="min-h-screen pb-32 md:pb-12 animate-in fade-in duration-500"
-      style={{ background: "linear-gradient(150deg, #071a0e 0%, #0a1f12 50%, #061610 100%)" }}
+      className="min-h-screen pb-32 md:pb-12 animate-in fade-in duration-500 bg-background"
     >
       {/* Sticky header */}
       <div
-        className="sticky top-0 z-20 flex items-center gap-3 px-4 pt-6 pb-4"
-        style={{ background: "linear-gradient(180deg, #071a0e 85%, transparent 100%)" }}
+        className="sticky top-0 z-20 flex items-center gap-3 px-4 pt-6 pb-4 bg-background/95 backdrop-blur-sm"
       >
         <Link
           href="/about"
-          className="flex items-center justify-center w-9 h-9 rounded-full border border-emerald-800/50 text-emerald-500 hover:text-emerald-300 hover:border-emerald-600 transition-colors"
+          className="flex items-center justify-center w-9 h-9 rounded-full border border-border text-muted-foreground hover:text-foreground hover:border-border transition-colors"
           data-testid="link-back-about"
         >
           <ChevronLeft className="w-5 h-5" />
         </Link>
         <div className="flex-1">
-          <h1 className="text-lg font-semibold text-emerald-300 leading-tight">Terms of Service</h1>
-          <p className="text-emerald-700 text-xs">Noor Quran · com.sj64noorquran</p>
+          <h1 className="text-lg font-semibold text-foreground leading-tight">Terms of Service</h1>
+          <p className="text-muted-foreground text-xs">Noor Quran · com.sj64noorquran</p>
         </div>
-        <ScrollText className="w-5 h-5 text-emerald-700" />
+        <ScrollText className="w-5 h-5 text-muted-foreground" />
       </div>
 
       <div className="px-4 space-y-4 max-w-2xl mx-auto">
         {/* Hero card */}
         <div
-          className="rounded-2xl p-5 border border-emerald-800/40"
-          style={{ background: "linear-gradient(135deg, rgba(26,92,56,0.2), rgba(6,22,16,0.4))" }}
+          className="rounded-2xl p-5 border border-border bg-card"
         >
           <div className="flex items-center gap-2 mb-3">
-            <ScrollText className="w-5 h-5 text-emerald-400" />
-            <p className="text-emerald-300 font-semibold text-base">Welcome to Noor Quran</p>
+            <ScrollText className="w-5 h-5 text-primary" />
+            <p className="text-foreground font-semibold text-base">Welcome to Noor Quran</p>
           </div>
-          <p className="text-emerald-500 text-sm leading-relaxed">
+          <p className="text-muted-foreground text-sm leading-relaxed">
             These terms explain your rights and responsibilities when using Noor Quran. We wrote
             them to be clear and honest — please take a moment to read them. Using the app means
             you agree to these terms.
@@ -262,37 +259,33 @@ export function TermsOfService() {
         {SECTIONS.map((s) => (
           <div
             key={s.title}
-            className={`rounded-2xl border ${s.border} overflow-hidden`}
-            style={{ background: "rgba(255,255,255,0.02)" }}
+            className={`rounded-2xl border ${s.border} overflow-hidden bg-card`}
           >
             <div
-              className="flex items-center gap-3 px-4 py-3 border-b border-white/5"
-              style={{ background: s.bg }}
+              className="flex items-center gap-3 px-4 py-3 border-b border-border bg-muted"
             >
               <span className={s.accent}>{s.icon}</span>
               <p className={`font-semibold text-sm ${s.accent}`}>{s.title}</p>
             </div>
-            <p className="text-emerald-500 text-sm leading-relaxed px-4 py-4">{s.body}</p>
+            <p className="text-muted-foreground text-sm leading-relaxed px-4 py-4">{s.body}</p>
           </div>
         ))}
 
         {/* Contact */}
         <div
-          className="rounded-2xl border border-emerald-800/50 p-5"
-          style={{ background: "linear-gradient(135deg, rgba(26,92,56,0.15), rgba(6,22,16,0.3))" }}
+          className="rounded-2xl border border-border p-5 bg-card"
         >
           <div className="flex items-center gap-2 mb-3">
-            <Mail className="w-4 h-4 text-emerald-500" />
-            <p className="text-emerald-400 text-sm font-semibold">13. Contact Information</p>
+            <Mail className="w-4 h-4 text-primary" />
+            <p className="text-foreground text-sm font-semibold">13. Contact Information</p>
           </div>
-          <p className="text-emerald-600 text-sm leading-relaxed mb-1">
+          <p className="text-muted-foreground text-sm leading-relaxed mb-1">
             Questions about these Terms of Service? Contact the Noor Quran Team:
           </p>
-          <p className="text-emerald-700 text-xs mb-3 font-medium">SJ64 Studios · The Noor Quran Team</p>
+          <p className="text-muted-foreground text-xs mb-3 font-medium">SJ64 Studios · The Noor Quran Team</p>
           <button
             onClick={() => openUrl("mailto:easygroupjoin@gmail.com?subject=Noor Quran Terms of Service")}
-            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium text-emerald-300 border border-emerald-700/50 hover:border-emerald-500 transition-colors"
-            style={{ background: "rgba(26,92,56,0.3)" }}
+            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium text-primary-foreground border border-border bg-primary hover:border-border transition-colors"
             data-testid="button-terms-contact"
           >
             <Mail className="w-4 h-4" />
@@ -301,21 +294,21 @@ export function TermsOfService() {
         </div>
 
         {/* Effective date */}
-        <p className="text-emerald-800 text-xs text-center pt-2" data-testid="text-terms-updated">
+        <p className="text-muted-foreground text-xs text-center pt-2" data-testid="text-terms-updated">
           Last updated: July 19, 2026 &nbsp;·&nbsp; Effective immediately
         </p>
 
         {/* Close button */}
         <button
           onClick={() => window.history.back()}
-          className="w-full py-4 rounded-2xl text-sm font-semibold text-white transition-all active:scale-[0.98]"
+          className="w-full py-4 rounded-2xl text-sm font-semibold text-primary-foreground transition-all active:scale-[0.98] bg-primary"
           data-testid="button-terms-close"
-          style={{ background: "linear-gradient(135deg, #1a5c38, #0d3d24)" }}
+          
         >
           Close
         </button>
 
-        <p className="text-center text-emerald-900 text-xs pb-4">
+        <p className="text-center text-muted-foreground text-xs pb-4">
           Noor Quran © 2025–2026 · The Noor Quran Team
         </p>
       </div>

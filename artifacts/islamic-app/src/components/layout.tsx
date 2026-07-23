@@ -133,23 +133,19 @@ export function Layout({ children }: { children: React.ReactNode }) {
           padding-bottom uses env(safe-area-inset-bottom) so the nav sits
           above the Android gesture bar / home indicator on edge-to-edge builds */}
       <div
-        className={`md:hidden flex items-center justify-around px-1 border-t sticky bottom-0 z-20 ${
-          isDarkPage
-            ? "border-emerald-950 bg-[#071a0e]"
-            : "border-border bg-card"
-        }`}
+        className="md:hidden flex items-center justify-around px-1 border-t sticky bottom-0 z-20 border-border bg-card"
         style={{ paddingTop: "8px", paddingBottom: "calc(8px + env(safe-area-inset-bottom, 0px))" }}
       >
         <MobileNavItem href="/" icon={<HomeIcon className="w-5 h-5" />} label={t("nav_home")}
-          active={location === "/"} dark={isDarkPage} testId="home" />
+          active={location === "/"} testId="home" />
         <MobileNavItem href="/quran" icon={<Book className="w-5 h-5" />} label={t("nav_quran")}
-          active={location === "/quran" || location.startsWith("/quran/")} dark={isDarkPage} testId="quran" />
+          active={location === "/quran" || location.startsWith("/quran/")} testId="quran" />
         <MobileNavItem href="/prayer-times" icon={<Compass className="w-5 h-5" />} label={t("nav_prayers")}
-          active={location === "/prayer-times"} dark={isDarkPage} testId="prayers" />
+          active={location === "/prayer-times"} testId="prayers" />
         <MobileNavItem href="/teacher" icon={<GraduationCap className="w-5 h-5" />} label={t("nav_teacher")}
-          active={location.startsWith("/teacher")} dark={isDarkPage} testId="teacher" />
+          active={location.startsWith("/teacher")} testId="teacher" />
         <MobileNavItem href="/more" icon={<MoreHorizontal className="w-5 h-5" />} label={t("nav_more")}
-          active={isMoreActive} dark={isDarkPage} testId="more" />
+          active={isMoreActive} testId="more" />
       </div>
     </div>
   );
@@ -170,11 +166,11 @@ function NavItem({ href, icon, label, active }: { href: string; icon: React.Reac
   );
 }
 
-function MobileNavItem({ href, icon, label, active, dark, testId }: {
-  href: string; icon: React.ReactNode; label: string; active: boolean; dark: boolean; testId: string;
+function MobileNavItem({ href, icon, label, active, testId }: {
+  href: string; icon: React.ReactNode; label: string; active: boolean; testId: string;
 }) {
-  const activeClass   = dark ? "text-emerald-400" : "text-primary";
-  const inactiveClass = dark ? "text-emerald-900 hover:text-emerald-700" : "text-muted-foreground hover:text-foreground";
+  const activeClass   = "text-primary";
+  const inactiveClass = "text-muted-foreground hover:text-foreground";
 
   return (
     <Link

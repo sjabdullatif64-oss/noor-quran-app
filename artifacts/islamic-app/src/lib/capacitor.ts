@@ -24,7 +24,15 @@ type CapWindow = Window & {
 function getPlugin<T>(name: string): T | null {
   const cap = (window as CapWindow).Capacitor;
   const plugin = cap?.Plugins?.[name];
+  console.log("[Noor/Plugin] getPlugin('" + name + "') — Capacitor present=" + !!cap + ", Plugins present=" + !!cap?.Plugins + ", plugin=" + (plugin ? "PRESENT" : "MISSING"));
   return plugin ? (plugin as T) : null;
+}
+
+function logPending<T>(label: string, ms: number, promise: Promise<T>): Promise<T> {
+  const timer = setTimeout(() => {
+    console.warn("[Noor/Plugin] " + label + " — STILL PENDING after " + ms + "ms");
+  }, ms);
+  return promise.finally(() => clearTimeout(timer));
 }
 
 // ── App plugin — back-button handling ────────────────────────────────────────
@@ -402,13 +410,24 @@ interface NetworkPlugin {
 }
 
 export async function isConnected(): Promise<boolean> {
-  if (!isCapacitorApp()) return navigator.onLine;
+  console.log("[Noor/Network] isConnected() — start, isCapacitorApp=" + isCapacitorApp() + ", navigator.onLine=" + navigator.onLine);
+  if (!isCapacitorApp()) {
+    console.log("[Noor/Network] isConnected() — web path, returning navigator.onLine=" + navigator.onLine);
+    return navigator.onLine;
+  }
   const net = getPlugin<NetworkPlugin>("Network");
-  if (!net) return navigator.onLine;
+  console.log("[Noor/Network] isConnected() — Network plugin resolved: " + (net ? "PRESENT" : "MISSING"));
+  if (!net) {
+    console.log("[Noor/Network] isConnected() — no Network plugin, returning navigator.onLine=" + navigator.onLine);
+    return navigator.onLine;
+  }
   try {
-    const status = await net.getStatus();
+    console.log("[Noor/Network] isConnected() — BEFORE Network.getStatus()");
+    const status = await logPending("Network.getStatus()", 5000, net.getStatus());
+    console.log("[Noor/Network] isConnected() — AFTER Network.getStatus(), status=", JSON.stringify(status));
     return status.connected;
-  } catch {
+  } catch (e) {
+    console.error("[Noor/Network] isConnected() — Network.getStatus() REJECTED:", e);
     return navigator.onLine;
   }
 }

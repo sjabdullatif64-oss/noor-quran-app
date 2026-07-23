@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { Link } from "wouter";
 import { Heart, Search, Trash2, BookOpen, ChevronLeft } from "lucide-react";
+import { useI18n } from "@/lib/i18n-context";
 import {
   FavoriteSurah,
   FavoriteAyah,
@@ -22,6 +23,7 @@ function ayahHref(ayah: FavoriteAyah): string {
 }
 
 export function Favorites() {
+  const { t } = useI18n();
   const [tab, setTab] = useState<Tab>("surahs");
   const [surahs, setSurahs] = useState<FavoriteSurah[]>([]);
   const [ayahs, setAyahs] = useState<FavoriteAyah[]>([]);
@@ -61,31 +63,28 @@ export function Favorites() {
 
   return (
     <div
-      className="min-h-screen pb-28 md:pb-10 animate-in fade-in duration-500"
-      style={{ background: "linear-gradient(150deg, #071a0e 0%, #0a1f12 50%, #061610 100%)" }}
+      className="min-h-screen pb-28 md:pb-10 animate-in fade-in duration-500 bg-background"
     >
       {/* Header */}
       <div className="px-5 pt-6 pb-4 flex items-center gap-3">
-        <Link href="/more" className="text-emerald-600 hover:text-emerald-400 transition-colors" data-testid="link-back-more">
+        <Link href="/more" className="text-muted-foreground hover:text-primary transition-colors" data-testid="link-back-more">
           <ChevronLeft className="w-6 h-6" />
         </Link>
         <div>
-          <h1 className="text-2xl font-serif font-bold text-rose-300">Favorites</h1>
-          <p className="text-emerald-700 text-xs mt-0.5">
-            {surahs.length} surah{surahs.length !== 1 ? "s" : ""} · {ayahs.length} ayah{ayahs.length !== 1 ? "s" : ""}
-          </p>
+          <h1 className="text-2xl font-serif font-bold text-foreground">{t("favorites_title")}</h1>
+          <p className="text-muted-foreground text-xs mt-0.5">{t("favorites_subtitle")}</p>
         </div>
       </div>
 
       {/* Search */}
       <div className="px-4 mb-4">
         <div className="relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-emerald-700" />
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
           <Input
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder="Search favorites…"
-            className="pl-9 bg-transparent border-emerald-900/50 text-white placeholder:text-emerald-800 focus-visible:ring-emerald-700"
+            placeholder={t("favorites_search_placeholder")}
+            className="pl-9 bg-background border-border text-foreground placeholder:text-muted-foreground focus-visible:ring-primary"
             data-testid="input-favorites-search"
           />
         </div>
@@ -93,19 +92,18 @@ export function Favorites() {
 
       {/* Tabs */}
       <div className="px-4 mb-5 flex gap-2">
-        {(["surahs", "ayahs"] as Tab[]).map((t) => (
+        {(["surahs", "ayahs"] as Tab[]).map((tabKey) => (
           <button
-            key={t}
-            onClick={() => setTab(t)}
+            key={tabKey}
+            onClick={() => setTab(tabKey)}
             className={`px-5 py-2 rounded-full text-sm font-medium transition-all border ${
-              tab === t
-                ? "bg-rose-900/40 text-rose-300 border-rose-800/50"
-                : "text-emerald-600 border-emerald-900/40 hover:border-emerald-700"
+              tab === tabKey
+                ? "bg-muted text-foreground border-border"
+                : "text-muted-foreground border-border hover:border-border"
             }`}
-            style={{ background: tab === t ? undefined : "rgba(255,255,255,0.02)" }}
-            data-testid={`tab-${t}`}
+            data-testid={`tab-${tabKey}`}
           >
-            {t === "surahs" ? `Surahs (${surahs.length})` : `Ayahs (${ayahs.length})`}
+            {tabKey === "surahs" ? `${t("favorites_tab_surahs")} (${surahs.length})` : `${t("favorites_tab_ayahs")} (${ayahs.length})`}
           </button>
         ))}
       </div>
@@ -118,23 +116,22 @@ export function Favorites() {
           filteredSurahs.map((surah) => (
             <div
               key={surah.number}
-              className="group flex items-center gap-4 p-4 rounded-2xl border border-emerald-900/40 hover:border-rose-900/40 transition-all"
-              style={{ background: "rgba(255,255,255,0.04)" }}
+              className="group flex items-center gap-4 p-4 rounded-2xl border border-border hover:border-border transition-all bg-card"
               data-testid={`fav-surah-${surah.number}`}
             >
               <Link href={`/quran/${surah.number}`} className="flex-1 flex items-center gap-4">
-                <div className="w-10 h-10 rounded-full bg-rose-900/30 border border-rose-800/30 flex items-center justify-center text-rose-300 font-bold text-sm shrink-0">
+                <div className="w-10 h-10 rounded-full bg-rose-100 border border-rose-200 flex items-center justify-center text-rose-600 font-bold text-sm shrink-0">
                   {surah.number}
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="text-white font-semibold">{surah.englishName}</p>
-                  <p className="text-emerald-600 text-xs">{surah.englishNameTranslation} · {surah.numberOfAyahs} verses</p>
+                  <p className="text-foreground font-semibold">{surah.englishName}</p>
+                  <p className="text-muted-foreground text-xs">{surah.englishNameTranslation} · {surah.numberOfAyahs} {t("favorites_verses")}</p>
                 </div>
-                <p dir="rtl" className="font-arabic text-xl text-rose-300 shrink-0">{surah.name}</p>
+                <p dir="rtl" className="font-arabic text-xl text-rose-600 shrink-0">{surah.name}</p>
               </Link>
               <button
                 onClick={() => handleRemoveSurah(surah.number)}
-                className="opacity-40 hover:opacity-100 active:opacity-100 transition-opacity w-8 h-8 rounded-full flex items-center justify-center text-red-400 hover:bg-red-900/20 shrink-0"
+                className="opacity-40 hover:opacity-100 active:opacity-100 transition-opacity w-8 h-8 rounded-full flex items-center justify-center text-destructive hover:bg-muted shrink-0"
                 data-testid={`button-remove-fav-surah-${surah.number}`}
               >
                 <Trash2 className="w-4 h-4" />
@@ -145,32 +142,31 @@ export function Favorites() {
           filteredAyahs.map((ayah) => (
             <div
               key={`${ayah.surahNumber}-${ayah.ayahNumber}`}
-              className="group flex gap-4 p-4 rounded-2xl border border-emerald-900/40 hover:border-rose-900/40 transition-all"
-              style={{ background: "rgba(255,255,255,0.04)" }}
+              className="group flex gap-4 p-4 rounded-2xl border border-border hover:border-border transition-all bg-card"
               data-testid={`fav-ayah-${ayah.surahNumber}-${ayah.ayahNumber}`}
             >
               <Link href={ayahHref(ayah)} className="flex-1 min-w-0 space-y-2">
                 <div className="flex items-center gap-2 flex-wrap">
-                  <span className="text-xs font-bold bg-rose-900/30 text-rose-300 rounded-full px-2.5 py-0.5 border border-rose-800/30">
+                    <span className="text-xs font-bold bg-muted text-foreground rounded-full px-2.5 py-0.5 border border-border">
                     {ayah.surahEnglishName}
                   </span>
-                  <span className="text-xs text-emerald-700">Verse {ayah.ayahNumber}</span>
+                    <span className="text-xs text-muted-foreground">{t("favorites_verse")} {ayah.ayahNumber}</span>
                   {ayah.juzNumber && (
-                    <span className="text-xs text-emerald-900">Juz {ayah.juzNumber}</span>
+                      <span className="text-xs text-muted-foreground">{t("favorites_juz")} {ayah.juzNumber}</span>
                   )}
                 </div>
-                <p dir="rtl" className="font-arabic text-xl leading-loose text-white text-right">
+                <p dir="rtl" className="font-arabic text-xl leading-loose text-foreground text-right">
                   {ayah.textAr}
                 </p>
                 {ayah.textTranslation && (
-                  <p dir="rtl" className="text-sm text-emerald-600 leading-relaxed text-right font-serif line-clamp-2">
+                  <p dir="rtl" className="text-sm text-muted-foreground leading-relaxed text-right font-serif line-clamp-2">
                     {sanitizeUrduText(ayah.textTranslation)}
                   </p>
                 )}
               </Link>
               <button
                 onClick={() => handleRemoveAyah(ayah.surahNumber, ayah.ayahNumber)}
-                className="opacity-40 hover:opacity-100 active:opacity-100 transition-opacity w-8 h-8 rounded-full flex items-center justify-center text-red-400 hover:bg-red-900/20 shrink-0 self-start mt-1"
+                className="opacity-40 hover:opacity-100 active:opacity-100 transition-opacity w-8 h-8 rounded-full flex items-center justify-center text-destructive hover:bg-muted shrink-0 self-start mt-1"
                 data-testid={`button-remove-fav-ayah-${ayah.surahNumber}-${ayah.ayahNumber}`}
               >
                 <Trash2 className="w-4 h-4" />
@@ -184,32 +180,32 @@ export function Favorites() {
 }
 
 function EmptyState({ tab, hasQuery }: { tab: Tab; hasQuery: boolean }) {
+  const { t } = useI18n();
   return (
     <div className="flex flex-col items-center justify-center py-20 gap-5 text-center">
-      <div className="w-16 h-16 rounded-full flex items-center justify-center" style={{ background: "rgba(244,63,94,0.1)" }}>
-        <Heart className="w-8 h-8 text-rose-800" />
+      <div className="w-16 h-16 rounded-full flex items-center justify-center bg-muted">
+        <Heart className="w-8 h-8 text-rose-600" />
       </div>
       <div>
-        <p className="text-white font-medium">
-          {hasQuery ? "No results found" : tab === "surahs" ? "No favorite surahs yet" : "No favorite ayahs yet"}
+        <p className="text-foreground font-medium">
+          {hasQuery ? t("favorites_no_results_title") : tab === "surahs" ? t("favorites_empty_surahs_title") : t("favorites_empty_ayahs_title")}
         </p>
-        <p className="text-emerald-700 text-sm mt-1 max-w-xs">
+        <p className="text-muted-foreground text-sm mt-1 max-w-xs">
           {hasQuery
-            ? "Try a different search term"
+            ? t("favorites_no_results_sub")
             : tab === "surahs"
-            ? "Tap the heart icon on any surah to save it here"
-            : "Tap the heart icon on any ayah while reading to save it here"}
+            ? t("favorites_empty_surahs_sub")
+            : t("favorites_empty_ayahs_sub")}
         </p>
       </div>
       {!hasQuery && (
         <Link
           href="/quran"
-          className="flex items-center gap-2 px-5 py-2.5 rounded-full text-sm font-medium text-emerald-300 border border-emerald-700/40 hover:border-emerald-500 transition-colors"
-          style={{ background: "rgba(52,211,153,0.07)" }}
+          className="flex items-center gap-2 px-5 py-2.5 rounded-full text-sm font-medium text-primary border border-border hover:border-border transition-colors bg-primary/10"
           data-testid="link-go-quran"
         >
           <BookOpen className="w-4 h-4" />
-          Open Quran
+          {t("favorites_open_quran")}
         </Link>
       )}
     </div>

@@ -1,3 +1,4 @@
+- [Screenshot caching for theme verification](screenshot-theme-cache.md) — Screenshot tool can return cached images; always use a cache-busting query parameter when verifying visual changes like light/dark mode
 - [Capacitor external URL opening](capacitor-external-links.md) — window.open(_blank) is broken in Capacitor WebView; use openUrl() helper from @/lib/capacitor (wraps @capacitor/browser)
 - [Coins & Marketplace system](coins-marketplace.md) — server-side coins, marketplace, admin, referrals; key gotchas on zod and DB exports
 - [AdMob safe init pattern](admob-safe-init.md) — selective MobileAdsInitProvider removal via tools:node="merge" preserves WorkManager; full InitializationProvider removal breaks it

@@ -64,11 +64,8 @@ function FallbackScreen({ onClose }: { onClose: () => void }) {
       onClick={handleClose}
     >
       <div
-        className="relative w-full max-w-sm rounded-3xl overflow-hidden text-center"
+        className="relative w-full max-w-sm rounded-3xl overflow-hidden text-center bg-card border border-border shadow-[0_24px_80px_rgba(0,0,0,0.7),0_0_60px_rgba(26,92,56,0.18)]"
         style={{
-          background: "linear-gradient(160deg, #0d2b1a 0%, #0a1f14 50%, #071a0e 100%)",
-          border: "1px solid rgba(26,92,56,0.6)",
-          boxShadow: "0 24px 80px rgba(0,0,0,0.7), 0 0 60px rgba(26,92,56,0.18)",
           transform: visible ? "scale(1) translateY(0)" : "scale(0.88) translateY(24px)",
           transition: "transform 0.32s cubic-bezier(0.34,1.56,0.64,1)",
         }}
@@ -76,63 +73,52 @@ function FallbackScreen({ onClose }: { onClose: () => void }) {
       >
         <button
           onClick={handleClose}
-          className="absolute top-4 right-4 w-8 h-8 flex items-center justify-center rounded-full text-emerald-600 hover:text-emerald-400 transition-colors"
-          style={{ background: "rgba(26,92,56,0.25)" }}
+          className="absolute top-4 right-4 w-8 h-8 flex items-center justify-center rounded-full text-muted-foreground hover:text-foreground transition-colors bg-muted"
           aria-label="Close"
         >
           <X className="w-4 h-4" />
         </button>
 
         <div
-          className="absolute top-0 left-1/2 -translate-x-1/2 w-48 h-1 rounded-full"
-          style={{ background: "linear-gradient(90deg, transparent, #1a5c38, transparent)" }}
+          className="absolute top-0 left-1/2 -translate-x-1/2 w-48 h-1 rounded-full bg-primary/50"
         />
 
         <div className="px-7 pt-10 pb-8">
           <div className="flex justify-center mb-5">
             <div
-              className="w-20 h-20 rounded-full flex items-center justify-center text-4xl"
-              style={{
-                background: "radial-gradient(circle, rgba(26,92,56,0.35) 0%, rgba(26,92,56,0.08) 100%)",
-                border: "1.5px solid rgba(26,92,56,0.5)",
-                boxShadow: "0 0 32px rgba(26,92,56,0.25)",
-              }}
+              className="w-20 h-20 rounded-full flex items-center justify-center text-4xl bg-primary/15 border border-primary/30 shadow-[0_0_32px_rgba(26,92,56,0.25)]"
             >
               🤍
             </div>
           </div>
 
-          <h2 className="text-2xl font-bold mb-1" style={{ color: "#e8f5ee", letterSpacing: "-0.02em" }}>
+          <h2 className="text-2xl font-bold mb-1 text-foreground" style={{ letterSpacing: "-0.02em" }}>
             MashaAllah 🤍
           </h2>
 
           <div className="flex items-center gap-2 justify-center my-4">
-            <div className="h-px flex-1" style={{ background: "rgba(26,92,56,0.4)" }} />
-            <span className="text-emerald-700 text-xs">✦</span>
-            <div className="h-px flex-1" style={{ background: "rgba(26,92,56,0.4)" }} />
+            <div className="h-px flex-1 bg-border" />
+            <span className="text-muted-foreground text-xs">✦</span>
+            <div className="h-px flex-1 bg-border" />
           </div>
 
-          <p className="text-base font-semibold mb-1" style={{ color: "rgba(134,239,172,0.7)" }}>
+          <p className="text-base font-semibold mb-1 text-primary">
             New rewards coming soon
           </p>
 
-          <p className="text-sm leading-relaxed" style={{ color: "rgba(200,230,215,0.75)" }}>
+          <p className="text-sm leading-relaxed text-muted-foreground">
             Thank you for supporting Noor Quran.
             <br />
             Your kindness helps this Islamic app grow for everyone.
           </p>
 
-          <p className="mt-4 text-xs" style={{ color: "rgba(52,211,153,0.55)", fontStyle: "italic" }}>
+          <p className="mt-4 text-xs text-primary/50 italic">
             "And whoever does good — Allah is appreciative and Knowing." — Quran 2:158
           </p>
 
           <button
             onClick={handleClose}
-            className="mt-7 w-full py-3.5 rounded-2xl text-sm font-semibold text-white transition-all active:scale-[0.97]"
-            style={{
-              background: "linear-gradient(135deg, #1a5c38 0%, #145230 100%)",
-              boxShadow: "0 4px 24px rgba(26,92,56,0.35)",
-            }}
+            className="mt-7 w-full py-3.5 rounded-2xl text-sm font-semibold text-primary-foreground transition-all active:scale-[0.97] bg-primary shadow-[0_4px_24px_rgba(26,92,56,0.35)]"
           >
             Continue Reading 📖
           </button>
@@ -279,52 +265,43 @@ export function RewardedAdButton() {
       <button
         onClick={handleSupport}
         disabled={isLoading || isDone}
-        className="w-full flex items-center gap-4 p-4 rounded-2xl border text-left transition-all active:scale-[0.98] hover:opacity-90 disabled:opacity-60 disabled:cursor-not-allowed"
-        style={{
-          background: isDone
-            ? "linear-gradient(135deg, rgba(236,72,153,0.18) 0%, rgba(168,85,247,0.12) 100%)"
-            : "linear-gradient(135deg, rgba(236,72,153,0.12) 0%, rgba(168,85,247,0.08) 100%)",
-          borderColor: isDone ? "rgba(236,72,153,0.5)" : "rgba(236,72,153,0.3)",
-          boxShadow: isDone ? "0 0 20px rgba(236,72,153,0.12)" : undefined,
-        }}
+        className={`w-full flex items-center gap-4 p-4 rounded-2xl border text-left transition-all active:scale-[0.98] hover:opacity-90 disabled:opacity-60 disabled:cursor-not-allowed bg-rose-500/10 border-rose-500/30 text-rose-600 dark:bg-rose-900/20 dark:border-rose-700/40 dark:text-rose-400 ${isDone ? "bg-rose-500/15 border-rose-700/40 dark:border-rose-500/30" : ""}`}
         data-testid="button-support-noor-quran"
       >
         <span
-          className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0"
-          style={{ background: "rgba(236,72,153,0.18)" }}
+          className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0 bg-rose-500/15"
         >
           {isLoading ? (
-            <Loader2 className="w-5 h-5 text-pink-400 animate-spin" />
+            <Loader2 className="w-5 h-5 text-rose-500 dark:text-rose-400 animate-spin" />
           ) : isDone ? (
             <span className="text-lg">🌙</span>
           ) : (
-            <Heart className="w-5 h-5 text-pink-400 fill-pink-400" />
+            <Heart className="w-5 h-5 text-rose-500 dark:text-rose-400 fill-rose-500 dark:fill-rose-400" />
           )}
         </span>
 
         <div className="flex-1 min-w-0">
           {isDone ? (
             <>
-              <p className="text-white text-sm font-semibold">JazakAllah Khair 🌙</p>
-              <p className="text-pink-600 text-xs mt-0.5">Thank you for supporting Noor Quran</p>
+              <p className="text-foreground text-sm font-semibold">JazakAllah Khair 🌙</p>
+              <p className="text-rose-700 dark:text-rose-300 text-xs mt-0.5">Thank you for supporting Noor Quran</p>
             </>
           ) : isLoading ? (
             <>
-              <p className="text-white text-sm font-semibold">🤍 Support Noor Quran</p>
-              <p className="text-pink-600 text-xs mt-0.5">Loading, please wait…</p>
+              <p className="text-foreground text-sm font-semibold">🤍 Support Noor Quran</p>
+              <p className="text-rose-700 dark:text-rose-300 text-xs mt-0.5">Loading, please wait…</p>
             </>
           ) : (
             <>
-              <p className="text-white text-sm font-semibold">🤍 Support Noor Quran</p>
-              <p className="text-pink-600 text-xs mt-0.5">Tap to support this free Islamic app</p>
+              <p className="text-foreground text-sm font-semibold">🤍 Support Noor Quran</p>
+              <p className="text-rose-700 dark:text-rose-300 text-xs mt-0.5">Tap to support this free Islamic app</p>
             </>
           )}
         </div>
 
         {!isLoading && !isDone && (
           <span
-            className="text-[10px] font-bold text-pink-400 px-2 py-1 rounded-full border border-pink-900/50 shrink-0"
-            style={{ background: "rgba(236,72,153,0.1)" }}
+            className="text-[10px] font-bold text-rose-500 dark:text-rose-400 px-2 py-1 rounded-full border border-rose-700/40 dark:border-rose-500/30 shrink-0 bg-rose-500/10"
           >
             FREE
           </span>

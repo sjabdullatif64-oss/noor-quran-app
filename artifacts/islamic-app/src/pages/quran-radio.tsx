@@ -24,7 +24,7 @@ const STATIONS: Station[] = [
     url: "https://stream.radiojar.com/0tpy1h0kxtzuv",
     website: "https://radiojar.com",
     emoji: "🎙️",
-    color: "text-emerald-300", bg: "rgba(52,211,153,0.12)", border: "rgba(52,211,153,0.35)",
+    color: "text-primary", bg: "rgba(52,211,153,0.12)", border: "rgba(52,211,153,0.35)",
   },
   {
     id: "makkah_radio",
@@ -128,51 +128,47 @@ export function QuranRadio() {
   }
 
   return (
-    <div
-      className="min-h-screen pb-28 md:pb-10 animate-in fade-in duration-500"
-      style={{ background: "linear-gradient(150deg, #071a0e 0%, #0a1f12 50%, #061610 100%)" }}
-    >
+    <div className="min-h-screen pb-28 md:pb-10 animate-in fade-in duration-500 bg-background">
       {/* Header */}
       <div className="flex items-center gap-3 px-5 pt-6 pb-5">
-        <Link href="/more" className="text-emerald-600 hover:text-emerald-400 transition-colors">
+        <Link href="/more" className="text-muted-foreground hover:text-foreground transition-colors">
           <ChevronLeft className="w-6 h-6" />
         </Link>
         <div className="flex-1">
-          <h1 className="text-2xl font-serif font-bold text-emerald-300">Quran Radio</h1>
-          <p className="text-emerald-700 text-xs mt-0.5">Islamic audio streams — live recitation & nasheeds</p>
+          <h1 className="text-2xl font-serif font-bold text-primary">Quran Radio</h1>
+          <p className="text-muted-foreground text-xs mt-0.5">Islamic audio streams — live recitation & nasheeds</p>
         </div>
-        <Radio className="w-6 h-6 text-emerald-700" />
+        <Radio className="w-6 h-6 text-muted-foreground" />
       </div>
 
       {/* Now playing banner */}
       {playingId && (
         <div className="mx-4 mb-4 animate-in fade-in duration-300">
-          <div className="rounded-2xl border border-emerald-700/40 px-4 py-3 flex items-center gap-3"
-            style={{ background: "rgba(52,211,153,0.1)" }}>
+          <div className="rounded-2xl border border-border px-4 py-3 flex items-center gap-3 bg-card">
             {playState === "loading"
-              ? <Loader2 className="w-5 h-5 text-emerald-400 animate-spin shrink-0" />
+               ? <Loader2 className="w-5 h-5 text-primary animate-spin shrink-0" />
               : playState === "error"
               ? <span className="text-base shrink-0">⚠️</span>
               : (
                 <div className="flex gap-0.5 items-end shrink-0">
-                  {[3,5,7,4,6].map((h, i) => (
-                    <div key={i} className="w-1 rounded-full bg-emerald-400 animate-pulse"
+                   {[3,5,7,4,6].map((h, i) => (
+                     <div key={i} className="w-1 rounded-full bg-primary animate-pulse"
                       style={{ height: h * 3, animationDelay: `${i * 120}ms` }} />
                   ))}
                 </div>
               )
             }
             <div className="flex-1 min-w-0">
-              <p className="text-emerald-300 text-sm font-semibold truncate">
+               <p className="text-primary text-sm font-semibold truncate">
                 {playState === "loading" ? "Connecting…"
-                  : playState === "error" ? "Stream unavailable — try YouTube link"
-                  : `Now Playing: ${STATIONS.find(s => s.id === playingId)?.name}`}
+                 : playState === "error" ? "Stream unavailable — try YouTube link"
+                   : `Now Playing: ${STATIONS.find(s => s.id === playingId)?.name}`}
               </p>
               {playState === "playing" && (
-                <p className="text-emerald-700 text-xs mt-0.5">Tap station again to stop</p>
+                <p className="text-muted-foreground text-xs mt-0.5">Tap station again to stop</p>
               )}
             </div>
-            <button onClick={stopAll} className="shrink-0 text-emerald-700 hover:text-emerald-400 text-xs font-medium transition-colors">
+            <button onClick={stopAll} className="shrink-0 text-muted-foreground hover:text-foreground text-xs font-medium transition-colors">
               Stop
             </button>
           </div>
@@ -180,10 +176,9 @@ export function QuranRadio() {
       )}
 
       {/* Info */}
-      <div className="mx-4 mb-4 flex items-start gap-2.5 px-4 py-3 rounded-2xl border border-emerald-900/40"
-        style={{ background: "rgba(52,211,153,0.04)" }}>
-        <Volume2 className="w-4 h-4 text-emerald-700 shrink-0 mt-0.5" />
-        <p className="text-emerald-800 text-xs leading-relaxed">
+      <div className="mx-4 mb-4 flex items-start gap-2.5 px-4 py-3 rounded-2xl border border-border bg-card">
+        <Volume2 className="w-4 h-4 text-muted-foreground shrink-0 mt-0.5" />
+        <p className="text-muted-foreground text-xs leading-relaxed">
           Live streams require internet. If a stream fails, use the YouTube link to watch online. Turn up your volume for the best experience.
         </p>
       </div>
@@ -199,8 +194,8 @@ export function QuranRadio() {
               key={station.id}
               className="rounded-3xl border overflow-hidden transition-all"
               style={{
-                background: isPlaying ? station.bg : "rgba(255,255,255,0.04)",
-                borderColor: isPlaying ? station.border.replace("0.35", "0.6") : "rgba(26,92,56,0.25)",
+                background: isPlaying ? station.bg : undefined,
+                borderColor: "border-border",
               }}
             >
               <div className="flex items-center gap-4 p-4">
@@ -213,8 +208,8 @@ export function QuranRadio() {
                 {/* Info */}
                 <div className="flex-1 min-w-0">
                   <p className={`font-bold text-base ${station.color}`}>{station.name}</p>
-                  <p className="text-emerald-800 text-xs" dir="rtl">{station.nameAr}</p>
-                  <p className="text-emerald-700 text-xs mt-0.5 truncate">{station.description}</p>
+                  <p className="text-muted-foreground text-xs" dir="rtl">{station.nameAr}</p>
+                  <p className="text-muted-foreground text-xs mt-0.5 truncate">{station.description}</p>
                   {isError && <p className="text-red-400 text-xs mt-1">⚠️ Stream failed — tap YouTube link</p>}
                 </div>
 
@@ -239,7 +234,7 @@ export function QuranRadio() {
                 target="_blank"
                 rel="noopener noreferrer"
                 className="flex items-center gap-2 px-4 pb-3 text-xs transition-opacity hover:opacity-80"
-                style={{ color: station.color.replace("text-", "").includes("emerald") ? "#34d39980" : undefined, opacity: 0.6 }}
+                  style={{ opacity: 0.6 }}
                 onClick={(e) => e.stopPropagation()}
               >
                 <ExternalLink className="w-3 h-3" />
@@ -250,7 +245,7 @@ export function QuranRadio() {
         })}
       </div>
 
-      <p className="text-center text-emerald-900 text-xs mt-6 px-6 pb-4 leading-relaxed">
+      <p className="text-center text-muted-foreground text-xs mt-6 px-6 pb-4 leading-relaxed">
         Streams may vary by region. Use the YouTube links for guaranteed access.
       </p>
     </div>

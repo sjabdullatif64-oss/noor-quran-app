@@ -19,7 +19,7 @@ const HABITS: Habit[] = [
   { id: "asr",         emoji: "🌤️", label: "Asr Prayer",        sublabel: "Prayed Asr on time",               color: "text-orange-300", bg: "rgba(249,115,22,0.15)"  },
   { id: "maghrib",     emoji: "🌅", label: "Maghrib Prayer",    sublabel: "Prayed Maghrib on time",           color: "text-rose-300",   bg: "rgba(244,63,94,0.15)"   },
   { id: "isha",        emoji: "🌙", label: "Isha Prayer",       sublabel: "Prayed Isha on time",              color: "text-indigo-300", bg: "rgba(99,102,241,0.15)"  },
-  { id: "quran",       emoji: "📖", label: "Quran Reading",     sublabel: "Read at least 1 page of Quran",    color: "text-emerald-300",bg: "rgba(52,211,153,0.15)"  },
+   { id: "quran",       emoji: "📖", label: "Quran Reading",     sublabel: "Read at least 1 page of Quran",    color: "text-primary",bg: "bg-primary/10"  },
   { id: "morning_azk", emoji: "🌿", label: "Morning Azkar",     sublabel: "Completed morning remembrance",    color: "text-teal-300",   bg: "rgba(45,212,191,0.15)"  },
   { id: "evening_azk", emoji: "🌌", label: "Evening Azkar",     sublabel: "Completed evening remembrance",    color: "text-violet-300", bg: "rgba(139,92,246,0.15)"  },
   { id: "sadaqah",     emoji: "💝", label: "Sadaqah",           sublabel: "Gave in charity today",            color: "text-pink-300",   bg: "rgba(236,72,153,0.15)"  },
@@ -113,21 +113,19 @@ export function HabitTracker() {
 
   return (
     <div
-      className="min-h-screen pb-28 md:pb-10 animate-in fade-in duration-500"
-      style={{ background: "linear-gradient(150deg, #071a0e 0%, #0a1f12 50%, #061610 100%)" }}
+      className="min-h-screen pb-28 md:pb-10 animate-in fade-in duration-500 bg-background text-foreground"
     >
       {/* Header */}
       <div className="flex items-center gap-3 px-5 pt-6 pb-5">
-        <Link href="/more" className="text-emerald-600 hover:text-emerald-400 transition-colors">
+        <Link href="/more" className="text-muted-foreground hover:text-primary transition-colors">
           <ChevronLeft className="w-6 h-6" />
         </Link>
         <div className="flex-1">
-          <h1 className="text-2xl font-serif font-bold text-emerald-300">Islamic Habit Tracker</h1>
-          <p className="text-emerald-700 text-xs mt-0.5">Build your daily Islamic routine</p>
+          <h1 className="text-2xl font-serif font-bold text-foreground">Islamic Habit Tracker</h1>
+          <p className="text-muted-foreground text-xs mt-0.5">Build your daily Islamic routine</p>
         </div>
         <button onClick={resetToday}
-          className="w-9 h-9 flex items-center justify-center rounded-xl border border-emerald-900/40 text-emerald-700 hover:text-emerald-500 transition-colors"
-          style={{ background: "rgba(255,255,255,0.03)" }}
+          className="w-9 h-9 flex items-center justify-center rounded-xl border border-border text-muted-foreground hover:text-primary transition-colors bg-card"
           title="Reset today">
           <RotateCcw className="w-4 h-4" />
         </button>
@@ -135,15 +133,14 @@ export function HabitTracker() {
 
       <div className="px-4 space-y-4">
         {/* Progress ring + streak */}
-        <div className="rounded-3xl border border-emerald-900/40 overflow-hidden"
-          style={{ background: "rgba(255,255,255,0.04)" }}>
-          <div className="h-0.5 w-full" style={{ background: "linear-gradient(90deg, transparent, #1a5c38, transparent)" }} />
+        <div className="rounded-3xl border border-border overflow-hidden bg-card">
+          <div className="h-0.5 w-full bg-primary/20" />
           <div className="p-5 flex items-center gap-5">
             {/* Circle progress */}
             <div className="relative w-20 h-20 shrink-0">
               <svg className="w-20 h-20 -rotate-90" viewBox="0 0 80 80">
-                <circle cx="40" cy="40" r="33" fill="none" stroke="rgba(26,92,56,0.25)" strokeWidth="7" />
-                <circle cx="40" cy="40" r="33" fill="none" stroke="#34d399" strokeWidth="7"
+                <circle cx="40" cy="40" r="33" fill="none" stroke="hsl(var(--border))" strokeWidth="7" />
+                <circle cx="40" cy="40" r="33" fill="none" stroke="hsl(var(--primary))" strokeWidth="7"
                   strokeLinecap="round"
                   strokeDasharray={`${2 * Math.PI * 33}`}
                   strokeDashoffset={`${2 * Math.PI * 33 * (1 - pct / 100)}`}
@@ -151,16 +148,16 @@ export function HabitTracker() {
                 />
               </svg>
               <div className="absolute inset-0 flex flex-col items-center justify-center">
-                <span className="text-white font-bold text-lg leading-none">{pct}%</span>
-                <span className="text-emerald-700 text-[9px]">{completedCount}/{totalCount}</span>
+                <span className="text-foreground font-bold text-lg leading-none">{pct}%</span>
+                <span className="text-muted-foreground text-[9px]">{completedCount}/{totalCount}</span>
               </div>
             </div>
 
             <div className="flex-1">
-              <p className="text-white font-bold text-base">
+              <p className="text-foreground font-bold text-base">
                 {pct === 100 ? "MashaAllah! All done 🌟" : pct >= 50 ? "Great progress! 🔥" : "Keep going! 💪"}
               </p>
-              <p className="text-emerald-600 text-sm mt-0.5">{completedCount} of {totalCount} habits completed</p>
+              <p className="text-muted-foreground text-sm mt-0.5">{completedCount} of {totalCount} habits completed</p>
               <div className="flex items-center gap-3 mt-3">
                 <div className="flex items-center gap-1.5">
                   <Flame className="w-4 h-4 text-orange-400" />
@@ -181,16 +178,16 @@ export function HabitTracker() {
             <div className="grid grid-cols-7 gap-1.5">
               {past7.map((day) => (
                 <div key={day.dateStr} className="flex flex-col items-center gap-1">
-                  <span className="text-emerald-800 text-[9px]">{day.dayLabel}</span>
+                  <span className="text-muted-foreground text-[9px]">{day.dayLabel}</span>
                   <div
                     className="w-8 h-8 rounded-xl flex items-center justify-center text-xs font-bold border"
                     style={day.isToday
-                      ? { background: "rgba(52,211,153,0.2)", borderColor: "#34d399", color: "#34d399" }
+                      ? { background: "hsl(var(--primary) / 0.2)", borderColor: "hsl(var(--primary))", color: "hsl(var(--primary))" }
                       : day.cnt >= HABITS.length
-                      ? { background: "rgba(52,211,153,0.15)", borderColor: "rgba(52,211,153,0.4)", color: "#34d399" }
+                      ? { background: "hsl(var(--primary) / 0.15)", borderColor: "hsl(var(--primary) / 0.4)", color: "hsl(var(--primary))" }
                       : day.cnt > 0
-                      ? { background: "rgba(26,92,56,0.15)", borderColor: "rgba(26,92,56,0.4)", color: "#1a5c38" }
-                      : { background: "rgba(255,255,255,0.03)", borderColor: "rgba(26,92,56,0.15)", color: "#0a1f12" }
+                      ? { background: "hsl(var(--muted))", borderColor: "hsl(var(--border))", color: "hsl(var(--foreground))" }
+                      : { background: "hsl(var(--muted))", borderColor: "hsl(var(--border))", color: "hsl(var(--muted-foreground))" }
                     }
                   >
                     {day.cnt > 0 ? day.cnt : "·"}
@@ -210,39 +207,37 @@ export function HabitTracker() {
                 key={habit.id}
                 onClick={() => toggle(habit.id)}
                 className={`w-full flex items-center gap-4 p-4 rounded-2xl border text-left transition-all active:scale-[0.98] ${
-                  isDone ? "border-emerald-700/50" : "border-emerald-900/40"
+                  isDone ? "border-border" : "border-border"
                 }`}
                 style={{
-                  background: isDone
-                    ? "linear-gradient(135deg, rgba(52,211,153,0.12) 0%, rgba(26,92,56,0.1) 100%)"
-                    : "rgba(255,255,255,0.03)",
+                  background: isDone ? "hsl(var(--muted))" : "hsl(var(--card))",
                 }}
               >
                 {/* Habit icon */}
                 <div className="w-11 h-11 rounded-xl flex items-center justify-center text-xl shrink-0"
-                  style={{ background: isDone ? "rgba(52,211,153,0.15)" : habit.bg }}>
+                  style={{ background: isDone ? "hsl(var(--primary) / 0.15)" : habit.bg }}>
                   {isDone ? "✅" : habit.emoji}
                 </div>
 
                 {/* Labels */}
                 <div className="flex-1 min-w-0">
-                  <p className={`font-semibold text-sm ${isDone ? "text-emerald-300 line-through decoration-emerald-700" : "text-white"}`}>
+                  <p className={`font-semibold text-sm ${isDone ? "text-primary line-through decoration-primary" : "text-foreground"}`}>
                     {habit.label}
                   </p>
-                  <p className="text-emerald-700 text-xs mt-0.5 truncate">{habit.sublabel}</p>
+                  <p className="text-muted-foreground text-xs mt-0.5 truncate">{habit.sublabel}</p>
                 </div>
 
                 {/* Check */}
                 {isDone
-                  ? <CheckCircle2 className="w-6 h-6 text-emerald-400 shrink-0" />
-                  : <Circle className="w-6 h-6 text-emerald-900 shrink-0" />
+                   ? <CheckCircle2 className="w-6 h-6 text-primary shrink-0" />
+                   : <Circle className="w-6 h-6 text-muted-foreground shrink-0" />
                 }
               </button>
             );
           })}
         </div>
 
-        <p className="text-center text-emerald-900 text-xs pt-2 pb-4">
+        <p className="text-center text-muted-foreground text-xs pt-2 pb-4">
           Habits reset daily at midnight. Each completed habit earns 🪙 coins.
         </p>
       </div>

@@ -24,10 +24,10 @@ const CARDS: GiftCard[] = [
     title: "Eid Mubarak",
     arabic: "عِيدٌ مُبَارَكٌ",
     subtitle: "May Allah accept our prayers",
-    gradientFrom: "from-amber-900/40",
-    gradientTo: "to-amber-800/20",
-    border: "border-amber-700/30",
-    accentText: "text-amber-300",
+    gradientFrom: "from-muted",
+    gradientTo: "to-muted",
+    border: "border-border",
+    accentText: "text-primary",
     hexAccent: "#fcd34d",
     hexBg1: "#451a03",
     hexBg2: "#78350f",
@@ -37,10 +37,10 @@ const CARDS: GiftCard[] = [
     title: "Ramadan Kareem",
     arabic: "رَمَضَانُ كَرِيمٌ",
     subtitle: "Blessed month of mercy & forgiveness",
-    gradientFrom: "from-emerald-900/40",
-    gradientTo: "to-emerald-800/20",
-    border: "border-emerald-700/30",
-    accentText: "text-emerald-300",
+    gradientFrom: "from-muted",
+    gradientTo: "to-muted",
+    border: "border-border",
+    accentText: "text-primary",
     hexAccent: "#6ee7b7",
     hexBg1: "#052e16",
     hexBg2: "#064e3b",
@@ -50,10 +50,10 @@ const CARDS: GiftCard[] = [
     title: "Jumma Mubarak",
     arabic: "جُمُعَةٌ مُبَارَكَةٌ",
     subtitle: "The best day of the week",
-    gradientFrom: "from-teal-900/40",
-    gradientTo: "to-teal-800/20",
-    border: "border-teal-700/30",
-    accentText: "text-teal-300",
+    gradientFrom: "from-muted",
+    gradientTo: "to-muted",
+    border: "border-border",
+    accentText: "text-primary",
     hexAccent: "#5eead4",
     hexBg1: "#042f2e",
     hexBg2: "#065f46",
@@ -63,10 +63,10 @@ const CARDS: GiftCard[] = [
     title: "Hajj Mabroor",
     arabic: "حَجٌّ مَبْرُورٌ",
     subtitle: "May your Hajj be accepted",
-    gradientFrom: "from-sky-900/40",
-    gradientTo: "to-sky-800/20",
-    border: "border-sky-700/30",
-    accentText: "text-sky-300",
+    gradientFrom: "from-muted",
+    gradientTo: "to-muted",
+    border: "border-border",
+    accentText: "text-primary",
     hexAccent: "#7dd3fc",
     hexBg1: "#082f49",
     hexBg2: "#0c4a6e",
@@ -76,10 +76,10 @@ const CARDS: GiftCard[] = [
     title: "Barakallah Feek",
     arabic: "بَارَكَ اللّٰهُ فِيكَ",
     subtitle: "May Allah bless you",
-    gradientFrom: "from-purple-900/40",
-    gradientTo: "to-purple-800/20",
-    border: "border-purple-700/30",
-    accentText: "text-purple-300",
+    gradientFrom: "from-muted",
+    gradientTo: "to-muted",
+    border: "border-border",
+    accentText: "text-primary",
     hexAccent: "#c4b5fd",
     hexBg1: "#2e1065",
     hexBg2: "#4c1d95",
@@ -89,10 +89,10 @@ const CARDS: GiftCard[] = [
     title: "Masha Allah",
     arabic: "مَاشَاءَ اللّٰهُ",
     subtitle: "Whatever Allah wills",
-    gradientFrom: "from-rose-900/40",
-    gradientTo: "to-rose-800/20",
-    border: "border-rose-700/30",
-    accentText: "text-rose-300",
+    gradientFrom: "from-muted",
+    gradientTo: "to-muted",
+    border: "border-border",
+    accentText: "text-primary",
     hexAccent: "#fda4af",
     hexBg1: "#4c0519",
     hexBg2: "#881337",
@@ -234,16 +234,15 @@ export function IslamicGifts() {
 
   return (
     <div
-      className="min-h-screen pb-28 md:pb-10 animate-in fade-in duration-500"
-      style={{ background: "linear-gradient(150deg, #071a0e 0%, #0a1f12 50%, #061610 100%)" }}
+      className="min-h-screen pb-28 md:pb-10 animate-in fade-in duration-500 bg-background text-foreground"
     >
       <div className="flex items-center gap-3 px-5 pt-6 pb-6">
-        <Link href="/more" className="text-emerald-600 hover:text-emerald-400 transition-colors" data-testid="link-back-more">
+        <Link href="/more" className="text-muted-foreground hover:text-primary transition-colors" data-testid="link-back-more">
           <ChevronLeft className="w-6 h-6" />
         </Link>
         <div>
-          <h1 className="text-2xl font-serif font-bold text-emerald-300">Islamic Gifts</h1>
-          <p className="text-emerald-700 text-xs mt-0.5">Tap any card to preview, share, or download</p>
+          <h1 className="text-2xl font-serif font-bold text-foreground">Islamic Gifts</h1>
+          <p className="text-muted-foreground text-xs mt-0.5">Tap any card to preview, share, or download</p>
         </div>
       </div>
 
@@ -252,17 +251,17 @@ export function IslamicGifts() {
           <button
             key={card.id}
             onClick={() => setSelected(card)}
-            className={`bg-gradient-to-br ${card.gradientFrom} ${card.gradientTo} border ${card.border} rounded-2xl p-5 flex flex-col items-center gap-3 text-center active:scale-95 transition-all hover:scale-[1.02]`}
+            className={`bg-gradient-to-br ${card.gradientFrom} ${card.gradientTo} border ${card.border} rounded-2xl p-5 flex flex-col items-center gap-3 text-center active:scale-95 transition-all hover:scale-[1.02] bg-card`}
             data-testid={`gift-card-${card.id}`}
           >
             <div
               className={`w-10 h-10 rounded-full flex items-center justify-center ${card.accentText}`}
-              style={{ background: "rgba(255,255,255,0.06)" }}
+              style={{ background: "bg-card" }}
             >
               <Gift className="w-5 h-5" />
             </div>
             <div>
-              <p className="text-white font-semibold text-sm">{card.title}</p>
+              <p className="text-foreground font-semibold text-sm">{card.title}</p>
               <p dir="rtl" className={`font-arabic text-lg mt-1 ${card.accentText}`}>{card.arabic}</p>
             </div>
           </button>
@@ -279,8 +278,8 @@ export function IslamicGifts() {
           {/* Card preview */}
           <div
             className={`w-full max-w-sm rounded-3xl p-10 flex flex-col items-center gap-6 text-center border animate-in zoom-in-95 duration-300`}
-            style={{
-              background: `linear-gradient(135deg, ${selected.hexBg1}, ${selected.hexBg2})`,
+              style={{
+              	background: `linear-gradient(135deg, ${selected.hexBg1}, ${selected.hexBg2})`,
               borderColor: `${selected.hexAccent}30`,
               boxShadow: `0 0 60px ${selected.hexAccent}20, 0 0 120px ${selected.hexAccent}10`,
             }}
@@ -299,7 +298,7 @@ export function IslamicGifts() {
                 {selected.arabic}
               </p>
               <div className="w-16 h-px mx-auto opacity-30" style={{ background: selected.hexAccent }} />
-              <p className="text-white font-bold text-2xl font-serif">{selected.title}</p>
+              <p className="text-foreground font-bold text-2xl font-serif">{selected.title}</p>
               <p className="text-sm opacity-60" style={{ color: selected.hexAccent }}>{selected.subtitle}</p>
             </div>
 
@@ -340,7 +339,7 @@ export function IslamicGifts() {
           {/* Close */}
           <button
             onClick={() => setSelected(null)}
-            className="mt-6 w-12 h-12 rounded-full bg-white/10 flex items-center justify-center text-white hover:bg-white/20 transition-colors"
+            className="mt-6 w-12 h-12 rounded-full bg-muted flex items-center justify-center text-foreground hover:bg-muted/80 transition-colors"
             data-testid="button-close-gift-modal"
           >
             <X className="w-6 h-6" />

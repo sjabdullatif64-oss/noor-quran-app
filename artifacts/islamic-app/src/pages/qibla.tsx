@@ -252,7 +252,7 @@ export function Qibla() {
         <h1 className="text-2xl md:text-3xl font-serif font-bold text-amber-300 tracking-wide">
           Al Haram Direction
         </h1>
-        <p className="text-emerald-400/60 text-sm mt-1">Qibla Compass · Direction to Makkah</p>
+        <p className="text-primary/60 text-sm mt-1">Qibla Compass · Direction to Makkah</p>
       </div>
 
       <div className="w-full max-w-md px-4 flex flex-col items-center gap-5 mt-2">
@@ -393,8 +393,8 @@ export function Qibla() {
             style={{ background: "rgba(255,255,255,0.04)" }}
             data-testid="compass-unavailable-banner"
           >
-            <Navigation className="w-5 h-5 text-emerald-400 shrink-0" />
-            <p className="text-white/60 text-sm">
+            <Navigation className="w-5 h-5 text-primary shrink-0" />
+            <p className="text-foreground/60 text-sm">
               No compass sensor detected. The Qibla angle is shown below — use it with an external compass.
             </p>
           </div>
@@ -420,9 +420,9 @@ export function Qibla() {
                 style={{ background: "rgba(255,255,255,0.04)" }}
               >
                 <MapPin className="w-4 h-4 text-amber-400 shrink-0" />
-                <p className="text-white/60 text-sm">
+                <p className="text-foreground/60 text-sm">
                   Your location:{" "}
-                  <span className="text-white font-medium">{cityName}</span>
+                  <span className="text-foreground font-medium">{cityName}</span>
                 </p>
               </div>
             )}
@@ -431,10 +431,10 @@ export function Qibla() {
               className="col-span-2 rounded-2xl p-3 flex items-center gap-3 border border-white/10"
               style={{ background: "rgba(255,255,255,0.04)" }}
             >
-              <Navigation className="w-4 h-4 text-emerald-400 shrink-0" />
-              <p className="text-white/60 text-sm">
+              <Navigation className="w-4 h-4 text-primary shrink-0" />
+              <p className="text-foreground/60 text-sm">
                 Destination:{" "}
-                <span className="text-white font-medium">Masjid Al-Haram, Makkah</span>
+                <span className="text-foreground font-medium">Masjid Al-Haram, Makkah</span>
               </p>
             </div>
           </div>
@@ -461,7 +461,7 @@ export function Qibla() {
 
         {/* ── CTA / idle ──────────────────────────────────────────────────── */}
         {status === "idle" && (
-          <p className="text-white/35 text-sm text-center max-w-xs mt-1">
+          <p className="text-foreground/35 text-sm text-center max-w-xs mt-1">
             Allow location access to calculate the exact Qibla direction from your position.
           </p>
         )}
@@ -469,7 +469,7 @@ export function Qibla() {
         {(status === "idle" || status === "error") && (
           <button
             onClick={getLocation}
-            className="flex items-center justify-center gap-2 w-full max-w-xs h-12 rounded-full text-white font-semibold text-base"
+            className="flex items-center justify-center gap-2 w-full max-w-xs h-12 rounded-full text-foreground font-semibold text-base"
             style={{
               background: "linear-gradient(135deg, #b45309, #d97706)",
               boxShadow: "0 4px 24px rgba(217,119,6,0.35)",
@@ -495,7 +495,7 @@ export function Qibla() {
 
         {/* Hint */}
         {status === "granted" && isStable && (
-          <p className="text-white/25 text-xs text-center px-8 -mt-1">
+          <p className="text-foreground/25 text-xs text-center px-8 -mt-1">
             Rotate your device until the golden arrow points straight up.
           </p>
         )}
@@ -516,7 +516,7 @@ function InfoCard({
 }) {
   const colors = {
     amber: { border: "border-amber-500/20", text: "text-amber-300", sub: "text-amber-400/55" },
-    emerald: { border: "border-emerald-500/20", text: "text-emerald-300", sub: "text-emerald-400/55" },
+    emerald: { border: "border-emerald-500/20", text: "text-primary", sub: "text-primary/55" },
   }[accent];
 
   return (

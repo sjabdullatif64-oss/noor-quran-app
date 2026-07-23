@@ -61,7 +61,7 @@ async function compressImageFile(file: File, maxWidth = 800, quality = 0.72): Pr
 function StatusBadge({ status }: { status: string }) {
   return (
     <span className={`text-xs font-semibold px-2 py-0.5 rounded-full border ${
-      status === "approved" ? "border-emerald-700/50 bg-emerald-900/30 text-emerald-400" :
+      status === "approved" ? "border-border bg-muted text-primary" :
       status === "rejected" ? "border-red-700/50 bg-red-900/20 text-red-400" :
       "border-yellow-700/50 bg-yellow-900/20 text-yellow-400"
     }`}>{status}</span>
@@ -73,9 +73,9 @@ type AdminRow = {
   user: { id: string; deviceId: string; referralCode: string; coinsBalance: number } | null;
 };
 
-const INPUT_CLS = "bg-emerald-950/60 border-emerald-800/60 text-white placeholder:text-emerald-800 h-9 text-sm";
-const TEXTAREA_CLS = "w-full px-3 py-2 rounded-xl bg-emerald-950/60 border border-emerald-800/60 text-white placeholder:text-emerald-800 text-sm resize-none focus:outline-none focus:ring-1 focus:ring-emerald-700";
-const SELECT_CLS = "w-full px-3 py-2 rounded-xl bg-emerald-950/60 border border-emerald-800/60 text-white text-sm focus:outline-none focus:ring-1 focus:ring-emerald-700";
+const INPUT_CLS = "bg-muted border-border text-foreground placeholder:text-muted-foreground h-9 text-sm";
+const TEXTAREA_CLS = "w-full px-3 py-2 rounded-xl bg-muted border border-border text-foreground placeholder:text-muted-foreground text-sm resize-none focus:outline-none focus:ring-1 focus:ring-primary";
+const SELECT_CLS = "w-full px-3 py-2 rounded-xl bg-muted border border-border text-foreground text-sm focus:outline-none focus:ring-1 focus:ring-primary";
 
 export function AdminProducts() {
   const { toast } = useToast();
@@ -294,23 +294,20 @@ export function AdminProducts() {
 
   if (!authed) {
     return (
-      <div
-        className="min-h-screen flex flex-col items-center justify-center px-6"
-        style={{ background: "linear-gradient(150deg, #071a0e 0%, #0a1f12 50%, #061610 100%)" }}
-      >
-        <ShieldCheck className="w-14 h-14 text-emerald-500 mb-4" />
-        <h1 className="text-2xl font-serif font-bold text-emerald-300 mb-1">Admin Panel</h1>
-        <p className="text-emerald-700 text-sm mb-6">Enter admin token to continue</p>
+      <div className="min-h-screen flex flex-col items-center justify-center px-6 bg-background">
+        <ShieldCheck className="w-14 h-14 text-primary mb-4" />
+        <h1 className="text-2xl font-serif font-bold text-foreground mb-1">Admin Panel</h1>
+        <p className="text-muted-foreground text-sm mb-6">Enter admin token to continue</p>
         <form onSubmit={handleLogin} className="w-full max-w-sm space-y-3">
           <Input
             type="password"
             value={tokenInput}
             onChange={(e) => setTokenInput(e.target.value)}
             placeholder="Admin token"
-            className="bg-emerald-950/40 border-emerald-800/50 text-white placeholder:text-emerald-800"
+            className="bg-muted border-border text-foreground placeholder:text-muted-foreground"
             autoFocus
           />
-          <Button type="submit" className="w-full bg-emerald-700 hover:bg-emerald-600 text-white rounded-xl h-11">
+          <Button type="submit" className="w-full bg-primary hover:bg-primary/90 text-primary-foreground rounded-xl h-11">
             {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : "Access Admin Panel"}
           </Button>
         </form>
@@ -319,27 +316,24 @@ export function AdminProducts() {
   }
 
   return (
-    <div
-      className="min-h-screen pb-28 animate-in fade-in duration-500"
-      style={{ background: "linear-gradient(150deg, #071a0e 0%, #0a1f12 50%, #061610 100%)" }}
-    >
+      <div className="min-h-screen pb-28 animate-in fade-in duration-500 bg-background">
       {/* Header */}
       <div className="px-4 pt-8 pb-4 flex items-center gap-3">
-        <ShieldCheck className="w-6 h-6 text-emerald-400 shrink-0" />
+        <ShieldCheck className="w-6 h-6 text-primary shrink-0" />
         <div className="flex-1">
-          <h1 className="text-xl font-serif font-bold text-emerald-300">Product Admin</h1>
-          <p className="text-emerald-700 text-xs">{rows.length} item(s)</p>
+          <h1 className="text-xl font-serif font-bold text-foreground">Product Admin</h1>
+          <p className="text-muted-foreground text-xs">{rows.length} item(s)</p>
         </div>
         <button
           onClick={() => setShowCreate((v) => !v)}
-          className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-700/80 text-white text-xs font-semibold border border-emerald-600/50 active:scale-95 transition-transform"
+          className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-primary/80 text-primary-foreground text-xs font-semibold border border-border active:scale-95 transition-transform"
         >
           {showCreate ? <ChevronUp className="w-3.5 h-3.5" /> : <Plus className="w-3.5 h-3.5" />}
           {showCreate ? "Close" : "Create"}
         </button>
         <button
           onClick={() => load(token, tab)}
-          className="w-9 h-9 rounded-full border border-emerald-800/50 flex items-center justify-center text-emerald-500 shrink-0"
+          className="w-9 h-9 rounded-full border border-border flex items-center justify-center text-primary shrink-0"
         >
           {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <RefreshCw className="w-4 h-4" />}
         </button>
@@ -348,10 +342,9 @@ export function AdminProducts() {
       {/* ── Create Product Panel ── */}
       {showCreate && (
         <div
-          className="mx-4 mb-4 rounded-2xl border border-emerald-700/40 p-4 space-y-3"
-          style={{ background: "rgba(26,92,56,0.12)" }}
+          className="mx-4 mb-4 rounded-2xl border border-border p-4 space-y-3 bg-muted"
         >
-          <p className="text-emerald-300 font-bold text-sm flex items-center gap-2">
+          <p className="text-foreground font-bold text-sm flex items-center gap-2">
             <Plus className="w-4 h-4" /> New Product
           </p>
 
@@ -372,11 +365,11 @@ export function AdminProducts() {
               <img
                 src={newImageUrl}
                 alt="Preview"
-                className="w-full h-32 object-cover rounded-xl border border-emerald-800/40"
+                className="w-full h-32 object-cover rounded-xl border border-border"
               />
               <button
                 onClick={() => setNewImageUrl("")}
-                className="absolute top-2 right-2 w-6 h-6 rounded-full bg-black/60 flex items-center justify-center text-white"
+                className="absolute top-2 right-2 w-6 h-6 rounded-full bg-black/50 flex items-center justify-center text-primary-foreground"
               >
                 <X className="w-3 h-3" />
               </button>
@@ -384,7 +377,7 @@ export function AdminProducts() {
           ) : (
             <button
               onClick={() => createFileRef.current?.click()}
-              className="w-full h-24 rounded-xl border-2 border-dashed border-emerald-800/50 flex flex-col items-center justify-center gap-2 text-emerald-700 active:scale-[0.98] transition-transform"
+              className="w-full h-24 rounded-xl border-2 border-dashed border-border flex flex-col items-center justify-center gap-2 text-muted-foreground active:scale-[0.98] transition-transform"
             >
               <ImagePlus className="w-6 h-6" />
               <span className="text-xs">Tap to pick image from gallery</span>
@@ -393,7 +386,7 @@ export function AdminProducts() {
           {newImageUrl && (
             <button
               onClick={() => createFileRef.current?.click()}
-              className="text-emerald-600 text-xs underline"
+              className="text-primary text-xs underline"
             >
               Change image
             </button>
@@ -445,15 +438,15 @@ export function AdminProducts() {
             onClick={() => setNewFeatured((v) => !v)}
             className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl border text-sm font-semibold transition-all ${
               newFeatured
-                ? "border-amber-600/50 bg-amber-900/20 text-amber-300"
-                : "border-emerald-800/50 bg-emerald-950/30 text-emerald-600"
+                ? "border-border bg-primary/10 text-primary"
+                : "border-border bg-muted text-muted-foreground"
             }`}
           >
             <span className="flex items-center gap-2">
-              <Star className={`w-4 h-4 ${newFeatured ? "fill-amber-400 text-amber-400" : ""}`} />
+              <Star className={`w-4 h-4 ${newFeatured ? "fill-primary text-primary" : ""}`} />
               {newFeatured ? "Featured — will appear at top" : "Not featured"}
             </span>
-            <span className={`text-xs px-2 py-0.5 rounded-full border ${newFeatured ? "border-amber-600/50 bg-amber-900/30 text-amber-400" : "border-emerald-800/50 text-emerald-700"}`}>
+            <span className={`text-xs px-2 py-0.5 rounded-full border ${newFeatured ? "border-border bg-primary/10 text-primary" : "border-border text-muted-foreground"}`}>
               {newFeatured ? "ON" : "OFF"}
             </span>
           </button>
@@ -462,14 +455,14 @@ export function AdminProducts() {
             <Button
               onClick={handleCreate}
               disabled={creating}
-              className="flex-1 bg-emerald-700 hover:bg-emerald-600 text-white rounded-xl gap-1.5"
+              className="flex-1 bg-primary hover:bg-primary/90 text-primary-foreground rounded-xl gap-1.5"
             >
               {creating ? <Loader2 className="w-4 h-4 animate-spin" /> : <><Plus className="w-4 h-4" /> Create & Publish</>}
             </Button>
             <Button
               onClick={() => setShowCreate(false)}
               variant="ghost"
-              className="text-emerald-500 rounded-xl"
+              className="text-primary rounded-xl"
             >
               <X className="w-4 h-4" />
             </Button>
@@ -484,7 +477,7 @@ export function AdminProducts() {
             key={t}
             onClick={() => setTab(t)}
             className={`px-4 py-1.5 rounded-full text-sm font-semibold transition-all ${
-              tab === t ? "bg-emerald-700 text-white" : "text-emerald-600 border border-emerald-900/50 bg-emerald-950/30"
+              tab === t ? "bg-primary text-primary-foreground" : "text-muted-foreground border border-border bg-muted"
             }`}
           >
             {t === "pending" ? "Pending" : "All Products"}
@@ -494,9 +487,9 @@ export function AdminProducts() {
 
       {/* ── Product list ── */}
       {loading ? (
-        <div className="flex justify-center py-16"><Loader2 className="w-8 h-8 animate-spin text-emerald-600" /></div>
+        <div className="flex justify-center py-16"><Loader2 className="w-8 h-8 animate-spin text-primary" /></div>
       ) : rows.length === 0 ? (
-        <div className="text-center py-16 text-emerald-700">
+        <div className="text-center py-16 text-muted-foreground">
           <Package className="w-10 h-10 mx-auto mb-3 opacity-40" />
           <p>No products in this view.</p>
         </div>
@@ -507,25 +500,24 @@ export function AdminProducts() {
             return (
               <div
                 key={p.id}
-                className={`rounded-2xl border overflow-hidden ${featured ? "border-amber-700/40" : "border-emerald-900/50"}`}
-                style={{ background: featured ? "rgba(30,20,0,0.6)" : "rgba(10,30,18,0.7)" }}
+                className={`rounded-2xl border overflow-hidden ${featured ? "border-border" : "border-border"} bg-muted`}
               >
                 {p.imageUrl && expandedId === p.id && (
                   <img src={p.imageUrl} alt={p.title} className="w-full h-36 object-cover" />
                 )}
                 <div className="p-4 space-y-2">
                   <div className="flex items-start justify-between gap-2 flex-wrap">
-                    <h3 className="font-bold text-white text-base leading-tight flex-1">{p.title}</h3>
+                    <h3 className="font-bold text-foreground text-base leading-tight flex-1">{p.title}</h3>
                     <div className="flex items-center gap-1.5 shrink-0">
                       {featured && (
-                        <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-amber-700/40 text-amber-300 border border-amber-700/40">
+                        <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-primary/10 text-primary border border-border">
                           ⭐ Featured
                         </span>
                       )}
                       <StatusBadge status={p.status} />
                     </div>
                   </div>
-                  <p className="text-emerald-500 text-xs">{CATEGORY_LABELS[p.category] ?? p.category}</p>
+                  <p className="text-primary text-xs">{CATEGORY_LABELS[p.category] ?? p.category}</p>
 
                   {expandedId === p.id && (
                     editingId === p.id ? (
@@ -547,11 +539,11 @@ export function AdminProducts() {
                             <img
                               src={editImageUrl}
                               alt="Preview"
-                              className="w-full h-28 object-cover rounded-xl border border-emerald-800/40"
+                              className="w-full h-28 object-cover rounded-xl border border-border"
                             />
                             <button
                               onClick={() => setEditImageUrl("")}
-                              className="absolute top-1.5 right-1.5 w-5 h-5 rounded-full bg-black/60 flex items-center justify-center text-white"
+                              className="absolute top-1.5 right-1.5 w-5 h-5 rounded-full bg-black/50 flex items-center justify-center text-primary-foreground"
                             >
                               <X className="w-2.5 h-2.5" />
                             </button>
@@ -559,13 +551,13 @@ export function AdminProducts() {
                         ) : (
                           <button
                             onClick={() => editFileRef.current?.click()}
-                            className="w-full h-16 rounded-xl border-2 border-dashed border-emerald-800/50 flex items-center justify-center gap-2 text-emerald-700 text-xs active:scale-[0.98] transition-transform"
+                              className="w-full h-16 rounded-xl border-2 border-dashed border-border flex items-center justify-center gap-2 text-muted-foreground text-xs active:scale-[0.98] transition-transform"
                           >
                             <ImagePlus className="w-4 h-4" /> Pick image from gallery
                           </button>
                         )}
                         {editImageUrl && (
-                          <button onClick={() => editFileRef.current?.click()} className="text-emerald-600 text-xs underline">
+                          <button onClick={() => editFileRef.current?.click()} className="text-primary text-xs underline">
                             Change image
                           </button>
                         )}
@@ -580,20 +572,20 @@ export function AdminProducts() {
                       </div>
                     ) : (
                       <>
-                        <p className="text-emerald-400 text-sm">{p.description}</p>
-                        <p className="text-emerald-600 text-xs">📞 {p.contactInfo}</p>
-                        {p.productLink && <p className="text-emerald-600 text-xs">🔗 {p.productLink}</p>}
-                        {p.submittedBy && <p className="text-emerald-600 text-xs">👤 {p.submittedBy}</p>}
-                        {u && <p className="text-emerald-800 text-xs">Device: {u.deviceId.slice(0, 16)}…</p>}
+                        <p className="text-muted-foreground text-sm">{p.description}</p>
+                        <p className="text-muted-foreground text-xs">📞 {p.contactInfo}</p>
+                        {p.productLink && <p className="text-muted-foreground text-xs">🔗 {p.productLink}</p>}
+                        {p.submittedBy && <p className="text-muted-foreground text-xs">👤 {p.submittedBy}</p>}
+                        {u && <p className="text-muted-foreground text-xs">Device: {u.deviceId.slice(0, 16)}…</p>}
                         <div className="flex flex-wrap gap-2 text-xs">
-                          <span className="text-emerald-700">Created: {new Date(p.createdAt).toLocaleString()}</span>
+                          <span className="text-muted-foreground">Created: {new Date(p.createdAt).toLocaleString()}</span>
                           {p.promotionType !== "none" && (
-                            <span className="text-amber-500 font-semibold">⭐ {p.promotionType}</span>
+                            <span className="text-primary font-semibold">⭐ {p.promotionType}</span>
                           )}
-                          {p.rejectionReason && <span className="text-red-400">Reason: {p.rejectionReason}</span>}
-                          {p.approvedAt && <span className="text-emerald-500">Approved: {new Date(p.approvedAt).toLocaleString()}</span>}
+                          {p.rejectionReason && <span className="text-muted-foreground">Reason: {p.rejectionReason}</span>}
+                          {p.approvedAt && <span className="text-primary">Approved: {new Date(p.approvedAt).toLocaleString()}</span>}
                           {p.promotionExpiry && (
-                            <span className={new Date(p.promotionExpiry) > new Date() ? "text-amber-400" : "text-emerald-800"}>
+                            <span className={new Date(p.promotionExpiry) > new Date() ? "text-primary" : "text-muted-foreground"}>
                               Featured until: {new Date(p.promotionExpiry).toLocaleDateString()}
                             </span>
                           )}
@@ -604,7 +596,7 @@ export function AdminProducts() {
 
                   <button
                     onClick={() => setExpandedId(expandedId === p.id ? null : p.id)}
-                    className="flex items-center gap-1 text-emerald-600 text-xs mt-1"
+                    className="flex items-center gap-1 text-primary text-xs mt-1"
                   >
                     <Eye className="w-3.5 h-3.5" /> {expandedId === p.id ? "Less" : "Details"}
                   </button>
@@ -616,10 +608,10 @@ export function AdminProducts() {
                     {editingId === p.id ? (
                       <div className="flex gap-2">
                         <Button size="sm" onClick={() => saveEdit(p.id)} disabled={acting[p.id]}
-                          className="flex-1 bg-emerald-700 hover:bg-emerald-600 text-white rounded-xl gap-1">
+                          className="flex-1 bg-primary hover:bg-primary/90 text-primary-foreground rounded-xl gap-1">
                           {acting[p.id] ? <Loader2 className="w-4 h-4 animate-spin" /> : <><Save className="w-4 h-4" /> Save</>}
                         </Button>
-                        <Button size="sm" onClick={cancelEdit} variant="ghost" className="text-emerald-500 rounded-xl">
+                          <Button size="sm" onClick={cancelEdit} variant="ghost" className="text-primary rounded-xl">
                           <X className="w-4 h-4" />
                         </Button>
                       </div>
@@ -629,11 +621,11 @@ export function AdminProducts() {
                           value={rejectReason[p.id] ?? ""}
                           onChange={(e) => setRejectReason((r) => ({ ...r, [p.id]: e.target.value }))}
                           placeholder="Rejection reason (optional)"
-                          className="bg-emerald-950/50 border-emerald-900/50 text-white placeholder:text-emerald-800 h-9 text-sm"
+                          className="bg-muted border-border text-foreground placeholder:text-muted-foreground h-9 text-sm"
                         />
                         <div className="flex gap-2">
                           <Button size="sm" onClick={() => approve(p.id)} disabled={acting[p.id]}
-                            className="flex-1 bg-emerald-700 hover:bg-emerald-600 text-white rounded-xl gap-1">
+                          className="flex-1 bg-primary hover:bg-primary/90 text-primary-foreground rounded-xl gap-1">
                             {acting[p.id] ? <Loader2 className="w-4 h-4 animate-spin" /> : <><CheckCircle className="w-4 h-4" /> Approve</>}
                           </Button>
                           <Button size="sm" onClick={() => reject(p.id)} disabled={acting[p.id]}
@@ -668,10 +660,10 @@ export function AdminProducts() {
                     {editingId === p.id ? (
                       <div className="flex gap-2">
                         <Button size="sm" onClick={() => saveEdit(p.id)} disabled={acting[p.id]}
-                          className="flex-1 bg-emerald-700 hover:bg-emerald-600 text-white rounded-xl gap-1">
+                          className="flex-1 bg-primary hover:bg-emerald-600 text-foreground rounded-xl gap-1">
                           {acting[p.id] ? <Loader2 className="w-4 h-4 animate-spin" /> : <><Save className="w-4 h-4" /> Save</>}
                         </Button>
-                        <Button size="sm" onClick={cancelEdit} variant="ghost" className="text-emerald-500 rounded-xl">
+                        <Button size="sm" onClick={cancelEdit} variant="ghost" className="text-primary rounded-xl">
                           <X className="w-4 h-4" />
                         </Button>
                       </div>

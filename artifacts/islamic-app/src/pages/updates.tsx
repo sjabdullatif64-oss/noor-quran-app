@@ -30,12 +30,12 @@ function useSheetUpdates() {
 // ── Category styles ────────────────────────────────────────────────────────────
 function categoryStyle(cat: string) {
   const c = cat?.toLowerCase() ?? "";
-  if (c.includes("quran"))   return { bg: "rgba(52,211,153,0.12)",  text: "text-emerald-300", border: "border-emerald-700/40" };
-  if (c.includes("prayer"))  return { bg: "rgba(96,165,250,0.12)",  text: "text-blue-300",    border: "border-blue-700/40"   };
-  if (c.includes("event"))   return { bg: "rgba(168,85,247,0.12)",  text: "text-purple-300",  border: "border-purple-700/40" };
-  if (c.includes("feature")) return { bg: "rgba(234,179,8,0.12)",   text: "text-yellow-300",  border: "border-yellow-700/40" };
-  if (c.includes("update"))  return { bg: "rgba(249,115,22,0.12)",  text: "text-orange-300",  border: "border-orange-700/40" };
-  return                            { bg: "rgba(45,212,191,0.10)",   text: "text-teal-300",    border: "border-teal-800/40"   };
+  if (c.includes("quran"))   return { bg: "bg-primary/15", text: "text-foreground", border: "border-border" };
+  if (c.includes("prayer"))  return { bg: "bg-primary/15", text: "text-foreground", border: "border-border" };
+  if (c.includes("event"))   return { bg: "bg-primary/15", text: "text-foreground", border: "border-border" };
+  if (c.includes("feature")) return { bg: "bg-primary/15", text: "text-foreground", border: "border-border" };
+  if (c.includes("update"))  return { bg: "bg-primary/15", text: "text-foreground", border: "border-border" };
+  return                            { bg: "bg-muted", text: "text-foreground", border: "border-border" };
 }
 
 function formatDate(str: string): string {
@@ -56,15 +56,15 @@ function CardImage({ url, title, hasVideo }: { url: string; title: string; hasVi
   useEffect(() => { setStatus("loading"); }, [resolved]);
 
   return status === "error" ? (
-    <div className="w-full flex flex-col items-center justify-center gap-2 border-b border-emerald-900/30"
-      style={{ aspectRatio: "16/8", background: "rgba(52,211,153,0.04)" }}>
-      <ImageOff className="w-8 h-8 text-emerald-900" />
-      <span className="text-emerald-900 text-xs">Image unavailable</span>
+    <div className="w-full flex flex-col items-center justify-center gap-2 border-b border-border bg-card"
+      style={{ aspectRatio: "16/8" }}>
+      <ImageOff className="w-8 h-8 text-muted-foreground" />
+      <span className="text-muted-foreground text-xs">Image unavailable</span>
     </div>
   ) : (
     <div className="relative w-full overflow-hidden" style={{ aspectRatio: "16/8" }}>
       {status === "loading" && (
-        <div className="absolute inset-0 animate-pulse" style={{ background: "rgba(52,211,153,0.06)" }} />
+        <div className="absolute inset-0 animate-pulse bg-muted" />
       )}
       <img
         src={resolved}
@@ -84,12 +84,12 @@ function CardImage({ url, title, hasVideo }: { url: string; title: string; hasVi
         }}
         loading="lazy"
       />
-      <div className="absolute inset-0" style={{ background: "linear-gradient(to bottom, transparent 50%, rgba(6,22,16,0.9) 100%)" }} />
+       <div className="absolute inset-0 bg-gradient-to-b from-transparent to-background/90" />
       {hasVideo && (
         <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
           <div className="w-12 h-12 rounded-full flex items-center justify-center"
             style={{ background: "rgba(0,0,0,0.5)", backdropFilter: "blur(4px)" }}>
-            <Play className="w-5 h-5 text-white ml-0.5" />
+            <Play className="w-5 h-5 text-foreground ml-0.5" />
           </div>
         </div>
       )}
@@ -116,9 +116,8 @@ function UpdateCard({ item, index, onTitleTap }: {
 
   return (
     <div
-      className="rounded-2xl overflow-hidden border border-emerald-900/40 transition-all duration-300 hover:border-emerald-700/40 active:scale-[0.99]"
+      className="rounded-2xl overflow-hidden border border-border transition-all duration-300 hover:border-border active:scale-[0.99] bg-card"
       style={{
-        background: "rgba(255,255,255,0.03)",
         animationDelay: `${index * 60}ms`,
         animation: "fadeSlideUp 0.4s ease both",
       }}
@@ -127,9 +126,9 @@ function UpdateCard({ item, index, onTitleTap }: {
       {hasImage && item.category && (
         <div className="relative">
           <CardImage url={item.image_url} title={item.title} hasVideo={hasVideo} />
-          <span
-            className={`absolute top-3 left-3 px-2.5 py-1 rounded-full text-xs font-semibold border ${cat.text} ${cat.border}`}
-            style={{ background: "rgba(6,22,16,0.7)", backdropFilter: "blur(4px)" }}
+            <span
+              className={`absolute top-3 left-3 px-2.5 py-1 rounded-full text-xs font-semibold border ${cat.text} ${cat.border} ${cat.bg}`}
+              style={{ backdropFilter: "blur(4px)" }}
           >
             {item.category}
           </span>
@@ -143,13 +142,12 @@ function UpdateCard({ item, index, onTitleTap }: {
         {!hasImage && (
           <div className="flex items-center gap-2 flex-wrap">
             {item.category && (
-              <span className={`px-2.5 py-0.5 rounded-full text-xs font-semibold border ${cat.text} ${cat.border}`}
-                style={{ background: cat.bg }}>
+              <span className={`px-2.5 py-0.5 rounded-full text-xs font-semibold border ${cat.text} ${cat.border} ${cat.bg}`}>
                 <Tag className="w-2.5 h-2.5 inline mr-1" />{item.category}
               </span>
             )}
             {item.created_at && (
-              <span className="text-emerald-800 text-xs flex items-center gap-1">
+              <span className="text-muted-foreground text-xs flex items-center gap-1">
                 <Clock className="w-3 h-3" />{formatDate(item.created_at)}
               </span>
             )}
@@ -157,37 +155,35 @@ function UpdateCard({ item, index, onTitleTap }: {
         )}
 
         {hasImage && item.created_at && (
-          <span className="text-emerald-800 text-xs flex items-center gap-1">
+          <span className="text-muted-foreground text-xs flex items-center gap-1">
             <Clock className="w-3 h-3" />{formatDate(item.created_at)}
           </span>
         )}
 
         {/* Title — tap 20× to trigger secret admin access */}
         <h3
-          className="text-white font-bold text-base leading-snug select-none cursor-default"
+          className="text-foreground font-bold text-base leading-snug select-none cursor-default"
           onPointerDown={onTitleTap}
         >
           {item.title}
         </h3>
 
         {item.description && (
-          <p className="text-emerald-600 text-sm leading-relaxed line-clamp-3">{item.description}</p>
+          <p className="text-muted-foreground text-sm leading-relaxed line-clamp-3">{item.description}</p>
         )}
 
         {(hasVideo || hasLink) && (
           <div className="flex gap-2 pt-1">
             {hasVideo && (
               <button onClick={() => openUrl(item.video_url)}
-                className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-semibold text-emerald-200 transition-all active:scale-[0.97]"
-                style={{ background: "linear-gradient(135deg, #1a5c38 0%, #16a34a 100%)" }}
+                className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-semibold text-primary-foreground bg-primary transition-all active:scale-[0.97]"
                 data-testid={`button-watch-${item.id}`}>
                 <Play className="w-3.5 h-3.5" />{watchLabel}
               </button>
             )}
             {hasLink && (
               <button onClick={() => openUrl(item.target_link)}
-                className={`flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-semibold transition-all active:scale-[0.97] ${hasVideo ? "text-emerald-400 border border-emerald-800/50" : "text-emerald-200"}`}
-                style={hasVideo ? { background: "rgba(52,211,153,0.06)" } : { background: "linear-gradient(135deg, #1a5c38 0%, #16a34a 100%)" }}
+                className={`flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-semibold transition-all active:scale-[0.97] ${hasVideo ? "text-foreground border border-border bg-card" : "text-primary-foreground bg-primary"}`}
                 data-testid={`button-open-${item.id}`}>
                 <ExternalLink className="w-3.5 h-3.5" />{openLabel}
               </button>
@@ -226,15 +222,14 @@ function AdminLoginModal({ onSuccess, onClose }: { onSuccess: () => void; onClos
     <div className="fixed inset-0 z-50 flex items-center justify-center p-6"
       style={{ background: "rgba(0,0,0,0.85)", backdropFilter: "blur(8px)" }}>
       <div
-        className={`w-full max-w-sm rounded-3xl p-7 border border-emerald-800/40 ${shake ? "animate-bounce" : ""}`}
-        style={{ background: "linear-gradient(150deg, #071a0e 0%, #0d2314 100%)" }}
+        className={`w-full max-w-sm rounded-3xl p-7 border border-border bg-card ${shake ? "animate-bounce" : ""}`}
       >
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center gap-2">
-            <Shield className="w-5 h-5 text-emerald-400" />
-            <span className="text-emerald-300 font-bold text-lg">Admin Access</span>
+            <Shield className="w-5 h-5 text-primary" />
+            <span className="text-foreground font-bold text-lg">Admin Access</span>
           </div>
-          <button onClick={onClose} className="text-emerald-700 hover:text-emerald-400 transition-colors">
+          <button onClick={onClose} className="text-muted-foreground hover:text-foreground transition-colors">
             <X className="w-5 h-5" />
           </button>
         </div>
@@ -248,12 +243,12 @@ function AdminLoginModal({ onSuccess, onClose }: { onSuccess: () => void; onClos
               onChange={(e) => { setCode(e.target.value); setError(""); }}
               onKeyDown={(e) => e.key === "Enter" && submit()}
               placeholder="Enter access code"
-              className="w-full px-4 py-3 pr-12 rounded-xl text-white text-base border border-emerald-800/50 outline-none focus:border-emerald-600 transition-colors"
-              style={{ background: "rgba(255,255,255,0.06)", letterSpacing: show ? "normal" : "4px" }}
+               className="w-full px-4 py-3 pr-12 rounded-xl text-foreground text-base border border-border outline-none focus:border-border transition-colors bg-card"
+               style={{ letterSpacing: show ? "normal" : "4px" }}
               autoComplete="off"
             />
             <button onClick={() => setShow((s) => !s)}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-emerald-700 hover:text-emerald-400 transition-colors">
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors">
               {show ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
             </button>
           </div>
@@ -261,8 +256,7 @@ function AdminLoginModal({ onSuccess, onClose }: { onSuccess: () => void; onClos
           {error && <p className="text-red-400 text-sm text-center">{error}</p>}
 
           <button onClick={submit}
-            className="w-full py-3 rounded-xl font-bold text-white text-base transition-all active:scale-[0.98]"
-            style={{ background: "linear-gradient(135deg, #1a5c38 0%, #16a34a 100%)" }}>
+            className="w-full py-3 rounded-xl font-bold text-primary-foreground text-base transition-all active:scale-[0.98] bg-primary">
             Verify
           </button>
         </div>
@@ -280,13 +274,13 @@ const EMPTY_ITEM: Omit<UpdateItem, "id"> = {
 const CATEGORIES = ["Quran", "Prayer", "Event", "Feature", "Update", "General"];
 const STATUS_OPTIONS = ["active", "inactive"];
 
-const inputCls = "w-full px-3.5 py-2.5 rounded-xl text-white text-sm border border-emerald-900/40 outline-none focus:border-emerald-600 transition-colors bg-white/[0.06] placeholder:text-emerald-800";
+const inputCls = "w-full px-3.5 py-2.5 rounded-xl text-foreground text-sm border border-border outline-none focus:border-border transition-colors bg-card placeholder:text-muted-foreground";
 
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div className="space-y-1.5">
-      <label className="text-emerald-500 text-xs font-semibold uppercase tracking-wider">{label}</label>
-      <div style={{ background: "rgba(255,255,255,0.03)" }} className="rounded-xl">
+      <label className="text-primary text-xs font-semibold uppercase tracking-wider">{label}</label>
+      <div className="rounded-xl bg-card">
         {children}
       </div>
     </div>
@@ -360,13 +354,12 @@ function AdminFormModal({ item, mode, onSave, onClose, submitting = false }: {
   }
 
   return (
-    <div className="fixed inset-0 z-[60] flex flex-col"
-      style={{ background: "linear-gradient(150deg, #071a0e 0%, #0a1f12 100%)" }}>
-      <div className="flex items-center justify-between px-5 pt-6 pb-4 border-b border-emerald-900/40">
-        <h2 className="text-emerald-300 font-bold text-lg">
+    <div className="fixed inset-0 z-50 flex flex-col bg-background">
+      <div className="flex items-center justify-between px-5 pt-6 pb-4 border-b border-border">
+        <h2 className="text-primary font-bold text-lg">
           {mode === "create" ? "Create Item" : "Edit Item"}
         </h2>
-        <button onClick={onClose} className="text-emerald-700 hover:text-emerald-400 transition-colors">
+        <button onClick={onClose} className="text-muted-foreground hover:text-primary transition-colors">
           <X className="w-5 h-5" />
         </button>
       </div>
@@ -398,7 +391,7 @@ function AdminFormModal({ item, mode, onSave, onClose, submitting = false }: {
             type="button"
             onClick={() => fileInputRef.current?.click()}
             disabled={galleryLoading}
-            className="w-full py-3 rounded-xl text-sm font-semibold flex items-center justify-center gap-2 border border-emerald-800/50 transition-all active:scale-[0.98] disabled:opacity-50"
+            className="w-full py-3 rounded-xl text-sm font-semibold flex items-center justify-center gap-2 border border-border transition-all active:scale-[0.98] disabled:opacity-50"
             style={{
               color: form.image_url?.startsWith("data:") ? "#86efac" : "#34d399",
               background: "rgba(52,211,153,0.06)",
@@ -417,7 +410,7 @@ function AdminFormModal({ item, mode, onSave, onClose, submitting = false }: {
           {/* OR divider */}
           <div className="flex items-center gap-2 my-2 px-1">
             <div className="flex-1 h-px" style={{ background: "rgba(52,211,153,0.12)" }} />
-            <span className="text-emerald-900 text-[10px] font-bold uppercase tracking-wider">or paste URL</span>
+            <span className="text-muted-foreground text-[10px] font-bold uppercase tracking-wider">or paste URL</span>
             <div className="flex-1 h-px" style={{ background: "rgba(52,211,153,0.12)" }} />
           </div>
 
@@ -436,7 +429,7 @@ function AdminFormModal({ item, mode, onSave, onClose, submitting = false }: {
                 <button
                   type="button"
                   onClick={() => setImgPreview((v) => !v)}
-                  className="mt-1.5 ml-1 flex items-center gap-1 text-xs text-emerald-600 hover:text-emerald-400"
+                  className="mt-1.5 ml-1 flex items-center gap-1 text-xs text-muted-foreground hover:text-primary"
                 >
                   <Eye className="w-3 h-3" />
                   {imgPreview ? "Hide preview" : "Preview image"}
@@ -447,7 +440,7 @@ function AdminFormModal({ item, mode, onSave, onClose, submitting = false }: {
                   <img
                     src={form.image_url.startsWith("data:") ? form.image_url : resolved}
                     alt="preview"
-                    className="w-full rounded-xl object-cover border border-emerald-900/40"
+                    className="w-full rounded-xl object-cover border border-border"
                     style={{ maxHeight: 160 }}
                     onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
                   />
@@ -464,7 +457,7 @@ function AdminFormModal({ item, mode, onSave, onClose, submitting = false }: {
                 </div>
               )}
               {form.image_url && !form.image_url.startsWith("data:") && (
-                <p className="mt-1 ml-1 text-emerald-900 text-[10px] break-all">
+                <p className="mt-1 ml-1 text-muted-foreground text-[10px] break-all">
                   Resolved: {resolveImageUrl(form.image_url)}
                 </p>
               )}
@@ -495,7 +488,7 @@ function AdminFormModal({ item, mode, onSave, onClose, submitting = false }: {
               {CATEGORIES.map((c) => <option key={c} value={c}>{c}</option>)}
               {!CATEGORIES.includes(form.category) && <option value="__custom">{form.category || "Custom…"}</option>}
             </select>
-            <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-emerald-700 pointer-events-none" />
+            <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
           </div>
           <input value={form.category} onChange={(e) => set("category", e.target.value)}
             placeholder="Or type custom category" className={inputCls + " mt-2"} />
@@ -507,10 +500,10 @@ function AdminFormModal({ item, mode, onSave, onClose, submitting = false }: {
               <button key={s} onClick={() => set("status", s)}
                 className={`flex-1 py-2 rounded-xl text-sm font-semibold border transition-all ${
                   form.status === s
-                    ? "bg-emerald-700 text-white border-emerald-600"
-                    : "text-emerald-600 border-emerald-900/40 hover:border-emerald-700"
+                    ? "bg-primary text-primary-foreground border-border"
+                    : "text-muted-foreground border-border hover:border-border"
                 }`}
-                style={form.status !== s ? { background: "rgba(255,255,255,0.03)" } : {}}>
+                style={form.status !== s ? { background: "transparent" } : {}}>
                 {s}
               </button>
             ))}
@@ -523,12 +516,11 @@ function AdminFormModal({ item, mode, onSave, onClose, submitting = false }: {
         </Field>
       </div>
 
-      <div className="px-5 py-4 border-t border-emerald-900/40"
+      <div className="px-5 py-4 border-t border-border"
         style={{ paddingBottom: "max(1rem, env(safe-area-inset-bottom))" }}>
         <button onClick={handleSave}
           disabled={!form.title.trim() || submitting}
-          className="w-full py-3.5 rounded-2xl font-bold text-white text-base flex items-center justify-center gap-2 transition-all active:scale-[0.98] disabled:opacity-40"
-          style={{ background: "linear-gradient(135deg, #1a5c38 0%, #16a34a 100%)" }}>
+          className="w-full py-3.5 rounded-2xl font-bold text-primary-foreground text-base flex items-center justify-center gap-2 transition-all active:scale-[0.98] disabled:opacity-40 bg-primary">
           {submitting
             ? <Loader2 className="w-4 h-4 animate-spin" />
             : <Save className="w-4 h-4" />}
@@ -567,51 +559,51 @@ function SheetSyncPanel() {
   }
 
   return (
-    <div className="mx-5 mb-4 rounded-2xl border border-emerald-900/40 overflow-hidden"
+    <div className="mx-5 mb-4 rounded-2xl border border-border overflow-hidden"
       style={{ background: "rgba(255,255,255,0.02)" }}>
 
       {/* Header — always shows Connected since URL is pre-configured */}
       <button onClick={() => setShow(v => !v)}
         className="w-full flex items-center justify-between px-4 py-3">
         <div className="flex items-center gap-2">
-          <Settings2 className="w-4 h-4 text-emerald-600" />
-          <span className="text-emerald-500 text-sm font-semibold">Google Sheet Sync</span>
+          <Settings2 className="w-4 h-4 text-muted-foreground" />
+          <span className="text-primary text-sm font-semibold">Google Sheet Sync</span>
           <span className="text-[10px] px-2 py-0.5 rounded-full border font-bold text-green-400 border-green-800/50 bg-green-900/20">
             ✓ Connected
           </span>
           {saved && (
-            <span className="text-[10px] text-emerald-400 font-semibold animate-in fade-in">
+            <span className="text-[10px] text-primary font-semibold animate-in fade-in">
               URL updated
             </span>
           )}
         </div>
-        <ChevronDown className={`w-4 h-4 text-emerald-700 transition-transform ${show ? "rotate-180" : ""}`} />
+        <ChevronDown className={`w-4 h-4 text-muted-foreground transition-transform ${show ? "rotate-180" : ""}`} />
       </button>
 
       {show && (
-        <div className="border-t border-emerald-900/30 px-4 pt-4 pb-5 space-y-4">
+        <div className="border-t border-border px-4 pt-4 pb-5 space-y-4">
 
           {/* Active URL */}
           <div className="space-y-1.5">
-            <p className="text-emerald-600 text-[10px] font-bold uppercase tracking-wider">
+            <p className="text-muted-foreground text-[10px] font-bold uppercase tracking-wider">
               Active Apps Script URL
             </p>
             <div className="rounded-xl p-3 border border-green-900/30 flex items-start gap-2"
               style={{ background: "rgba(52,211,153,0.04)" }}>
               <CheckCircle className="w-3.5 h-3.5 text-green-500 shrink-0 mt-0.5" />
-              <p className="text-emerald-700 text-[10px] font-mono break-all leading-relaxed">
+              <p className="text-muted-foreground text-[10px] font-mono break-all leading-relaxed">
                 {activeUrl}
               </p>
             </div>
-            <p className="text-emerald-800 text-[10px]">
+            <p className="text-muted-foreground text-[10px]">
               Every Create / Edit / Delete writes directly to your Google Sheet.
             </p>
           </div>
 
           {/* Sheet columns reference */}
-          <div className="rounded-xl p-3 border border-emerald-900/30"
+          <div className="rounded-xl p-3 border border-border"
             style={{ background: "rgba(0,0,0,0.15)" }}>
-            <p className="text-emerald-600 text-[10px] font-bold mb-1.5 uppercase tracking-wider">
+            <p className="text-muted-foreground text-[10px] font-bold mb-1.5 uppercase tracking-wider">
               Sheet columns (Row 1 headers)
             </p>
             <div className="grid grid-cols-2 gap-x-4 gap-y-0.5">
@@ -621,8 +613,8 @@ function SheetSyncPanel() {
                 const [letter, field] = col.split("=");
                 return (
                   <div key={col} className="flex items-center gap-1.5">
-                    <span className="text-emerald-900 font-mono text-[10px] w-4">{letter}</span>
-                    <span className="text-emerald-700 text-[10px] font-mono">{field}</span>
+                    <span className="text-muted-foreground font-mono text-[10px] w-4">{letter}</span>
+                    <span className="text-muted-foreground text-[10px] font-mono">{field}</span>
                   </div>
                 );
               })}
@@ -632,7 +624,7 @@ function SheetSyncPanel() {
           {/* Override URL (advanced) */}
           <div className="space-y-2">
             <button onClick={() => setEditing(v => !v)}
-              className="flex items-center gap-1.5 text-[11px] text-emerald-700 hover:text-emerald-500 transition-colors">
+              className="flex items-center gap-1.5 text-[11px] text-muted-foreground hover:text-primary transition-colors">
               <Settings2 className="w-3 h-3" />
               {editing ? "Cancel" : "Use a different Apps Script URL"}
             </button>
@@ -649,16 +641,15 @@ function SheetSyncPanel() {
                 <button
                   onClick={saveUrl}
                   disabled={!url.trim()}
-                  className="w-full py-2.5 rounded-xl font-bold text-sm flex items-center justify-center gap-2 transition-all active:scale-[0.98] disabled:opacity-40"
-                  style={{ background: "linear-gradient(135deg, #1a5c38 0%, #16a34a 100%)" }}>
+                  className="w-full py-2.5 rounded-xl font-bold text-sm flex items-center justify-center gap-2 transition-all active:scale-[0.98] disabled:opacity-40">
                   <Save className="w-3.5 h-3.5" /> Save New URL
                 </button>
 
                 {/* Copy script option for re-deployment */}
-                <div className="rounded-xl border border-emerald-900/40 overflow-hidden">
+                <div className="rounded-xl border border-border overflow-hidden">
                   <div className="flex items-center justify-between px-3 py-2"
                     style={{ background: "rgba(255,255,255,0.03)" }}>
-                    <span className="text-emerald-800 text-[10px] font-mono">noor-quran-sheet-api.gs</span>
+                    <span className="text-muted-foreground text-[10px] font-mono">noor-quran-sheet-api.gs</span>
                     <button onClick={copyScript}
                       className="flex items-center gap-1 text-[11px] font-semibold transition-colors"
                       style={{ color: copied ? "#4ade80" : "#34d399" }}>
@@ -865,18 +856,17 @@ function AdminPanel({ sheetItems, onClose }: {
   const allItems = mergeItems(currentSheet, localItems, deletedIds, overrides);
 
   return (
-    <div className="fixed inset-0 z-50 flex flex-col"
-      style={{ background: "linear-gradient(150deg, #071a0e 0%, #0a1f12 100%)" }}>
+    <div className="fixed inset-0 z-50 flex flex-col bg-background">
       {/* Header */}
-      <div className="flex items-center justify-between px-5 pt-6 pb-4 border-b border-emerald-900/40">
+      <div className="flex items-center justify-between px-5 pt-6 pb-4 border-b border-border">
         <div className="flex items-center gap-2">
-          <Shield className="w-5 h-5 text-emerald-400" />
-          <h1 className="text-emerald-300 font-bold text-xl">Admin Panel</h1>
-          <span className="text-emerald-800 text-xs border border-emerald-900/40 rounded-full px-2 py-0.5">
+          <Shield className="w-5 h-5 text-primary" />
+          <h1 className="text-foreground font-bold text-xl">Admin Panel</h1>
+          <span className="text-muted-foreground text-xs border border-border rounded-full px-2 py-0.5">
             {allItems.length} items
           </span>
         </div>
-        <button onClick={onClose} className="text-emerald-700 hover:text-emerald-400 transition-colors">
+        <button onClick={onClose} className="text-muted-foreground hover:text-foreground transition-colors">
           <X className="w-5 h-5" />
         </button>
       </div>
@@ -890,8 +880,7 @@ function AdminPanel({ sheetItems, onClose }: {
       <div className="px-5 pb-2">
         <button
           onClick={handleClearCache}
-          className="w-full py-2 rounded-xl text-xs font-semibold border border-red-900/30 text-red-500 hover:text-red-400 hover:border-red-700/50 transition-all active:scale-[0.98] flex items-center justify-center gap-1.5"
-          style={{ background: "rgba(239,68,68,0.06)" }}>
+          className="w-full py-2 rounded-xl text-xs font-semibold border border-border text-muted-foreground hover:text-foreground hover:border-border transition-all active:scale-[0.98] flex items-center justify-center gap-1.5 bg-card">
           <Trash2 className="w-3 h-3" /> Clear Local Cache
         </button>
       </div>
@@ -906,8 +895,7 @@ function AdminPanel({ sheetItems, onClose }: {
       {/* Create button */}
       <div className="px-5 pb-3">
         <button onClick={() => setFormState({ open: true, mode: "create", item: null })}
-          className="w-full py-3 rounded-2xl font-bold text-white text-sm flex items-center justify-center gap-2 border border-emerald-700/50 transition-all active:scale-[0.98]"
-          style={{ background: "linear-gradient(135deg, #1a5c38 0%, #16a34a 100%)" }}>
+          className="w-full py-3 rounded-2xl font-bold text-primary-foreground text-sm flex items-center justify-center gap-2 border border-border transition-all active:scale-[0.98] bg-primary">
           <Plus className="w-4 h-4" /> Create New Item
         </button>
       </div>
@@ -915,55 +903,52 @@ function AdminPanel({ sheetItems, onClose }: {
       {/* Items list */}
       <div className="flex-1 overflow-y-auto px-5 pb-8 space-y-3">
         {allItems.length === 0 && (
-          <div className="text-center py-16 text-emerald-800 text-sm">No items yet. Create one above.</div>
+          <div className="text-center py-16 text-muted-foreground text-sm">No items yet. Create one above.</div>
         )}
         {allItems.map((item) => {
           const isLocal      = localItems.some((l) => l.id === item.id);
           const isOverridden = overrides.some((o) => o.id === item.id);
           return (
             <div key={item.id}
-              className="rounded-2xl p-4 border border-emerald-900/40 space-y-2"
-              style={{ background: "rgba(255,255,255,0.03)" }}>
+              className="rounded-2xl p-4 border border-border space-y-2 bg-card">
               <div className="flex items-start justify-between gap-3">
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-1.5 mb-1.5 flex-wrap">
                     <span className={`text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full border ${
                       isLocal
-                        ? "text-emerald-300 border-emerald-700/50 bg-emerald-900/30"
-                        : "text-amber-400 border-amber-800/50 bg-amber-900/20"
+                        ? "text-foreground border-border bg-primary/15"
+                        : "text-muted-foreground border-border bg-card"
                     }`}>
                       {isLocal ? "📱 Local" : isOverridden ? "📊 Sheet (edited)" : "📊 Sheet"}
                     </span>
                     {item.category && (
-                      <span className="text-[10px] text-emerald-700 border border-emerald-900/40 px-1.5 py-0.5 rounded-full">
+                      <span className="text-[10px] text-muted-foreground border border-border px-1.5 py-0.5 rounded-full">
                         {item.category}
                       </span>
                     )}
-                    <span className={`text-[10px] px-1.5 py-0.5 rounded-full border ${
+                      <span className={`text-[10px] px-1.5 py-0.5 rounded-full border ${
                       item.status?.toLowerCase() === "active"
-                        ? "text-green-400 border-green-900/40"
-                        : "text-red-400 border-red-900/40"
+                        ? "text-foreground border-border"
+                        : "text-muted-foreground border-border"
                     }`}>
                       {item.status || "active"}
                     </span>
                   </div>
-                  <p className="text-white font-semibold text-sm leading-snug truncate">{item.title}</p>
+                  <p className="text-foreground font-semibold text-sm leading-snug truncate">{item.title}</p>
                   {item.description && (
-                    <p className="text-emerald-700 text-xs mt-0.5 line-clamp-2">{item.description}</p>
+                    <p className="text-muted-foreground text-xs mt-0.5 line-clamp-2">{item.description}</p>
                   )}
                   {item.image_url && (
-                    <p className="text-emerald-900 text-[10px] mt-1 truncate">🖼 {item.image_url}</p>
+                    <p className="text-muted-foreground text-[10px] mt-1 truncate">🖼 {item.image_url}</p>
                   )}
                 </div>
                 <div className="flex flex-col gap-2 shrink-0">
                   <button onClick={() => setFormState({ open: true, mode: "edit", item })}
-                    className="w-8 h-8 rounded-full flex items-center justify-center border border-emerald-800/40 text-emerald-500 hover:text-emerald-300 hover:border-emerald-600 transition-all"
-                    style={{ background: "rgba(52,211,153,0.06)" }}>
+                    className="w-8 h-8 rounded-full flex items-center justify-center border border-border text-muted-foreground hover:text-foreground hover:border-border transition-all bg-card">
                     <Pencil className="w-3.5 h-3.5" />
                   </button>
                   <button onClick={() => setConfirmDelete(item.id)}
-                    className="w-8 h-8 rounded-full flex items-center justify-center border border-red-900/30 text-red-700 hover:text-red-400 hover:border-red-700 transition-all"
-                    style={{ background: "rgba(239,68,68,0.06)" }}>
+                    className="w-8 h-8 rounded-full flex items-center justify-center border border-border text-muted-foreground hover:text-foreground hover:border-border transition-all bg-card">
                     <Trash2 className="w-3.5 h-3.5" />
                   </button>
                 </div>
@@ -975,23 +960,19 @@ function AdminPanel({ sheetItems, onClose }: {
 
       {/* Delete confirm */}
       {confirmDelete && (
-        <div className="fixed inset-0 z-[70] flex items-center justify-center p-6"
-          style={{ background: "rgba(0,0,0,0.7)", backdropFilter: "blur(4px)" }}>
-          <div className="w-full max-w-xs rounded-3xl p-6 border border-red-900/40"
-            style={{ background: "linear-gradient(150deg, #1a0707 0%, #0f0a0a 100%)" }}>
-            <p className="text-white font-bold text-base mb-2">Delete Item?</p>
-            <p className="text-red-400 text-sm mb-5">
+        <div className="fixed inset-0 z-[70] flex items-center justify-center p-6 bg-background/80 backdrop-blur-sm">
+          <div className="w-full max-w-xs rounded-3xl p-6 border border-border bg-card">
+            <p className="text-foreground font-bold text-base mb-2">Delete Item?</p>
+            <p className="text-muted-foreground text-sm mb-5">
               {localItems.some((l) => l.id === confirmDelete)
                 ? "This will permanently remove the local item."
                 : "This will hide the Sheet item from the app (and delete from Sheet if sync is set up)."}
             </p>
             <div className="flex gap-3">
               <button onClick={() => setConfirmDelete(null)}
-                className="flex-1 py-2.5 rounded-xl text-emerald-400 border border-emerald-900/40 text-sm font-semibold"
-                style={{ background: "rgba(255,255,255,0.04)" }}>Cancel</button>
+                className="flex-1 py-2.5 rounded-xl text-muted-foreground border border-border text-sm font-semibold bg-card">Cancel</button>
               <button onClick={() => handleDelete(confirmDelete)}
-                className="flex-1 py-2.5 rounded-xl text-white text-sm font-bold"
-                style={{ background: "linear-gradient(135deg, #7f1d1d, #ef4444)" }}>Delete</button>
+                className="flex-1 py-2.5 rounded-xl text-primary-foreground text-sm font-bold bg-primary">Delete</button>
             </div>
           </div>
         </div>
@@ -1081,35 +1062,33 @@ export function Updates() {
     <>
       <div
         ref={containerRef}
-        className="min-h-screen pb-28 md:pb-10 overflow-y-auto"
-        style={{ background: "linear-gradient(150deg, #071a0e 0%, #0a1f12 50%, #061610 100%)" }}
-        onTouchStart={onTouchStart}
+        className="min-h-screen pb-28 md:pb-10 overflow-y-auto"onTouchStart={onTouchStart}
         onTouchMove={onTouchMove}
         onTouchEnd={onTouchEnd}
       >
         {/* Pull-to-refresh indicator */}
         <div className="flex items-center justify-center overflow-hidden transition-all duration-300"
           style={{ height: pullY > 0 ? `${pullY}px` : 0 }}>
-          <RefreshCw className="w-5 h-5 text-emerald-400"
+          <RefreshCw className="w-5 h-5 text-primary"
             style={{ transform: `rotate(${(pullY / 64) * 180}deg)` }} />
         </div>
 
         {/* Header */}
         <div className="flex items-center gap-3 px-5 pt-6 pb-4">
-          <Link href="/more" className="text-emerald-600 hover:text-emerald-400 transition-colors"
+          <Link href="/more" className="text-muted-foreground hover:text-primary transition-colors"
             data-testid="link-back-more">
             <ChevronLeft className="w-6 h-6" />
           </Link>
           <div className="flex-1">
-            <h1 className="text-2xl font-serif font-bold text-emerald-300">Updates</h1>
+            <h1 className="text-2xl font-serif font-bold text-primary">Updates</h1>
             {lastUpdated && !isLoading && (
-              <p className="text-emerald-800 text-xs mt-0.5 flex items-center gap-1">
+              <p className="text-muted-foreground text-xs mt-0.5 flex items-center gap-1">
                 <Clock className="w-3 h-3" /> Refreshed at {lastUpdated}
               </p>
             )}
           </div>
           <button onClick={() => refetch()} disabled={isFetching}
-            className="w-9 h-9 rounded-full flex items-center justify-center border border-emerald-800/40 text-emerald-500 hover:text-emerald-300 hover:border-emerald-600 transition-all"
+            className="w-9 h-9 rounded-full flex items-center justify-center border border-border text-primary hover:text-primary hover:border-emerald-600 transition-all"
             style={{ background: "rgba(52,211,153,0.06)" }}
             data-testid="button-refresh-updates">
             <RefreshCw className={`w-4 h-4 ${isFetching ? "animate-spin" : ""}`} />
@@ -1132,8 +1111,8 @@ export function Updates() {
                 <button key={cat} onClick={() => setActiveCategory(cat)}
                   className={`shrink-0 px-3.5 py-1.5 rounded-full text-xs font-semibold border transition-all ${
                     activeCategory === cat
-                      ? "bg-emerald-700 text-white border-emerald-600"
-                      : "text-emerald-600 border-emerald-900/50 hover:border-emerald-700"
+                      ? "bg-primary text-primary-foreground border-emerald-600"
+                      : "text-muted-foreground border-border hover:border-primary"
                   }`}
                   style={activeCategory === cat ? {} : { background: "rgba(255,255,255,0.04)" }}>
                   {cat}
@@ -1146,7 +1125,7 @@ export function Updates() {
           {isLoading && (
             <div className="space-y-4">
               {Array.from({ length: 3 }).map((_, i) => (
-                <div key={i} className="rounded-2xl overflow-hidden border border-emerald-900/40"
+                <div key={i} className="rounded-2xl overflow-hidden border border-border"
                   style={{ background: "rgba(255,255,255,0.03)" }}>
                   <div className="w-full h-44 animate-pulse" style={{ background: "rgba(52,211,153,0.06)" }} />
                   <div className="p-4 space-y-3">
@@ -1179,10 +1158,10 @@ export function Updates() {
             <div className="flex flex-col items-center justify-center py-20 text-center">
               <div className="w-20 h-20 rounded-3xl flex items-center justify-center mb-5"
                 style={{ background: "rgba(52,211,153,0.08)" }}>
-                <Sparkles className="w-9 h-9 text-emerald-700" />
+                <Sparkles className="w-9 h-9 text-muted-foreground" />
               </div>
-              <p className="text-emerald-500 font-semibold text-base">No updates available</p>
-              <p className="text-emerald-800 text-sm mt-1">Check back soon for news and features</p>
+              <p className="text-primary font-semibold text-base">No updates available</p>
+              <p className="text-muted-foreground text-sm mt-1">Check back soon for news and features</p>
             </div>
           )}
 
@@ -1192,7 +1171,7 @@ export function Updates() {
           ))}
 
           {!isLoading && !isError && filtered.length > 0 && (
-            <p className="text-emerald-900 text-xs text-center pb-4">
+            <p className="text-muted-foreground text-xs text-center pb-4">
               {filtered.length} update{filtered.length !== 1 ? "s" : ""} · Refreshes automatically
             </p>
           )}

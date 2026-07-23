@@ -1,10 +1,10 @@
 import React, { useEffect, useState } from "react";
-import { usePrayerTimes, useRandomAyah } from "@/lib/api";
+import { usePrayerTimes, useRandomAyah, RTL_LANGUAGES } from "@/lib/api";
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { MapPin, Clock, BookOpen, ChevronRight, Star, Package, ExternalLink } from "lucide-react";
 import { Link, useLocation } from "wouter";
-import { getCity, getCountry } from "@/lib/settings";
+import { getCity, getCountry, getLang } from "@/lib/settings";
 import { useI18n } from "@/lib/i18n-context";
 import { useQuery } from "@tanstack/react-query";
 import { noorApi, type NoorProduct } from "@/lib/noor-api";
@@ -37,17 +37,14 @@ function useProductsPreview() {
 
 function ProductPreviewCard({ p, featured }: { p: NoorProduct; featured?: boolean }) {
   const [, navigate] = useLocation();
+  const { t } = useI18n();
   const hasLink = !!p.productLink?.trim();
 
   return (
     <div
-      className="shrink-0 w-44 rounded-2xl overflow-hidden border flex flex-col transition-all active:scale-[0.97]"
-      style={{
-        background: featured
-          ? "linear-gradient(135deg, rgba(120,80,0,0.3) 0%, rgba(50,30,0,0.25) 100%)"
-          : "rgba(255,255,255,0.03)",
-        borderColor: featured ? "rgba(180,120,0,0.4)" : "rgba(26,92,56,0.3)",
-      }}
+      className={`shrink-0 w-44 rounded-2xl overflow-hidden border flex flex-col transition-all active:scale-[0.97] bg-card ${
+        featured ? "border-amber-500/40" : "border-border"
+      }`}
     >
       {/* Card body — tap to open marketplace */}
       <button
@@ -55,7 +52,7 @@ function ProductPreviewCard({ p, featured }: { p: NoorProduct; featured?: boolea
         onClick={() => navigate("/marketplace")}
       >
         {p.imageUrl ? (
-          <div className="w-full overflow-hidden bg-black/20" style={{ aspectRatio: "4/3" }}>
+          <div className="w-full overflow-hidden bg-muted" style={{ aspectRatio: "4/3" }}>
             <img
               src={p.imageUrl}
               alt={p.title}
@@ -66,21 +63,21 @@ function ProductPreviewCard({ p, featured }: { p: NoorProduct; featured?: boolea
           </div>
         ) : (
           <div
-            className="w-full flex items-center justify-center"
-            style={{ aspectRatio: "4/3", background: "rgba(26,92,56,0.12)" }}
+            className="w-full flex items-center justify-center bg-muted"
+            style={{ aspectRatio: "4/3" }}
           >
-            <Package className="w-8 h-8 text-emerald-900" />
+            <Package className="w-8 h-8 text-muted-foreground" />
           </div>
         )}
         <div className="px-3 pt-2.5 pb-1 flex flex-col gap-1">
           {featured && (
-            <div className="flex items-center gap-1 text-amber-400 text-[10px] font-bold">
-              <Star className="w-3 h-3 fill-amber-400" /> Featured
+            <div className="flex items-center gap-1 text-amber-500 text-[10px] font-bold">
+              <Star className="w-3 h-3 fill-amber-500" /> {t("home_product_featured")}
             </div>
           )}
-          <p className="text-white text-xs font-semibold leading-snug line-clamp-2">{p.title}</p>
+          <p className="text-foreground text-xs font-semibold leading-snug line-clamp-2">{p.title}</p>
           {p.category && (
-            <p className="text-emerald-700 text-[10px] font-medium capitalize">
+            <p className="text-muted-foreground text-[10px] font-medium capitalize">
               {p.category.replace("_", " ")}
             </p>
           )}
@@ -91,9 +88,9 @@ function ProductPreviewCard({ p, featured }: { p: NoorProduct; featured?: boolea
       {hasLink && (
         <button
           onClick={() => openUrl(p.productLink!)}
-          className="mx-3 mb-2.5 flex items-center justify-center gap-1.5 py-1.5 rounded-lg bg-emerald-800/40 border border-emerald-700/40 text-emerald-300 text-[11px] font-semibold active:scale-95 transition-transform"
+          className="mx-3 mb-2.5 flex items-center justify-center gap-1.5 py-1.5 rounded-lg bg-muted border border-border text-foreground text-[11px] font-semibold active:scale-95 transition-transform"
         >
-          <ExternalLink className="w-3 h-3" /> Visit
+          <ExternalLink className="w-3 h-3" /> {t("home_product_visit")}
         </button>
       )}
     </div>
@@ -102,6 +99,7 @@ function ProductPreviewCard({ p, featured }: { p: NoorProduct; featured?: boolea
 
 function IslamicProductsStrip() {
   const { data, isLoading } = useProductsPreview();
+  const { t } = useI18n();
 
   const featured = data?.featured ?? [];
   const rest = data?.rest ?? [];
@@ -112,12 +110,12 @@ function IslamicProductsStrip() {
   return (
     <div className="space-y-3">
       <div className="flex items-center justify-between">
-        <h2 className="text-base font-bold text-foreground">Islamic Products</h2>
+        <h2 className="text-base font-bold text-foreground">{t("home_products_title")}</h2>
         <Link
           href="/marketplace"
           className="flex items-center gap-0.5 text-sm text-primary hover:underline font-medium"
         >
-          View all <ChevronRight className="w-4 h-4" />
+          {t("home_products_view_all")} <ChevronRight className="w-4 h-4" />
         </Link>
       </div>
 
@@ -155,9 +153,11 @@ function IslamicProductsStrip() {
 export function Home() {
   const [city]    = useState(() => getCity());
   const [country] = useState(() => getCountry());
+  const [translationLang] = useState(() => getLang());
   const { data: prayerData, isLoading: prayerLoading } = usePrayerTimes(city, country);
-  const { data: ayahData,   isLoading: ayahLoading }   = useRandomAyah();
+  const { data: ayahData,   isLoading: ayahLoading }   = useRandomAyah(translationLang);
   const { t } = useI18n();
+  const isRtlTranslation = RTL_LANGUAGES.has(translationLang);
 
   const [nextPrayer, setNextPrayer] = useState<{ name: string; time: string; diffStr: string } | null>(null);
 
@@ -171,7 +171,14 @@ export function Home() {
       const currentSeconds = now.getSeconds();
 
       const timings     = prayerData.timings;
-      const prayerNames = ["Fajr", "Sunrise", "Dhuhr", "Asr", "Maghrib", "Isha"];
+      const prayerNames = [
+        t("prayer_name_Fajr"),
+        t("prayer_name_Sunrise"),
+        t("prayer_name_Dhuhr"),
+        t("prayer_name_Asr"),
+        t("prayer_name_Maghrib"),
+        t("prayer_name_Isha"),
+      ];
 
       let next = null;
       for (const name of prayerNames) {
@@ -186,7 +193,7 @@ export function Home() {
       if (!next) {
         const timeStr = timings.Fajr.replace(/ \(.*\)/, "");
         const [h, m]  = timeStr.split(":").map(Number);
-        next = { name: "Fajr", time: timeStr, h: h + 24, m };
+        next = { name: t("prayer_name_Fajr"), time: timeStr, h: h + 24, m };
       }
 
       const totalCurrent = currentHours * 3600 + currentMinutes * 60 + currentSeconds;
@@ -280,8 +287,8 @@ export function Home() {
                 <p dir="rtl" className="text-3xl leading-loose font-arabic text-primary text-right">
                   {ayahData?.textAr}
                 </p>
-                <p dir="rtl" className="text-xl leading-relaxed text-foreground text-right opacity-90 font-serif">
-                  {ayahData?.textUr}
+                <p dir={isRtlTranslation ? "rtl" : "ltr"} className="text-xl leading-relaxed text-foreground opacity-90 font-serif">
+                  {ayahData?.textTranslation}
                 </p>
                 <div className="flex items-center justify-between border-t border-border pt-4">
                   <p className="text-sm text-muted-foreground">

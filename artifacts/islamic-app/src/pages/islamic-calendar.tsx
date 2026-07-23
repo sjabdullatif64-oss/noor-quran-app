@@ -79,18 +79,18 @@ function gregorianToHijri(gy: number, gm: number, gd: number): { year: number; m
 
 // ── Event colour mapping ──────────────────────────────────────────────────────
 const EVENT_STYLES: Record<IslamicEvent["type"], { dot: string; badge: string; text: string }> = {
-  "new-year":  { dot: "bg-emerald-400",  badge: "bg-emerald-900/60 border-emerald-700/50",   text: "text-emerald-300"  },
-  "ashura":    { dot: "bg-sky-400",      badge: "bg-sky-900/60 border-sky-700/50",            text: "text-sky-300"      },
-  "mawlid":    { dot: "bg-amber-400",    badge: "bg-amber-900/60 border-amber-700/50",        text: "text-amber-300"    },
-  "miraj":     { dot: "bg-purple-400",   badge: "bg-purple-900/60 border-purple-700/50",      text: "text-purple-300"   },
-  "baraat":    { dot: "bg-indigo-400",   badge: "bg-indigo-900/60 border-indigo-700/50",      text: "text-indigo-300"   },
-  "ramadan":   { dot: "bg-teal-400",     badge: "bg-teal-900/60 border-teal-700/50",          text: "text-teal-300"     },
-  "qadr":      { dot: "bg-yellow-300",   badge: "bg-yellow-900/60 border-yellow-700/50",      text: "text-yellow-200"   },
-  "eid-fitr":  { dot: "bg-rose-400",     badge: "bg-rose-900/60 border-rose-700/50",          text: "text-rose-300"     },
-  "hajj":      { dot: "bg-orange-400",   badge: "bg-orange-900/60 border-orange-700/50",      text: "text-orange-300"   },
-  "arafah":    { dot: "bg-amber-400",    badge: "bg-amber-900/60 border-amber-700/50",        text: "text-amber-300"    },
-  "eid-adha":  { dot: "bg-rose-400",     badge: "bg-rose-900/60 border-rose-700/50",          text: "text-rose-300"     },
-  "tashreeq":  { dot: "bg-orange-300",   badge: "bg-orange-900/60 border-orange-700/50",      text: "text-orange-300"   },
+  "new-year":  { dot: "bg-emerald-400",  badge: "bg-muted border-border",   text: "text-primary"  },
+  "ashura":    { dot: "bg-sky-400",      badge: "bg-muted border-border",            text: "text-primary"      },
+  "mawlid":    { dot: "bg-amber-400",    badge: "bg-muted border-border",        text: "text-primary"    },
+  "miraj":     { dot: "bg-purple-400",   badge: "bg-muted border-border",      text: "text-primary"   },
+  "baraat":    { dot: "bg-indigo-400",   badge: "bg-muted border-border",      text: "text-primary"   },
+  "ramadan":   { dot: "bg-teal-400",     badge: "bg-muted border-border",          text: "text-primary"     },
+  "qadr":      { dot: "bg-yellow-300",   badge: "bg-muted border-border",      text: "text-primary"   },
+  "eid-fitr":  { dot: "bg-rose-400",     badge: "bg-muted border-border",          text: "text-primary"     },
+  "hajj":      { dot: "bg-orange-400",   badge: "bg-muted border-border",      text: "text-primary"   },
+  "arafah":    { dot: "bg-amber-400",    badge: "bg-muted border-border",        text: "text-primary"    },
+  "eid-adha":  { dot: "bg-rose-400",     badge: "bg-muted border-border",          text: "text-primary"     },
+  "tashreeq":  { dot: "bg-orange-300",   badge: "bg-muted border-border",      text: "text-primary"   },
 };
 
 // ── Day cell data ─────────────────────────────────────────────────────────────
@@ -239,22 +239,21 @@ export function IslamicCalendar() {
 
   return (
     <div
-      className="min-h-screen pb-28 md:pb-10 animate-in fade-in duration-500"
-      style={{ background: "linear-gradient(150deg, #071a0e 0%, #0a1f12 55%, #061610 100%)" }}
+      className="min-h-screen pb-28 md:pb-10 animate-in fade-in duration-500 bg-background text-foreground"
     >
       {/* ── Header ───────────────────────────────────────────────────────── */}
       <div className="flex items-center gap-3 px-5 pt-6 pb-4">
-        <Link href="/more" className="text-emerald-600 hover:text-emerald-400 transition-colors">
+        <Link href="/more" className="text-muted-foreground hover:text-primary transition-colors">
           <ChevronLeft className="w-6 h-6" />
         </Link>
         <div className="flex-1">
-          <h1 className="text-2xl font-serif font-bold text-emerald-300">Islamic Calendar</h1>
-          <p className="text-emerald-700 text-xs mt-0.5">Hijri · Gregorian · Islamic Events</p>
+          <h1 className="text-2xl font-serif font-bold text-foreground">Islamic Calendar</h1>
+          <p className="text-muted-foreground text-xs mt-0.5">Hijri · Gregorian · Islamic Events</p>
         </div>
         {/* Today button */}
         <button
           onClick={goToday}
-          className="text-xs px-3 py-1.5 rounded-full border border-emerald-800/50 text-emerald-500 hover:text-emerald-300 hover:border-emerald-600 transition-all"
+          className="text-xs px-3 py-1.5 rounded-full border border-border text-muted-foreground hover:text-primary hover:border-border transition-all bg-card"
         >
           Today
         </button>
@@ -267,29 +266,28 @@ export function IslamicCalendar() {
 
         {/* ── Month navigation ──────────────────────────────────────────── */}
         <div
-          className="rounded-2xl border border-emerald-900/40 overflow-hidden"
-          style={{ background: "rgba(255,255,255,0.03)" }}
+          className="rounded-2xl border border-border overflow-hidden bg-card"
         >
           {/* Month/year header with navigation */}
-          <div className="flex items-center justify-between px-4 py-3 border-b border-emerald-900/30">
+          <div className="flex items-center justify-between px-4 py-3 border-b border-border">
             <button
               onClick={prevMonth}
-              className="w-9 h-9 rounded-xl flex items-center justify-center text-emerald-500 hover:text-emerald-300 hover:bg-emerald-900/40 transition-all active:scale-90"
+              className="w-9 h-9 rounded-xl flex items-center justify-center text-muted-foreground hover:text-primary hover:bg-muted transition-all active:scale-90"
               aria-label="Previous month"
             >
               <ChevronLeft className="w-5 h-5" />
             </button>
 
             <div className="text-center animate-in fade-in duration-300">
-              <p className="text-white font-bold text-base">
+                <p className="text-foreground font-bold text-base">
                 {GREGORIAN_MONTHS[viewMonth]} {viewYear}
               </p>
-              <p className="text-emerald-600 text-xs mt-0.5">{hijriMonthLabel}</p>
+                <p className="text-muted-foreground text-xs mt-0.5">{hijriMonthLabel}</p>
             </div>
 
             <button
               onClick={nextMonth}
-              className="w-9 h-9 rounded-xl flex items-center justify-center text-emerald-500 hover:text-emerald-300 hover:bg-emerald-900/40 transition-all active:scale-90"
+              className="w-9 h-9 rounded-xl flex items-center justify-center text-muted-foreground hover:text-primary hover:bg-muted transition-all active:scale-90"
               aria-label="Next month"
             >
               <ChevronRight className="w-5 h-5" />
@@ -297,12 +295,12 @@ export function IslamicCalendar() {
           </div>
 
           {/* Weekday labels */}
-          <div className="grid grid-cols-7 border-b border-emerald-900/20">
+          <div className="grid grid-cols-7 border-b border-border">
             {WEEK_DAYS.map((wd) => (
               <div
                 key={wd}
                 className={`text-center py-2 text-xs font-semibold uppercase tracking-wide ${
-                  wd === "Fri" ? "text-amber-400" : wd === "Sun" ? "text-rose-400/70" : "text-emerald-700"
+                  wd === "Fri" ? "text-amber-500" : wd === "Sun" ? "text-rose-500/70" : "text-muted-foreground"
                 }`}
               >
                 {wd}
@@ -322,7 +320,7 @@ export function IslamicCalendar() {
           </div>
 
           {/* Legend */}
-          <div className="px-4 py-3 border-t border-emerald-900/20 flex flex-wrap gap-3">
+          <div className="px-4 py-3 border-t border-border flex flex-wrap gap-3">
             <LegendDot color="bg-emerald-400" label="Today" />
             <LegendDot color="bg-amber-400/70" label="Friday" />
             <LegendDot color="bg-rose-400" label="Eid" />
@@ -334,17 +332,14 @@ export function IslamicCalendar() {
 
         {/* ── Events this month ─────────────────────────────────────────── */}
         {monthEvents.length > 0 && (
-          <div
-            className="rounded-2xl border border-emerald-900/40 overflow-hidden"
-            style={{ background: "rgba(255,255,255,0.03)" }}
-          >
-            <div className="px-4 py-3 border-b border-emerald-900/30">
-              <p className="text-emerald-400 text-sm font-semibold uppercase tracking-wider flex items-center gap-2">
+          <div className="rounded-2xl border border-border overflow-hidden bg-card">
+            <div className="px-4 py-3 border-b border-border">
+              <p className="text-primary text-sm font-semibold uppercase tracking-wider flex items-center gap-2">
                 <Star className="w-4 h-4" />
                 Events This Month
               </p>
             </div>
-            <div className="divide-y divide-emerald-900/20">
+            <div className="divide-y divide-border">
               {monthEvents.map((ev, i) => {
                 const style = EVENT_STYLES[ev.type];
                 return (
@@ -352,9 +347,9 @@ export function IslamicCalendar() {
                     <div className={`w-2.5 h-2.5 rounded-full shrink-0 ${style.dot}`} />
                     <div className="flex-1 min-w-0">
                       <p className={`text-sm font-medium ${style.text}`}>{ev.name}</p>
-                      <p className="text-emerald-800 text-xs mt-0.5 font-arabic">{ev.nameAr}</p>
+                      <p className="text-muted-foreground text-xs mt-0.5 font-arabic">{ev.nameAr}</p>
                     </div>
-                    <span className="text-emerald-800 text-xs shrink-0">
+                    <span className="text-muted-foreground text-xs shrink-0">
                       {ev.hDay}{ev.rangeEnd ? `–${ev.rangeEnd}` : ""} {HIJRI_MONTHS[ev.hMonth - 1]}
                     </span>
                   </div>
@@ -400,17 +395,17 @@ function TodayCard({ todayHijri, today }: { todayHijri: { year: number; month: n
           >
             {gDay}
           </p>
-          <p className={`text-xs font-semibold mt-1 ${isFriday ? "text-amber-400" : "text-emerald-500"}`}>
+          <p className={`text-xs font-semibold mt-1 ${isFriday ? "text-amber-400" : "text-primary"}`}>
             {dayName}
           </p>
         </div>
 
-        <div className="w-px h-14 bg-emerald-800/60" />
+        <div className="w-px h-14 bg-muted" />
 
         {/* Gregorian */}
         <div className="flex-1">
-          <p className="text-white font-bold text-lg leading-tight">{gMonth} {gYear}</p>
-          <p className="text-emerald-600 text-xs mt-0.5">Gregorian</p>
+          <p className="text-foreground font-bold text-lg leading-tight">{gMonth} {gYear}</p>
+          <p className="text-muted-foreground text-xs mt-0.5">Gregorian</p>
           {isFriday && (
             <span className="inline-block mt-1.5 text-xs text-amber-300 bg-amber-900/30 border border-amber-700/40 px-2 py-0.5 rounded-full">
               Jumu'ah Mubarak 🌟
@@ -418,15 +413,15 @@ function TodayCard({ todayHijri, today }: { todayHijri: { year: number; month: n
           )}
         </div>
 
-        <div className="w-px h-14 bg-emerald-800/60" />
+        <div className="w-px h-14 bg-muted" />
 
         {/* Hijri */}
         <div className="flex-1 text-right">
           <p className="text-emerald-200 font-bold text-lg leading-tight">
             {todayHijri.day} {HIJRI_MONTHS[todayHijri.month - 1]}
           </p>
-          <p className="text-emerald-600 text-xs mt-0.5">{todayHijri.year} AH</p>
-          <p className="text-emerald-800 text-xs font-arabic mt-0.5">
+          <p className="text-muted-foreground text-xs mt-0.5">{todayHijri.year} AH</p>
+          <p className="text-muted-foreground text-xs font-arabic mt-0.5">
             {HIJRI_MONTHS_AR[todayHijri.month - 1]}
           </p>
         </div>
@@ -442,13 +437,13 @@ function DayCell({ day }: { day: CalDay }) {
 
   let cellBg   = "transparent";
   let gNumColor = "text-emerald-200";
-  let hNumColor = "text-emerald-800";
+  let hNumColor = "text-muted-foreground";
   let border   = "border border-transparent";
 
   if (day.isToday) {
     cellBg    = "rgba(52,211,153,0.18)";
-    gNumColor = "text-white font-bold";
-    hNumColor = "text-emerald-400";
+    gNumColor = "text-primary-foreground font-bold";
+    hNumColor = "text-primary";
     border    = "border border-emerald-500/60";
   } else if (day.isFriday) {
     cellBg    = "rgba(251,191,36,0.07)";
@@ -459,7 +454,7 @@ function DayCell({ day }: { day: CalDay }) {
     gNumColor = "text-rose-400/70";
   } else if (primaryEvent) {
     cellBg    = "rgba(52,211,153,0.05)";
-    border    = "border border-emerald-900/30";
+    border    = "border border-border";
   }
 
   return (
@@ -489,7 +484,7 @@ function LegendDot({ color, label }: { color: string; label: string }) {
   return (
     <div className="flex items-center gap-1.5">
       <span className={`w-2 h-2 rounded-full ${color}`} />
-      <span className="text-emerald-700 text-xs">{label}</span>
+      <span className="text-muted-foreground text-xs">{label}</span>
     </div>
   );
 }
@@ -512,15 +507,14 @@ const ALL_EVENTS_DISPLAY = [
 function AllEventsSection() {
   return (
     <div
-      className="rounded-2xl border border-emerald-900/40 overflow-hidden"
-      style={{ background: "rgba(255,255,255,0.03)" }}
+      className="rounded-2xl border border-border overflow-hidden bg-card"
     >
-      <div className="px-4 py-3 border-b border-emerald-900/30">
-        <p className="text-emerald-400 text-sm font-semibold uppercase tracking-wider flex items-center gap-2">
+      <div className="px-4 py-3 border-b border-border">
+        <p className="text-primary text-sm font-semibold uppercase tracking-wider flex items-center gap-2">
           <Moon className="w-4 h-4" />
           Important Islamic Events
         </p>
-        <p className="text-emerald-700 text-xs mt-0.5">Annual Hijri calendar highlights</p>
+        <p className="text-muted-foreground text-xs mt-0.5">Annual Hijri calendar highlights</p>
       </div>
       <div className="divide-y divide-emerald-900/20">
         {ALL_EVENTS_DISPLAY.map((ev, i) => {
@@ -536,10 +530,10 @@ function AllEventsSection() {
               <div className="flex-1 min-w-0">
                 <div className="flex items-start justify-between gap-2">
                   <p className={`text-sm font-semibold ${style.text}`}>{ev.name}</p>
-                  <span className="text-emerald-800 text-xs shrink-0 mt-0.5">{ev.date}</span>
+                  <span className="text-muted-foreground text-xs shrink-0 mt-0.5">{ev.date}</span>
                 </div>
-                <p className="text-emerald-600 text-xs mt-0.5">{ev.desc}</p>
-                <p className="text-emerald-800/70 text-xs font-arabic mt-0.5">{ev.nameAr}</p>
+                <p className="text-muted-foreground text-xs mt-0.5">{ev.desc}</p>
+                <p className="text-muted-foreground/70 text-xs font-arabic mt-0.5">{ev.nameAr}</p>
               </div>
             </div>
           );
@@ -553,26 +547,26 @@ function AllEventsSection() {
 function HijriMonthsSection() {
   return (
     <div
-      className="rounded-2xl border border-emerald-900/40 overflow-hidden"
+      className="rounded-2xl border border-border overflow-hidden"
       style={{ background: "rgba(255,255,255,0.03)" }}
     >
-      <div className="px-4 py-3 border-b border-emerald-900/30">
-        <p className="text-emerald-400 text-sm font-semibold uppercase tracking-wider flex items-center gap-2">
+      <div className="px-4 py-3 border-b border-border">
+        <p className="text-primary text-sm font-semibold uppercase tracking-wider flex items-center gap-2">
           <Calendar className="w-4 h-4" />
           Islamic Months
         </p>
       </div>
-      <div className="grid grid-cols-2 divide-x divide-emerald-900/20">
+      <div className="grid grid-cols-2 divide-x divide-border">
         {HIJRI_MONTHS.map((name, i) => (
           <div
             key={i}
-            className={`px-4 py-3 ${i % 2 === 0 ? "" : ""} ${i < 10 ? "border-b border-emerald-900/20" : ""}`}
+            className={`px-4 py-3 ${i % 2 === 0 ? "" : ""} ${i < 10 ? "border-b border-border" : ""}`}
           >
             <div className="flex items-center gap-2">
-              <span className="text-emerald-900 text-xs font-mono w-4 shrink-0">{String(i + 1).padStart(2, "0")}</span>
+              <span className="text-muted-foreground text-xs font-mono w-4 shrink-0">{String(i + 1).padStart(2, "0")}</span>
               <div>
-                <p className="text-emerald-300 text-sm font-medium">{name}</p>
-                <p className="text-emerald-800 text-xs font-arabic">{HIJRI_MONTHS_AR[i]}</p>
+                <p className="text-primary text-sm font-medium">{name}</p>
+                <p className="text-muted-foreground text-xs font-arabic">{HIJRI_MONTHS_AR[i]}</p>
               </div>
             </div>
           </div>

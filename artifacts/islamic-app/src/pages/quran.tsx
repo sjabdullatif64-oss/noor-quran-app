@@ -7,8 +7,10 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { toggleSurahFav, isSurahFav } from "@/lib/favorites";
 import { JUZ_DATA } from "@/lib/juz-data";
+import { useI18n } from "@/lib/i18n-context";
 
 export function Quran() {
+  const { t } = useI18n();
   const { data: surahs, isLoading } = useSurahList();
   const [, navigate] = useLocation();
   const [search, setSearch] = useState("");
@@ -51,13 +53,13 @@ export function Quran() {
   return (
     <div className="space-y-4 animate-in fade-in duration-500">
       <header>
-        <h1 className="text-3xl md:text-4xl font-serif font-bold text-primary">The Noble Quran</h1>
+        <h1 className="text-3xl md:text-4xl font-serif font-bold text-primary">{t("quran_title")}</h1>
       </header>
 
       <Tabs defaultValue="surah">
         <TabsList className="w-full mb-2 bg-muted/60">
-          <TabsTrigger value="surah" className="flex-1">Surah</TabsTrigger>
-          <TabsTrigger value="juz" className="flex-1">Juz</TabsTrigger>
+          <TabsTrigger value="surah" className="flex-1">{t("quran_tab_surah")}</TabsTrigger>
+          <TabsTrigger value="juz" className="flex-1">{t("quran_tab_juz")}</TabsTrigger>
         </TabsList>
 
         {/* ── Surah Tab ──────────────────────────────────────────── */}
@@ -65,7 +67,7 @@ export function Quran() {
           <div className="relative max-w-md">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground w-5 h-5" />
             <Input
-              placeholder="Search by name or number..."
+              placeholder={t("quran_search_placeholder")}
               className="pl-10 bg-card border-border"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
@@ -99,7 +101,7 @@ export function Quran() {
                         </div>
                         <div className="text-right">
                           <p dir="rtl" className="font-arabic text-xl text-primary">{surah.name}</p>
-                          <p className="text-xs text-muted-foreground">{surah.numberOfAyahs} Verses</p>
+                            <p className="text-xs text-muted-foreground">{surah.numberOfAyahs} {t("quran_verses_count")}</p>
                         </div>
                       </div>
                     </Link>
@@ -137,14 +139,14 @@ export function Quran() {
               >
                 <div className="w-12 h-12 rounded-full bg-primary/10 flex flex-col items-center justify-center shrink-0 border border-primary/20">
                   <span className="text-primary font-bold text-sm leading-tight">{juz.juz}</span>
-                  <span className="text-primary/50 text-[9px] leading-tight font-medium">Juz</span>
+                  <span className="text-primary/50 text-[9px] leading-tight font-medium">{t("quran_tab_juz")}</span>
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2">
                     <BookOpen className="w-3.5 h-3.5 text-primary/60 shrink-0" />
                     <p className="font-semibold text-foreground text-sm">{juz.surahName}</p>
                   </div>
-                  <p className="text-xs text-muted-foreground mt-0.5">Starts from Ayah {juz.startAyah}</p>
+                  <p className="text-xs text-muted-foreground mt-0.5">{t("quran_juz_start_ayah")} {juz.startAyah}</p>
                 </div>
                 <p dir="rtl" className="font-arabic text-xl text-primary shrink-0">{juz.surahArabic}</p>
               </button>

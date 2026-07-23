@@ -81,12 +81,12 @@ export function More() {
   const ITEMS = [
     {
       id: "marketplace",
-      label: "Islamic Marketplace",
-      description: "Browse Islamic products",
+      label: t("more_marketplace"),
+      description: t("more_marketplace_sub"),
       icon: <ShoppingBag className="w-6 h-6" />,
       href: "/marketplace",
-      accent: "text-cyan-300",
-      iconBg: "rgba(34,211,238,0.15)",
+      accent: "text-primary",
+      iconBg: "bg-primary/10",
     },
     {
       id: "islamic-calendar",
@@ -94,8 +94,8 @@ export function More() {
       description: t("more_islamic_calendar_sub"),
       icon: <CalendarDays className="w-6 h-6" />,
       href: "/islamic-calendar",
-      accent: "text-teal-300",
-      iconBg: "rgba(45,212,191,0.18)",
+      accent: "text-primary",
+      iconBg: "bg-primary/10",
     },
     {
       id: "writing",
@@ -103,8 +103,8 @@ export function More() {
       description: t("more_writing_sub"),
       icon: <PenLine className="w-6 h-6" />,
       href: "/writing",
-      accent: "text-lime-300",
-      iconBg: "rgba(132,204,22,0.18)",
+      accent: "text-primary",
+      iconBg: "bg-primary/10",
     },
     {
       id: "qibla",
@@ -112,8 +112,8 @@ export function More() {
       description: t("more_qibla_sub"),
       icon: <Navigation className="w-6 h-6" />,
       href: "/qibla",
-      accent: "text-amber-300",
-      iconBg: "rgba(217,119,6,0.18)",
+      accent: "text-primary",
+      iconBg: "bg-primary/10",
     },
     {
       id: "favorites",
@@ -121,8 +121,8 @@ export function More() {
       description: t("more_favorites_sub"),
       icon: <Heart className="w-6 h-6" />,
       href: "/favorites",
-      accent: "text-rose-300",
-      iconBg: "rgba(244,63,94,0.18)",
+      accent: "text-primary",
+      iconBg: "bg-primary/10",
     },
     {
       id: "tasbeeh",
@@ -130,8 +130,8 @@ export function More() {
       description: t("more_tasbeeh_sub"),
       icon: <Hash className="w-6 h-6" />,
       href: "/tasbeeh",
-      accent: "text-emerald-300",
-      iconBg: "rgba(52,211,153,0.15)",
+      accent: "text-primary",
+      iconBg: "bg-primary/10",
     },
     {
       id: "bookmarks",
@@ -139,8 +139,8 @@ export function More() {
       description: t("more_bookmarks_sub"),
       icon: <Bookmark className="w-6 h-6" />,
       href: "/bookmarks",
-      accent: "text-sky-300",
-      iconBg: "rgba(56,189,248,0.15)",
+      accent: "text-primary",
+      iconBg: "bg-primary/10",
     },
     {
       id: "gifts",
@@ -148,8 +148,8 @@ export function More() {
       description: t("more_gifts_sub"),
       icon: <Gift className="w-6 h-6" />,
       href: "/islamic-gifts",
-      accent: "text-purple-300",
-      iconBg: "rgba(168,85,247,0.15)",
+      accent: "text-primary",
+      iconBg: "bg-primary/10",
     },
     {
       id: "downloads",
@@ -157,8 +157,8 @@ export function More() {
       description: t("more_downloads_sub"),
       icon: <Download className="w-6 h-6" />,
       href: "/downloads",
-      accent: "text-teal-300",
-      iconBg: "rgba(45,212,191,0.15)",
+      accent: "text-primary",
+      iconBg: "bg-primary/10",
     },
     {
       id: "notifications",
@@ -166,8 +166,8 @@ export function More() {
       description: t("more_notif_sub"),
       icon: <Bell className="w-6 h-6" />,
       href: "/notifications",
-      accent: "text-yellow-300",
-      iconBg: "rgba(234,179,8,0.15)",
+      accent: "text-primary",
+      iconBg: "bg-primary/10",
     },
     {
       id: "settings",
@@ -175,8 +175,8 @@ export function More() {
       description: t("more_settings_sub"),
       icon: <Settings className="w-6 h-6" />,
       href: "/settings",
-      accent: "text-slate-300",
-      iconBg: "rgba(148,163,184,0.15)",
+      accent: "text-primary",
+      iconBg: "bg-primary/10",
     },
     {
       id: "about",
@@ -184,66 +184,53 @@ export function More() {
       description: t("more_about_sub"),
       icon: <Info className="w-6 h-6" />,
       href: "/about",
-      accent: "text-emerald-300",
-      iconBg: "rgba(52,211,153,0.12)",
+      accent: "text-primary",
+      iconBg: "bg-primary/10",
     },
   ];
 
   return (
     <div
-      className="min-h-screen pb-28 md:pb-10 animate-in fade-in duration-500"
-      style={{ background: "linear-gradient(150deg, #071a0e 0%, #0a1f12 50%, #061610 100%)" }}
+      className="min-h-screen pb-28 md:pb-10 animate-in fade-in duration-500 bg-background"
     >
       {/* Header */}
       <div className="px-6 pt-8 pb-5">
-        <h1 className="text-3xl font-serif font-bold text-emerald-300">{t("more_title")}</h1>
-        <p className="text-emerald-600 text-sm mt-1">{t("more_subtitle")}</p>
+        <h1 className="text-3xl font-serif font-bold text-primary">{t("more_title")}</h1>
+        <p className="text-muted-foreground text-sm mt-1">{t("more_subtitle")}</p>
       </div>
 
       {/* Share App + Rate App */}
       <div className="px-4 mb-4 flex flex-col gap-3">
         <button
           onClick={handleShare}
-          className="w-full flex items-center gap-4 p-5 rounded-2xl border border-emerald-700/40 text-left transition-all active:scale-[0.98]"
-          style={{
-            background: "linear-gradient(135deg, rgba(26,92,56,0.5) 0%, rgba(13,61,36,0.4) 100%)",
-            boxShadow: "0 0 24px rgba(52,211,153,0.08)",
-          }}
+          className="w-full flex items-center gap-4 p-5 rounded-2xl border border-border bg-primary/10 text-left transition-all active:scale-[0.98]"
           data-testid="more-share-app"
         >
           <div
-            className="w-12 h-12 rounded-xl flex items-center justify-center shrink-0 text-emerald-300"
-            style={{ background: "rgba(52,211,153,0.18)" }}
+            className="w-12 h-12 rounded-xl flex items-center justify-center shrink-0 text-primary bg-primary/15"
           >
             <Share2 className="w-6 h-6" />
           </div>
           <div className="flex-1 min-w-0">
-            <p className="text-white font-bold text-base">{t("more_share")}</p>
-            <p className="text-emerald-500 text-sm mt-0.5">{t("more_share_sub")}</p>
+            <p className="text-foreground font-bold text-base">{t("more_share")}</p>
+            <p className="text-primary text-sm mt-0.5">{t("more_share_sub")}</p>
           </div>
-          <span className="text-emerald-600 text-xs px-2 py-1 rounded-full border border-emerald-800/40 shrink-0">
+            <span className="text-muted-foreground text-xs px-2 py-1 rounded-full border border-border shrink-0 bg-card">
             {t("more_share_badge")}
           </span>
         </button>
 
         <button
           onClick={() => openUrl("https://play.google.com/store/apps/details?id=com.sj64noorquran&reviewId=0")}
-          className="w-full flex items-center gap-4 p-5 rounded-2xl border border-amber-700/40 text-left transition-all active:scale-[0.98] hover:border-amber-600/60"
-          style={{
-            background: "linear-gradient(135deg, rgba(120,80,0,0.35) 0%, rgba(80,50,0,0.28) 100%)",
-            boxShadow: "0 0 20px rgba(251,191,36,0.06)",
-          }}
+          className="w-full flex items-center gap-4 p-5 rounded-2xl border border-border bg-card text-left transition-all active:scale-[0.98] hover:border-border"
           data-testid="more-rate-app"
         >
-          <div
-            className="w-12 h-12 rounded-xl flex items-center justify-center shrink-0 text-amber-300"
-            style={{ background: "rgba(251,191,36,0.18)" }}
-          >
-            <Star className="w-6 h-6 fill-amber-300" />
+          <div className="w-12 h-12 rounded-xl flex items-center justify-center shrink-0 text-primary bg-primary/10">
+            <Star className="w-6 h-6 fill-primary" />
           </div>
           <div className="flex-1 min-w-0">
-            <p className="text-white font-bold text-base">{t("more_rate")}</p>
-            <p className="text-amber-600 text-sm mt-0.5">{t("more_rate_sub")}</p>
+            <p className="text-foreground font-bold text-base">{t("more_rate")}</p>
+            <p className="text-muted-foreground text-sm mt-0.5">{t("more_rate_sub")}</p>
           </div>
           <div className="flex gap-0.5 shrink-0">
             {[1,2,3,4,5].map((s) => (
@@ -264,24 +251,20 @@ export function More() {
           <button
             key={item.id}
             onClick={() => navigate(item.href)}
-            className="w-full flex items-center gap-4 p-4 rounded-2xl border border-emerald-900/40 text-left transition-all active:scale-[0.98] hover:border-emerald-700/40"
-            style={{
-              background: "rgba(255,255,255,0.04)",
-              animationDelay: `${i * 40}ms`,
-            }}
+            className="w-full flex items-center gap-4 p-4 rounded-2xl border border-border bg-card text-left transition-all active:scale-[0.98] hover:border-border"
+            style={{ animationDelay: `${i * 40}ms` }}
             data-testid={`more-item-${item.id}`}
           >
             <div
-              className={`w-12 h-12 rounded-xl flex items-center justify-center shrink-0 ${item.accent}`}
-              style={{ background: item.iconBg }}
+              className={`w-12 h-12 rounded-xl flex items-center justify-center shrink-0 ${item.accent} ${item.iconBg}`}
             >
               {item.icon}
             </div>
             <div className="flex-1 min-w-0">
-              <p className="text-white font-semibold text-base">{item.label}</p>
-              <p className="text-emerald-600 text-sm mt-0.5 truncate">{item.description}</p>
+              <p className="text-foreground font-semibold text-base">{item.label}</p>
+              <p className="text-muted-foreground text-sm mt-0.5 truncate">{item.description}</p>
             </div>
-            <ChevronRight className="w-5 h-5 text-emerald-800 shrink-0" />
+            <ChevronRight className="w-5 h-5 text-muted-foreground shrink-0" />
           </button>
         ))}
       </div>
@@ -289,7 +272,7 @@ export function More() {
       {/* Footer — 20-tap admin access */}
       <button
         onClick={handleFooterTap}
-        className="w-full text-center text-emerald-900 text-xs mt-6 pb-4 active:text-emerald-700 transition-colors select-none"
+        className="w-full text-center text-muted-foreground text-xs mt-6 pb-4 active:text-primary transition-colors select-none"
       >
         {t("more_footer")}
       </button>
@@ -301,19 +284,18 @@ export function More() {
           style={{ background: "rgba(0,0,0,0.75)", backdropFilter: "blur(4px)" }}
         >
           <div
-            className="w-full max-w-sm rounded-2xl border border-emerald-800/50 p-6 space-y-4"
-            style={{ background: "linear-gradient(150deg, #071a0e 0%, #0d2618 100%)" }}
+            className="w-full max-w-sm rounded-2xl border border-border p-6 space-y-4 bg-background"
           >
             <div className="flex items-center justify-between">
-              <p className="text-emerald-300 font-bold text-base">Admin Access</p>
+              <p className="text-primary font-bold text-base">{t("more_admin_title")}</p>
               <button
                 onClick={closeAdminDialog}
-                className="w-8 h-8 flex items-center justify-center rounded-full border border-emerald-900/50 text-emerald-600 active:scale-90 transition-transform"
+                className="w-8 h-8 flex items-center justify-center rounded-full border border-border text-muted-foreground active:scale-90 transition-transform"
               >
                 <X className="w-4 h-4" />
               </button>
             </div>
-            <p className="text-emerald-600 text-xs">Enter the admin token to continue.</p>
+            <p className="text-muted-foreground text-xs">Enter the admin token to continue.</p>
             <div className="relative">
               <input
                 type={showAdminPw ? "text" : "password"}
@@ -322,19 +304,19 @@ export function More() {
                 onKeyDown={(e) => { if (e.key === "Enter") handleAdminLogin(); }}
                 placeholder="Admin token…"
                 autoFocus
-                className="w-full px-3 py-2.5 pr-10 rounded-xl bg-emerald-950/60 border border-emerald-800/50 text-white placeholder:text-emerald-800 text-sm focus:outline-none focus:ring-1 focus:ring-emerald-600"
+                className="w-full px-3 py-2.5 pr-10 rounded-xl bg-background border border-border text-foreground placeholder:text-muted-foreground text-sm focus:outline-none focus:ring-1 focus:ring-primary"
               />
               <button
                 type="button"
                 onClick={() => setShowAdminPw((v) => !v)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-emerald-700"
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground"
               >
                 {showAdminPw ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
               </button>
             </div>
             <button
               onClick={handleAdminLogin}
-              className="w-full py-2.5 rounded-xl bg-emerald-700 hover:bg-emerald-600 text-white font-bold text-sm transition-colors active:scale-[0.98]"
+              className="w-full py-2.5 rounded-xl bg-primary hover:bg-primary/90 text-primary-foreground font-bold text-sm transition-colors active:scale-[0.98]"
             >
               Enter Admin Panel
             </button>

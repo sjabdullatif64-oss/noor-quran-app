@@ -10,12 +10,12 @@ const SECTIONS = [
   {
     icon: <BookOpen className="w-5 h-5" />,
     title: "Information We Collect",
-    accent: "text-emerald-400",
+    accent: "text-primary",
     bg: "rgba(52,211,153,0.07)",
-    border: "border-emerald-800/40",
+    border: "border-border",
     body: (
       <>
-        Noor Quran does <strong className="text-emerald-300">not</strong> collect any personally
+        Noor Quran does <strong className="text-primary">not</strong> collect any personally
         identifiable information (PII) such as your name, email address, or phone number. The
         only data stored is your in-app preferences — chosen language, city, dark-mode setting,
         bookmarks, and favorites — and these are stored <em>locally on your device only</em>.
@@ -237,48 +237,43 @@ export function PrivacyPolicy() {
   return (
     <div
       ref={topRef}
-      className="min-h-screen pb-32 md:pb-12 animate-in fade-in duration-500"
-      style={{ background: "linear-gradient(150deg, #071a0e 0%, #0a1f12 50%, #061610 100%)" }}
+      className="min-h-screen pb-32 md:pb-12 animate-in fade-in duration-500 bg-background text-foreground"
     >
       {/* Sticky header */}
-      <div
-        className="sticky top-0 z-20 flex items-center gap-3 px-4 pt-6 pb-4"
-        style={{ background: "linear-gradient(180deg, #071a0e 85%, transparent 100%)" }}
-      >
+      <div className="sticky top-0 z-20 flex items-center gap-3 px-4 pt-6 pb-4 bg-background/95 backdrop-blur border-b border-border">
         <Link
           href="/"
-          className="flex items-center justify-center w-9 h-9 rounded-full border border-emerald-800/50 text-emerald-500 hover:text-emerald-300 hover:border-emerald-600 transition-colors"
+          className="flex items-center justify-center w-9 h-9 rounded-full border border-border text-muted-foreground hover:text-primary hover:border-border transition-colors bg-card"
         >
           <ChevronLeft className="w-5 h-5" />
         </Link>
         <div className="flex-1">
-          <h1 className="text-lg font-semibold text-emerald-300 leading-tight">Privacy Policy</h1>
-          <p className="text-emerald-700 text-xs">Noor Quran · com.sj64noorquran</p>
+          <h1 className="text-lg font-semibold text-foreground leading-tight">Privacy Policy</h1>
+          <p className="text-muted-foreground text-xs">Noor Quran · com.sj64noorquran</p>
         </div>
-        <Shield className="w-5 h-5 text-emerald-700" />
+        <Shield className="w-5 h-5 text-muted-foreground" />
       </div>
 
       <div className="px-4 space-y-4 max-w-2xl mx-auto">
 
         {/* Hero card */}
         <div
-          className="rounded-2xl p-5 border border-emerald-800/40"
-          style={{ background: "linear-gradient(135deg, rgba(26,92,56,0.2), rgba(6,22,16,0.4))" }}
+          className="rounded-2xl p-5 border border-border bg-card"
         >
           <div className="flex items-center gap-2 mb-3">
-            <Shield className="w-5 h-5 text-emerald-400" />
-            <p className="text-emerald-300 font-semibold text-base">Our Commitment to You</p>
+            <Shield className="w-5 h-5 text-primary" />
+            <p className="text-foreground font-semibold text-base">Our Commitment to You</p>
           </div>
-          <p className="text-emerald-500 text-sm leading-relaxed mb-4">
+          <p className="text-muted-foreground text-sm leading-relaxed mb-4">
             Noor Quran was built as a free service to the Muslim community. We take your privacy
             seriously — we do not collect personal data, we do not track you, and we do not sell
             your information. This policy explains exactly what we do and do not do.
           </p>
-          <div className="border-t border-emerald-900/40 pt-3">
-            <p className="text-emerald-700 text-xs font-arabic text-right leading-loose mb-1" dir="rtl">
+          <div className="border-t border-border pt-3">
+            <p className="text-muted-foreground text-xs font-arabic text-right leading-loose mb-1" dir="rtl">
               وَاللَّهُ يَعْلَمُ مَا تُسِرُّونَ وَمَا تُعْلِنُونَ
             </p>
-            <p className="text-emerald-800 text-xs text-right">
+            <p className="text-muted-foreground text-xs text-right">
               "Allah knows what you conceal and what you reveal." — Quran 16:19
             </p>
           </div>
@@ -288,27 +283,24 @@ export function PrivacyPolicy() {
         {SECTIONS.map((s) => (
           <div
             key={s.title}
-            className={`rounded-2xl border ${s.border} overflow-hidden`}
-            style={{ background: "rgba(255,255,255,0.02)" }}
+            className={`rounded-2xl border ${s.border} overflow-hidden bg-card`}
           >
             <div
-              className="flex items-center gap-3 px-4 py-3 border-b border-white/5"
-              style={{ background: s.bg }}
+              className={`flex items-center gap-3 px-4 py-3 border-b border-border ${s.bg}`}
             >
               <span className={s.accent}>{s.icon}</span>
               <p className={`font-semibold text-sm ${s.accent}`}>{s.title}</p>
             </div>
-            <p className="text-emerald-500 text-sm leading-relaxed px-4 py-4">{s.body}</p>
+            <p className="text-foreground text-sm leading-relaxed px-4 py-4">{s.body}</p>
           </div>
         ))}
 
         {/* Children's privacy */}
         <div
-          className="rounded-2xl border border-emerald-900/40 p-4"
-          style={{ background: "rgba(255,255,255,0.02)" }}
+          className="rounded-2xl border border-border p-4 bg-card"
         >
-          <p className="text-emerald-400 text-sm font-semibold mb-2">Children&apos;s Privacy</p>
-          <p className="text-emerald-600 text-sm leading-relaxed">
+          <p className="text-primary text-sm font-semibold mb-2">Children&apos;s Privacy</p>
+          <p className="text-muted-foreground text-sm leading-relaxed">
             Noor Quran does not knowingly collect personal information from children under 13.
             The app is designed for general audiences and contains Islamic educational content
             suitable for all ages. No age-gated features or account creation is required.
@@ -317,11 +309,10 @@ export function PrivacyPolicy() {
 
         {/* Policy changes */}
         <div
-          className="rounded-2xl border border-emerald-900/40 p-4"
-          style={{ background: "rgba(255,255,255,0.02)" }}
+          className="rounded-2xl border border-border p-4 bg-card"
         >
-          <p className="text-emerald-400 text-sm font-semibold mb-2">Policy Changes</p>
-          <p className="text-emerald-600 text-sm leading-relaxed">
+          <p className="text-primary text-sm font-semibold mb-2">Policy Changes</p>
+          <p className="text-muted-foreground text-sm leading-relaxed">
             We may update this Privacy Policy occasionally. Any changes will be reflected on
             this page with a revised effective date. Continued use of Noor Quran after changes
             constitutes acceptance of the updated policy.
@@ -330,21 +321,20 @@ export function PrivacyPolicy() {
 
         {/* Third-party links */}
         <div
-          className="rounded-2xl border border-emerald-900/40 p-4"
-          style={{ background: "rgba(255,255,255,0.02)" }}
+          className="rounded-2xl border border-border p-4 bg-card"
         >
-          <p className="text-emerald-500 text-xs font-semibold uppercase tracking-wider mb-3">
+          <p className="text-primary text-xs font-semibold uppercase tracking-wider mb-3">
             Third-Party Privacy Policies
           </p>
-          <div className="divide-y divide-emerald-900/20">
+          <div className="divide-y divide-border">
             {THIRD_PARTY.map((link) => (
               <button
                 key={link.name}
                 onClick={() => openUrl(link.url)}
                 className="w-full text-left flex justify-between items-center py-2.5"
               >
-                <span className="text-emerald-400 text-sm">{link.name}</span>
-                <span className="text-emerald-700 text-xs">View Policy →</span>
+                <span className="text-foreground text-sm">{link.name}</span>
+                <span className="text-muted-foreground text-xs">View Policy →</span>
               </button>
             ))}
           </div>
@@ -352,22 +342,20 @@ export function PrivacyPolicy() {
 
         {/* Contact */}
         <div
-          className="rounded-2xl border border-emerald-800/50 p-5"
-          style={{ background: "linear-gradient(135deg, rgba(26,92,56,0.15), rgba(6,22,16,0.3))" }}
+          className="rounded-2xl border border-border p-5 bg-card"
         >
           <div className="flex items-center gap-2 mb-3">
-            <Mail className="w-4 h-4 text-emerald-500" />
-            <p className="text-emerald-400 text-sm font-semibold">Contact Us</p>
+            <Mail className="w-4 h-4 text-primary" />
+            <p className="text-foreground text-sm font-semibold">Contact Us</p>
           </div>
-          <p className="text-emerald-600 text-sm leading-relaxed mb-1">
+          <p className="text-muted-foreground text-sm leading-relaxed mb-1">
             If you have any questions, concerns, or requests regarding this Privacy Policy or
             your data, please contact the Noor Quran Team:
           </p>
-          <p className="text-emerald-700 text-xs mb-3 font-medium">The Noor Quran Team</p>
+          <p className="text-muted-foreground text-xs mb-3 font-medium">The Noor Quran Team</p>
           <button
             onClick={() => openUrl("mailto:easygroupjoin@gmail.com")}
-            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium text-emerald-300 border border-emerald-700/50 hover:border-emerald-500 transition-colors"
-            style={{ background: "rgba(26,92,56,0.3)" }}
+            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium text-primary border border-border bg-muted hover:border-border transition-colors"
           >
             <Mail className="w-4 h-4" />
             easygroupjoin@gmail.com
@@ -375,20 +363,19 @@ export function PrivacyPolicy() {
         </div>
 
         {/* Effective date */}
-        <p className="text-emerald-800 text-xs text-center pt-2">
+        <p className="text-muted-foreground text-xs text-center pt-2">
           Last updated: July 19, 2026 &nbsp;·&nbsp; Effective immediately
         </p>
 
         {/* Close button */}
         <button
           onClick={() => window.history.back()}
-          className="w-full py-4 rounded-2xl text-sm font-semibold text-white transition-all active:scale-[0.98]"
-          style={{ background: "linear-gradient(135deg, #1a5c38, #0d3d24)" }}
+          className="w-full py-4 rounded-2xl text-sm font-semibold text-primary-foreground bg-primary transition-all active:scale-[0.98]"
         >
           Close
         </button>
 
-        <p className="text-center text-emerald-900 text-xs pb-4">
+        <p className="text-center text-muted-foreground text-xs pb-4">
           Noor Quran © 2025 · The Noor Quran Team
         </p>
       </div>

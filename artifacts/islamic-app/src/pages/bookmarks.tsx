@@ -3,6 +3,7 @@ import { Link } from "wouter";
 import { Bookmark as BookmarkType, getBookmarks, removeBookmark } from "@/lib/bookmarks";
 import { FavoriteSurah, getFavSurahs, removeFavSurah } from "@/lib/favorites";
 import { sanitizeUrduText } from "@/lib/api";
+import { useI18n } from "@/lib/i18n-context";
 import { Trash2, BookOpen, BookmarkX, Search, BookMarked } from "lucide-react";
 import { Input } from "@/components/ui/input";
 
@@ -16,6 +17,7 @@ function ayahHref(bm: BookmarkType): string {
 }
 
 export function Bookmarks() {
+  const { t } = useI18n();
   const [tab, setTab] = useState<Tab>("surahs");
   const [surahs, setSurahs] = useState<FavoriteSurah[]>([]);
   const [ayahs, setAyahs] = useState<BookmarkType[]>([]);
@@ -54,10 +56,12 @@ export function Bookmarks() {
       <header className="space-y-1">
         <h1 className="text-3xl md:text-4xl font-serif font-bold text-primary flex items-center gap-3">
           <BookMarked className="w-8 h-8" />
-          Bookmarks
+          {t("bookmarks_title")}
         </h1>
         <p className="text-muted-foreground">
-          {surahs.length} saved surah{surahs.length !== 1 ? "s" : ""} · {ayahs.length} reading mark{ayahs.length !== 1 ? "s" : ""}
+          {surahs.length} {t("bookmarks_count_surah")}
+          {surahs.length !== 1 ? "s" : ""} · {ayahs.length} {t("bookmarks_count_mark")}
+          {ayahs.length !== 1 ? "s" : ""}
         </p>
       </header>
 
@@ -67,7 +71,7 @@ export function Bookmarks() {
         <Input
           value={query}
           onChange={(e) => setQuery(e.target.value)}
-          placeholder="Search bookmarks…"
+          placeholder={t("bookmarks_search_placeholder")}
           className="pl-9 bg-card border-border"
           data-testid="input-bookmarks-search"
         />
@@ -75,18 +79,18 @@ export function Bookmarks() {
 
       {/* Tabs */}
       <div className="flex gap-2">
-        {(["surahs", "ayahs"] as Tab[]).map((t) => (
+        {(["surahs", "ayahs"] as Tab[]).map((tabKey) => (
           <button
-            key={t}
-            onClick={() => setTab(t)}
+            key={tabKey}
+            onClick={() => setTab(tabKey)}
             className={`px-5 py-2 rounded-full text-sm font-medium transition-all border ${
-              tab === t
+              tab === tabKey
                 ? "bg-primary text-primary-foreground border-primary shadow-sm"
                 : "text-muted-foreground border-border hover:border-primary/40"
             }`}
-            data-testid={`tab-bookmarks-${t}`}
+            data-testid={`tab-bookmarks-${tabKey}`}
           >
-            {t === "surahs" ? `Saved Surahs (${surahs.length})` : `Reading Marks (${ayahs.length})`}
+            {tabKey === "surahs" ? `${t("bookmarks_tab_surahs")} (${surahs.length})` : `${t("bookmarks_tab_ayahs")} (${ayahs.length})`}
           </button>
         ))}
       </div>
@@ -109,7 +113,7 @@ export function Bookmarks() {
                 <div className="flex-1 min-w-0">
                   <p className="font-semibold text-foreground truncate">{surah.englishName}</p>
                   <p className="text-muted-foreground text-xs truncate">
-                    {surah.englishNameTranslation} · {surah.numberOfAyahs} verses
+                    {surah.englishNameTranslation} · {surah.numberOfAyahs} {t("bookmarks_surah_verses")}
                   </p>
                 </div>
                 <p dir="rtl" className="font-arabic text-xl text-primary shrink-0">{surah.name}</p>
@@ -142,9 +146,9 @@ export function Bookmarks() {
                     <span className="text-xs font-bold bg-primary/10 text-primary rounded-full px-2.5 py-0.5">
                       {bm.surahEnglishName}
                     </span>
-                    <span className="text-xs text-muted-foreground">Verse {bm.ayahNumber}</span>
+                      <span className="text-xs text-muted-foreground">{t("bookmarks_ayah_verse")} {bm.ayahNumber}</span>
                     {bm.juzNumber && (
-                      <span className="text-xs text-muted-foreground/60">Juz {bm.juzNumber}</span>
+                      <span className="text-xs text-muted-foreground/60">{t("bookmarks_ayah_juz")} {bm.juzNumber}</span>
                     )}
                   </div>
                   <p dir="rtl" className="text-2xl font-arabic leading-loose text-foreground text-right">
@@ -173,6 +177,7 @@ export function Bookmarks() {
 }
 
 function EmptyState({ tab, hasQuery }: { tab: Tab; hasQuery: boolean }) {
+  const { t } = useI18n();
   return (
     <div className="flex flex-col items-center justify-center py-24 gap-6 text-center">
       <div className="w-20 h-20 rounded-full bg-muted flex items-center justify-center">
@@ -181,17 +186,17 @@ function EmptyState({ tab, hasQuery }: { tab: Tab; hasQuery: boolean }) {
       <div className="space-y-2">
         <p className="text-lg font-medium text-foreground">
           {hasQuery
-            ? "No results found"
+            ? t("bookmarks_empty_no_results")
             : tab === "surahs"
-            ? "No saved surahs yet"
-            : "No reading marks yet"}
+            ? t("bookmarks_empty_surahs")
+            : t("bookmarks_empty_ayahs")}
         </p>
         <p className="text-muted-foreground text-sm max-w-xs">
           {hasQuery
-            ? "Try a different search term"
+            ? t("bookmarks_empty_search_sub")
             : tab === "surahs"
-            ? "Tap the heart icon on any surah to save it here."
-            : "Tap the bookmark icon while reading an ayah to save your place."}
+            ? t("bookmarks_empty_surahs_sub")
+            : t("bookmarks_empty_ayahs_sub")}
         </p>
       </div>
       <Link
@@ -200,7 +205,7 @@ function EmptyState({ tab, hasQuery }: { tab: Tab; hasQuery: boolean }) {
         data-testid="link-go-quran"
       >
         <BookOpen className="w-4 h-4" />
-        Open Quran
+        {t("bookmarks_open_quran")}
       </Link>
     </div>
   );

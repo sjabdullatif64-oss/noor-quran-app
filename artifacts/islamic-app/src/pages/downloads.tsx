@@ -1,6 +1,7 @@
 import { useState, useCallback, useEffect } from "react";
 import { ChevronLeft, Download, Trash2, CheckCircle, Play, Pause, HardDrive, Wifi, XCircle, Search, Globe } from "lucide-react";
 import { Link } from "wouter";
+import { useI18n } from "@/lib/i18n-context";
 import {
   SURAH_PACKS,
   SurahPack,
@@ -52,6 +53,7 @@ function buildInitialPackStates(): Record<string, PackState> {
 }
 
 export function Downloads() {
+  const { t } = useI18n();
   // ── Both states initialized synchronously from localStorage so the UI is
   //    always correct on first render — no empty-flash or stale-data issues.
   const [packStates, setPackStates] = useState<Record<string, PackState>>(buildInitialPackStates);
@@ -124,17 +126,17 @@ export function Downloads() {
         setTranslStatus(lang, { progress: loaded, total });
       });
       setTranslStatus(lang, { status: "complete" });
-      toast({ title: "Downloaded!", description: `${TRANSLATION_ENGLISH_NAMES[lang]} translation saved offline.` });
+      toast({ title: t("downloads_toast_success"), description: `${TRANSLATION_ENGLISH_NAMES[lang]} ${t("downloads_toast_success_sub")}` });
     } catch {
       setTranslStatus(lang, { status: "error", errorMsg: "Download failed. Check your connection." });
-      toast({ title: "Download failed", description: "Please check your internet connection.", variant: "destructive" });
+      toast({ title: t("downloads_toast_fail"), description: t("downloads_toast_fail_sub"), variant: "destructive" });
     }
   };
 
   const handleTranslDelete = async (lang: TranslationLanguage) => {
     await deleteTranslationPack(lang);
     setTranslStatus(lang, { status: "idle", progress: 0, total: 0 });
-    toast({ title: "Deleted", description: `${TRANSLATION_ENGLISH_NAMES[lang]} translation removed.` });
+    toast({ title: t("downloads_toast_deleted"), description: `${TRANSLATION_ENGLISH_NAMES[lang]} ${t("downloads_toast_deleted_sub")}` });
   };
 
   // ── Download ─────────────────────────────────────────────────────────────────
@@ -147,10 +149,10 @@ export function Downloads() {
       // Mark complete then refresh both states from storage atomically
       setPackStatus(pack.id, { status: "complete" });
       refreshDownloads();
-      toast({ title: "Download complete!", description: `${pack.name} is now available offline.` });
+      toast({ title: t("downloads_toast_complete"), description: `${pack.name} ${t("downloads_toast_complete_sub")}` });
     } catch {
       setPackStatus(pack.id, { status: "error", errorMsg: "Download failed. Check your connection." });
-      toast({ title: "Download failed", description: "Please check your internet connection.", variant: "destructive" });
+      toast({ title: t("downloads_toast_fail"), description: t("downloads_toast_fail_sub"), variant: "destructive" });
     }
   };
 
@@ -159,7 +161,7 @@ export function Downloads() {
     if (playingPackId === packId) stopPlayer();
     await deletePack(packId);
     refreshDownloads();
-    toast({ title: "Deleted", description: "Pack removed from your device." });
+    toast({ title: t("downloads_toast_deleted"), description: t("downloads_toast_deleted_pack_sub") });
   };
 
   // ── Offline player ───────────────────────────────────────────────────────────
@@ -183,7 +185,7 @@ export function Downloads() {
 
     const url = await getAudioBlobUrl(ayah.globalNum);
     if (!url) {
-      toast({ title: "Audio not cached", description: "Please download this pack again.", variant: "destructive" });
+      toast({ title: t("downloads_toast_audio_missing"), description: t("downloads_toast_audio_missing_sub"), variant: "destructive" });
       return;
     }
 
@@ -230,32 +232,31 @@ export function Downloads() {
 
   return (
     <div
-      className="min-h-screen pb-28 md:pb-10 animate-in fade-in duration-500"
-      style={{ background: "linear-gradient(150deg, #071a0e 0%, #0a1f12 50%, #061610 100%)" }}
+      className="min-h-screen pb-28 md:pb-10 animate-in fade-in duration-500 bg-background"
     >
       {/* Header */}
       <div className="flex items-center gap-3 px-5 pt-6 pb-6">
-        <Link href="/more" className="text-emerald-600 hover:text-emerald-400 transition-colors" data-testid="link-back-more">
+        <Link href="/more" className="text-muted-foreground hover:text-primary transition-colors" data-testid="link-back-more">
           <ChevronLeft className="w-6 h-6" />
         </Link>
         <div>
-          <h1 className="text-2xl font-serif font-bold text-emerald-300">Downloads</h1>
-          <p className="text-emerald-700 text-xs mt-0.5">Save surahs for offline reading & playback</p>
+          <h1 className="text-2xl font-serif font-bold text-foreground">{t("downloads_title")}</h1>
+          <p className="text-muted-foreground text-xs mt-0.5">{t("downloads_subtitle")}</p>
         </div>
       </div>
 
       {/* Storage bar */}
-      <div className="mx-4 mb-5 rounded-2xl p-4 border border-emerald-900/40" style={{ background: "rgba(255,255,255,0.03)" }}>
+      <div className="mx-4 mb-5 rounded-2xl p-4 border border-border bg-card">
         <div className="flex items-center justify-between mb-3">
-          <div className="flex items-center gap-2 text-emerald-400 text-sm font-medium">
+          <div className="flex items-center gap-2 text-primary text-sm font-medium">
             <HardDrive className="w-4 h-4" />
-            <span>Device Storage</span>
+            <span>{t("downloads_device_storage")}</span>
           </div>
-          <span className="text-emerald-600 text-xs">{usedMB.toFixed(1)} MB used</span>
+          <span className="text-muted-foreground text-xs">{usedMB.toFixed(1)} MB {t("downloads_used")}</span>
         </div>
-        <div className="h-2 bg-emerald-900/50 rounded-full overflow-hidden">
+        <div className="h-2 bg-muted rounded-full overflow-hidden">
           <div
-            className="h-full bg-emerald-500 rounded-full transition-all"
+            className="h-full bg-primary rounded-full transition-all"
             style={{ width: `${Math.min((usedMB / 50) * 100, 100)}%` }}
           />
         </div>
@@ -265,23 +266,23 @@ export function Downloads() {
       <div className="px-4 mb-6">
         {/* Section header + count */}
         <div className="flex items-center justify-between mb-3">
-          <p className="text-emerald-500 text-xs uppercase tracking-wider font-medium">
-            All Surahs ({SURAH_PACKS.length})
+            <p className="text-muted-foreground text-xs uppercase tracking-wider font-medium">
+              {t("downloads_all_surahs")} ({SURAH_PACKS.length})
           </p>
-          <p className="text-emerald-700 text-xs">
-            {SURAH_PACKS.filter((p) => packStates[p.id]?.status === "complete").length} downloaded
+            <p className="text-muted-foreground text-xs">
+             {SURAH_PACKS.filter((p) => packStates[p.id]?.status === "complete").length} {t("downloads_downloaded")}
           </p>
         </div>
 
         {/* Search input */}
         <div className="relative mb-3">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-emerald-700 pointer-events-none" />
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
           <input
             type="text"
-            placeholder="Search surah name…"
+            placeholder={t("downloads_search_placeholder")}
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="w-full bg-transparent border border-emerald-900/50 rounded-xl pl-9 pr-4 py-2.5 text-sm text-emerald-200 placeholder:text-emerald-800 focus:outline-none focus:border-emerald-700 transition-colors"
+            className="w-full bg-background border border-border rounded-xl pl-9 pr-4 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-border transition-colors"
           />
         </div>
 
@@ -308,17 +309,16 @@ export function Downloads() {
             return (
               <div
                 key={pack.id}
-                className="rounded-xl border border-emerald-900/40 overflow-hidden"
-                style={{ background: "rgba(255,255,255,0.03)" }}
+                className="rounded-xl border border-border overflow-hidden bg-card"
               >
                 <div className="flex items-center gap-3 px-3 py-2.5">
                   {/* Surah number badge */}
                   <div
                     className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0 text-xs font-bold"
                     style={{
-                      background: isComplete ? "rgba(52,211,153,0.18)" : "rgba(45,212,191,0.07)",
-                      color: isComplete ? "#34d399" : "#2dd4bf",
-                      border: isComplete ? "1px solid rgba(52,211,153,0.25)" : "1px solid rgba(45,212,191,0.15)",
+                      background: isComplete ? "hsl(var(--primary) / 0.18)" : "hsl(var(--secondary) / 0.07)",
+                      color: isComplete ? "hsl(var(--primary))" : "hsl(var(--secondary))",
+                      border: isComplete ? "1px solid hsl(var(--primary) / 0.25)" : "1px solid hsl(var(--secondary) / 0.15)",
                     }}
                   >
                     {isComplete ? <CheckCircle className="w-4 h-4" /> : surahNum}
@@ -327,10 +327,10 @@ export function Downloads() {
                   {/* Name */}
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-1.5">
-                      <p className="text-white font-medium text-sm leading-tight truncate">{pack.name}</p>
-                      <span dir="rtl" className="font-arabic text-emerald-600 text-sm shrink-0">{pack.nameAr}</span>
+                      <p className="text-foreground font-medium text-sm leading-tight truncate">{pack.name}</p>
+                      <span dir="rtl" className="font-arabic text-muted-foreground text-sm shrink-0">{pack.nameAr}</span>
                     </div>
-                    <p className="text-emerald-800 text-xs">{pack.description} · {pack.size}</p>
+                    <p className="text-muted-foreground text-xs">{pack.description} · {pack.size}</p>
                   </div>
 
                   {/* Actions */}
@@ -338,8 +338,7 @@ export function Downloads() {
                     {isComplete && (
                       <button
                         onClick={() => togglePlay(pack.id)}
-                        className="w-8 h-8 rounded-full flex items-center justify-center text-emerald-400 border border-emerald-800/40 hover:border-emerald-600 transition-all"
-                        style={{ background: "rgba(52,211,153,0.1)" }}
+                        className="w-8 h-8 rounded-full flex items-center justify-center text-primary border border-border hover:border-border transition-all bg-primary/10"
                         data-testid={`button-play-offline-${pack.id}`}
                       >
                         {isOfflinePlaying && isPlaying ? <Pause className="w-3.5 h-3.5" /> : <Play className="w-3.5 h-3.5" />}
@@ -349,19 +348,18 @@ export function Downloads() {
                     {!isComplete && !isDownloading && !isError && (
                       <button
                         onClick={() => handleDownload(pack)}
-                        className="flex items-center gap-1 px-2.5 py-1.5 rounded-full text-xs font-medium text-teal-300 border border-teal-800/40 hover:border-teal-600 transition-colors"
-                        style={{ background: "rgba(45,212,191,0.08)" }}
+                        className="flex items-center gap-1 px-2.5 py-1.5 rounded-full text-xs font-medium text-primary border border-border hover:border-border transition-colors bg-primary/10"
                         data-testid={`button-download-${pack.id}`}
                       >
                         <Download className="w-3 h-3" />
-                        Save
+                        {t("downloads_save")}
                       </button>
                     )}
 
                     {isComplete && (
                       <button
                         onClick={() => handleDelete(pack.id)}
-                        className="w-8 h-8 rounded-full flex items-center justify-center text-red-400 hover:text-red-300 transition-colors"
+                        className="w-8 h-8 rounded-full flex items-center justify-center text-destructive hover:text-destructive/80 transition-colors"
                         data-testid={`button-delete-${pack.id}`}
                         aria-label={`Delete ${pack.name}`}
                       >
@@ -372,15 +370,15 @@ export function Downloads() {
                     {isError && (
                       <button
                         onClick={() => handleDownload(pack)}
-                        className="flex items-center gap-1 px-2.5 py-1.5 rounded-full text-xs font-medium text-red-300 border border-red-800/40"
+                        className="flex items-center gap-1 px-2.5 py-1.5 rounded-full text-xs font-medium text-destructive border border-border"
                       >
                         <XCircle className="w-3 h-3" />
-                        Retry
+                        {t("downloads_retry")}
                       </button>
                     )}
 
                     {isDownloading && (
-                      <span className="text-emerald-600 text-xs tabular-nums">{progressPct}%</span>
+                    <span className="text-muted-foreground text-xs tabular-nums">{progressPct}%</span>
                     )}
                   </div>
                 </div>
@@ -388,9 +386,9 @@ export function Downloads() {
                 {/* Inline progress bar */}
                 {isDownloading && (
                   <div className="px-3 pb-2.5">
-                    <div className="h-1 bg-emerald-900/40 rounded-full overflow-hidden">
+                    <div className="h-1 bg-muted rounded-full overflow-hidden">
                       <div
-                        className="h-full bg-emerald-500 rounded-full transition-all"
+                        className="h-full bg-primary rounded-full transition-all"
                         style={{ width: `${progressPct}%` }}
                       />
                     </div>
@@ -399,14 +397,14 @@ export function Downloads() {
 
                 {isError && (
                   <div className="px-3 pb-2">
-                    <p className="text-red-400 text-xs">{state.errorMsg}</p>
+                      <p className="text-destructive text-xs">{state.errorMsg}</p>
                   </div>
                 )}
 
                 {isOfflinePlaying && (
-                  <div className="px-3 pb-2 border-t border-emerald-900/30 pt-2">
-                    <p className="text-emerald-600 text-xs">
-                      ▶ Ayah {playingAyahIdx + 1} / {getDownloadedAyahs(pack.id).length}
+                    <div className="px-3 pb-2 border-t border-border pt-2">
+                      <p className="text-muted-foreground text-xs">
+                      {t("downloads_player_ayah")} {playingAyahIdx + 1} / {getDownloadedAyahs(pack.id).length}
                     </p>
                   </div>
                 )}
@@ -419,26 +417,25 @@ export function Downloads() {
       {/* Downloaded summary list */}
       {downloadedPacks.length > 0 && (
         <div className="px-4 space-y-3">
-          <p className="text-emerald-500 text-xs uppercase tracking-wider font-medium">
-            Downloaded ({downloadedPacks.length})
+            <p className="text-muted-foreground text-xs uppercase tracking-wider font-medium">
+            {t("downloads_summary_title")} ({downloadedPacks.length})
           </p>
           {downloadedPacks.map((pack) => (
             <div
               key={pack.id}
-              className="flex items-center gap-3 p-3 rounded-xl border border-emerald-900/30"
-              style={{ background: "rgba(52,211,153,0.04)" }}
+              className="flex items-center gap-3 p-3 rounded-xl border border-border bg-card"
             >
-              <CheckCircle className="w-5 h-5 text-emerald-500 shrink-0" />
+              <CheckCircle className="w-5 h-5 text-primary shrink-0" />
               <div className="flex-1 min-w-0">
-                <p className="text-emerald-300 text-sm font-medium">{pack.name}</p>
-                <p className="text-emerald-800 text-xs">
-                  {pack.ayahGlobals.length} ayahs · Saved {new Date(pack.downloadedAt).toLocaleDateString()}
+                <p className="text-foreground text-sm font-medium">{pack.name}</p>
+                <p className="text-muted-foreground text-xs">
+                  {pack.ayahGlobals.length} {t("downloads_summary_item_sub")} {new Date(pack.downloadedAt).toLocaleDateString()}
                 </p>
               </div>
               {/* Delete shortcut in summary row — always visible */}
               <button
                 onClick={() => handleDelete(pack.id)}
-                className="w-8 h-8 rounded-full flex items-center justify-center text-red-400 hover:text-red-300 transition-colors shrink-0"
+                className="w-8 h-8 rounded-full flex items-center justify-center text-destructive hover:text-destructive/80 transition-colors shrink-0"
                 data-testid={`button-delete-summary-${pack.id}`}
                 aria-label={`Delete ${pack.name}`}
               >
@@ -452,46 +449,40 @@ export function Downloads() {
       {/* ── Translation Packs ────────────────────────────────────────────────── */}
       <div className="px-4 mt-6 mb-6">
         <div className="flex items-center justify-between mb-3">
-          <p className="text-emerald-500 text-xs uppercase tracking-wider font-medium">
-            Translation Packs
+            <p className="text-muted-foreground text-xs uppercase tracking-wider font-medium">
+              {t("downloads_translation_packs")}
           </p>
-          <p className="text-emerald-700 text-xs">Arabic & Urdu bundled</p>
+          <p className="text-muted-foreground text-xs">{t("downloads_arabic_bundled")}</p>
         </div>
 
         {/* Bundled — Arabic */}
-        <div className="rounded-xl border border-emerald-900/40 overflow-hidden mb-2"
-          style={{ background: "rgba(255,255,255,0.03)" }}>
+          <div className="rounded-xl border border-border overflow-hidden mb-2 bg-card">
           <div className="flex items-center gap-3 px-3 py-2.5">
-            <div className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0"
-              style={{ background: "rgba(52,211,153,0.18)", color: "#34d399", border: "1px solid rgba(52,211,153,0.25)" }}>
+              <div className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0 bg-primary/10 text-primary border border-border">
               <CheckCircle className="w-4 h-4" />
             </div>
             <div className="flex-1 min-w-0">
-              <p className="text-white font-medium text-sm">Arabic (القرآن)</p>
-              <p className="text-emerald-800 text-xs">Bundled · Always available offline</p>
+              <p className="text-foreground font-medium text-sm">{t("downloads_lang_arabic")}</p>
+              <p className="text-muted-foreground text-xs">{t("downloads_bundled")} · {t("downloads_always_offline")}</p>
             </div>
-            <span className="text-emerald-600 text-xs font-medium px-2 py-1 rounded-full"
-              style={{ background: "rgba(52,211,153,0.08)", border: "1px solid rgba(52,211,153,0.2)" }}>
-              Bundled
+            <span className="text-muted-foreground text-xs font-medium px-2 py-1 rounded-full bg-muted border border-border">
+              {t("downloads_bundled")}
             </span>
           </div>
         </div>
 
         {/* Bundled — Urdu */}
-        <div className="rounded-xl border border-emerald-900/40 overflow-hidden mb-3"
-          style={{ background: "rgba(255,255,255,0.03)" }}>
+          <div className="rounded-xl border border-border overflow-hidden mb-3 bg-card">
           <div className="flex items-center gap-3 px-3 py-2.5">
-            <div className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0"
-              style={{ background: "rgba(52,211,153,0.18)", color: "#34d399", border: "1px solid rgba(52,211,153,0.25)" }}>
+              <div className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0 bg-primary/10 text-primary border border-border">
               <CheckCircle className="w-4 h-4" />
             </div>
             <div className="flex-1 min-w-0">
-              <p className="text-white font-medium text-sm">Urdu (اردو)</p>
-              <p className="text-emerald-800 text-xs">Bundled · Always available offline</p>
+              <p className="text-foreground font-medium text-sm">{t("downloads_lang_urdu")}</p>
+              <p className="text-muted-foreground text-xs">{t("downloads_bundled")} · {t("downloads_always_offline")}</p>
             </div>
-            <span className="text-emerald-600 text-xs font-medium px-2 py-1 rounded-full"
-              style={{ background: "rgba(52,211,153,0.08)", border: "1px solid rgba(52,211,153,0.2)" }}>
-              Bundled
+            <span className="text-muted-foreground text-xs font-medium px-2 py-1 rounded-full bg-muted border border-border">
+              {t("downloads_bundled")}
             </span>
           </div>
         </div>
@@ -506,40 +497,38 @@ export function Downloads() {
             const pct         = ts?.total > 0 ? Math.round((ts.progress / ts.total) * 100) : 0;
 
             return (
-              <div key={lang} className="rounded-xl border border-emerald-900/40 overflow-hidden"
-                style={{ background: "rgba(255,255,255,0.03)" }}>
+                <div key={lang} className="rounded-xl border border-border overflow-hidden bg-card">
                 <div className="flex items-center gap-3 px-3 py-2.5">
                   <div className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0"
                     style={{
-                      background: isComplete ? "rgba(52,211,153,0.18)" : "rgba(45,212,191,0.07)",
-                      color:      isComplete ? "#34d399" : "#2dd4bf",
-                      border:     isComplete ? "1px solid rgba(52,211,153,0.25)" : "1px solid rgba(45,212,191,0.15)",
+                      background: isComplete ? "hsl(var(--primary) / 0.18)" : "hsl(var(--secondary) / 0.07)",
+                      color:      isComplete ? "hsl(var(--primary))" : "hsl(var(--secondary))",
+                      border:     isComplete ? "1px solid hsl(var(--primary) / 0.25)" : "1px solid hsl(var(--secondary) / 0.15)",
                     }}>
                     {isComplete ? <CheckCircle className="w-4 h-4" /> : <Globe className="w-4 h-4" />}
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-1.5">
-                      <p className="text-white font-medium text-sm">{TRANSLATION_ENGLISH_NAMES[lang]}</p>
-                      <span className="text-emerald-600 text-sm">{TRANSLATION_LABELS[lang]}</span>
+                      <p className="text-foreground font-medium text-sm">{TRANSLATION_ENGLISH_NAMES[lang]}</p>
+                      <span className="text-muted-foreground text-sm">{TRANSLATION_LABELS[lang]}</span>
                     </div>
-                    <p className="text-emerald-800 text-xs">
-                      {isComplete ? "Downloaded · Saved offline" : TRANSLATION_PACK_SIZE[lang]}
+                    <p className="text-muted-foreground text-xs">
+                      {isComplete ? t("downloads_downloaded_offline") : TRANSLATION_PACK_SIZE[lang]}
                     </p>
                   </div>
                   <div className="flex items-center gap-1.5 shrink-0">
                     {!isComplete && !isDling && !isError && (
                       <button
                         onClick={() => handleTranslDownload(lang)}
-                        className="flex items-center gap-1 px-2.5 py-1.5 rounded-full text-xs font-medium text-teal-300 border border-teal-800/40 hover:border-teal-600 transition-colors"
-                        style={{ background: "rgba(45,212,191,0.08)" }}>
+                        className="flex items-center gap-1 px-2.5 py-1.5 rounded-full text-xs font-medium text-primary border border-border hover:border-border transition-colors bg-primary/10">
                         <Download className="w-3 h-3" />
-                        Save
+                        {t("downloads_save")}
                       </button>
                     )}
                     {isComplete && (
                       <button
                         onClick={() => handleTranslDelete(lang)}
-                        className="w-8 h-8 rounded-full flex items-center justify-center text-red-400 hover:text-red-300 transition-colors"
+                        className="w-8 h-8 rounded-full flex items-center justify-center text-destructive hover:text-destructive/80 transition-colors"
                         aria-label={`Delete ${lang} translation`}>
                         <Trash2 className="w-3.5 h-3.5" />
                       </button>
@@ -547,27 +536,27 @@ export function Downloads() {
                     {isError && (
                       <button
                         onClick={() => handleTranslDownload(lang)}
-                        className="flex items-center gap-1 px-2.5 py-1.5 rounded-full text-xs font-medium text-red-300 border border-red-800/40">
+                        className="flex items-center gap-1 px-2.5 py-1.5 rounded-full text-xs font-medium text-destructive border border-border">
                         <XCircle className="w-3 h-3" />
-                        Retry
+                        {t("downloads_retry")}
                       </button>
                     )}
                     {isDling && (
-                      <span className="text-emerald-600 text-xs tabular-nums">{pct}%</span>
+                    <span className="text-muted-foreground text-xs tabular-nums">{pct}%</span>
                     )}
                   </div>
                 </div>
                 {isDling && (
                   <div className="px-3 pb-2.5">
-                    <div className="h-1 bg-emerald-900/40 rounded-full overflow-hidden">
-                      <div className="h-full bg-emerald-500 rounded-full transition-all"
+                    <div className="h-1 bg-muted rounded-full overflow-hidden">
+                      <div className="h-full bg-primary rounded-full transition-all"
                         style={{ width: `${pct}%` }} />
                     </div>
                   </div>
                 )}
                 {isError && (
                   <div className="px-3 pb-2">
-                    <p className="text-red-400 text-xs">{ts.errorMsg}</p>
+                    <p className="text-destructive text-xs">{ts.errorMsg}</p>
                   </div>
                 )}
               </div>
@@ -576,8 +565,8 @@ export function Downloads() {
         </div>
       </div>
 
-      <p className="text-center text-emerald-900 text-xs mt-8 pb-4 px-4">
-        Audio stored locally on your device. Delete anytime to free space.
+      <p className="text-center text-muted-foreground text-xs mt-8 pb-4 px-4">
+        {t("downloads_audio_local")} {t("downloads_audio_delete_anytime")}
       </p>
     </div>
   );

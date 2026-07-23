@@ -113,77 +113,105 @@ export function TeacherLesson() {
   // ── Recording flow ──────────────────────────────────────────────────────────
 
   const beginRecording = useCallback(async () => {
-    if (!lesson) return;
+    console.log("[Noor/Teacher] beginRecording() — start, lessonId=" + (lesson?.id ?? "null"));
+    if (!lesson) {
+      console.log("[Noor/Teacher] beginRecording() — no lesson, returning");
+      return;
+    }
 
     // Daily-limit gate applies only to NEW lessons
     if (!isLessonCompleted(lesson.id) && getDailyStatus().limitReached) {
+      console.log("[Noor/Teacher] beginRecording() — daily limit reached, phase=limit");
       setPhase("limit");
       return;
     }
     if (!hasConsent()) {
+      console.log("[Noor/Teacher] beginRecording() — no consent, phase=consent");
       setPhase("consent");
       return;
     }
+    console.log("[Noor/Teacher] beginRecording() — consent OK, calling getSpeechSupport()");
     // Re-check support at tap time — never trust possibly-stale initial state
     const sup = await getSpeechSupport();
+    console.log("[Noor/Teacher] beginRecording() — getSpeechSupport() returned: " + sup);
     setSupport(sup);
     if (sup === "none") {
+      console.log("[Noor/Teacher] beginRecording() — support=none, phase=no-mic");
       setNoMicReason(getSpeechSupportReason());
       setPhase("no-mic");
       return;
     }
-    if (!(await isConnected())) {
+    console.log("[Noor/Teacher] beginRecording() — calling isConnected()");
+    const connected = await isConnected();
+    console.log("[Noor/Teacher] beginRecording() — isConnected() returned: " + connected);
+    if (!connected) {
+      console.log("[Noor/Teacher] beginRecording() — offline, phase=offline");
       setPhase("offline");
       return;
     }
 
     // Just-in-time permission: first tap shows the native Android dialog
+    console.log("[Noor/Teacher] beginRecording() — calling checkSpeechPermission()");
     const perm = await checkSpeechPermission();
+    console.log("[Noor/Teacher] beginRecording() — checkSpeechPermission() returned: " + perm);
     if (perm === "denied") {
+      console.log("[Noor/Teacher] beginRecording() — permission denied, phase=mic-denied");
       setPhase("mic-denied");
       return;
     }
     if (perm === "prompt" && sup === "native") {
+      console.log("[Noor/Teacher] beginRecording() — permission prompt, calling requestSpeechPermission()");
       const granted = await requestSpeechPermission();
+      console.log("[Noor/Teacher] beginRecording() — requestSpeechPermission() returned: " + granted);
       if (granted !== "granted") {
+        console.log("[Noor/Teacher] beginRecording() — request denied, phase=mic-denied");
         setPhase("mic-denied");
         return;
       }
     }
 
+    console.log("[Noor/Teacher] beginRecording() — entering recording phase");
     setPhase("recording");
     setRecordMs(0);
     const started = Date.now();
     recordTimer.current = setInterval(() => setRecordMs(Date.now() - started), 100);
 
+    console.log("[Noor/Teacher] beginRecording() — calling listenOnce(" + MAX_RECORD_MS + ")");
     const res = await listenOnce(MAX_RECORD_MS);
+    console.log("[Noor/Teacher] beginRecording() — listenOnce() returned: ", JSON.stringify(res));
 
     if (recordTimer.current) { clearInterval(recordTimer.current); recordTimer.current = null; }
     setPhase("checking");
+    console.log("[Noor/Teacher] beginRecording() — phase=checking");
 
-    if (res.error === "not-allowed") { setPhase("mic-denied"); return; }
-    if (res.error === "network") { setPhase("offline"); return; }
+    if (res.error === "not-allowed") { console.log("[Noor/Teacher] beginRecording() — error not-allowed, phase=mic-denied"); setPhase("mic-denied"); return; }
+    if (res.error === "network") { console.log("[Noor/Teacher] beginRecording() — error network, phase=offline"); setPhase("offline"); return; }
 
     const a = assess(lesson.expected, res.alternatives, res.confidence);
+    console.log("[Noor/Teacher] beginRecording() — assess() verdict=" + a.verdict + " score=" + a.matchScore);
     setResult(a);
 
+    let finalPhase = "feedback";
     if (a.verdict === "pass") {
       const cr = completeLesson(lesson.id, a.matchScore);
       clearMistake(lesson.id);
       setCompletedNow(cr);
-      if (cr === "limit-reached") setPhase("limit");
-      else setPhase("passed");
+      if (cr === "limit-reached") { setPhase("limit"); finalPhase = "limit"; }
+      else { setPhase("passed"); finalPhase = "passed"; }
     } else if (a.verdict === "unclear") {
       setPhase("unclear"); // never counted as a mistake
+      finalPhase = "unclear";
     } else {
       setAttempts((n) => n + 1);
       recordMistake(lesson.id);
       setPhase("feedback");
     }
+    console.log("[Noor/Teacher] beginRecording() — final phase=" + finalPhase);
   }, [lesson]);
 
   /** Tap "Read Now" → permission (first time) → listen; auto-stops after MAX_RECORD_MS. */
   const onReadNow = useCallback(() => {
+    console.log("[Noor/Teacher] onReadNow() — tapped");
     beginRecording();
   }, [beginRecording]);
 
@@ -196,10 +224,9 @@ export function TeacherLesson() {
 
   if (!lesson) {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center gap-4 px-6"
-        style={{ background: "#071a0e" }}>
-        <p className="text-emerald-400 text-sm">Lesson not found.</p>
-        <Link href="/teacher" className="text-emerald-300 text-sm underline">Back to Teacher</Link>
+      <div className="min-h-screen flex flex-col items-center justify-center gap-4 px-6 bg-background">
+        <p className="text-muted-foreground text-sm">Lesson not found.</p>
+        <Link href="/teacher" className="text-primary text-sm underline">Back to Teacher</Link>
       </div>
     );
   }
@@ -209,22 +236,20 @@ export function TeacherLesson() {
   if (!isLessonUnlocked(lesson.id)) {
     const nextAllowed = getNextUncompleted();
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center gap-3 px-6 text-center"
-        style={{ background: "linear-gradient(150deg, #071a0e 0%, #0a1f12 50%, #061610 100%)" }}
+      <div className="min-h-screen flex flex-col items-center justify-center gap-3 px-6 text-center bg-background"
         data-testid="panel-locked">
-        <p className="text-emerald-300 font-semibold text-sm">This lesson is still locked</p>
-        <p className="text-emerald-600 text-xs max-w-xs leading-relaxed">
+        <p className="text-foreground font-semibold text-sm">This lesson is still locked</p>
+        <p className="text-muted-foreground text-xs max-w-xs leading-relaxed">
           Lessons unlock one at a time as you pass them — step by step is how strong reading is
           built.
         </p>
         {nextAllowed && (
           <Link href={`/teacher/lesson/${nextAllowed}`}
-            className="mt-2 px-5 py-2.5 rounded-xl text-xs font-semibold text-white"
-            style={{ background: "linear-gradient(135deg, #1a5c38, #0d3d24)" }}>
+            className="mt-2 px-5 py-2.5 rounded-xl text-xs font-semibold text-primary-foreground bg-primary">
             Go to your current lesson
           </Link>
         )}
-        <Link href="/teacher" className="text-emerald-500 text-xs underline mt-1">Back to Teacher</Link>
+        <Link href="/teacher" className="text-primary text-xs underline mt-1">Back to Teacher</Link>
       </div>
     );
   }
@@ -258,36 +283,34 @@ export function TeacherLesson() {
 
   return (
     <div
-      className="min-h-screen pb-32 md:pb-12 animate-in fade-in duration-300"
-      style={{ background: "linear-gradient(150deg, #071a0e 0%, #0a1f12 50%, #061610 100%)" }}
+      className="min-h-screen pb-32 md:pb-12 animate-in fade-in duration-300 bg-background"
     >
       {/* Header */}
-      <div className="sticky top-0 z-20 px-4 pt-6 pb-3"
-        style={{ background: "linear-gradient(180deg, #071a0e 85%, transparent 100%)" }}>
+      <div className="sticky top-0 z-20 px-4 pt-6 pb-3 bg-background/95 backdrop-blur-sm">
         <div className="flex items-center gap-3 max-w-2xl mx-auto">
           <Link
             href="/teacher"
-            className="flex items-center justify-center w-9 h-9 rounded-full border border-emerald-800/50 text-emerald-500"
+            className="flex items-center justify-center w-9 h-9 rounded-full border border-border text-muted-foreground"
             data-testid="link-back-teacher"
           >
             <ChevronLeft className="w-5 h-5" />
           </Link>
           <div className="flex-1 min-w-0">
-            <p className="text-emerald-300 text-sm font-semibold truncate">
+            <p className="text-foreground text-sm font-semibold truncate">
               Level {lesson.level}: {levelInfo.title}
             </p>
-            <p className="text-emerald-700 text-[11px]">
+            <p className="text-muted-foreground text-[11px]">
               {revision
                 ? `Smart Revision · ${revision.index} of ${revision.total}`
                 : `Lesson ${lesson.order} of ${levelLessons.length}${alreadyDone ? " · completed" : ""}`}
             </p>
           </div>
-          <p className="text-emerald-600 text-xs shrink-0">{lesson.order}/{levelLessons.length}</p>
+          <p className="text-muted-foreground text-xs shrink-0">{lesson.order}/{levelLessons.length}</p>
         </div>
         {/* Level progress bar */}
-        <div className="max-w-2xl mx-auto mt-2 h-1 rounded-full bg-emerald-950 overflow-hidden">
+        <div className="max-w-2xl mx-auto mt-2 h-1 rounded-full bg-muted overflow-hidden">
           <div
-            className="h-full rounded-full bg-emerald-500 transition-all"
+            className="h-full rounded-full bg-primary transition-all"
             style={{ width: `${(lesson.order / levelLessons.length) * 100}%` }}
           />
         </div>
@@ -296,69 +319,64 @@ export function TeacherLesson() {
       <div className="px-4 space-y-4 max-w-2xl mx-auto pt-2">
         {/* The word card */}
         <div
-          className="rounded-3xl p-8 border border-emerald-800/40 text-center"
-          style={{ background: "linear-gradient(135deg, rgba(26,92,56,0.25), rgba(6,22,16,0.5))" }}
+          className="rounded-3xl p-8 border border-border text-center bg-card"
         >
           {lesson.highlight && (
-            <p className="text-emerald-200 font-arabic text-6xl mb-3" dir="rtl" data-testid="text-target">
+            <p className="text-foreground font-arabic text-6xl mb-3" dir="rtl" data-testid="text-target">
               {lesson.arabic}
             </p>
           )}
           <p
-            className={`text-emerald-100 font-arabic leading-relaxed ${lesson.highlight ? "text-4xl" : "text-6xl"}`}
+            className={`text-foreground font-arabic leading-relaxed ${lesson.highlight ? "text-4xl" : "text-6xl"}`}
             data-testid="text-lesson-word"
           >
             {wordDisplay}
           </p>
-          <p className="text-emerald-400 text-base mt-4 font-medium">{lesson.transliteration}</p>
-          <p className="text-emerald-600 text-sm mt-1">&ldquo;{lesson.meaning}&rdquo;</p>
+          <p className="text-muted-foreground text-base mt-4 font-medium">{lesson.transliteration}</p>
+          <p className="text-muted-foreground text-sm mt-1">&ldquo;{lesson.meaning}&rdquo;</p>
 
           <button
             onClick={playAudio}
-            className="mt-6 inline-flex items-center gap-2 px-6 py-3 rounded-2xl text-sm font-semibold text-emerald-200 border border-emerald-700/60 transition-all active:scale-95"
-            style={{ background: "rgba(26,92,56,0.4)" }}
+            className="mt-6 inline-flex items-center gap-2 px-6 py-3 rounded-2xl text-sm font-semibold text-primary-foreground border border-border bg-primary transition-all active:scale-95"
             data-testid="button-listen"
           >
             {playing ? <Loader2 className="w-4 h-4 animate-spin" /> : <Volume2 className="w-4 h-4" />}
             Listen
           </button>
-          <p className="text-emerald-800 text-[10px] mt-2">Verified recitation — listen as many times as you like</p>
+          <p className="text-muted-foreground text-[10px] mt-2">Verified recitation — listen as many times as you like</p>
         </div>
 
         {/* Tip */}
-        <div className="rounded-2xl border border-emerald-900/40 p-4 flex gap-3"
-          style={{ background: "rgba(255,255,255,0.02)" }}>
+        <div className="rounded-2xl border border-border p-4 flex gap-3 bg-card">
           <Sparkles className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
-          <p className="text-emerald-500 text-xs leading-relaxed">{lesson.tip}</p>
+          <p className="text-muted-foreground text-xs leading-relaxed">{lesson.tip}</p>
         </div>
 
         {/* ── State panels ── */}
 
         {phase === "consent" && (
-          <div className="rounded-2xl border border-emerald-700/50 p-5"
-            style={{ background: "rgba(26,92,56,0.2)" }} data-testid="panel-consent">
+          <div className="rounded-2xl border border-border p-5 bg-card" data-testid="panel-consent">
             <div className="flex items-center gap-2 mb-3">
-              <ShieldCheck className="w-5 h-5 text-emerald-400" />
-              <p className="text-emerald-300 font-semibold text-sm">Before you start speaking</p>
+              <ShieldCheck className="w-5 h-5 text-primary" />
+              <p className="text-foreground font-semibold text-sm">Before you start speaking</p>
             </div>
-            <ul className="text-emerald-500 text-xs leading-relaxed space-y-2 mb-4 list-disc pl-4">
-              <li>Your recitation is processed by <strong className="text-emerald-300">your device&apos;s speech-recognition service</strong> — on most Android devices this is provided by Google and audio may be processed on Google&apos;s servers.</li>
-              <li>Noor Quran itself <strong className="text-emerald-300">never saves or uploads</strong> audio files of your voice.</li>
+            <ul className="text-muted-foreground text-xs leading-relaxed space-y-2 mb-4 list-disc pl-4">
+              <li>Your recitation is processed by <strong className="text-primary">your device&apos;s speech-recognition service</strong> — on most Android devices this is provided by Google and audio may be processed on Google&apos;s servers.</li>
+              <li>Noor Quran itself <strong className="text-primary">never saves or uploads</strong> audio files of your voice.</li>
               <li>Only the recognized text is used — for instant feedback — then discarded.</li>
               <li>You can delete all learning data anytime from the Teacher home screen.</li>
             </ul>
             <div className="flex gap-2">
               <button
-                onClick={() => { grantConsent(); setPhase("idle"); beginRecording(); }}
-                className="flex-1 py-3 rounded-xl text-sm font-semibold text-white"
-                style={{ background: "linear-gradient(135deg, #1a5c38, #0d3d24)" }}
+                onClick={() => { console.log("[Noor/Teacher] consent — I understand tapped, granting consent"); grantConsent(); setPhase("idle"); beginRecording(); }}
+                className="flex-1 py-3 rounded-xl text-sm font-semibold text-primary-foreground bg-primary"
                 data-testid="button-consent-agree"
               >
                 I understand — continue
               </button>
               <button
-                onClick={() => setPhase("no-mic")}
-                className="px-4 py-3 rounded-xl text-xs font-medium text-emerald-400 border border-emerald-800/50"
+                onClick={() => { console.log("[Noor/Teacher] consent — Listen only selected"); setPhase("no-mic"); }}
+                className="px-4 py-3 rounded-xl text-xs font-medium text-muted-foreground border border-border"
               >
                 Listen only
               </button>
@@ -367,13 +385,12 @@ export function TeacherLesson() {
         )}
 
         {phase === "passed" && result && (
-          <div className="rounded-2xl border border-emerald-600/60 p-5 text-center"
-            style={{ background: "rgba(52,211,153,0.1)" }} data-testid="panel-passed">
-            <CheckCircle2 className="w-10 h-10 text-emerald-400 mx-auto mb-2" />
-            <p className="text-emerald-300 font-bold text-base">
+          <div className="rounded-2xl border border-border p-5 text-center bg-card" data-testid="panel-passed">
+            <CheckCircle2 className="w-10 h-10 text-primary mx-auto mb-2" />
+            <p className="text-foreground font-bold text-base">
               {result.matchScore >= 90 ? "Excellent! Masha'Allah!" : "Well done! That was correct."}
             </p>
-            <p className="text-emerald-500 text-xs mt-1">
+            <p className="text-muted-foreground text-xs mt-1">
               Word match: {result.matchScore}%
               {completedNow === "review" && " · review practice (already completed)"}
             </p>
@@ -381,54 +398,52 @@ export function TeacherLesson() {
         )}
 
         {alreadyDone && phase === "idle" && (
-          <div className="rounded-2xl border border-emerald-800/40 p-3 text-center"
-            style={{ background: "rgba(52,211,153,0.05)" }}>
-            <p className="text-emerald-500 text-xs flex items-center justify-center gap-2">
+          <div className="rounded-2xl border border-border p-3 text-center bg-card">
+            <p className="text-muted-foreground text-xs flex items-center justify-center gap-2">
               <CheckCircle2 className="w-3.5 h-3.5" /> You completed this lesson — practice again anytime.
             </p>
           </div>
         )}
 
         {phase === "feedback" && result && (
-          <div className="rounded-2xl border border-amber-800/50 p-5 animate-in fade-in slide-in-from-bottom-2 duration-300"
-            style={{ background: "rgba(217,119,6,0.07)" }} data-testid="panel-feedback">
-            <p className="text-amber-300 font-semibold text-sm mb-2">
+          <div className="rounded-2xl border border-border p-5 animate-in fade-in slide-in-from-bottom-2 duration-300 bg-card" data-testid="panel-feedback">
+            <p className="text-foreground font-semibold text-sm mb-2">
               Good try — let&apos;s polish it together.
             </p>
             {/* Word match bar */}
             <div className="flex items-center gap-2 mb-3">
-              <div className="flex-1 h-1.5 rounded-full bg-amber-950/60 overflow-hidden">
-                <div className="h-full rounded-full bg-amber-400 transition-all duration-500"
+                <div className="flex-1 h-1.5 rounded-full bg-muted overflow-hidden">
+                  <div className="h-full rounded-full bg-primary transition-all duration-500"
                   style={{ width: `${result.matchScore}%` }} />
               </div>
               <p className="text-amber-400 text-xs font-semibold shrink-0">{result.matchScore}%</p>
             </div>
             {/* The word with problem letters highlighted */}
             {result.missing.length > 0 && (
-              <div className="rounded-xl bg-amber-950/30 p-3 mb-2 text-center">
+                <div className="rounded-xl bg-muted p-3 mb-2 text-center">
                 <p className="font-arabic text-3xl leading-relaxed" dir="rtl" data-testid="text-diff-word">
                   {lesson.word.split("").map((ch, i) => {
                     const norm = normalizeArabic(ch);
                     const wrong = norm.length > 0 && result.missing.includes(norm);
                     return (
-                      <span key={i} className={wrong ? "text-rose-400 underline decoration-rose-500/60 underline-offset-4" : "text-emerald-100"}>
+                        <span key={i} className={wrong ? "text-rose-400 underline decoration-rose-500/60 underline-offset-4" : "text-foreground"}>
                         {ch}
                       </span>
                     );
                   })}
                 </p>
-                <p className="text-amber-500/90 text-[11px] mt-2">
+                <p className="text-muted-foreground text-[11px] mt-2">
                   The <span className="text-rose-400 font-semibold">highlighted letters</span> were not heard clearly — listen again and focus on those sounds.
                 </p>
               </div>
             )}
             {result.heard && (
-              <p className="text-amber-500/90 text-xs mb-1">
+              <p className="text-muted-foreground text-xs mb-1">
                 I heard: <span className="font-arabic text-sm" dir="rtl">{result.heard}</span>
               </p>
             )}
             {result.missing.length > 0 && (
-              <p className="text-amber-500/90 text-xs mb-1">
+              <p className="text-muted-foreground text-xs mb-1">
                 Sounds to focus on:{" "}
                 <span className="font-arabic text-base text-amber-300" dir="rtl">
                   {result.missing.join(" ، ")}
@@ -436,16 +451,16 @@ export function TeacherLesson() {
               </p>
             )}
             {result.extra.length > 0 && (
-              <p className="text-amber-500/90 text-xs mb-1">
+              <p className="text-muted-foreground text-xs mb-1">
                 Extra sounds I heard (not in the word):{" "}
                 <span className="font-arabic text-base text-amber-300" dir="rtl">
                   {result.extra.join(" ، ")}
                 </span>
               </p>
             )}
-            <p className="text-amber-600 text-xs mt-2 leading-relaxed">{lesson.tip}</p>
+              <p className="text-muted-foreground text-xs mt-2 leading-relaxed">{lesson.tip}</p>
             {attempts >= MAX_RETRIES && (
-              <p className="text-amber-500 text-xs mt-3 leading-relaxed border-t border-amber-900/30 pt-3">
+                <p className="text-muted-foreground text-xs mt-3 leading-relaxed border-t border-border pt-3">
                 This one is tricky — that&apos;s completely normal. Tap <strong>Listen</strong> a few
                 more times and repeat slowly, sound by sound. You can also continue in
                 listen-only mode and come back later.
@@ -453,7 +468,7 @@ export function TeacherLesson() {
             )}
             <button
               onClick={playAudio}
-              className="mt-3 inline-flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-semibold text-amber-200 border border-amber-800/50"
+              className="mt-3 inline-flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-semibold text-primary-foreground border border-border bg-primary"
             >
               <Volume2 className="w-3.5 h-3.5" /> Hear it again
             </button>
@@ -461,8 +476,7 @@ export function TeacherLesson() {
         )}
 
         {phase === "unclear" && (
-          <div className="rounded-2xl border border-sky-900/50 p-4 text-center"
-            style={{ background: "rgba(56,189,248,0.06)" }} data-testid="panel-unclear">
+          <div className="rounded-2xl border border-border p-4 text-center bg-card" data-testid="panel-unclear">
             <Ear className="w-6 h-6 text-sky-400 mx-auto mb-2" />
             <p className="text-sky-300 text-sm font-medium">I couldn&apos;t clearly understand that.</p>
             <p className="text-sky-600 text-xs mt-1">
@@ -473,11 +487,10 @@ export function TeacherLesson() {
         )}
 
         {phase === "mic-denied" && (
-          <div className="rounded-2xl border border-rose-900/50 p-4"
-            style={{ background: "rgba(244,63,94,0.06)" }} data-testid="panel-denied">
+          <div className="rounded-2xl border border-border p-4 bg-card" data-testid="panel-denied">
             <div className="flex items-center gap-2 mb-2">
               <MicOff className="w-4 h-4 text-rose-400" />
-              <p className="text-rose-300 text-sm font-medium">Microphone permission needed</p>
+              <p className="text-foreground text-sm font-medium">Microphone permission needed</p>
             </div>
             <p className="text-rose-500/80 text-xs leading-relaxed">
               To check your recitation, the app needs microphone access. Allow it under
@@ -490,15 +503,14 @@ export function TeacherLesson() {
                   const ok = await openAppSettings().catch(() => false);
                   if (!ok) setSettingsFailed(true);
                 }}
-                className="flex-1 py-2.5 rounded-xl text-xs font-semibold text-rose-200 border border-rose-800/50"
-                style={{ background: "rgba(244,63,94,0.12)" }}
+                className="flex-1 py-2.5 rounded-xl text-xs font-semibold text-primary-foreground border border-border bg-primary"
                 data-testid="button-open-settings"
               >
                 Open Settings
               </button>
               <button
                 onClick={() => { setPhase("idle"); setResult(null); setSettingsFailed(false); }}
-                className="flex-1 py-2.5 rounded-xl text-xs font-semibold text-emerald-300 border border-emerald-800/50"
+                className="flex-1 py-2.5 rounded-xl text-xs font-semibold text-muted-foreground border border-border"
                 data-testid="button-denied-retry"
               >
                 Try Again
@@ -514,27 +526,25 @@ export function TeacherLesson() {
         )}
 
         {phase === "no-mic" && (
-          <div className="rounded-2xl border border-emerald-900/50 p-4"
-            style={{ background: "rgba(255,255,255,0.02)" }} data-testid="panel-nomic">
+          <div className="rounded-2xl border border-border p-4 bg-card" data-testid="panel-nomic">
             <div className="flex items-center gap-2 mb-2">
-              <Ear className="w-4 h-4 text-emerald-400" />
-              <p className="text-emerald-300 text-sm font-medium">Listen-only practice</p>
+              <Ear className="w-4 h-4 text-primary" />
+              <p className="text-foreground text-sm font-medium">Listen-only practice</p>
             </div>
-            <p className="text-emerald-600 text-xs leading-relaxed">
+            <p className="text-muted-foreground text-xs leading-relaxed">
               {support === "none"
                 ? "Recitation checking isn't available in this browser — it works in the Noor Quran Android app. For now: tap Listen, repeat aloud, and compare with your own ears — it's how students have learned for centuries."
                 : "Tap Listen and repeat aloud as many times as you like. To pass this lesson and unlock the next one, the AI needs to hear your recitation — allow the microphone when you're ready."}
             </p>
             {noMicReason && (
-              <p className="text-emerald-800 text-[10px] mt-2 leading-relaxed" data-testid="text-nomic-reason">
+              <p className="text-muted-foreground text-[10px] mt-2 leading-relaxed" data-testid="text-nomic-reason">
                 Reason: {noMicReason}
               </p>
             )}
             {support !== "none" && (
               <button
                 onClick={() => setPhase("idle")}
-                className="mt-3 w-full py-2.5 rounded-xl text-xs font-semibold text-emerald-200 border border-emerald-700/50"
-                style={{ background: "rgba(26,92,56,0.3)" }}
+                className="mt-3 w-full py-2.5 rounded-xl text-xs font-semibold text-primary-foreground border border-border bg-primary"
                 data-testid="button-back-to-mic"
               >
                 I&apos;m ready — try with the microphone
@@ -544,11 +554,10 @@ export function TeacherLesson() {
         )}
 
         {phase === "offline" && (
-          <div className="rounded-2xl border border-slate-700/50 p-4 text-center"
-            style={{ background: "rgba(255,255,255,0.02)" }} data-testid="panel-offline">
-            <WifiOff className="w-6 h-6 text-slate-400 mx-auto mb-2" />
-            <p className="text-slate-300 text-sm font-medium">No internet connection</p>
-            <p className="text-slate-500 text-xs mt-1">
+          <div className="rounded-2xl border border-border p-4 text-center bg-card" data-testid="panel-offline">
+            <WifiOff className="w-6 h-6 text-muted-foreground mx-auto mb-2" />
+            <p className="text-foreground text-sm font-medium">No internet connection</p>
+            <p className="text-muted-foreground text-xs mt-1">
               Speech checking needs a connection on most devices. You can still practice in
               listen-only mode with downloaded audio.
             </p>
@@ -556,18 +565,17 @@ export function TeacherLesson() {
         )}
 
         {phase === "limit" && (
-          <div className="rounded-2xl border border-emerald-700/50 p-5 text-center"
-            style={{ background: "rgba(26,92,56,0.2)" }} data-testid="panel-limit">
-            <CheckCircle2 className="w-8 h-8 text-emerald-400 mx-auto mb-2" />
-            <p className="text-emerald-300 font-semibold text-sm">
+          <div className="rounded-2xl border border-border p-5 text-center bg-card" data-testid="panel-limit">
+            <CheckCircle2 className="w-8 h-8 text-primary mx-auto mb-2" />
+            <p className="text-foreground font-semibold text-sm">
               Masha&apos;Allah — today&apos;s {getDailyStatus().limit} lessons are complete!
             </p>
-            <p className="text-emerald-600 text-xs mt-1 leading-relaxed">
+            <p className="text-muted-foreground text-xs mt-1 leading-relaxed">
               Rest is part of learning. You can still review completed lessons and listen as much
               as you like. New lessons unlock at midnight.
             </p>
             <Link href="/teacher"
-              className="inline-block mt-3 px-5 py-2.5 rounded-xl text-xs font-semibold text-emerald-200 border border-emerald-700/50">
+              className="inline-block mt-3 px-5 py-2.5 rounded-xl text-xs font-semibold text-primary-foreground border border-border bg-primary">
               Back to dashboard
             </Link>
           </div>
@@ -584,18 +592,17 @@ export function TeacherLesson() {
                   <>
                     <div className="w-20 h-20 rounded-full inline-flex items-center justify-center bg-rose-500 scale-110 shadow-lg shadow-rose-900/50 animate-pulse"
                       data-testid="indicator-recording">
-                      <Mic className="w-7 h-7 text-[#071a0e]" />
+                      <Mic className="w-7 h-7 text-primary-foreground" />
                     </div>
                     <p className="text-rose-300 text-sm font-medium mt-3" data-testid="text-listening">
                       Listening… Read the letter or word now.
                     </p>
-                    <p className="text-emerald-700 text-[11px] mt-1">
+                    <p className="text-muted-foreground text-[11px] mt-1">
                       {(recordMs / 1000).toFixed(1)}s · stops automatically
                     </p>
                     <button
                       onClick={onStop}
-                      className="mt-3 inline-flex items-center gap-2 px-6 py-2.5 rounded-xl text-xs font-semibold text-rose-200 border border-rose-700/60 active:scale-95 transition-all"
-                      style={{ background: "rgba(244,63,94,0.15)" }}
+                      className="mt-3 inline-flex items-center gap-2 px-6 py-2.5 rounded-xl text-xs font-semibold text-primary-foreground border border-border bg-primary active:scale-95 transition-all"
                       data-testid="button-stop"
                     >
                       <span className="w-2.5 h-2.5 rounded-[3px] bg-rose-400 inline-block" /> Stop — I&apos;m done
@@ -603,21 +610,21 @@ export function TeacherLesson() {
                   </>
                 ) : phase === "checking" ? (
                   <>
-                    <div className="w-20 h-20 rounded-full inline-flex items-center justify-center bg-emerald-500 opacity-60 shadow-lg shadow-emerald-900/50">
-                      <Loader2 className="w-7 h-7 text-[#071a0e] animate-spin" />
+                    <div className="w-20 h-20 rounded-full inline-flex items-center justify-center bg-primary opacity-60 shadow-lg">
+                      <Loader2 className="w-7 h-7 text-primary-foreground animate-spin" />
                     </div>
-                    <p className="text-emerald-600 text-xs mt-3">Checking your recitation…</p>
+                    <p className="text-muted-foreground text-xs mt-3">Checking your recitation…</p>
                   </>
                 ) : (
                   <>
                     <button
                       onClick={onReadNow}
-                      className="inline-flex items-center gap-2.5 px-8 py-4 rounded-2xl text-base font-bold text-[#071a0e] bg-emerald-500 active:scale-95 shadow-lg shadow-emerald-900/50 transition-all"
+                      className="inline-flex items-center gap-2.5 px-8 py-4 rounded-2xl text-base font-bold text-primary-foreground bg-primary active:scale-95 shadow-lg transition-all"
                       data-testid="button-record"
                     >
                       <Mic className="w-5 h-5" /> Read Now
                     </button>
-                    <p className="text-emerald-600 text-xs mt-3">
+                    <p className="text-muted-foreground text-xs mt-3">
                       Tap, then read the {lesson.highlight ? "letter" : "word"} aloud
                     </p>
                   </>
@@ -629,7 +636,7 @@ export function TeacherLesson() {
               {(phase === "feedback" || phase === "unclear") && (
                 <button
                   onClick={() => { setPhase("idle"); setResult(null); }}
-                  className="flex-1 py-3.5 rounded-2xl text-sm font-semibold text-emerald-300 border border-emerald-700/50 flex items-center justify-center gap-2"
+                  className="flex-1 py-3.5 rounded-2xl text-sm font-semibold text-primary border border-border flex items-center justify-center gap-2"
                   data-testid="button-try-again"
                 >
                   <RotateCcw className="w-4 h-4" /> Try Again
@@ -645,10 +652,9 @@ export function TeacherLesson() {
                   disabled={!passed}
                   className={`flex-1 py-3.5 rounded-2xl text-sm font-semibold flex items-center justify-center gap-2 transition-all ${
                     passed
-                      ? "text-white active:scale-[0.98]"
-                      : "text-emerald-800 border border-emerald-900/50 cursor-not-allowed"
+                      ? "text-primary-foreground bg-primary active:scale-[0.98]"
+                      : "text-muted-foreground border border-border cursor-not-allowed"
                   }`}
-                  style={passed ? { background: "linear-gradient(135deg, #1a5c38, #0d3d24)" } : undefined}
                   data-testid="button-next-revision"
                 >
                   {revision.index >= revision.total
@@ -662,10 +668,9 @@ export function TeacherLesson() {
                   disabled={!passed}
                   className={`flex-1 py-3.5 rounded-2xl text-sm font-semibold flex items-center justify-center gap-2 transition-all ${
                     passed
-                      ? "text-white active:scale-[0.98]"
-                      : "text-emerald-800 border border-emerald-900/50 cursor-not-allowed"
+                      ? "text-primary-foreground bg-primary active:scale-[0.98]"
+                      : "text-muted-foreground border border-border cursor-not-allowed"
                   }`}
-                  style={passed ? { background: "linear-gradient(135deg, #1a5c38, #0d3d24)" } : undefined}
                   data-testid="button-next"
                 >
                   {passed ? "Pass & Next Lesson" : "Pass the AI check to unlock"} <ArrowRight className="w-4 h-4" />
@@ -673,8 +678,7 @@ export function TeacherLesson() {
               ) : (
                 passed && (
                   <Link href="/teacher"
-                    className="flex-1 py-3.5 rounded-2xl text-sm font-semibold text-white text-center"
-                    style={{ background: "linear-gradient(135deg, #1a5c38, #0d3d24)" }}>
+                    className="flex-1 py-3.5 rounded-2xl text-sm font-semibold text-primary-foreground text-center bg-primary">
                     Finish — back to dashboard
                   </Link>
                 )

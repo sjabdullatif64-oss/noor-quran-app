@@ -89,18 +89,17 @@ export function KidsMode() {
 
   return (
     <div
-      className="min-h-screen pb-28 md:pb-10 animate-in fade-in duration-500"
-      style={{ background: "linear-gradient(150deg, #071a0e 0%, #0a1f12 50%, #071a0e 100%)" }}
+      className="min-h-screen pb-28 md:pb-10 animate-in fade-in duration-500 bg-background"
     >
       {/* Kid-friendly header */}
       <div className="px-5 pt-6 pb-4">
         <div className="flex items-center gap-3 mb-4">
-          <Link href="/more" className="text-emerald-600 hover:text-emerald-400 transition-colors">
+          <Link href="/more" className="text-primary hover:text-primary transition-colors">
             <ChevronLeft className="w-6 h-6" />
           </Link>
           <div className="flex-1">
-            <h1 className="text-2xl font-bold" style={{ color: "#34d399" }}>🧒 Kids Islamic Mode</h1>
-            <p className="text-emerald-700 text-xs mt-0.5">Learn Islam with fun!</p>
+            <h1 className="text-2xl font-bold text-primary">🧒 Kids Islamic Mode</h1>
+            <p className="text-muted-foreground text-xs mt-0.5">Learn Islam with fun!</p>
           </div>
         </div>
 
@@ -126,7 +125,7 @@ export function KidsMode() {
       {active && (
         <div className="px-4 space-y-4">
           <button onClick={() => setActive(null)}
-            className="flex items-center gap-2 text-emerald-500 hover:text-emerald-300 text-sm transition-colors mb-4">
+            className="flex items-center gap-2 text-primary hover:text-primary text-sm transition-colors mb-4">
             <ChevronLeft className="w-4 h-4" /> Back to sections
           </button>
 
@@ -137,10 +136,9 @@ export function KidsMode() {
               <div className="grid grid-cols-4 gap-2.5">
                 {ARABIC_LETTERS.map(l => (
                   <div key={l.letter}
-                    className="flex flex-col items-center justify-center py-4 rounded-2xl border border-amber-900/30"
-                    style={{ background: "rgba(245,158,11,0.08)" }}>
+                    className="flex flex-col items-center justify-center py-4 rounded-2xl border border-border bg-primary/10">
                     <span className="text-3xl font-bold" style={{ color: "#f59e0b", fontFamily: "'Amiri', serif" }}>{l.letter}</span>
-                    <span className="text-amber-700 text-xs mt-1">{l.name}</span>
+                    <span className="text-muted-foreground text-xs mt-1">{l.name}</span>
                   </div>
                 ))}
               </div>
@@ -150,20 +148,19 @@ export function KidsMode() {
           {/* ── Short Surahs ── */}
           {active === "surahs" && (
             <>
-              <h2 className="text-xl font-bold text-emerald-300 mb-4">📖 Short Surahs</h2>
+              <h2 className="text-xl font-bold text-primary mb-4">📖 Short Surahs</h2>
               <div className="space-y-4">
                 {SHORT_SURAHS.map(s => (
-                  <div key={s.n} className="rounded-3xl border border-emerald-900/40 p-5 space-y-3"
-                    style={{ background: "rgba(52,211,153,0.06)" }}>
+                  <div key={s.n} className="rounded-3xl border border-border p-5 space-y-3 bg-primary/10">
                     <div className="flex items-center justify-between">
-                      <p className="text-emerald-300 font-bold text-base">Surah {s.name}</p>
+                      <p className="text-primary font-bold text-base">Surah {s.name}</p>
                       <div className="flex gap-0.5">{Array.from({length: s.stars}).map((_,i) => (
                         <Star key={i} className="w-3.5 h-3.5 text-amber-400 fill-amber-400" />
                       ))}</div>
                     </div>
                     <p className="text-right text-lg leading-loose" dir="rtl"
                       style={{ color: "#e8f5ee", fontFamily: "'Amiri', serif" }}>{s.arabic}</p>
-                    <p className="text-emerald-600 text-sm italic">{s.meaning}</p>
+                    <p className="text-muted-foreground text-sm italic">{s.meaning}</p>
                   </div>
                 ))}
               </div>
@@ -181,7 +178,7 @@ export function KidsMode() {
                   return (
                     <button key={d.trans} onClick={() => bumpDhikr(d.trans)}
                       className="w-full flex items-center gap-4 p-4 rounded-3xl border text-left transition-all active:scale-[0.97]"
-                      style={{ background: done ? `${d.color}22` : "rgba(255,255,255,0.04)", borderColor: done ? d.color + "80" : "rgba(26,92,56,0.3)" }}>
+                      style={{ background: done ? `${d.color}22` : undefined, borderColor: done ? d.color + "80" : undefined }}>
                       <div className="w-14 h-14 rounded-2xl flex flex-col items-center justify-center shrink-0 border"
                         style={{ background: `${d.color}18`, borderColor: `${d.color}40` }}>
                         <span className="text-lg font-bold" style={{ color: d.color }}>{cnt}</span>
@@ -189,8 +186,8 @@ export function KidsMode() {
                       </div>
                       <div className="flex-1">
                         <p className="text-right text-xl" style={{ color: d.color, fontFamily: "'Amiri', serif" }}>{d.arabic}</p>
-                        <p className="text-white text-sm font-semibold mt-1">{d.trans}</p>
-                        <p className="text-emerald-700 text-xs">{d.meaning}</p>
+                        <p className="text-foreground text-sm font-semibold mt-1">{d.trans}</p>
+                        <p className="text-muted-foreground text-xs">{d.meaning}</p>
                       </div>
                       {done && <span className="text-2xl shrink-0">⭐</span>}
                     </button>
@@ -198,8 +195,7 @@ export function KidsMode() {
                 })}
               </div>
               <button onClick={() => setDhikrCounts({})}
-                className="w-full py-3 rounded-2xl border border-emerald-900/40 text-emerald-700 text-sm transition-all active:scale-[0.98]"
-                style={{ background: "rgba(255,255,255,0.03)" }}>
+                        className="w-full py-3 rounded-2xl border border-border text-muted-foreground text-sm transition-all active:scale-[0.98] bg-card">
                 Reset all counters
               </button>
             </>
@@ -211,15 +207,14 @@ export function KidsMode() {
               <h2 className="text-xl font-bold text-sky-300 mb-4">✨ Names of Allah</h2>
               <div className="grid grid-cols-2 gap-2.5">
                 {NAMES_OF_ALLAH.map(n => (
-                  <div key={n.name} className="rounded-2xl border border-sky-900/30 p-4 text-center"
-                    style={{ background: "rgba(56,189,248,0.06)" }}>
-                    <p className="text-xl text-sky-300" style={{ fontFamily: "'Amiri', serif" }}>{n.arabic}</p>
-                    <p className="text-white text-xs font-bold mt-2">{n.name}</p>
-                    <p className="text-sky-700 text-xs mt-0.5">{n.meaning}</p>
+                    <div key={n.name} className="rounded-2xl border border-border p-4 text-center bg-primary/10">
+                    <p className="text-xl text-primary" style={{ fontFamily: "'Amiri', serif" }}>{n.arabic}</p>
+                    <p className="text-foreground text-xs font-bold mt-2">{n.name}</p>
+                    <p className="text-muted-foreground text-xs mt-0.5">{n.meaning}</p>
                   </div>
                 ))}
               </div>
-              <p className="text-center text-emerald-800 text-xs">Allah has 99 beautiful names. Learn them all!</p>
+              <p className="text-center text-muted-foreground text-xs">Allah has 99 beautiful names. Learn them all!</p>
             </>
           )}
 
@@ -229,14 +224,13 @@ export function KidsMode() {
               <h2 className="text-xl font-bold text-pink-300 mb-4">🌟 Prophet Stories</h2>
               <div className="space-y-4">
                 {PROPHET_STORIES.map(s => (
-                  <div key={s.prophet} className="rounded-3xl border border-pink-900/30 overflow-hidden"
-                    style={{ background: "rgba(244,114,182,0.05)" }}>
+                    <div key={s.prophet} className="rounded-3xl border border-border overflow-hidden bg-primary/10">
                     <div className="px-5 py-4 space-y-3">
                       <div className="flex items-center gap-3">
                         <span className="text-3xl">{s.emoji}</span>
                         <p className="text-pink-300 font-bold text-lg">Prophet {s.prophet}</p>
                       </div>
-                      <p className="text-emerald-200/80 text-sm leading-relaxed">{s.story}</p>
+                      <p className="text-muted-foreground text-sm leading-relaxed">{s.story}</p>
                       <div className="flex items-start gap-2 rounded-2xl px-3 py-2"
                         style={{ background: "rgba(244,114,182,0.1)" }}>
                         <Star className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
@@ -255,16 +249,15 @@ export function KidsMode() {
               <h2 className="text-xl font-bold text-orange-300 mb-4">🤲 Duas for Kids</h2>
               <div className="space-y-4">
                 {DAILY_DUAS_KIDS.map(d => (
-                  <div key={d.when} className="rounded-3xl border border-orange-900/30 p-5 space-y-3"
-                    style={{ background: "rgba(251,146,60,0.06)" }}>
+                    <div key={d.when} className="rounded-3xl border border-border p-5 space-y-3 bg-primary/10">
                     <div className="flex items-center gap-2">
                       <span className="text-2xl">{d.emoji}</span>
                       <p className="text-orange-300 font-bold text-sm">{d.when}</p>
                     </div>
                     <p className="text-right text-lg leading-loose" dir="rtl"
                       style={{ color: "#e8f5ee", fontFamily: "'Amiri', serif" }}>{d.arabic}</p>
-                    <p className="text-emerald-500 text-sm italic">{d.trans}</p>
-                    <p className="text-emerald-700 text-sm">{d.meaning}</p>
+                    <p className="text-primary text-sm italic">{d.trans}</p>
+                    <p className="text-muted-foreground text-sm">{d.meaning}</p>
                   </div>
                 ))}
               </div>

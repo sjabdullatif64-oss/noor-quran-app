@@ -437,22 +437,24 @@ export const useHijriMonthCalendar = (gMonth: number, gYear: number) =>
     retry: 2,
   });
 
-export const useRandomAyah = () =>
+export const useRandomAyah = (translation: TranslationLanguage) =>
   useQuery({
-    queryKey: ["randomAyah"],
+    queryKey: ["randomAyah", translation],
     queryFn: async () => {
-      // ── Offline-first: use bundled Arabic + Urdu data ─────────────────────
-      const [arabicData, urduData] = await Promise.all([
-        getOfflineArabic(),
-        getOfflineUrdu(),
-      ]);
+      const edition = TRANSLATION_EDITIONS[translation];
 
-      if (arabicData && urduData) {
-        const randomSurahNum  = Math.floor(Math.random() * 114) + 1;
-        const surah           = arabicData[String(randomSurahNum)];
-        const urSurah         = urduData[String(randomSurahNum)];
-        const randomAyahIdx   = Math.floor(Math.random() * surah.ayahs.length);
-        const ayah            = surah.ayahs[randomAyahIdx];
+      // ── Offline-first: use bundled Arabic + selected translation ───────────
+      const arabicData = await getOfflineArabic();
+
+      if (arabicData) {
+        const randomSurahNum = Math.floor(Math.random() * 114) + 1;
+        const surah          = arabicData[String(randomSurahNum)];
+        const randomAyahIdx  = Math.floor(Math.random() * surah.ayahs.length);
+        const ayah           = surah.ayahs[randomAyahIdx];
+
+        const selectedTexts = await getOfflineTranslationTexts(translation, randomSurahNum);
+        const fallbackTexts = selectedTexts ? null : await getOfflineTranslationTexts("urdu", randomSurahNum);
+        const textTranslation = selectedTexts?.[randomAyahIdx] ?? fallbackTexts?.[randomAyahIdx] ?? "";
 
         return {
           surah:         surah.englishName,
@@ -460,7 +462,7 @@ export const useRandomAyah = () =>
           numberInSurah: ayah.n,
           globalNumber:  ayah.g,
           textAr:        ayah.t,
-          textUr:        sanitizeUrduText(urSurah?.[randomAyahIdx] ?? ""),
+          textTranslation: sanitizeTranslation(translation, textTranslation),
           audioUrl:      getAudioUrl(ayah.g),
         };
       }
@@ -473,12 +475,14 @@ export const useRandomAyah = () =>
       const randomAyahIdx = Math.floor(Math.random() * numAyahs);
       const randomAyah    = data.data.ayahs[randomAyahIdx];
 
-      const [arRes, urRes] = await Promise.all([
+      const [arRes, trRes] = await Promise.all([
         fetch(`https://api.alquran.cloud/v1/ayah/${randomAyah.number}`),
-        fetch(`https://api.alquran.cloud/v1/ayah/${randomAyah.number}/ur.jalandhry`),
+        edition
+          ? fetch(`https://api.alquran.cloud/v1/ayah/${randomAyah.number}/${edition}`)
+          : Promise.resolve(new Response(JSON.stringify({ data: { text: "" } }))),
       ]);
       const arData = await arRes.json();
-      const urData = await urRes.json();
+      const trData = await trRes.json();
 
       return {
         surah:         data.data.englishName,
@@ -486,7 +490,7 @@ export const useRandomAyah = () =>
         numberInSurah: arData.data.numberInSurah as number,
         globalNumber:  randomAyah.number,
         textAr:        arData.data.text,
-        textUr:        sanitizeUrduText(urData.data.text),
+        textTranslation: sanitizeTranslation(translation, trData?.data?.text ?? ""),
         audioUrl:      getAudioUrl(randomAyah.number),
       };
     },

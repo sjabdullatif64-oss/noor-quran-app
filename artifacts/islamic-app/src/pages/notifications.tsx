@@ -5,6 +5,7 @@ import {
   Lock, RefreshCw, Settings2, Smartphone, Globe,
 } from "lucide-react";
 import { Link } from "wouter";
+import { useI18n } from "@/lib/i18n-context";
 import {
   getNotifSettings,
   saveNotifSettings,
@@ -32,28 +33,29 @@ interface NotifDef {
   fridayOnly?: boolean;
 }
 
-const DAILY_REMINDERS: NotifDef[] = [
-  { key: "quranAyah",       label: "Daily Quran Ayah",   sublabel: "A verse from the Holy Quran each day",       icon: <BookOpen className="w-5 h-5" />, accent: "text-emerald-300", accentBg: "rgba(52,211,153,0.12)"  },
-  { key: "islamicQuote",    label: "Islamic Wisdom",     sublabel: "Hadith or Islamic quote of the day",         icon: <Star     className="w-5 h-5" />, accent: "text-amber-300",  accentBg: "rgba(217,119,6,0.12)"   },
-  { key: "morningAzkar",    label: "Morning Azkar",      sublabel: "Morning remembrance and dhikr",              icon: <Sunrise  className="w-5 h-5" />, accent: "text-sky-300",    accentBg: "rgba(56,189,248,0.12)"  },
-  { key: "eveningAzkar",    label: "Evening Azkar",      sublabel: "Evening remembrance before sunset",          icon: <Sunset   className="w-5 h-5" />, accent: "text-orange-300", accentBg: "rgba(249,115,22,0.12)"  },
-  { key: "tasbeehReminder", label: "Tasbeeh Reminder",   sublabel: "SubhanAllah · Alhamdulillah · Allahu Akbar", icon: <Hash     className="w-5 h-5" />, accent: "text-purple-300", accentBg: "rgba(168,85,247,0.12)"  },
+const DAILY_REMINDERS = (t: (key: string) => string): NotifDef[] => [
+  { key: "quranAyah",       label: t("notif_daily_ayah_label"),       sublabel: "A verse from the Holy Quran each day",       icon: <BookOpen className="w-5 h-5" />, accent: "text-emerald-600", accentBg: "rgba(52,211,153,0.12)"  },
+  { key: "islamicQuote",    label: t("notif_islamic_wisdom_label"),   sublabel: "Hadith or Islamic quote of the day",         icon: <Star     className="w-5 h-5" />, accent: "text-amber-600",  accentBg: "rgba(217,119,6,0.12)"   },
+  { key: "morningAzkar",    label: t("notif_morning_azkar_label"),    sublabel: "Morning remembrance and dhikr",              icon: <Sunrise  className="w-5 h-5" />, accent: "text-sky-600",    accentBg: "rgba(56,189,248,0.12)"  },
+  { key: "eveningAzkar",    label: t("notif_evening_azkar_label"),    sublabel: "Evening remembrance before sunset",          icon: <Sunset   className="w-5 h-5" />, accent: "text-orange-600", accentBg: "rgba(249,115,22,0.12)"  },
+  { key: "tasbeehReminder", label: t("notif_tasbeeh_reminder_label"), sublabel: "SubhanAllah · Alhamdulillah · Allahu Akbar", icon: <Hash     className="w-5 h-5" />, accent: "text-purple-600", accentBg: "rgba(168,85,247,0.12)"  },
 ];
 
 const PRAYER_REMINDERS: NotifDef[] = [
-  { key: "fajrReminder",    label: "Fajr",    sublabel: "Dawn prayer",      icon: <Sunrise className="w-5 h-5" />, accent: "text-blue-300",   accentBg: "rgba(96,165,250,0.12)"  },
-  { key: "dhuhrReminder",   label: "Dhuhr",   sublabel: "Midday prayer",    icon: <Sun     className="w-5 h-5" />, accent: "text-yellow-300", accentBg: "rgba(234,179,8,0.12)"   },
-  { key: "asrReminder",     label: "Asr",     sublabel: "Afternoon prayer", icon: <Sun     className="w-5 h-5" />, accent: "text-orange-300", accentBg: "rgba(249,115,22,0.12)"  },
-  { key: "maghribReminder", label: "Maghrib", sublabel: "Sunset prayer",    icon: <Sunset  className="w-5 h-5" />, accent: "text-rose-300",   accentBg: "rgba(244,63,94,0.12)"   },
-  { key: "ishaReminder",    label: "Isha",    sublabel: "Night prayer",     icon: <Moon    className="w-5 h-5" />, accent: "text-indigo-300", accentBg: "rgba(99,102,241,0.12)"  },
+  { key: "fajrReminder",    label: "Fajr",    sublabel: "Dawn prayer",      icon: <Sunrise className="w-5 h-5" />, accent: "text-blue-600",   accentBg: "rgba(96,165,250,0.12)"  },
+  { key: "dhuhrReminder",   label: "Dhuhr",   sublabel: "Midday prayer",    icon: <Sun     className="w-5 h-5" />, accent: "text-yellow-600", accentBg: "rgba(234,179,8,0.12)"   },
+  { key: "asrReminder",     label: "Asr",     sublabel: "Afternoon prayer", icon: <Sun     className="w-5 h-5" />, accent: "text-orange-600", accentBg: "rgba(249,115,22,0.12)"  },
+  { key: "maghribReminder", label: "Maghrib", sublabel: "Sunset prayer",    icon: <Sunset  className="w-5 h-5" />, accent: "text-rose-600",   accentBg: "rgba(244,63,94,0.12)"   },
+  { key: "ishaReminder",    label: "Isha",    sublabel: "Night prayer",     icon: <Moon    className="w-5 h-5" />, accent: "text-indigo-600", accentBg: "rgba(99,102,241,0.12)"  },
 ];
 
-const WEEKLY_REMINDERS: NotifDef[] = [
-  { key: "jummaReminder", label: "Jumu'ah Mubarak", sublabel: "Every Friday — read Al-Kahf & send salawat upon the Prophet ﷺ", icon: <BookMarked className="w-5 h-5" />, accent: "text-teal-300", accentBg: "rgba(45,212,191,0.12)", fridayOnly: true },
+const WEEKLY_REMINDERS = (t: (key: string) => string): NotifDef[] => [
+  { key: "jummaReminder", label: t("notif_jumma_reminder_label"), sublabel: "Every Friday — read Al-Kahf & send salawat upon the Prophet ﷺ", icon: <BookMarked className="w-5 h-5" />, accent: "text-teal-600", accentBg: "rgba(45,212,191,0.12)", fridayOnly: true },
 ];
 
 // ── Main component ────────────────────────────────────────────────────────────
 export function Notifications() {
+  const { t } = useI18n();
   const [settings,   setSettings]   = useState<AllNotifSettings>(getNotifSettings);
   const [permission, setPermission] = useState<PermissionState>(() => getPermissionState());
   const [requesting, setRequesting] = useState(false);
@@ -115,7 +117,7 @@ export function Notifications() {
     setPermission(result);
     setRequesting(false);
     if (result === "granted") {
-      toast({ title: "🌙 Notifications enabled!", description: "You'll receive Islamic reminders at your chosen times." });
+      toast({ title: t("notif_toast_enabled"), description: "You'll receive Islamic reminders at your chosen times." });
       // Schedule default-enabled notifications immediately after permission grant.
       // saveNotifSettings persists the settings AND triggers native scheduling on Capacitor.
       saveNotifSettings(settings);
@@ -161,23 +163,21 @@ export function Notifications() {
 
   return (
     <div
-      className="min-h-screen pb-28 md:pb-10 animate-in fade-in duration-500"
-      style={{ background: "linear-gradient(150deg, #071a0e 0%, #0a1f12 50%, #061610 100%)" }}
+      className="min-h-screen pb-28 md:pb-10 animate-in fade-in duration-500 bg-background"
     >
       {/* ── Header ── */}
       <div className="flex items-center gap-3 px-5 pt-6 pb-5">
-        <Link href="/more" className="text-emerald-600 hover:text-emerald-400 transition-colors" data-testid="link-back-more">
+        <Link href="/more" className="text-primary hover:text-primary transition-colors" data-testid="link-back-more">
           <ChevronLeft className="w-6 h-6" />
         </Link>
         <div className="flex-1">
-          <h1 className="text-2xl font-serif font-bold text-emerald-300">Notifications</h1>
-          <p className="text-emerald-700 text-xs mt-0.5">Islamic reminders &amp; prayer alerts</p>
+          <h1 className="text-2xl font-serif font-bold text-primary">{t("settings_notif_section")}</h1>
+          <p className="text-muted-foreground text-xs mt-0.5">Islamic reminders &amp; prayer alerts</p>
         </div>
         {granted && (
           <button
             onClick={handleTest}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium text-teal-300 border border-teal-800/40 hover:border-teal-600 transition-colors"
-            style={{ background: "rgba(45,212,191,0.08)" }}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium text-primary border border-border hover:border-border transition-colors bg-primary/10"
             data-testid="button-test-notification"
           >
             {testSent ? <Check className="w-3.5 h-3.5" /> : <Play className="w-3.5 h-3.5" />}
@@ -204,12 +204,12 @@ export function Notifications() {
         {/* ── Notification sections — always visible, locked when not granted ── */}
         <NotifSection
           title="Daily Reminders"
-          items={DAILY_REMINDERS}
+          items={DAILY_REMINDERS(t)}
           settings={settings}
           locked={!granted}
           onToggle={(key, val) => updateSetting(key, { enabled: val })}
           onTime={(key, val)   => updateSetting(key, { time: val })}
-          onToggleAll={(en)    => toggleAll(DAILY_REMINDERS.map(d => d.key), en)}
+          onToggleAll={(en)    => toggleAll(DAILY_REMINDERS(t).map(d => d.key), en)}
         />
 
         <NotifSection
@@ -225,15 +225,15 @@ export function Notifications() {
 
         <NotifSection
           title="Weekly Reminders"
-          items={WEEKLY_REMINDERS}
+          items={WEEKLY_REMINDERS(t)}
           settings={settings}
           locked={!granted}
           onToggle={(key, val) => updateSetting(key, { enabled: val })}
           onTime={(key, val)   => updateSetting(key, { time: val })}
-          onToggleAll={(en)    => toggleAll(WEEKLY_REMINDERS.map(d => d.key), en)}
+          onToggleAll={(en)    => toggleAll(WEEKLY_REMINDERS(t).map(d => d.key), en)}
         />
 
-        <p className="text-emerald-900 text-xs text-center pt-2 pb-6 leading-relaxed">
+        <p className="text-muted-foreground text-xs text-center pt-2 pb-6 leading-relaxed">
           Reminders fire locally — they work best when the app has been recently opened.
         </p>
       </div>
@@ -247,24 +247,23 @@ function EnableCard({ env, onEnable, loading }: { env: AppEnv; onEnable: () => v
   const isNative = env === "capacitor" || env === "twa";
   return (
     <div
-      className="rounded-3xl overflow-hidden border border-emerald-700/40 animate-in fade-in duration-400"
-      style={{ background: "linear-gradient(135deg, rgba(26,92,56,0.4) 0%, rgba(13,61,36,0.5) 100%)" }}
+      className="rounded-3xl overflow-hidden border border-border animate-in fade-in duration-400 bg-primary/15"
     >
-      <div className="h-1 w-full" style={{ background: "linear-gradient(90deg, #1a5c38, #34d399, #1a5c38)" }} />
+        <div className="h-1 w-full bg-primary" />
 
       <div className="p-6 text-center space-y-4">
         <div className="relative mx-auto w-fit">
           <div className="w-16 h-16 rounded-2xl flex items-center justify-center mx-auto"
             style={{ background: "rgba(52,211,153,0.12)", boxShadow: "0 0 24px rgba(52,211,153,0.15)" }}>
-            <Bell className="w-8 h-8 text-emerald-400" />
+            <Bell className="w-8 h-8 text-primary" />
           </div>
-          <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-emerald-500 animate-ping opacity-60" />
-          <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-emerald-400" />
+          <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-primary animate-ping opacity-60" />
+          <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-primary" />
         </div>
 
         <div>
-          <p className="text-emerald-200 font-bold text-lg">Enable Notifications</p>
-          <p className="text-emerald-600 text-sm mt-1 max-w-xs mx-auto leading-relaxed">
+          <p className="text-foreground font-bold text-lg">Enable Notifications</p>
+          <p className="text-muted-foreground text-sm mt-1 max-w-xs mx-auto leading-relaxed">
             {isNative
               ? "Grant notification permission to receive daily Quranic reminders and prayer alerts."
               : "Receive daily Quranic reminders, prayer alerts, and Islamic wisdom — right on your device."}
@@ -272,7 +271,7 @@ function EnableCard({ env, onEnable, loading }: { env: AppEnv; onEnable: () => v
         </div>
 
         {/* Environment badge */}
-        <div className="flex items-center justify-center gap-1.5 text-emerald-700 text-xs">
+        <div className="flex items-center justify-center gap-1.5 text-muted-foreground text-xs">
           {isNative ? <Smartphone className="w-3.5 h-3.5" /> : <Globe className="w-3.5 h-3.5" />}
           <span>
             {env === "capacitor" ? "Native app — uses system notifications"
@@ -282,15 +281,14 @@ function EnableCard({ env, onEnable, loading }: { env: AppEnv; onEnable: () => v
           </span>
         </div>
 
-        <p className="text-emerald-800 text-sm font-arabic">وَاذْكُرُوا اللَّهَ كَثِيرًا</p>
-        <p className="text-emerald-900 text-xs -mt-2">"Remember Allah abundantly." [Quran 8:45]</p>
+        <p className="text-muted-foreground text-sm font-arabic">وَاذْكُرُوا اللَّهَ كَثِيرًا</p>
+        <p className="text-muted-foreground text-xs -mt-2">"Remember Allah abundantly." [Quran 8:45]</p>
 
         {/* CTA — directly bound to onClick, always a user gesture */}
         <button
           onClick={onEnable}
           disabled={loading}
-          className="w-full py-4 rounded-2xl font-bold text-white text-base transition-all active:scale-[0.97] disabled:opacity-60 flex items-center justify-center gap-2"
-          style={{ background: "linear-gradient(135deg, #1a5c38 0%, #16a34a 100%)", boxShadow: "0 4px 20px rgba(52,211,153,0.2)" }}
+          className="w-full py-4 rounded-2xl font-bold text-primary-foreground text-base transition-all active:scale-[0.97] disabled:opacity-60 flex items-center justify-center gap-2 bg-primary"
           data-testid="button-enable-notifications"
         >
           {loading ? <RefreshCw className="w-5 h-5 animate-spin" /> : <Bell className="w-5 h-5" />}
@@ -304,17 +302,16 @@ function EnableCard({ env, onEnable, loading }: { env: AppEnv; onEnable: () => v
 function GrantedBanner() {
   return (
     <div
-      className="rounded-2xl p-4 border border-emerald-700/40 flex gap-3 items-center animate-in fade-in duration-400"
-      style={{ background: "rgba(52,211,153,0.08)" }}
+      className="rounded-2xl p-4 border border-border flex gap-3 items-center animate-in fade-in duration-400 bg-primary/10"
       data-testid="banner-notifications-granted"
     >
-      <div className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0"
+        <div className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0"
         style={{ background: "rgba(52,211,153,0.15)" }}>
-        <BellRing className="w-5 h-5 text-emerald-400" />
+        <BellRing className="w-5 h-5 text-primary" />
       </div>
       <div>
-        <p className="text-emerald-300 font-semibold text-sm">Notifications enabled ✓</p>
-        <p className="text-emerald-700 text-xs mt-0.5">Toggle your preferred reminders below.</p>
+        <p className="text-primary font-semibold text-sm">Notifications enabled ✓</p>
+        <p className="text-muted-foreground text-xs mt-0.5">Toggle your preferred reminders below.</p>
       </div>
     </div>
   );
@@ -355,8 +352,7 @@ function BlockedCard({ env, onCheckAgain }: { env: AppEnv; onCheckAgain: () => v
 
   return (
     <div
-      className="rounded-3xl overflow-hidden border border-red-900/40 animate-in fade-in duration-400"
-      style={{ background: "rgba(239,68,68,0.06)" }}
+      className="rounded-3xl overflow-hidden border border-border animate-in fade-in duration-400 bg-destructive/10"
       data-testid="banner-notifications-blocked"
     >
       <div className="h-0.5 w-full" style={{ background: "linear-gradient(90deg, #991b1b, #ef4444, #991b1b)" }} />
@@ -365,11 +361,11 @@ function BlockedCard({ env, onCheckAgain }: { env: AppEnv; onCheckAgain: () => v
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0"
             style={{ background: "rgba(239,68,68,0.12)" }}>
-            <BellOff className="w-5 h-5 text-red-400" />
+            <BellOff className="w-5 h-5 text-destructive" />
           </div>
           <div>
-            <p className="text-red-300 font-bold text-base">Notifications are blocked</p>
-            <p className="text-red-700 text-xs mt-0.5">
+            <p className="text-destructive font-bold text-base">Notifications are blocked</p>
+            <p className="text-destructive/80 text-xs mt-0.5">
               {env === "capacitor" ? "Blocked in system settings."
               : env === "twa"      ? "Blocked — open Android Settings to re-enable."
               : "You previously denied permission."}
@@ -378,14 +374,13 @@ function BlockedCard({ env, onCheckAgain }: { env: AppEnv; onCheckAgain: () => v
         </div>
 
         {/* Step-by-step instructions */}
-        <div className="rounded-2xl border border-red-900/30 p-4 space-y-3"
-          style={{ background: "rgba(239,68,68,0.04)" }}>
-          <p className="text-red-400 text-xs font-semibold uppercase tracking-wider">
+        <div className="rounded-2xl border border-border p-4 space-y-3 bg-destructive/10">
+          <p className="text-destructive text-xs font-semibold uppercase tracking-wider">
             How to enable {isAndroidEnv ? "on Android" : "in your browser"}
           </p>
 
           {env === "capacitor" ? (
-            <ol className="space-y-2 text-sm text-red-300/80">
+            <ol className="space-y-2 text-sm text-destructive/80">
               <Step n={1} text="Open your phone Settings" />
               <Step n={2} text="Go to Apps → Noor Quran" />
               <Step n={3} text='Tap "Notifications"' />
@@ -393,21 +388,21 @@ function BlockedCard({ env, onCheckAgain }: { env: AppEnv; onCheckAgain: () => v
               <Step n={5} text='Tap "Check Again" below' />
             </ol>
           ) : env === "twa" ? (
-            <ol className="space-y-2 text-sm text-red-300/80">
+            <ol className="space-y-2 text-sm text-destructive/80">
               <Step n={1} text="Open your phone Settings" />
               <Step n={2} text="Go to Apps → Noor Quran" />
               <Step n={3} text='Tap "Notifications" → Turn on' />
               <Step n={4} text="Return here and tap Check Again" />
             </ol>
           ) : env === "android" ? (
-            <ol className="space-y-2 text-sm text-red-300/80">
+            <ol className="space-y-2 text-sm text-destructive/80">
               <Step n={1} text="Open Chrome Settings (⋮ menu)" />
               <Step n={2} text="Site Settings → Notifications" />
               <Step n={3} text="Find this site and change to Allow" />
               <Step n={4} text="Return here and tap Check Again" />
             </ol>
           ) : (
-            <ol className="space-y-2 text-sm text-red-300/80">
+            <ol className="space-y-2 text-sm text-destructive/80">
               <Step n={1} text="Click the 🔒 lock icon in your browser address bar" />
               <Step n={2} text='Find "Notifications" in Site Settings' />
               <Step n={3} text='Change from "Block" to "Allow"' />
@@ -422,8 +417,7 @@ function BlockedCard({ env, onCheckAgain }: { env: AppEnv; onCheckAgain: () => v
           <button
             onClick={handleCheckAgain}
             disabled={checking}
-            className="flex-1 flex items-center justify-center gap-2 py-3 rounded-2xl text-sm font-semibold text-emerald-300 border border-emerald-800/40 transition-all hover:border-emerald-600 active:scale-[0.97] disabled:opacity-60"
-            style={{ background: "rgba(52,211,153,0.07)" }}
+            className="flex-1 flex items-center justify-center gap-2 py-3 rounded-2xl text-sm font-semibold text-primary border border-border transition-all hover:border-border active:scale-[0.97] disabled:opacity-60 bg-primary/10"
             data-testid="button-retry-permission"
           >
             <RefreshCw className={`w-4 h-4 ${checking ? "animate-spin" : ""}`} />
@@ -434,8 +428,7 @@ function BlockedCard({ env, onCheckAgain }: { env: AppEnv; onCheckAgain: () => v
           {isAndroidEnv && (
             <button
               onClick={openNativeSettings}
-              className="flex items-center justify-center gap-2 px-4 py-3 rounded-2xl text-sm font-semibold text-amber-300 border border-amber-800/40 transition-all hover:border-amber-600 active:scale-[0.97]"
-              style={{ background: "rgba(217,119,6,0.08)" }}
+              className="flex items-center justify-center gap-2 px-4 py-3 rounded-2xl text-sm font-semibold text-amber-600 border border-border transition-all hover:border-border active:scale-[0.97] bg-amber-100"
               data-testid="button-open-settings"
             >
               <Settings2 className="w-4 h-4" />
@@ -450,12 +443,11 @@ function BlockedCard({ env, onCheckAgain }: { env: AppEnv; onCheckAgain: () => v
 
 function UnsupportedBanner({ env }: { env: AppEnv }) {
   return (
-    <div className="rounded-2xl p-4 border border-red-700/40 flex gap-3 items-start"
-      style={{ background: "rgba(239,68,68,0.08)" }}>
-      <BellOff className="w-5 h-5 text-red-400 shrink-0 mt-0.5" />
+    <div className="rounded-2xl p-4 border border-border flex gap-3 items-start bg-destructive/10">
+      <BellOff className="w-5 h-5 text-destructive shrink-0 mt-0.5" />
       <div>
-        <p className="text-red-300 font-semibold text-sm">Notifications not supported</p>
-        <p className="text-red-700 text-xs mt-0.5">
+        <p className="text-destructive font-semibold text-sm">Notifications not supported</p>
+        <p className="text-destructive/80 text-xs mt-0.5">
           {env === "android"
             ? "Try opening the app in Chrome on Android for notification support."
             : "Your browser doesn't support notifications. Try Chrome or install the app."}
@@ -468,7 +460,7 @@ function UnsupportedBanner({ env }: { env: AppEnv }) {
 function Step({ n, text }: { n: number; text: string }) {
   return (
     <li className="flex gap-2.5 items-start">
-      <span className="w-5 h-5 rounded-full bg-red-900/50 text-red-300 text-xs flex items-center justify-center shrink-0 mt-0.5 font-bold">{n}</span>
+      <span className="w-5 h-5 rounded-full bg-destructive/10 text-destructive text-xs flex items-center justify-center shrink-0 mt-0.5 font-bold">{n}</span>
       <span>{text}</span>
     </li>
   );
@@ -490,24 +482,23 @@ function NotifSection({ title, subtitle, items, settings, locked, onToggle, onTi
 
   return (
     <div
-      className={`rounded-2xl border border-emerald-900/40 overflow-hidden transition-opacity duration-300 ${locked ? "opacity-50 select-none" : ""}`}
-      style={{ background: "rgba(255,255,255,0.03)" }}
+      className={`rounded-2xl border border-border overflow-hidden transition-opacity duration-300 bg-card ${locked ? "opacity-50 select-none" : ""}`}
     >
-      <div className="flex items-center justify-between px-4 py-3 border-b border-emerald-900/30">
+      <div className="flex items-center justify-between px-4 py-3 border-b border-border">
         <div>
           <div className="flex items-center gap-1.5">
-            {locked && <Lock className="w-3 h-3 text-emerald-800" />}
-            <p className="text-emerald-400 text-sm font-semibold uppercase tracking-wider">{title}</p>
+            {locked && <Lock className="w-3 h-3 text-muted-foreground" />}
+            <p className="text-primary text-sm font-semibold uppercase tracking-wider">{title}</p>
           </div>
-          {subtitle && <p className="text-emerald-700 text-xs mt-0.5">{subtitle}</p>}
+          {subtitle && <p className="text-muted-foreground text-xs mt-0.5">{subtitle}</p>}
         </div>
         {!locked && (
           <button
             onClick={() => onToggleAll(!allEnabled)}
             className={`text-xs px-3 py-1 rounded-full border transition-all ${
               allEnabled
-                ? "border-emerald-600 text-emerald-400 bg-emerald-900/20"
-                : "border-emerald-900/40 text-emerald-700 hover:border-emerald-700"
+                ? "border-border text-primary bg-muted"
+                : "border-border text-muted-foreground hover:border-border"
             }`}
           >
             {allEnabled ? "All On" : anyEnabled ? "Some On" : "All Off"}
@@ -515,7 +506,7 @@ function NotifSection({ title, subtitle, items, settings, locked, onToggle, onTi
         )}
       </div>
 
-      <div className="divide-y divide-emerald-900/20">
+      <div className="divide-y divide-border">
         {items.map((item) => {
           const s = settings[item.key];
           return (
@@ -528,8 +519,8 @@ function NotifSection({ title, subtitle, items, settings, locked, onToggle, onTi
                   {item.icon}
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="text-white text-sm font-medium truncate">{item.label}</p>
-                  <p className="text-emerald-700 text-xs truncate">{item.sublabel}</p>
+                  <p className="text-foreground text-sm font-medium truncate">{item.label}</p>
+                  <p className="text-muted-foreground text-xs truncate">{item.sublabel}</p>
                   {item.fridayOnly && (
                     <span className="text-xs text-teal-600 font-medium">Fridays only</span>
                   )}
@@ -544,12 +535,12 @@ function NotifSection({ title, subtitle, items, settings, locked, onToggle, onTi
 
               {s.enabled && !locked && (
                 <div className="flex items-center gap-3 pl-14 animate-in slide-in-from-top-1 duration-200">
-                  <p className="text-emerald-600 text-xs flex-1">Remind me at</p>
+                  <p className="text-muted-foreground text-xs flex-1">Remind me at</p>
                   <input
                     type="time"
                     value={s.time}
                     onChange={(e) => onTime(item.key, e.target.value)}
-                    className="bg-emerald-900/30 border border-emerald-800/40 text-emerald-200 text-sm rounded-xl px-3 py-1.5 focus:outline-none focus:border-emerald-600 transition-colors"
+                    className="bg-background border border-border text-foreground text-sm rounded-xl px-3 py-1.5 focus:outline-none focus:border-border transition-colors"
                     data-testid={`time-notif-${item.key}`}
                   />
                 </div>
@@ -573,12 +564,12 @@ function Toggle({ checked, disabled, onChange, testId }: {
       disabled={disabled}
       onClick={() => !disabled && onChange(!checked)}
       data-testid={testId}
-      className={`relative w-12 h-6 rounded-full transition-all duration-300 shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 ${
+        className={`relative w-12 h-6 rounded-full transition-all duration-300 shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary ${
         disabled
           ? "cursor-not-allowed"
           : checked
-          ? "bg-emerald-500"
-          : "bg-emerald-900/50"
+          ? "bg-primary"
+          : "bg-muted"
       }`}
     >
       <span

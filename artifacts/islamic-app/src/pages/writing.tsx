@@ -33,9 +33,9 @@ const CATEGORIES: { id: NoteCategory; label: string; icon: React.ReactNode; colo
     id: "quran",
     label: "Quran Notes",
     icon: <BookOpen className="w-4 h-4" />,
-    color: "text-emerald-300",
-    bg: "rgba(52,211,153,0.12)",
-    border: "border-emerald-700/40",
+    color: "text-primary",
+    bg: "bg-primary/10",
+    border: "border-border",
   },
   {
     id: "reminder",
@@ -157,23 +157,21 @@ export function Writing() {
   // ── Render: List ──────────────────────────────────────────────────────────
   return (
     <div
-      className="min-h-screen pb-28 md:pb-10 animate-in fade-in duration-400"
-      style={{ background: "linear-gradient(150deg, #071a0e 0%, #0a1f12 50%, #061610 100%)" }}
+      className="min-h-screen pb-28 md:pb-10 animate-in fade-in duration-400 bg-background"
     >
       {/* Header */}
       <div className="flex items-center gap-3 px-5 pt-6 pb-3">
-        <Link href="/more" className="text-emerald-600 hover:text-emerald-400 transition-colors">
+        <Link href="/more" className="text-muted-foreground hover:text-primary transition-colors">
           <ChevronLeft className="w-6 h-6" />
         </Link>
         <div className="flex-1">
-          <h1 className="text-2xl font-serif font-bold text-emerald-300">Islamic Writing</h1>
-          <p className="text-emerald-800 text-xs mt-0.5">{notes.length} note{notes.length !== 1 ? "s" : ""}</p>
+          <h1 className="text-2xl font-serif font-bold text-primary">Islamic Writing</h1>
+          <p className="text-muted-foreground text-xs mt-0.5">{notes.length} note{notes.length !== 1 ? "s" : ""}</p>
         </div>
         <div className="flex items-center gap-2">
           <button
             onClick={() => { setShowSearch((v) => !v); if (showSearch) setSearchQuery(""); }}
-            className="w-9 h-9 rounded-full flex items-center justify-center border border-emerald-800/40 text-emerald-500 hover:text-emerald-300 transition-all"
-            style={{ background: "rgba(52,211,153,0.06)" }}
+            className="w-9 h-9 rounded-full flex items-center justify-center border border-border text-primary hover:text-primary transition-all bg-primary/10"
             data-testid="button-writing-search"
             aria-label="Search notes"
           >
@@ -181,8 +179,7 @@ export function Writing() {
           </button>
           <button
             onClick={createNote}
-            className="w-9 h-9 rounded-full flex items-center justify-center text-white transition-all hover:brightness-110 active:scale-95"
-            style={{ background: "linear-gradient(135deg, #1a5c38 0%, #16a34a 100%)" }}
+            className="w-9 h-9 rounded-full flex items-center justify-center bg-primary text-primary-foreground transition-all hover:brightness-110 active:scale-95"
             data-testid="button-writing-new"
             aria-label="New note"
           >
@@ -195,21 +192,20 @@ export function Writing() {
       {showSearch && (
         <div className="px-5 pb-3 animate-in slide-in-from-top-2 duration-200">
           <div
-            className="flex items-center gap-3 px-4 py-3 rounded-xl border border-emerald-800/40"
-            style={{ background: "rgba(255,255,255,0.04)" }}
+            className="flex items-center gap-3 px-4 py-3 rounded-xl border border-border bg-card"
           >
-            <Search className="w-4 h-4 text-emerald-600 shrink-0" />
+            <Search className="w-4 h-4 text-primary shrink-0" />
             <input
               autoFocus
               type="text"
               placeholder="Search notes..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="flex-1 bg-transparent text-white text-sm placeholder-emerald-800 outline-none"
+              className="flex-1 bg-transparent text-foreground text-sm placeholder:text-muted-foreground outline-none"
               data-testid="input-writing-search"
             />
             {searchQuery && (
-              <button onClick={() => setSearchQuery("")} className="text-emerald-700 hover:text-emerald-500">
+                <button onClick={() => setSearchQuery("")} className="text-muted-foreground hover:text-primary">
                 <X className="w-3.5 h-3.5" />
               </button>
             )}
@@ -226,12 +222,12 @@ export function Writing() {
                 key={cat.id}
                 onClick={() => setFilterCat(filterCat === cat.id ? "all" : cat.id)}
                 className={`flex flex-col items-center gap-1.5 py-3 px-1 rounded-2xl border transition-all ${
-                  filterCat === cat.id ? `${cat.border} ${cat.color}` : "border-emerald-900/30 text-emerald-700"
+                  filterCat === cat.id ? `${cat.border} ${cat.color}` : "border-border text-muted-foreground"
                 }`}
-                style={{ background: filterCat === cat.id ? cat.bg : "rgba(255,255,255,0.03)" }}
+                style={{ background: filterCat === cat.id ? cat.bg : undefined }}
                 data-testid={`button-cat-${cat.id}`}
               >
-                <span className={filterCat === cat.id ? cat.color : "text-emerald-800"}>
+                  <span className={filterCat === cat.id ? cat.color : "text-muted-foreground"}>
                   {cat.icon}
                 </span>
                 <span className="text-xs font-bold leading-none">{totalByCategory(cat.id)}</span>
@@ -253,7 +249,7 @@ export function Writing() {
               style={{ background: CAT_MAP[filterCat].bg }}>
               {CAT_MAP[filterCat].label}
             </span>
-            <button onClick={() => setFilterCat("all")} className="text-xs text-emerald-700 hover:text-emerald-500">
+            <button onClick={() => setFilterCat("all")} className="text-xs text-muted-foreground hover:text-primary">
               Clear filter
             </button>
           </div>
@@ -262,26 +258,22 @@ export function Writing() {
         {/* Empty state */}
         {filteredNotes.length === 0 && (
           <div className="flex flex-col items-center justify-center py-20 text-center">
-            <div
-              className="w-20 h-20 rounded-3xl flex items-center justify-center mb-5"
-              style={{ background: "rgba(52,211,153,0.08)" }}
-            >
-              <FileText className="w-9 h-9 text-emerald-800" />
+            <div className="w-20 h-20 rounded-3xl flex items-center justify-center mb-5 bg-primary/10">
+              <FileText className="w-9 h-9 text-muted-foreground" />
             </div>
-            <p className="text-emerald-500 font-semibold">
+            <p className="text-primary font-semibold">
               {searchQuery ? "No notes found" : "No notes yet"}
             </p>
-            <p className="text-emerald-800 text-sm mt-1">
+            <p className="text-muted-foreground text-sm mt-1">
               {searchQuery
                 ? `No results for "${searchQuery}"`
                 : "Tap + to write your first Islamic note"}
             </p>
-            <p className="text-emerald-900 text-xs mt-1 font-arabic">اكتب بسم الله</p>
+            <p className="text-muted-foreground text-xs mt-1 font-arabic">اكتب بسم الله</p>
             {!searchQuery && (
               <button
                 onClick={createNote}
-                className="mt-5 px-5 py-2.5 rounded-xl text-sm font-semibold text-white transition-all hover:brightness-110"
-                style={{ background: "linear-gradient(135deg, #1a5c38 0%, #16a34a 100%)" }}
+                className="mt-5 px-5 py-2.5 rounded-xl text-sm font-semibold bg-primary text-primary-foreground transition-all hover:brightness-110"
               >
                 Write First Note
               </button>
@@ -295,9 +287,9 @@ export function Writing() {
           return (
             <div
               key={note.id}
-              className="rounded-2xl border border-emerald-900/40 overflow-hidden transition-all hover:border-emerald-700/40"
+              className="rounded-2xl border border-border overflow-hidden transition-all hover:border-border"
               style={{
-                background: "rgba(255,255,255,0.03)",
+                background: "var(--card)",
                 animation: "fadeSlideUp 0.35s ease both",
                 animationDelay: `${i * 35}ms`,
               }}
@@ -313,12 +305,12 @@ export function Writing() {
                     {cat.icon}
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="text-white font-semibold text-sm leading-tight truncate">
-                      {note.title || <span className="text-emerald-700 italic">Untitled note</span>}
+                    <p className="text-foreground font-semibold text-sm leading-tight truncate">
+                      {note.title || <span className="text-muted-foreground italic">Untitled note</span>}
                     </p>
                     <div className="flex items-center gap-2 mt-0.5">
                       <span className={`text-[10px] font-semibold ${cat.color}`}>{cat.label}</span>
-                      <span className="text-emerald-800 text-[10px] flex items-center gap-0.5">
+                      <span className="text-muted-foreground text-[10px] flex items-center gap-0.5">
                         <Clock className="w-2.5 h-2.5" />{formatRelative(note.updatedAt)}
                       </span>
                     </div>
@@ -328,8 +320,7 @@ export function Writing() {
                   <div className="flex items-center gap-1 shrink-0">
                     <button
                       onClick={() => setEditingNote(note)}
-                      className="w-8 h-8 rounded-lg flex items-center justify-center text-emerald-600 hover:text-emerald-300 transition-colors"
-                      style={{ background: "rgba(52,211,153,0.06)" }}
+                      className="w-8 h-8 rounded-lg flex items-center justify-center text-primary hover:text-primary transition-colors bg-primary/10"
                       data-testid={`button-edit-${note.id}`}
                       aria-label="Edit note"
                     >
@@ -349,11 +340,11 @@ export function Writing() {
 
                 {/* Content preview */}
                 {note.content ? (
-                  <p className="text-emerald-600 text-sm leading-relaxed line-clamp-2 pl-11">
+                    <p className="text-muted-foreground text-sm leading-relaxed line-clamp-2 pl-11">
                     {note.content}
                   </p>
                 ) : (
-                  <p className="text-emerald-900 text-xs italic pl-11">Empty note — tap edit to add content</p>
+                    <p className="text-muted-foreground text-xs italic pl-11">Empty note — tap edit to add content</p>
                 )}
               </div>
             </div>
@@ -365,17 +356,13 @@ export function Writing() {
       {deleteTarget && (
         <div className="fixed inset-0 z-50 flex items-end justify-center p-4 sm:items-center"
           style={{ background: "rgba(0,0,0,0.6)", backdropFilter: "blur(4px)" }}>
-          <div
-            className="w-full max-w-sm rounded-2xl p-6 border border-red-900/40 animate-in slide-in-from-bottom-4 duration-200"
-            style={{ background: "#0a1f12" }}
-          >
-            <p className="text-white font-bold text-base mb-1">Delete this note?</p>
-            <p className="text-emerald-700 text-sm mb-5">This action cannot be undone.</p>
+          <div className="w-full max-w-sm rounded-2xl p-6 border border-border animate-in slide-in-from-bottom-4 duration-200 bg-card">
+            <p className="text-foreground font-bold text-base mb-1">Delete this note?</p>
+            <p className="text-muted-foreground text-sm mb-5">This action cannot be undone.</p>
             <div className="flex gap-3">
               <button
                 onClick={() => setDeleteTarget(null)}
-                className="flex-1 py-2.5 rounded-xl border border-emerald-800/50 text-emerald-400 text-sm font-semibold transition-all"
-                style={{ background: "rgba(52,211,153,0.06)" }}
+                className="flex-1 py-2.5 rounded-xl border border-border text-muted-foreground text-sm font-semibold transition-all bg-primary/10"
               >
                 Cancel
               </button>
@@ -432,16 +419,14 @@ function NoteEditor({
 
   return (
     <div
-      className="fixed inset-0 z-40 flex flex-col animate-in fade-in duration-200"
-      style={{ background: "linear-gradient(150deg, #071a0e 0%, #0a1f12 50%, #061610 100%)" }}
+      className="fixed inset-0 z-40 flex flex-col animate-in fade-in duration-200 bg-background"
       data-testid="writing-editor"
     >
       {/* Editor header */}
-      <div className="flex items-center gap-3 px-4 pt-5 pb-3 border-b border-emerald-900/30 shrink-0">
+      <div className="flex items-center gap-3 px-4 pt-5 pb-3 border-b border-border shrink-0">
         <button
           onClick={onClose}
-          className="w-9 h-9 rounded-full flex items-center justify-center text-emerald-600 hover:text-emerald-300 transition-colors"
-          style={{ background: "rgba(52,211,153,0.06)" }}
+          className="w-9 h-9 rounded-full flex items-center justify-center text-primary hover:text-primary transition-colors bg-primary/10"
           data-testid="button-editor-close"
         >
           <ChevronLeft className="w-5 h-5" />
@@ -454,7 +439,7 @@ function NoteEditor({
         </div>
 
         {/* Save indicator */}
-        <div className={`flex items-center gap-1 text-xs transition-all ${saved ? "text-emerald-400 opacity-100" : "opacity-0"}`}>
+        <div className={`flex items-center gap-1 text-xs transition-all ${saved ? "text-primary opacity-100" : "opacity-0"}`}>
           <Check className="w-3.5 h-3.5" />
           Saved
         </div>
@@ -471,7 +456,7 @@ function NoteEditor({
       </div>
 
       {/* Category selector */}
-      <div className="flex gap-2 overflow-x-auto px-4 py-3 border-b border-emerald-900/20 shrink-0 scrollbar-hide">
+      <div className="flex gap-2 overflow-x-auto px-4 py-3 border-b border-border shrink-0 scrollbar-hide">
         {CATEGORIES.map((cat) => (
           <button
             key={cat.id}
@@ -479,9 +464,9 @@ function NoteEditor({
             className={`shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold border transition-all ${
               category === cat.id
                 ? `${cat.color} ${cat.border}`
-                : "text-emerald-800 border-emerald-900/40"
+                : "text-muted-foreground border-border"
             }`}
-            style={{ background: category === cat.id ? cat.bg : "rgba(255,255,255,0.02)" }}
+            style={{ background: category === cat.id ? cat.bg : undefined }}
             data-testid={`button-editor-cat-${cat.id}`}
           >
             {cat.icon}
@@ -497,7 +482,7 @@ function NoteEditor({
           placeholder="Note title..."
           value={title}
           onChange={(e) => handleTitle(e.target.value)}
-          className="w-full bg-transparent text-white text-xl font-bold placeholder-emerald-900 outline-none"
+          className="w-full bg-transparent text-foreground text-xl font-bold placeholder:text-muted-foreground outline-none"
           data-testid="input-note-title"
           maxLength={120}
         />
@@ -509,7 +494,7 @@ function NoteEditor({
           placeholder="بِسْمِ اللَّهِ&#10;&#10;Start writing your Islamic notes here..."
           value={content}
           onChange={(e) => handleContent(e.target.value)}
-          className="w-full h-full bg-transparent text-emerald-300 text-base leading-relaxed placeholder-emerald-900/60 outline-none resize-none"
+          className="w-full h-full bg-transparent text-foreground text-base leading-relaxed placeholder:text-muted-foreground outline-none resize-none"
           data-testid="textarea-note-content"
           style={{ fontFamily: "inherit" }}
         />
@@ -517,16 +502,15 @@ function NoteEditor({
 
       {/* Footer stats */}
       <div
-        className="flex items-center justify-between px-5 py-3 border-t border-emerald-900/30 shrink-0"
-        style={{ background: "rgba(0,0,0,0.2)" }}
+        className="flex items-center justify-between px-5 py-3 border-t border-border shrink-0 bg-muted"
       >
         <div className="flex items-center gap-3">
-          <span className="flex items-center gap-1 text-emerald-800 text-xs">
+            <span className="flex items-center gap-1 text-muted-foreground text-xs">
             <Tag className="w-3 h-3" />{wordCount} words
           </span>
-          <span className="text-emerald-900 text-xs">{charCount} chars</span>
+          <span className="text-muted-foreground text-xs">{charCount} chars</span>
         </div>
-        <span className="text-emerald-900 text-xs flex items-center gap-1">
+        <span className="text-muted-foreground text-xs flex items-center gap-1">
           <Sparkles className="w-3 h-3" />Auto-saving
         </span>
       </div>
@@ -535,17 +519,13 @@ function NoteEditor({
       {deleteConfirm && (
         <div className="absolute inset-0 z-50 flex items-end justify-center p-4 sm:items-center"
           style={{ background: "rgba(0,0,0,0.6)", backdropFilter: "blur(4px)" }}>
-          <div
-            className="w-full max-w-sm rounded-2xl p-6 border border-red-900/40"
-            style={{ background: "#0a1f12" }}
-          >
-            <p className="text-white font-bold text-base mb-1">Delete this note?</p>
-            <p className="text-emerald-700 text-sm mb-5">This action cannot be undone.</p>
+          <div className="w-full max-w-sm rounded-2xl p-6 border border-border bg-card">
+            <p className="text-foreground font-bold text-base mb-1">Delete this note?</p>
+            <p className="text-muted-foreground text-sm mb-5">This action cannot be undone.</p>
             <div className="flex gap-3">
               <button
                 onClick={() => setDeleteConfirm(false)}
-                className="flex-1 py-2.5 rounded-xl border border-emerald-800/50 text-emerald-400 text-sm font-semibold"
-                style={{ background: "rgba(52,211,153,0.06)" }}
+                className="flex-1 py-2.5 rounded-xl border border-border text-muted-foreground text-sm font-semibold bg-primary/10"
               >
                 Cancel
               </button>
