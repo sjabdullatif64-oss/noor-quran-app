@@ -4,7 +4,9 @@ on:
   workflow_dispatch:
 
 env:
-  PREV_ARTIFACT_ID: '8575409297'
+  # Previous production AAB candidates
+  PREV_1_0_15_ARTIFACT_ID: '8559326938'
+  PREV_1_0_16_ARTIFACT_ID: '8575409297'
   CURR_ARTIFACT_ID: '8576000083'
 
 jobs:
@@ -31,56 +33,60 @@ jobs:
 
       - name: Download AABs
         run: |
-          curl -L -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
-            -H "Accept: application/vnd.github+json" \
-            "https://api.github.com/repos/${{ github.repository }}/actions/artifacts/${{ env.PREV_ARTIFACT_ID }}/zip" \
-            -o prev-artifact.zip
-          curl -L -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
-            -H "Accept: application/vnd.github+json" \
-            "https://api.github.com/repos/${{ github.repository }}/actions/artifacts/${{ env.CURR_ARTIFACT_ID }}/zip" \
-            -o curr-artifact.zip
-          unzip -o prev-artifact.zip -d prev
-          unzip -o curr-artifact.zip -d curr
-          mv prev/noor-quran-1.0.16.aab previous.aab
-          mv curr/noor-quran-1.0.16.aab current.aab
-          ls -lh previous.aab current.aab
+          download_and_unpack() {
+            local id=$1 out=$2
+            curl -L -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
+              -H "Accept: application/vnd.github+json" \
+              "https://api.github.com/repos/${{ github.repository }}/actions/artifacts/${id}/zip" \
+              -o ${out}.zip
+            mkdir -p ${out}
+            unzip -o ${out}.zip -d ${out}
+            mv ${out}/noor-quran-1.0.16.aab ${out}.aab || mv ${out}/noor-quran-*.aab ${out}.aab
+          }
+          download_and_unpack ${{ env.PREV_1_0_15_ARTIFACT_ID }} prev_1_0_15
+          download_and_unpack ${{ env.PREV_1_0_16_ARTIFACT_ID }} prev_1_0_16
+          download_and_unpack ${{ env.CURR_ARTIFACT_ID }} current
+          ls -lh *.aab
 
       - name: Print certificates
         run: |
-          echo "=== PREVIOUS AAB CERTIFICATE ==="
-          keytool -printcert -jarfile previous.aab
-          echo "=== CURRENT AAB CERTIFICATE ==="
-          keytool -printcert -jarfile current.aab
+          for f in prev_1_0_15.aab prev_1_0_16.aab current.aab; do
+            echo "=== CERTIFICATE: $f ==="
+            keytool -printcert -jarfile $f | grep -E 'Owner|Issuer|SHA256|Serial|Valid'
+            echo
+          done
 
       - name: Dump manifests
         run: |
-          echo "=== PREVIOUS MANIFEST ==="
-          java -jar bundletool.jar dump manifest --bundle=previous.aab
-          echo "=== CURRENT MANIFEST ==="
-          java -jar bundletool.jar dump manifest --bundle=current.aab
+          for f in prev_1_0_15.aab prev_1_0_16.aab current.aab; do
+            echo "=== MANIFEST: $f ==="
+            java -jar bundletool.jar dump manifest --bundle=$f
+          done
 
-      - name: Dump files summary
+      - name: Compare manifests
         run: |
-          echo "=== PREVIOUS FILES ==="
-          java -jar bundletool.jar dump files --bundle=previous.aab | head -100
-          echo "=== CURRENT FILES ==="
-          java -jar bundletool.jar dump files --bundle=current.aab | head -100
+          java -jar bundletool.jar dump manifest --bundle=prev_1_0_15.aab > prev_1_0_15_manifest.xml
+          java -jar bundletool.jar dump manifest --bundle=prev_1_0_16.aab > prev_1_0_16_manifest.xml
+          java -jar bundletool.jar dump manifest --bundle=current.aab > current_manifest.xml
+          echo "=== prev_1_0_15 vs current ==="
+          diff -u prev_1_0_15_manifest.xml current_manifest.xml || true
+          echo "=== prev_1_0_16 vs current ==="
+          diff -u prev_1_0_16_manifest.xml current_manifest.xml || true
 
-      - name: Extract universal APKs and compare
+      - name: Build universal APKs and dump badging
         run: |
-          java -jar bundletool.jar build-apks --bundle=previous.aab --output=previous.apks --mode=universal
-          java -jar bundletool.jar build-apks --bundle=current.aab --output=current.apks --mode=universal
-          java -jar bundletool.jar extract-apks --apks=previous.apks --output=prev-apk
-          java -jar bundletool.jar extract-apks --apks=current.apks --output=curr-apk
-          ls -lh prev-apk curr-apk
-          echo "=== PREVIOUS APK BADGING ==="
-          aapt2 dump badging prev-apk/*.apk
-          echo "=== CURRENT APK BADGING ==="
-          aapt2 dump badging curr-apk/*.apk
+          for f in prev_1_0_15.aab prev_1_0_16.aab current.aab; do
+            base=$(basename $f .aab)
+            java -jar bundletool.jar build-apks --bundle=$f --output=${base}.apks --mode=universal
+            mkdir -p ${base}_apk
+            unzip -o ${base}.apks -d ${base}_apk
+            echo "=== BADGING: $f ==="
+            aapt2 dump badging ${base}_apk/*.apk
+          done
 
-      - name: Get size estimates
+      - name: Size estimates
         run: |
-          echo "=== PREVIOUS SIZE ==="
-          java -jar bundletool.jar get-size total --apks=previous.apks
-          echo "=== CURRENT SIZE ==="
-          java -jar bundletool.jar get-size total --apks=current.apks
+          for f in prev_1_0_15.aab prev_1_0_16.aab current.aab; do
+            echo "=== SIZE: $f ==="
+            ls -lh $f
+          done
