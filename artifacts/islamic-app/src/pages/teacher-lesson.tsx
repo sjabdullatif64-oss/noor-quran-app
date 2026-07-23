@@ -155,9 +155,19 @@ export function TeacherLesson() {
       return;
     }
 
-    // ── Step 1: getSpeechSupport ────────────────────────────────────────────
-    dbg("Step 1 / 5 — getSpeechSupport()");
-    const sup = await getSpeechSupport();
+    // ── Step 1: getSpeechSupport (sub-step diagnostics) ──────────────────────
+    // Each sub-step posts directly to setDebugStep (no timer reset).
+    // One 8-second warn timer fires if the whole group doesn't complete.
+    if (debugWarnTimer.current) clearTimeout(debugWarnTimer.current);
+    let _lastSubStep = "Step 1.1 — Capacitor.isNativePlatform()";
+    setDebugStep(_lastSubStep);
+    debugWarnTimer.current = setTimeout(() => {
+      setDebugStep("⚠️ STUCK — " + _lastSubStep);
+    }, 8000);
+    const sup = await getSpeechSupport((subMsg) => {
+      _lastSubStep = subMsg;
+      setDebugStep(subMsg);
+    });
     dbgDone("Step 1 ✓ → support = \"" + sup + "\"");
     setSupport(sup);
     if (sup === "none") {
