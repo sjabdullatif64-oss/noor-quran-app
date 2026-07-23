@@ -42,7 +42,7 @@ const config: CapacitorConfig = {
     backgroundColor: "#071a0e",
     allowMixedContent: false,
     captureInput: true,
-    webContentsDebuggingEnabled: true, // enabled for speech-recognition diagnostics
+    webContentsDebuggingEnabled: false,
   },
   plugins: {
     SplashScreen: {

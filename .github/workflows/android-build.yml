@@ -132,7 +132,23 @@ jobs:
           ANDROID_SDK_ROOT: ${{ env.ANDROID_HOME }}
           ANDROID_HOME:     ${{ env.ANDROID_HOME }}
 
-      # ── 8. Gradle wrapper ────────────────────────────────────────────────────
+
+        # ── 7b. Apply native plugin patches ──────────────────────────────────────
+        # node_modules is reinstalled fresh; copy our tracked patched sources
+        # over the originals BEFORE Gradle compiles them.
+        # Fixes main-thread deadlock in @capacitor-community/speech-recognition@7.0.1:
+        # SpeechRecognizer.createSpeechRecognizer() in load() posts to the UI
+        # thread via bridge.getWebView().post(). On Android 13+ the IPC
+        # service-binding can stall the UI thread for seconds, which also freezes
+        # the WebView JS event loop — so setTimeout/Promise microtasks (including
+        # our withTimeout fallback) never fire and checkPermissions() hangs forever.
+        - name: Apply native plugin patches
+          run: |
+            DEST="artifacts/islamic-app/node_modules/@capacitor-community/speech-recognition/android/src/main/java/com/getcapacitor/community/speechrecognition"
+            cp artifacts/islamic-app/android-patches/SpeechRecognition.java "$DEST/SpeechRecognition.java"
+            echo "✅ SpeechRecognition.java patch applied"
+
+          # ── 8. Gradle wrapper ────────────────────────────────────────────────────
       - name: Generate Gradle wrapper
         working-directory: ${{ env.ANDROID_DIR }}
         run: |
