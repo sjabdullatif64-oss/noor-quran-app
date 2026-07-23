@@ -10,8 +10,8 @@ android {
     defaultConfig {
         applicationId "com.sj64noorquran"
         minSdk rootProject.ext.minSdkVersion
-        // targetSdk 35 = Android 15 — as requested, independent of compileSdk
-        targetSdk 35
+        // targetSdk 36 = Android 16 — meets Google Play targetSdk requirement
+        targetSdk 36
         versionCode 74684548
         versionName "1.0.16"
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"

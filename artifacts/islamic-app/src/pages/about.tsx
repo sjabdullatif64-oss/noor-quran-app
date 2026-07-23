@@ -425,16 +425,6 @@ export function About() {
               border="border-border"
             />
           </Link>
-          <Link href="/terms-of-service" className="block mt-3" data-testid="button-about-terms">
-            <ActionButton
-              icon={<ScrollText className="w-5 h-5" />}
-              label="Terms of Service"
-              sublabel="Rules & conditions for using the app"
-              accent="text-violet-400"
-              bg="rgba(139,92,246,0.08)"
-              border="border-violet-900/40"
-            />
-          </Link>
         </div>
 
         <p className="text-center text-muted-foreground text-xs pb-6">

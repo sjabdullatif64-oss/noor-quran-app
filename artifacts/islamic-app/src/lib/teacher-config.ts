@@ -3,7 +3,12 @@
  *
  * ALL tunable limits and thresholds for the Teacher feature live here.
  * No screen may hardcode these values.
+ *
+ * FEATURE FLAG: The AI Teacher is temporarily disabled while the native Android
+ * microphone flow is under investigation. Set to `true` to re-enable once the
+ * root cause is fixed and tested.
  */
+export const AI_TEACHER_ENABLED = false;
 
 /** Maximum NEW micro-lessons a learner may complete per day (resets local midnight). */
 export const DAILY_LIMIT = 10;

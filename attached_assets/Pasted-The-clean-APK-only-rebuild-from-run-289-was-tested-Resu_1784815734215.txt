@@ -1,0 +1,76 @@
+The clean APK-only rebuild from run #289 was tested.
+
+Result:
+
+The AI Teacher still behaves exactly the same as before.
+
+After:
+
+Read Now
+→ I understand
+→ Continue
+
+nothing happens.
+
+Therefore, the custom SpeechRecognition patch did not solve the issue.
+
+Stop all further investigation of the AI Teacher for now.
+
+Please prepare a stable production release with the AI Teacher temporarily disabled and hidden.
+
+Requirements:
+
+1. Hide the Teacher tab completely from the bottom navigation.
+2. Hide all Teacher buttons, cards, screens, lesson links, microphone options, and visible Teacher text.
+3. Block direct Teacher routes and redirect them safely to Home.
+4. Ensure no SpeechRecognition call, microphone permission request, Teacher initialization, or Teacher background logic runs.
+5. Keep the Teacher source code and existing progress data for future restoration.
+6. Use one clear feature flag such as AI_TEACHER_ENABLED = false.
+7. Revert the unverified custom SpeechRecognition native patch.
+8. Remove:
+   - artifacts/islamic-app/android-patches/SpeechRecognition.java
+   - artifacts/islamic-app/scripts/apply-patches.js
+   - the package.json postinstall patch command
+9. Restore the normal speech-recognition plugin installation.
+10. Remove the duplicate Terms of Service button and keep only one.
+11. Replace the Terms of Service with the approved non-Teacher version.
+12. Remove Teacher, microphone, pronunciation, speech recognition, lesson limits, and Teacher progress references from the Privacy Policy and all user-visible content.
+13. Preserve all approved stable improvements:
+   - Light Mode
+   - Selected translation for Ayah of the Day
+   - Language and translation improvements
+   - Quran Reader
+   - Prayer Times
+   - Qibla
+   - Islamic Calendar
+   - Quran audio and downloads
+   - Bookmarks
+   - Favorites
+   - Search
+   - Digital Tasbeeh
+   - Notifications
+   - AdMob
+14. Update Android target requirements for Google Play:
+   - targetSdkVersion 36
+   - compileSdkVersion 36 if required
+   - do not change minSdkVersion unless technically necessary
+
+Do not build yet.
+
+First provide:
+
+- Every changed file
+- Current versionName and versionCode
+- targetSdkVersion and compileSdkVersion
+- Confirmation that Teacher is hidden but not deleted
+- Confirmation that no Teacher or SpeechRecognition code runs
+- Confirmation that the custom native patch is removed
+- Confirmation that only one Terms of Service button remains
+- Confirmation that Teacher and microphone text is removed from Terms and Privacy Policy
+- Typecheck result
+- Production build result
+
+Wait for my approval before building.
+
+After approval, build only an APK first.
+Do not build or upload an AAB until I test and approve the APK.

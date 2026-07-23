@@ -5,9 +5,8 @@ buildscript {
         // Build.VERSION_CODES.VANILLA_ICE_CREAM (API 35) in SystemBars.java.
         // Setting this lower causes "cannot find symbol: VANILLA_ICE_CREAM".
         compileSdkVersion = 36
-        // targetSdk 34 = Android 14; meets Play Store minimum requirement
-        // without opting into Android 15/16 runtime behaviour changes.
-        targetSdkVersion  = 34
+        // targetSdk 36 = Android 16; meets Google Play targetSdk requirement
+        targetSdkVersion  = 36
         minSdkVersion     = 24
 
         // ── ext vars consumed by @capacitor-community/admob/android/build.gradle ──

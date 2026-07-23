@@ -1,7 +1,7 @@
 import { useEffect, useRef } from "react";
 import { Link } from "wouter";
 import {
-  ChevronLeft, ScrollText, BookOpen, GraduationCap, Mic, Shield,
+  ChevronLeft, ScrollText, BookOpen, Shield,
   Users, Scale, Wifi, RefreshCw, AlertTriangle, Mail, Sparkles,
 } from "lucide-react";
 import { openUrl } from "@/lib/capacitor";
@@ -56,62 +56,8 @@ const SECTIONS = [
     ),
   },
   {
-    icon: <GraduationCap className="w-5 h-5" />,
-    title: "4. AI Quran Teacher & Pronunciation Assessment",
-    accent: "text-violet-400",
-    bg: "rgba(139,92,246,0.07)",
-    border: "border-violet-900/40",
-    body: (
-      <>
-        The <strong className="text-violet-300">AI Quran Teacher</strong> offers step-by-step
-        reading lessons with optional pronunciation checking using speech recognition.{" "}
-        <strong className="text-violet-300">Important limitations:</strong> the pronunciation
-        result is <em>educational guidance only</em> and is <em>not guaranteed to be fully
-        accurate</em>. Speech recognition may mis-hear correct recitation or accept imperfect
-        recitation, and it does not assess Tajweed rules. For authoritative correction of your
-        recitation, please consult a <strong className="text-violet-300">qualified Quran
-        teacher</strong>. Lesson passes, scores, and feedback in the app carry no religious or
-        scholarly authority.
-      </>
-    ),
-  },
-  {
-    icon: <Mic className="w-5 h-5" />,
-    title: "5. Microphone Use",
-    accent: "text-teal-400",
-    bg: "rgba(45,212,191,0.07)",
-    border: "border-teal-900/40",
-    body: (
-      <>
-        Microphone access is used <strong className="text-teal-300">only</strong> for the Quran
-        Teacher pronunciation check, is requested only when you tap &quot;Read Now&quot;, and
-        only after you agree on the consent screen. Speech is processed by your device&apos;s
-        speech-recognition service (on most Android devices this is provided by Google and may
-        involve processing on Google&apos;s servers). The app itself does not record, store, or
-        upload audio files. See the Privacy Policy for full details. You may deny or revoke
-        microphone permission at any time and continue using the app in listen-only mode.
-      </>
-    ),
-  },
-  {
-    icon: <RefreshCw className="w-5 h-5" />,
-    title: "6. Daily Limits & Progress Features",
-    accent: "text-primary",
-    bg: "bg-primary/10",
-    border: "border-border",
-    body: (
-      <>
-        The Teacher feature includes a daily new-lesson limit, streaks, revision sessions, and
-        progress tracking designed to encourage steady learning. Progress data is stored on your
-        device. We may adjust limits, lesson content, curriculum structure, or scoring thresholds
-        in future updates to improve the learning experience. Clearing app data or deleting
-        learning data resets progress permanently.
-      </>
-    ),
-  },
-  {
     icon: <Users className="w-5 h-5" />,
-    title: "7. User Responsibilities & Acceptable Use",
+    title: "4. User Responsibilities & Acceptable Use",
     accent: "text-rose-400",
     bg: "rgba(244,63,94,0.07)",
     border: "border-rose-900/40",
@@ -127,7 +73,7 @@ const SECTIONS = [
   },
   {
     icon: <Scale className="w-5 h-5" />,
-    title: "8. Intellectual Property",
+    title: "5. Intellectual Property",
     accent: "text-amber-400",
     bg: "rgba(217,119,6,0.07)",
     border: "border-amber-900/40",
@@ -144,23 +90,22 @@ const SECTIONS = [
   },
   {
     icon: <Wifi className="w-5 h-5" />,
-    title: "9. Third-Party Services",
+    title: "6. Third-Party Services",
     accent: "text-indigo-400",
     bg: "rgba(99,102,241,0.07)",
     border: "border-indigo-900/40",
     body: (
       <>
         The app relies on third-party services: AlQuran Cloud (Quran text), Aladhan (prayer
-        times), Islamic Network CDN and Quran.com CDN (audio), Google AdMob (advertising in the
-        Android app), and your device&apos;s speech-recognition service (typically Google).
-        These services have their own terms and privacy policies, and we are not responsible
-        for their availability or conduct.
+        times), Islamic Network CDN and Quran.com CDN (audio), and Google AdMob (advertising in the
+        Android app). These services have their own terms and privacy policies, and we are not
+        responsible for their availability or conduct.
       </>
     ),
   },
   {
     icon: <RefreshCw className="w-5 h-5" />,
-    title: "10. App Availability & Changes",
+    title: "7. App Availability & Changes",
     accent: "text-sky-400",
     bg: "rgba(56,189,248,0.07)",
     border: "border-sky-900/40",
@@ -169,13 +114,13 @@ const SECTIONS = [
         We strive to keep Noor Quran available and accurate, but we do not guarantee
         uninterrupted operation. Features depend on third-party APIs that may change or become
         unavailable. We may add, modify, or remove features at any time without prior notice,
-        including the AI Quran Teacher, marketplace, and reward features.
+        including the marketplace and reward features.
       </>
     ),
   },
   {
     icon: <AlertTriangle className="w-5 h-5" />,
-    title: "11. Disclaimer of Warranties & Limitation of Liability",
+    title: "8. Disclaimer of Warranties & Limitation of Liability",
     accent: "text-rose-400",
     bg: "rgba(244,63,94,0.07)",
     border: "border-rose-900/40",
@@ -184,7 +129,7 @@ const SECTIONS = [
         Noor Quran is provided <strong className="text-rose-300">&quot;as is&quot;</strong> and{" "}
         <strong className="text-rose-300">&quot;as available&quot;</strong>, without warranties of
         any kind, express or implied, including accuracy of prayer times, Qibla direction,
-        translations, or pronunciation assessment. To the maximum extent permitted by law, SJ64
+        and translations. To the maximum extent permitted by law, SJ64
         Studios shall not be liable for any indirect, incidental, or consequential damages
         arising from your use of, or inability to use, the app. Always verify prayer times with
         your local mosque or authority.
@@ -193,7 +138,7 @@ const SECTIONS = [
   },
   {
     icon: <Shield className="w-5 h-5" />,
-    title: "12. Changes to These Terms",
+    title: "9. Changes to These Terms",
     accent: "text-primary",
     bg: "bg-primary/10",
     border: "border-border",
@@ -277,7 +222,7 @@ export function TermsOfService() {
         >
           <div className="flex items-center gap-2 mb-3">
             <Mail className="w-4 h-4 text-primary" />
-            <p className="text-foreground text-sm font-semibold">13. Contact Information</p>
+            <p className="text-foreground text-sm font-semibold">10. Contact Information</p>
           </div>
           <p className="text-muted-foreground text-sm leading-relaxed mb-1">
             Questions about these Terms of Service? Contact the Noor Quran Team:

@@ -5,6 +5,7 @@ import {
   Moon, Navigation, Sun, MoreHorizontal, Heart, Hash, Gift, Download, Settings, Bell,
   GraduationCap,
 } from "lucide-react";
+import { AI_TEACHER_ENABLED } from "@/lib/teacher-config";
 import { useTheme } from "./theme-provider";
 import { Button } from "./ui/button";
 import { useI18n } from "@/lib/i18n-context";
@@ -94,7 +95,9 @@ export function Layout({ children }: { children: React.ReactNode }) {
           <NavItem href="/" icon={<HomeIcon className="w-5 h-5" />} label={t("nav_home")} active={location === "/"} />
           <NavItem href="/quran" icon={<Book className="w-5 h-5" />} label={t("nav_quran")} active={location === "/quran" || location.startsWith("/quran/")} />
           <NavItem href="/prayer-times" icon={<Compass className="w-5 h-5" />} label={t("nav_prayers")} active={location === "/prayer-times"} />
-          <NavItem href="/teacher" icon={<GraduationCap className="w-5 h-5" />} label={t("nav_teacher")} active={location.startsWith("/teacher")} />
+          {AI_TEACHER_ENABLED && (
+            <NavItem href="/teacher" icon={<GraduationCap className="w-5 h-5" />} label={t("nav_teacher")} active={location.startsWith("/teacher")} />
+          )}
 
           <div className="mt-2 mb-1 px-2">
             <p className="text-xs text-muted-foreground/60 uppercase tracking-wider font-medium">{t("nav_more_section")}</p>
@@ -142,8 +145,10 @@ export function Layout({ children }: { children: React.ReactNode }) {
           active={location === "/quran" || location.startsWith("/quran/")} testId="quran" />
         <MobileNavItem href="/prayer-times" icon={<Compass className="w-5 h-5" />} label={t("nav_prayers")}
           active={location === "/prayer-times"} testId="prayers" />
-        <MobileNavItem href="/teacher" icon={<GraduationCap className="w-5 h-5" />} label={t("nav_teacher")}
-          active={location.startsWith("/teacher")} testId="teacher" />
+        {AI_TEACHER_ENABLED && (
+          <MobileNavItem href="/teacher" icon={<GraduationCap className="w-5 h-5" />} label={t("nav_teacher")}
+            active={location.startsWith("/teacher")} testId="teacher" />
+        )}
         <MobileNavItem href="/more" icon={<MoreHorizontal className="w-5 h-5" />} label={t("nav_more")}
           active={isMoreActive} testId="more" />
       </div>
