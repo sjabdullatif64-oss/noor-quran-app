@@ -258,3 +258,9 @@ id = "uWsliV0HPp7NEani-Qn3L"
 uri = "file://artifacts/islamic-app/public/release/noor-quran-1.0.14.apk"
 type = "unspecified"
 title = "Noor Quran v1.0.14 — on-screen mic debug"
+
+[[outputs]]
+id = "jRfWS8Q_Kw-VfJBlgsK7P"
+uri = "file://artifacts/islamic-app/public/release/noor-quran-1.0.15.apk"
+type = "unspecified"
+title = "Noor Quran v1.0.15 — getSpeechSupport sub-step diagnostics"

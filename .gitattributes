@@ -7,3 +7,6 @@ noor-quran-1.0.13.zip filter=lfs diff=lfs merge=lfs -text
 apk-out-14/noor-quran-1.0.14.apk filter=lfs diff=lfs merge=lfs -text
 artifacts/islamic-app/public/release/noor-quran-1.0.14.apk filter=lfs diff=lfs merge=lfs -text
 noor-quran-1.0.14.zip filter=lfs diff=lfs merge=lfs -text
+apk-out-15/noor-quran-1.0.15.apk filter=lfs diff=lfs merge=lfs -text
+artifacts/islamic-app/public/release/noor-quran-1.0.15.apk filter=lfs diff=lfs merge=lfs -text
+noor-quran-1.0.15.zip filter=lfs diff=lfs merge=lfs -text
