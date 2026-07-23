@@ -11,7 +11,6 @@ package com.sj64noorquran;
   import com.capacitorjs.plugins.app.AppPlugin;
   import com.capacitorjs.plugins.localnotifications.LocalNotificationsPlugin;
   import com.capacitorjs.plugins.share.SharePlugin;
-  import com.getcapacitor.community.speechrecognition.SpeechRecognition;
   import com.capacitorjs.plugins.network.NetworkPlugin;
   import nl.raphael.settings.NativeSettingsPlugin;
 
@@ -44,17 +43,11 @@ package com.sj64noorquran;
           // fix (keeping the JSON in sync with what's actually compiled).
           registerPlugin(SharePlugin.class);
           // Network — explicit registration so Network.getStatus() is always
-          // reachable. The Teacher flow awaits Network.getStatus() before showing
-          // the mic UI; if the plugin is only auto-discovered and plugins.json
+          // reachable. If the plugin is only auto-discovered and plugins.json
           // ever drifts (e.g. a stale AdMob entry causing loadPluginClasses()
-          // to abort), this call hangs indefinitely and the Teacher flow freezes.
+          // to abort), this call can hang.
           registerPlugin(NetworkPlugin.class);
-          // SpeechRecognition + NativeSettings — explicit registration (same
-          // defense-in-depth as Share). Their gradle modules were missing from
-          // the hand-maintained settings.gradle until v1.2.5, which left the
-          // classes out of the DEX entirely; now that they compile, register
-          // them explicitly so plugins.json drift can never break them again.
-          registerPlugin(SpeechRecognition.class);
+          // NativeSettings — explicit registration (same defense-in-depth as Share).
           registerPlugin(NativeSettingsPlugin.class);
           // Project-local Kotlin/Java plugins also registered here (not in plugins.json).
           // AzanPlugin is a project-local native plugin (android/app/src, not an npm
