@@ -126,26 +126,14 @@ jobs:
 
       # ── 7. Capacitor sync ────────────────────────────────────────────────────
       - name: Sync Capacitor Android
-          working-directory: ${{ env.APP_DIR }}
-          run: npx cap sync android 2>&1
-          env:
-            ANDROID_SDK_ROOT: ${{ env.ANDROID_HOME }}
-            ANDROID_HOME:     ${{ env.ANDROID_HOME }}
+        working-directory: ${{ env.APP_DIR }}
+        run: npx cap sync android 2>&1
+        env:
+          ANDROID_SDK_ROOT: ${{ env.ANDROID_HOME }}
+          ANDROID_HOME:     ${{ env.ANDROID_HOME }}
 
-          # ── 7b. Apply native plugin patches ──────────────────────────────────────
-        # node_modules is reinstalled fresh on the CI runner; copy our tracked
-        # patched source over the original before Gradle compiles it.
-        # Fixes: SpeechRecognizer.createSpeechRecognizer() in load() blocks the
-        # Android UI thread (= WebView JS thread) via IPC on Android 13+, which
-        # prevents bridge.eval() and JS setTimeout from firing — checkPermissions
-        # hangs indefinitely.
-        - name: Apply native plugin patches
-          run: |
-            DEST="artifacts/islamic-app/node_modules/@capacitor-community/speech-recognition/android/src/main/java/com/getcapacitor/community/speechrecognition"
-            cp artifacts/islamic-app/android-patches/SpeechRecognition.java "$DEST/SpeechRecognition.java"
-            echo "Patched SpeechRecognition.java applied"
-
-          - name: Generate Gradle wrapper
+      # ── 8. Gradle wrapper ────────────────────────────────────────────────────
+      - name: Generate Gradle wrapper
         working-directory: ${{ env.ANDROID_DIR }}
         run: |
           gradle wrapper \
