@@ -246,3 +246,9 @@ id = "1aIScXdvgJBGFavyktC-y"
 uri = "file://attached_assets/release/noor-quran-1.1.0-debug.zip"
 type = "unspecified"
 title = "Noor Quran 1.1.0 — Test APK (debug, zipped)"
+
+[[outputs]]
+id = "Qi7fDjmEl1gOXDuJAMCMC"
+uri = "file://artifacts/islamic-app/public/release/noor-quran-1.0.13.apk"
+type = "unspecified"
+title = "Noor Quran v1.0.13 — Teacher mic fix"

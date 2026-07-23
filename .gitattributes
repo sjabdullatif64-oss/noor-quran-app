@@ -1,3 +1,6 @@
 artifacts/islamic-app/android/gradle-8.11.1-bin.zip filter=lfs diff=lfs merge=lfs -text
 artifacts/islamic-app/android/gradle-8.11.1-bin.zip.1 filter=lfs diff=lfs merge=lfs -text
 artifacts/islamic-app/android/gradle-8.11.1/lib/kotlin-compiler-embeddable-2.0.20.jar filter=lfs diff=lfs merge=lfs -text
+apk-out/noor-quran-1.0.13.apk filter=lfs diff=lfs merge=lfs -text
+artifacts/islamic-app/public/release/noor-quran-1.0.13.apk filter=lfs diff=lfs merge=lfs -text
+noor-quran-1.0.13.zip filter=lfs diff=lfs merge=lfs -text
