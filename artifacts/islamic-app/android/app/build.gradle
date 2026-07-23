@@ -104,13 +104,7 @@ dependencies {
     implementation project(':capacitor-share')
     implementation project(':capacitor-browser')
 
-    // Speech Recognition — AI Quran Teacher. This module was MISSING before
-    // v1.2.5: capacitor.plugins.json listed the plugin but the native class was
-    // never compiled, so PluginManager.loadPluginClasses() threw on
-    // Class.forName() and speech calls rejected "not implemented".
-    implementation project(':capacitor-community-speech-recognition')
-
-    // Native Settings — open app settings for mic-permission recovery
+    // Native Settings — open app settings for app settings screens
     implementation project(':capacitor-native-settings')
 
     // AdMob — DISABLED for startup stability testing.

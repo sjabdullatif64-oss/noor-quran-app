@@ -27,7 +27,6 @@ const config: CapacitorConfig = {
     "@capacitor/share",
     "@capacitor/splash-screen",
     "@capacitor/status-bar",
-    "@capacitor-community/speech-recognition",
     "capacitor-native-settings",
   ],
   server: {
