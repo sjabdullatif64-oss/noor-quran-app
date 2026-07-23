@@ -1,0 +1,163 @@
+Before building the APK, make these final corrections exactly.
+
+1. AI Teacher must be completely invisible
+
+When AI_TEACHER_ENABLED = false:
+
+- Do not show the Teacher tab in mobile bottom navigation.
+- Do not show Teacher in desktop navigation.
+- Do not show any Teacher button, card, screen, lesson link, microphone option, pronunciation option, or visible Teacher text anywhere.
+- Do not show Teacher in Terms of Service, Privacy Policy, About, feature lists, onboarding, or any user-visible production content.
+- Do not return NotFound for Teacher routes.
+- Redirect every Teacher-related route safely to Home.
+- No Teacher initialization, SpeechRecognition call, microphone permission request, or Teacher background logic may run.
+- Keep the Teacher source code and existing progress data for future restoration.
+
+2. Terms of Service must use my approved text exactly
+
+Replace the complete Terms of Service page with the exact text below.
+
+Do not rewrite it.
+Do not shorten it.
+Do not add AI Teacher, microphone, speech recognition, pronunciation, lesson limits, marketplace, rewards, or any other removed feature.
+Do not restore any previous Terms sections.
+Keep the visible headings, paragraphs, Quran verse, email, date, and copyright text as provided.
+
+APPROVED TERMS OF SERVICE TEXT:
+
+‹
+Terms of Service
+Noor Quran · com.sj64noorquran
+♢
+♢
+Welcome to Noor Quran
+These Terms of Service govern your use of the Noor Quran application. By downloading, installing, or using the app, you agree to these Terms. If you do not agree, please stop using the app.
+
+وَقُل رَّبِّ زِدْنِي عِلْمًا
+“My Lord, increase me in knowledge.” — Quran 20:114
+▣
+Purpose of the App
+Noor Quran is provided for personal, educational, and devotional use.
+
+Features may include Quran reading, translations, Arabic recitation, audio downloads, prayer times, Qibla direction, Islamic calendar, notifications, bookmarks, favorites, search, and digital Tasbeeh.
+
+Features may be changed, improved, restricted, or removed in future updates.
+
+☰
+Quran Text & Translations
+We make reasonable efforts to provide accurate Quranic content. However, digital display, formatting, fonts, datasets, or technical errors may affect how content appears.
+
+If you notice a possible error in the Arabic text, verify it with an authenticated Mushaf and contact us.
+
+The Quran was revealed in Arabic. Translations are interpretations of its meaning and may differ between translators or contain mistakes, omissions, or outdated wording.
+
+Translations may also fail to load because of internet, server, API, device, or technical problems.
+
+Noor Quran does not guarantee the accuracy or continuous availability of every translation.
+
+For important religious questions, consult the Arabic text, reliable Tafsir, and a qualified Islamic scholar.
+
+◖
+Quran Audio & Downloads
+Quran recitations may be streamed or downloaded through third-party services.
+
+Audio playback or downloads may fail because of network interruptions, server problems, storage limitations, permissions, device restrictions, or other technical issues.
+
+Downloaded audio may be deleted if you clear app data, uninstall the app, reset your device, or use storage-cleaning tools.
+
+We do not guarantee permanent storage or availability of downloaded audio.
+
+⌖
+Prayer Times, Qibla & Islamic Calendar
+Prayer times, Qibla direction, and Hijri dates are provided as helpful estimates.
+
+Results may vary because of location accuracy, calculation method, device sensors, time-zone settings, local moon sightings, or technical limitations.
+
+For important religious observance, verify prayer times, Qibla direction, and Islamic dates with your local mosque or a recognized Islamic authority.
+
+🔔
+Notifications & Local Data
+Prayer reminders and other notifications may be delayed, blocked, or missed because of device settings, battery optimization, permissions, operating-system restrictions, or technical errors.
+
+Do not rely only on app notifications for important obligations.
+
+Bookmarks, favorites, Tasbeeh counts, settings, and downloaded content may be stored locally on your device.
+
+This data may be lost if app data is cleared, the app is uninstalled, the device is reset, or a technical problem occurs.
+
+$
+Third-Party Services & Advertising
+Noor Quran may use third-party APIs, hosting services, content providers, and Google AdMob to provide translations, audio, prayer information, and advertisements.
+
+These services operate under their own terms and privacy policies.
+
+We are not responsible for third-party outages, content errors, policy changes, advertisements, or service availability.
+
+✓
+Acceptable Use
+You agree to use Noor Quran only for lawful and personal purposes. You must not:
+
+Misuse, damage, disrupt, or interfere with the app or its services.
+Reverse engineer, copy, sell, redistribute, or commercially exploit the app without permission.
+Remove copyright, attribution, trademark, or legal notices.
+Use the app or its content for unlawful, deceptive, or harmful activity.
+
+©
+Intellectual Property
+The Noor Quran name, design, logo, interface, graphics, and original software are protected by applicable intellectual-property laws.
+
+Quran text, translations, recitations, and third-party materials remain the property of their respective owners or providers.
+
+!
+Disclaimer of Warranties
+Noor Quran is provided on an “AS IS” and “AS AVAILABLE” basis.
+
+We do not guarantee that the app will always be accurate, uninterrupted, secure, compatible with every device, or free from errors.
+
+The app is a helpful Islamic utility and is not a replacement for qualified religious guidance or official local religious authorities.
+
+⚠
+Limitation of Liability
+To the maximum extent permitted by law, Noor Quran and its developer will not be liable for direct, indirect, incidental, special, or consequential loss arising from use of the app or inability to use it.
+
+This includes translation errors, inaccurate prayer times, Qibla or calendar differences, missed notifications, unavailable services, lost bookmarks or favorites, deleted audio, data loss, and third-party service failures.
+
+↻
+Updates & Changes to These Terms
+We may update the app or these Terms when necessary for new features, technical improvements, security, legal requirements, or service changes.
+
+Updated Terms become effective when published on this page or within the app.
+
+Continued use of Noor Quran after an update means that you accept the revised Terms.
+
+✉
+Contact Us
+If you have questions, suggestions, or concerns about these Terms of Service, please contact the Noor Quran Team:
+
+The Noor Quran Team
+✉
+easygroupjoin@gmail.com
+Last updated: 21 July 2026 · Effective immediately
+Noor Quran © 2026 · The Noor Quran Team
+
+3. Duplicate button
+
+Keep only one Terms of Service button on the More/About screen.
+
+4. Final verification before APK build
+
+Before building, confirm:
+
+- AI Teacher is not visible anywhere.
+- All Teacher routes redirect to Home.
+- No Teacher or SpeechRecognition code runs.
+- The Terms of Service text matches the approved text exactly.
+- Only one Terms of Service button remains.
+- targetSdkVersion is 36.
+- compileSdkVersion is 36.
+- Typecheck passes.
+- Production build passes.
+
+After confirming, build only the APK.
+
+Do not build the AAB yet.
