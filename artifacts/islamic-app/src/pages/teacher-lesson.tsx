@@ -8,7 +8,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { Link, useLocation, useParams } from "wouter";
 import {
   ChevronLeft, Volume2, Mic, RotateCcw, ArrowRight, ShieldCheck,
-  CheckCircle2, Ear, MicOff, WifiOff, Sparkles, Loader2,
+  CheckCircle2, Ear, MicOff, WifiOff, Sparkles, Loader2, Bug,
 } from "lucide-react";
 import {
   MAX_RECORD_MS, MAX_RETRIES, TEACHER_CONSENT_KEY,
@@ -70,6 +70,33 @@ export function TeacherLesson() {
   const [settingsFailed, setSettingsFailed] = useState(false);
   const [noMicReason, setNoMicReason] = useState<string | null>(null);
 
+  // ── On-screen debug step overlay (temporary diagnostic) ──────────────────
+  const [debugStep, setDebugStep] = useState<string | null>(null);
+  const debugWarnTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  /** Mark entering a step. `warnAfterMs` fires a ⚠️ warning if the step hasn't
+   *  finished by then — visible directly on the phone without any adb/inspect. */
+  const dbg = useCallback((step: string, warnAfterMs = 4000) => {
+    setDebugStep(step);
+    if (debugWarnTimer.current) clearTimeout(debugWarnTimer.current);
+    debugWarnTimer.current = setTimeout(() => {
+      setDebugStep("⚠️ STUCK — " + step);
+    }, warnAfterMs);
+  }, []);
+
+  /** Mark a step as completed (clears warn timer, shows result inline). */
+  const dbgDone = useCallback((msg: string) => {
+    if (debugWarnTimer.current) { clearTimeout(debugWarnTimer.current); debugWarnTimer.current = null; }
+    setDebugStep(msg);
+  }, []);
+
+  /** Hide the overlay, optionally after a delay. */
+  const dbgClear = useCallback((delayMs = 0) => {
+    if (debugWarnTimer.current) { clearTimeout(debugWarnTimer.current); debugWarnTimer.current = null; }
+    if (delayMs > 0) setTimeout(() => setDebugStep(null), delayMs);
+    else setDebugStep(null);
+  }, []);
+
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const recordTimer = useRef<ReturnType<typeof setInterval> | null>(null);
 
@@ -84,6 +111,8 @@ export function TeacherLesson() {
     setResult(null);
     setCompletedNow(null);
     setRecordMs(0);
+    setDebugStep(null);
+    if (debugWarnTimer.current) { clearTimeout(debugWarnTimer.current); debugWarnTimer.current = null; }
     window.scrollTo({ top: 0 });
   }, [params.id]);
 
@@ -97,6 +126,7 @@ export function TeacherLesson() {
     audioRef.current?.pause();
     stopListening().catch(() => {});
     if (recordTimer.current) clearInterval(recordTimer.current);
+    if (debugWarnTimer.current) clearTimeout(debugWarnTimer.current);
   }, []);
 
   const playAudio = useCallback(() => {
@@ -113,101 +143,97 @@ export function TeacherLesson() {
   // ── Recording flow ──────────────────────────────────────────────────────────
 
   const beginRecording = useCallback(async () => {
-    console.log("[Noor/Teacher] beginRecording() — start, lessonId=" + (lesson?.id ?? "null"));
-    if (!lesson) {
-      console.log("[Noor/Teacher] beginRecording() — no lesson, returning");
-      return;
-    }
+    if (!lesson) return;
 
     // Daily-limit gate applies only to NEW lessons
     if (!isLessonCompleted(lesson.id) && getDailyStatus().limitReached) {
-      console.log("[Noor/Teacher] beginRecording() — daily limit reached, phase=limit");
       setPhase("limit");
       return;
     }
     if (!hasConsent()) {
-      console.log("[Noor/Teacher] beginRecording() — no consent, phase=consent");
       setPhase("consent");
       return;
     }
-    console.log("[Noor/Teacher] beginRecording() — consent OK, calling getSpeechSupport()");
-    // Re-check support at tap time — never trust possibly-stale initial state
+
+    // ── Step 1: getSpeechSupport ────────────────────────────────────────────
+    dbg("Step 1 / 5 — getSpeechSupport()");
     const sup = await getSpeechSupport();
-    console.log("[Noor/Teacher] beginRecording() — getSpeechSupport() returned: " + sup);
+    dbgDone("Step 1 ✓ → support = \"" + sup + "\"");
     setSupport(sup);
     if (sup === "none") {
-      console.log("[Noor/Teacher] beginRecording() — support=none, phase=no-mic");
       setNoMicReason(getSpeechSupportReason());
       setPhase("no-mic");
-      return;
-    }
-    console.log("[Noor/Teacher] beginRecording() — calling isConnected()");
-    const connected = await isConnected();
-    console.log("[Noor/Teacher] beginRecording() — isConnected() returned: " + connected);
-    if (!connected) {
-      console.log("[Noor/Teacher] beginRecording() — offline, phase=offline");
-      setPhase("offline");
+      dbgClear(2500);
       return;
     }
 
-    // Just-in-time permission: first tap shows the native Android dialog
-    console.log("[Noor/Teacher] beginRecording() — calling checkSpeechPermission()");
-    const perm = await checkSpeechPermission();
-    console.log("[Noor/Teacher] beginRecording() — checkSpeechPermission() returned: " + perm);
-    if (perm === "denied") {
-      console.log("[Noor/Teacher] beginRecording() — permission denied, phase=mic-denied");
-      setPhase("mic-denied");
+    // ── Step 2: isConnected / Network.getStatus ─────────────────────────────
+    dbg("Step 2 / 5 — Network.getStatus() (isConnected)");
+    const connected = await isConnected();
+    dbgDone("Step 2 ✓ → connected = " + connected);
+    if (!connected) {
+      setPhase("offline");
+      dbgClear(2500);
       return;
     }
+
+    // ── Step 3: checkSpeechPermission ───────────────────────────────────────
+    dbg("Step 3 / 5 — SpeechRecognition.checkPermissions()");
+    const perm = await checkSpeechPermission();
+    dbgDone("Step 3 ✓ → permission = \"" + perm + "\"");
+    if (perm === "denied") {
+      setPhase("mic-denied");
+      dbgClear(2500);
+      return;
+    }
+
+    // ── Step 4: requestSpeechPermission (first tap only) ────────────────────
     if (perm === "prompt" && sup === "native") {
-      console.log("[Noor/Teacher] beginRecording() — permission prompt, calling requestSpeechPermission()");
+      dbg("Step 4 / 5 — SpeechRecognition.requestPermissions()\n(OS dialog should appear now)", 10000);
       const granted = await requestSpeechPermission();
-      console.log("[Noor/Teacher] beginRecording() — requestSpeechPermission() returned: " + granted);
+      dbgDone("Step 4 ✓ → granted = \"" + granted + "\"");
       if (granted !== "granted") {
-        console.log("[Noor/Teacher] beginRecording() — request denied, phase=mic-denied");
         setPhase("mic-denied");
+        dbgClear(2500);
         return;
       }
+    } else {
+      dbgDone("Step 4 / 5 — skipped (permission already " + perm + ")");
     }
 
-    console.log("[Noor/Teacher] beginRecording() — entering recording phase");
+    // ── Step 5: enter recording phase ───────────────────────────────────────
+    dbgDone("Step 5 / 5 — starting recorder…");
     setPhase("recording");
     setRecordMs(0);
     const started = Date.now();
     recordTimer.current = setInterval(() => setRecordMs(Date.now() - started), 100);
+    dbgClear(1200); // recording UI is now visible — hide overlay
 
-    console.log("[Noor/Teacher] beginRecording() — calling listenOnce(" + MAX_RECORD_MS + ")");
     const res = await listenOnce(MAX_RECORD_MS);
-    console.log("[Noor/Teacher] beginRecording() — listenOnce() returned: ", JSON.stringify(res));
 
     if (recordTimer.current) { clearInterval(recordTimer.current); recordTimer.current = null; }
     setPhase("checking");
-    console.log("[Noor/Teacher] beginRecording() — phase=checking");
 
-    if (res.error === "not-allowed") { console.log("[Noor/Teacher] beginRecording() — error not-allowed, phase=mic-denied"); setPhase("mic-denied"); return; }
-    if (res.error === "network") { console.log("[Noor/Teacher] beginRecording() — error network, phase=offline"); setPhase("offline"); return; }
+    if (res.error === "not-allowed") { setPhase("mic-denied"); return; }
+    if (res.error === "network") { setPhase("offline"); return; }
 
     const a = assess(lesson.expected, res.alternatives, res.confidence);
-    console.log("[Noor/Teacher] beginRecording() — assess() verdict=" + a.verdict + " score=" + a.matchScore);
     setResult(a);
 
-    let finalPhase = "feedback";
     if (a.verdict === "pass") {
       const cr = completeLesson(lesson.id, a.matchScore);
       clearMistake(lesson.id);
       setCompletedNow(cr);
-      if (cr === "limit-reached") { setPhase("limit"); finalPhase = "limit"; }
-      else { setPhase("passed"); finalPhase = "passed"; }
+      if (cr === "limit-reached") setPhase("limit");
+      else setPhase("passed");
     } else if (a.verdict === "unclear") {
-      setPhase("unclear"); // never counted as a mistake
-      finalPhase = "unclear";
+      setPhase("unclear");
     } else {
       setAttempts((n) => n + 1);
       recordMistake(lesson.id);
       setPhase("feedback");
     }
-    console.log("[Noor/Teacher] beginRecording() — final phase=" + finalPhase);
-  }, [lesson]);
+  }, [lesson, dbg, dbgDone, dbgClear]);
 
   /** Tap "Read Now" → permission (first time) → listen; auto-stops after MAX_RECORD_MS. */
   const onReadNow = useCallback(() => {
@@ -687,6 +713,47 @@ export function TeacherLesson() {
           </div>
         )}
       </div>
+
+      {/* ── On-screen debug overlay (temporary diagnostic) ─────────────────
+          Shows which mic-flow step is active. Turns amber with ⚠️ if a step
+          takes longer than expected. Visible directly on the phone — no
+          adb/chrome://inspect needed. Tap ✕ to dismiss manually. */}
+      {debugStep && (
+        <div
+          className={`fixed bottom-24 left-3 right-3 z-50 rounded-2xl shadow-2xl border
+            ${debugStep.startsWith("⚠️")
+              ? "bg-amber-950 border-amber-600"
+              : "bg-zinc-950 border-zinc-700"
+            }`}
+          style={{ maxHeight: "38vh", overflow: "hidden" }}
+        >
+          {/* title bar */}
+          <div className={`flex items-center gap-2 px-4 py-2 border-b
+            ${debugStep.startsWith("⚠️") ? "border-amber-800" : "border-zinc-800"}`}>
+            <Bug className={`w-3.5 h-3.5 shrink-0
+              ${debugStep.startsWith("⚠️") ? "text-amber-400" : "text-zinc-400"}`} />
+            <p className={`flex-1 text-[10px] font-mono uppercase tracking-widest
+              ${debugStep.startsWith("⚠️") ? "text-amber-500" : "text-zinc-500"}`}>
+              Mic flow debug
+            </p>
+            <button
+              onClick={() => dbgClear()}
+              className={`text-lg leading-none px-1
+                ${debugStep.startsWith("⚠️") ? "text-amber-600" : "text-zinc-600"}`}
+              aria-label="Dismiss debug overlay"
+            >
+              ✕
+            </button>
+          </div>
+          {/* step text */}
+          <p
+            className={`px-4 py-3 text-sm font-mono leading-snug break-words whitespace-pre-wrap
+              ${debugStep.startsWith("⚠️") ? "text-amber-300" : "text-zinc-100"}`}
+          >
+            {debugStep}
+          </p>
+        </div>
+      )}
     </div>
   );
 }
