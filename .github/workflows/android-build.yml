@@ -222,23 +222,23 @@ jobs:
             --warning-mode summary
           echo "✅ Debug APK built"
 
-      # ── 12b. Release build (APK only) ────────────────────────────────────────
+      # ── 12b. Release build (AAB only) ────────────────────────────────────────
       #
       # -PMINIFY_RELEASE=true enables R8 minification + resource shrinking.
       # (Local builds omit this flag so the build stays under 2 min.)
-      - name: Build Release APK
+      - name: Build Release AAB
         if: ${{ (github.event.inputs.build_type || 'release') == 'release' }}
         working-directory: ${{ env.ANDROID_DIR }}
         run: |
           # Clear stale Gradle transform caches (avoids jlink failure from cached android-34 jmod)
           rm -rf ~/.gradle/caches/*/transforms/ || true
-          ./gradlew assembleRelease \
+          ./gradlew bundleRelease \
             -PMINIFY_RELEASE=true \
             --no-daemon \
             --no-build-cache \
             --stacktrace \
             --warning-mode summary
-          echo "✅ Release APK built"
+          echo "✅ Release AAB built"
         env:
           KEYSTORE_PATH:     app/upload-key.keystore
           KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
@@ -252,9 +252,9 @@ jobs:
           V="${{ steps.version.outputs.name }}"
           BUILD="${{ github.event.inputs.build_type || 'release' }}"
           if [[ "$BUILD" == "release" ]]; then
-            cp app/build/outputs/apk/release/app-release.apk \
-               app/build/outputs/apk/release/noor-quran-${V}.apk
-            echo "APK: $(du -h app/build/outputs/apk/release/noor-quran-${V}.apk)"
+            cp app/build/outputs/bundle/release/app-release.aab \
+               app/build/outputs/bundle/release/noor-quran-${V}.aab
+            echo "AAB: $(du -h app/build/outputs/bundle/release/noor-quran-${V}.aab)"
           else
             cp app/build/outputs/apk/debug/app-debug.apk \
                app/build/outputs/apk/debug/noor-quran-${V}-debug.apk
@@ -271,12 +271,12 @@ jobs:
           if-no-files-found: error
           retention-days: 14
 
-      - name: Upload Release APK
+      - name: Upload Release AAB
         if: ${{ (github.event.inputs.build_type || 'release') == 'release' }}
         uses: actions/upload-artifact@v4
         with:
-          name: noor-quran-apk-${{ steps.version.outputs.name }}-${{ github.run_number }}
-          path: ${{ env.ANDROID_DIR }}/app/build/outputs/apk/release/noor-quran-*.apk
+          name: noor-quran-aab-${{ steps.version.outputs.name }}-${{ github.run_number }}
+          path: ${{ env.ANDROID_DIR }}/app/build/outputs/bundle/release/noor-quran-*.aab
           if-no-files-found: error
           retention-days: 90
 
