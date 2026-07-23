@@ -252,3 +252,9 @@ id = "Qi7fDjmEl1gOXDuJAMCMC"
 uri = "file://artifacts/islamic-app/public/release/noor-quran-1.0.13.apk"
 type = "unspecified"
 title = "Noor Quran v1.0.13 — Teacher mic fix"
+
+[[outputs]]
+id = "uWsliV0HPp7NEani-Qn3L"
+uri = "file://artifacts/islamic-app/public/release/noor-quran-1.0.14.apk"
+type = "unspecified"
+title = "Noor Quran v1.0.14 — on-screen mic debug"
