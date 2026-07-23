@@ -223,11 +223,17 @@ export async function openAppSettings(): Promise<boolean> {
 
 export type PermissionState = "granted" | "denied" | "prompt";
 
-function logPending<T>(label: string, ms: number, promise: Promise<T>): Promise<T> {
-  const timer = setTimeout(() => {
-    console.warn("[Noor/Speech] " + label + " — STILL PENDING after " + ms + "ms");
-  }, ms);
-  return promise.finally(() => clearTimeout(timer));
+/** Race a promise against a timeout; resolves to `fallback` if the promise
+ *  doesn't settle within `ms` milliseconds. Never rejects. */
+function withTimeout<T>(promise: Promise<T>, ms: number, fallback: T, label: string): Promise<T> {
+  let timeoutId: ReturnType<typeof setTimeout>;
+  const timer = new Promise<T>((resolve) => {
+    timeoutId = setTimeout(() => {
+      console.warn("[Noor/Speech] " + label + " — timed out after " + ms + "ms, using fallback");
+      resolve(fallback);
+    }, ms);
+  });
+  return Promise.race([promise, timer]).finally(() => clearTimeout(timeoutId));
 }
 
 /** Check mic/speech permission WITHOUT prompting (native only; web reports "prompt"). */
@@ -240,7 +246,12 @@ export async function checkSpeechPermission(): Promise<PermissionState> {
   }
   try {
     console.log("[Noor/Speech] checkSpeechPermission() — BEFORE native.checkPermissions()");
-    const { speechRecognition } = await logPending("native.checkPermissions()", 5000, native.checkPermissions());
+    const { speechRecognition } = await withTimeout(
+      native.checkPermissions(),
+      2000,
+      { speechRecognition: "prompt" },
+      "native.checkPermissions()"
+    );
     console.log("[Noor/Speech] checkSpeechPermission() — AFTER native.checkPermissions(), speechRecognition=" + speechRecognition);
     if (speechRecognition === "granted") return "granted";
     if (speechRecognition === "denied") return "denied";
@@ -261,7 +272,12 @@ export async function requestSpeechPermission(): Promise<PermissionState> {
   }
   try {
     console.log("[Noor/Speech] requestSpeechPermission() — BEFORE native.requestPermissions()");
-    const { speechRecognition } = await logPending("native.requestPermissions()", 5000, native.requestPermissions());
+    const { speechRecognition } = await withTimeout(
+      native.requestPermissions(),
+      8000,
+      { speechRecognition: "prompt" },
+      "native.requestPermissions()"
+    );
     console.log("[Noor/Speech] requestSpeechPermission() — AFTER native.requestPermissions(), speechRecognition=" + speechRecognition);
     if (speechRecognition === "granted") return "granted";
     if (speechRecognition === "denied") return "denied";

@@ -28,11 +28,17 @@ function getPlugin<T>(name: string): T | null {
   return plugin ? (plugin as T) : null;
 }
 
-function logPending<T>(label: string, ms: number, promise: Promise<T>): Promise<T> {
-  const timer = setTimeout(() => {
-    console.warn("[Noor/Plugin] " + label + " — STILL PENDING after " + ms + "ms");
-  }, ms);
-  return promise.finally(() => clearTimeout(timer));
+/** Race a promise against a timeout; resolves to `fallback` if the promise
+ *  doesn't settle within `ms` milliseconds. Never rejects. */
+function withTimeout<T>(promise: Promise<T>, ms: number, fallback: T, label: string): Promise<T> {
+  let timeoutId: ReturnType<typeof setTimeout>;
+  const timer = new Promise<T>((resolve) => {
+    timeoutId = setTimeout(() => {
+      console.warn("[Noor/Plugin] " + label + " — timed out after " + ms + "ms, using fallback");
+      resolve(fallback);
+    }, ms);
+  });
+  return Promise.race([promise, timer]).finally(() => clearTimeout(timeoutId));
 }
 
 // ── App plugin — back-button handling ────────────────────────────────────────
@@ -423,7 +429,12 @@ export async function isConnected(): Promise<boolean> {
   }
   try {
     console.log("[Noor/Network] isConnected() — BEFORE Network.getStatus()");
-    const status = await logPending("Network.getStatus()", 5000, net.getStatus());
+    const status = await withTimeout(
+      net.getStatus(),
+      2000,
+      { connected: navigator.onLine, connectionType: "unknown" },
+      "Network.getStatus()"
+    );
     console.log("[Noor/Network] isConnected() — AFTER Network.getStatus(), status=", JSON.stringify(status));
     return status.connected;
   } catch (e) {
