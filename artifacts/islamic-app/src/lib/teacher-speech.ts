@@ -175,21 +175,51 @@ function getWebRecognizerCtor(): (new () => WebSpeechRecognition) | null {
  * the OS "recognizer availability" pre-check can report false negatives on
  * some devices, which would hide the mic button entirely. Real failures are
  * surfaced at listen time instead.
+ *
+ * `onStep` is an optional diagnostic callback: when provided, every
+ * sub-step inside this function posts a short status string so callers can
+ * display them directly on-screen without needing adb/chrome://inspect.
  */
-export async function getSpeechSupport(): Promise<SpeechSupport> {
-  console.log("[Noor/Speech] getSpeechSupport() — start");
-  const native = await getNativePlugin();
-  if (native) {
-    console.log("[Noor/Speech] getSpeechSupport() — native");
-    return "native";
+export async function getSpeechSupport(
+  onStep?: (msg: string) => void,
+): Promise<SpeechSupport> {
+  // ── Sub-step 1.1 ─────────────────────────────────────────────────────────
+  onStep?.("Step 1.1 — Capacitor.isNativePlatform()");
+  const isNative = Capacitor.isNativePlatform();
+  onStep?.("Step 1.1 ✓  isNativePlatform = " + isNative);
+
+  if (!isNative) {
+    // ── Sub-step 1.2 (web path) ─────────────────────────────────────────────
+    onStep?.("Step 1.2 — window.SpeechRecognition / webkitSpeechRecognition");
+    const webCtor = getWebRecognizerCtor();
+    onStep?.("Step 1.2 ✓  webSpeechAPI = " + (webCtor ? "available" : "missing"));
+    return webCtor ? "web" : "none";
   }
-  const webCtor = getWebRecognizerCtor();
-  if (webCtor) {
-    console.log("[Noor/Speech] getSpeechSupport() — web");
-    return "web";
-  }
-  console.log("[Noor/Speech] getSpeechSupport() — none");
-  return "none";
+
+  // ── Sub-step 1.2 (native path) ──────────────────────────────────────────
+  onStep?.("Step 1.2 — window.Capacitor.Plugins lookup");
+  type CapWin = { Capacitor?: { isNativePlatform?: () => boolean; Plugins?: Record<string, unknown> } };
+  const capObj = (window as unknown as CapWin).Capacitor;
+  const pluginsObj = capObj?.Plugins;
+  const pluginKeys = pluginsObj ? Object.keys(pluginsObj) : [];
+  onStep?.(
+    "Step 1.2 ✓  Plugins: " + pluginKeys.length + " registered\n" +
+    "[" + pluginKeys.join(", ") + "]"
+  );
+
+  // ── Sub-step 1.3 ─────────────────────────────────────────────────────────
+  onStep?.("Step 1.3 — Plugins[\"SpeechRecognition\"] direct lookup");
+  const directPlugin = pluginsObj?.["SpeechRecognition"];
+  onStep?.("Step 1.3 ✓  SpeechRecognition = " + (directPlugin ? "FOUND in Plugins" : "NOT FOUND in Plugins"));
+
+  // ── Sub-step 1.4 ─────────────────────────────────────────────────────────
+  onStep?.("Step 1.4 — accessing NativeSpeechRecognition (static import ref)");
+  const pluginRef = NativeSpeechRecognition as unknown as SpeechRecognitionPlugin;
+  onStep?.("Step 1.4 ✓  ref = " + (pluginRef ? "PRESENT" : "null / undefined"));
+
+  // ── Sub-step 1.5 ─────────────────────────────────────────────────────────
+  onStep?.("Step 1.5 — returning \"native\"");
+  return "native";
 }
 
 /**
