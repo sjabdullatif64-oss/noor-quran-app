@@ -100,7 +100,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
           )}
 
           <div className="mt-2 mb-1 px-2">
-            <p className="text-xs text-muted-foreground/60 uppercase tracking-wider font-medium">{t("nav_more_section")}</p>
+            <p className="text-xs text-muted-foreground uppercase tracking-wider font-medium">{t("nav_more_section")}</p>
           </div>
           <NavItem href="/qibla" icon={<Navigation className="w-5 h-5" />} label={t("nav_al_haram")} active={location === "/qibla"} />
           <NavItem href="/favorites" icon={<Heart className="w-5 h-5" />} label={t("nav_favorites")} active={location === "/favorites"} />

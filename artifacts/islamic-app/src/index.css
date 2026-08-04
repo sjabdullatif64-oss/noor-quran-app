@@ -70,7 +70,7 @@
   --elevate-2: rgba(0,0,0, .08);
 
   --background: 38 71% 96%;
-  --foreground: 165 40% 15%;
+  --foreground: 165 45% 12%;
   --border: 165 20% 85%;
   
   --card: 38 60% 98%;
@@ -95,10 +95,10 @@
   --secondary: 42 30% 85%;
   --secondary-foreground: 165 40% 15%;
   --muted: 38 40% 90%;
-  --muted-foreground: 165 20% 40%;
+  --muted-foreground: 165 25% 32%;
   --accent: 42 30% 85%;
   --accent-foreground: 165 40% 15%;
-  --destructive: 0 84% 60%;
+  --destructive: 0 72% 42%;
   --destructive-foreground: 0 0% 100%;
   
   --input: 165 20% 85%;
@@ -137,7 +137,7 @@
   --elevate-2: rgba(255,255,255, .09);
 
   --background: 165 50% 10%;
-  --foreground: 38 60% 90%;
+  --foreground: 38 70% 93%;
   --border: 165 40% 20%;
   
   --card: 165 45% 12%;
@@ -162,10 +162,10 @@
   --secondary: 165 40% 20%;
   --secondary-foreground: 38 60% 90%;
   --muted: 165 40% 20%;
-  --muted-foreground: 38 30% 70%;
+  --muted-foreground: 38 35% 78%;
   --accent: 165 40% 20%;
   --accent-foreground: 38 60% 90%;
-  --destructive: 0 62% 30%;
+  --destructive: 0 75% 62%;
   --destructive-foreground: 38 60% 90%;
   
   --input: 165 40% 20%;
@@ -228,6 +228,114 @@
   .border.hover-elevate-2:not(.no-hover-interaction-elevate)::after,
   .border.active-elevate-2:not(.no-active-interaction-elevate)::after { inset: -1px; }
 }
+
+/*
+ * Legacy screen-level accents were authored for the dark palette and use
+ * pale Tailwind colors directly. Keep those accents expressive in dark mode,
+ * but give them readable equivalents on light surfaces.
+ */
+.light [class*="text-emerald-200"],
+.light [class*="text-emerald-300"],
+.light [class*="text-emerald-400"],
+.light [class*="text-green-300"],
+.light [class*="text-green-400"] { color: hsl(158 64% 26%) !important; }
+.light [class*="text-teal-300"],
+.light [class*="text-teal-400"],
+.light [class*="text-cyan-300"],
+.light [class*="text-cyan-400"] { color: hsl(174 72% 28%) !important; }
+.light [class*="text-sky-300"],
+.light [class*="text-sky-400"],
+.light [class*="text-blue-300"],
+.light [class*="text-blue-400"] { color: hsl(211 78% 34%) !important; }
+.light [class*="text-amber-300"],
+.light [class*="text-amber-400"],
+.light [class*="text-yellow-300"],
+.light [class*="text-yellow-400"],
+.light [class*="text-orange-300"],
+.light [class*="text-orange-400"] { color: hsl(29 82% 32%) !important; }
+.light [class*="text-rose-300"],
+.light [class*="text-rose-400"],
+.light [class*="text-red-300"],
+.light [class*="text-red-400"] { color: hsl(0 70% 38%) !important; }
+.light [class*="text-purple-300"],
+.light [class*="text-purple-400"],
+.light [class*="text-violet-300"],
+.light [class*="text-violet-400"],
+.light [class*="text-indigo-300"],
+.light [class*="text-indigo-400"] { color: hsl(258 58% 38%) !important; }
+.light [class*="text-pink-300"],
+.light [class*="text-pink-400"],
+.light [class*="text-lime-300"],
+.light [class*="text-lime-400"] { color: hsl(80 65% 30%) !important; }
+
+.dark [class*="text-emerald-500"],
+.dark [class*="text-emerald-600"],
+.dark [class*="text-emerald-700"],
+.dark [class*="text-green-500"],
+.dark [class*="text-green-600"],
+.dark [class*="text-green-700"] { color: hsl(158 64% 70%) !important; }
+.dark [class*="text-teal-500"],
+.dark [class*="text-teal-600"],
+.dark [class*="text-teal-700"],
+.dark [class*="text-cyan-500"],
+.dark [class*="text-cyan-600"],
+.dark [class*="text-cyan-700"] { color: hsl(174 72% 68%) !important; }
+.dark [class*="text-sky-500"],
+.dark [class*="text-sky-600"],
+.dark [class*="text-sky-700"],
+.dark [class*="text-blue-500"],
+.dark [class*="text-blue-600"],
+.dark [class*="text-blue-700"] { color: hsl(211 78% 72%) !important; }
+.dark [class*="text-amber-500"],
+.dark [class*="text-amber-600"],
+.dark [class*="text-amber-700"],
+.dark [class*="text-yellow-500"],
+.dark [class*="text-yellow-600"],
+.dark [class*="text-yellow-700"],
+.dark [class*="text-orange-500"],
+.dark [class*="text-orange-600"],
+.dark [class*="text-orange-700"] { color: hsl(38 92% 72%) !important; }
+.dark [class*="text-rose-500"],
+.dark [class*="text-rose-600"],
+.dark [class*="text-rose-700"],
+.dark [class*="text-red-500"],
+.dark [class*="text-red-600"],
+.dark [class*="text-red-700"] { color: hsl(0 80% 72%) !important; }
+.dark [class*="text-purple-500"],
+.dark [class*="text-purple-600"],
+.dark [class*="text-purple-700"],
+.dark [class*="text-violet-500"],
+.dark [class*="text-violet-600"],
+.dark [class*="text-violet-700"],
+.dark [class*="text-indigo-500"],
+.dark [class*="text-indigo-600"],
+.dark [class*="text-indigo-700"] { color: hsl(258 78% 76%) !important; }
+.dark [class*="text-pink-500"],
+.dark [class*="text-pink-600"],
+.dark [class*="text-pink-700"],
+.dark [class*="text-lime-500"],
+.dark [class*="text-lime-600"],
+.dark [class*="text-lime-700"] { color: hsl(80 70% 70%) !important; }
+
+.light [class*="text-foreground/25"],
+.light [class*="text-foreground/35"],
+.light [class*="text-foreground/60"],
+.light [class*="text-foreground/80"],
+.light [class*="text-muted-foreground/50"],
+.light [class*="text-muted-foreground/60"],
+.light [class*="text-muted-foreground/70"],
+.light [class*="text-primary/50"],
+.light [class*="text-primary/60"],
+.light [class*="text-primary/70"] { color: hsl(var(--foreground)) !important; }
+.dark [class*="text-foreground/25"] { color: hsl(var(--foreground) / .78) !important; }
+.dark [class*="text-foreground/35"] { color: hsl(var(--foreground) / .82) !important; }
+.dark [class*="text-foreground/60"] { color: hsl(var(--foreground) / .88) !important; }
+.dark [class*="text-muted-foreground/50"],
+.dark [class*="text-muted-foreground/60"],
+.dark [class*="text-muted-foreground/70"] { color: hsl(var(--muted-foreground)) !important; }
+
+input::placeholder,
+textarea::placeholder { color: hsl(var(--muted-foreground)) !important; opacity: 1; }
 
 /* ── Audio engine animations ─────────────────────────────────────── */
 @keyframes wave {

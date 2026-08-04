@@ -332,8 +332,7 @@ export function PrayerTimes() {
               onClick={handleUseLocation}
               disabled={gpsLoading}
               title="Use my GPS location"
-              className="w-9 h-9 rounded-xl flex items-center justify-center text-primary hover:text-primary border border-border hover:border-border transition-all active:scale-90"
-              style={{ background: "bg-primary/10" }}
+              className="w-9 h-9 rounded-xl flex items-center justify-center text-primary hover:text-primary border border-border hover:border-border transition-all active:scale-90 bg-primary/10"
               data-testid="button-use-location"
             >
               {gpsLoading
@@ -361,8 +360,7 @@ export function PrayerTimes() {
         {/* ── Search panel (collapsible) ────────────────────────────────── */}
         {searchOpen && (
           <div
-            className="rounded-2xl border border-border overflow-hidden animate-in slide-in-from-top-2 duration-200"
-            style={{ background: "bg-card" }}
+            className="rounded-2xl border border-border overflow-hidden animate-in slide-in-from-top-2 duration-200 bg-card"
           >
             {/* Use My Location CTA */}
             <button
@@ -370,8 +368,7 @@ export function PrayerTimes() {
               disabled={gpsLoading}
               className="w-full flex items-center gap-3 px-4 py-3 border-b border-border text-left hover:bg-muted transition-colors active:scale-[0.99]"
             >
-              <div className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0"
-                style={{ background: "bg-primary/15" }}>
+              <div className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0 bg-primary/15">
                 {gpsLoading
                   ? <Loader2 className="w-4 h-4 text-primary animate-spin" />
                   : <LocateFixed className="w-4 h-4 text-primary" />}
@@ -429,10 +426,7 @@ export function PrayerTimes() {
           <button
               className="w-full flex items-center gap-3 px-4 py-3 mb-2 rounded-2xl border border-border hover:border-border active:scale-[0.98] transition-all bg-primary/10"
           >
-            <div
-              className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0"
-              style={{ background: "bg-primary/15" }}
-            >
+            <div className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0 bg-primary/15">
               <Bell className="w-4 h-4 text-primary" />
             </div>
             <div className="flex-1 text-left">
@@ -454,10 +448,9 @@ export function PrayerTimes() {
           <>
             <PrayerCards data={displayData} currentIdx={currentIdx} nextIdx={nextPrayerIdx} t={t} prayers={PRAYERS} />
             {isOfflineFallback && (
-              <div className="flex items-center gap-2 px-3 py-2 rounded-xl border border-amber-900/40 mx-1"
-                style={{ background: "rgba(217,119,6,0.07)" }}>
-                <WifiOff className="w-3.5 h-3.5 text-amber-500 shrink-0" />
-                <p className="text-amber-500 text-xs">Offline — showing last saved prayer times</p>
+              <div className="flex items-center gap-2 px-3 py-2 rounded-xl border border-amber-700/40 mx-1 bg-amber-500/10">
+                <WifiOff className="w-3.5 h-3.5 text-amber-700 dark:text-amber-300 shrink-0" />
+                <p className="text-amber-800 dark:text-amber-200 text-xs">Offline — showing last saved prayer times</p>
               </div>
             )}
           </>
@@ -505,11 +498,10 @@ function LocationStrip({ locState, city, country, gpsLoading, data, onRetry, nex
   if (locState === "gps-denied") {
     return (
       <div
-        className="rounded-2xl px-4 py-3 flex items-center gap-3 border border-amber-900/40"
-        style={{ background: "rgba(217,119,6,0.07)" }}
+        className="rounded-2xl px-4 py-3 flex items-center gap-3 border border-amber-700/40 bg-amber-500/10"
       >
-        <WifiOff className="w-4 h-4 text-amber-500 shrink-0" />
-        <p className="text-amber-500 text-sm flex-1">Location access denied — search a city below.</p>
+        <WifiOff className="w-4 h-4 text-amber-700 dark:text-amber-300 shrink-0" />
+        <p className="text-amber-800 dark:text-amber-200 text-sm flex-1">Location access denied — search a city below.</p>
       </div>
     );
   }
@@ -517,12 +509,11 @@ function LocationStrip({ locState, city, country, gpsLoading, data, onRetry, nex
   if (locState === "gps-error") {
     return (
       <div
-        className="rounded-2xl px-4 py-3 flex items-center gap-3 border border-amber-900/40"
-        style={{ background: "rgba(217,119,6,0.07)" }}
+        className="rounded-2xl px-4 py-3 flex items-center gap-3 border border-amber-700/40 bg-amber-500/10"
       >
-        <WifiOff className="w-4 h-4 text-amber-500 shrink-0" />
-        <p className="text-amber-500 text-sm flex-1">GPS unavailable — search a city or retry.</p>
-        <button onClick={onRetry} className="text-amber-400 hover:text-amber-200 transition-colors">
+        <WifiOff className="w-4 h-4 text-amber-700 dark:text-amber-300 shrink-0" />
+        <p className="text-amber-800 dark:text-amber-200 text-sm flex-1">GPS unavailable — search a city or retry.</p>
+        <button onClick={onRetry} className="text-amber-700 dark:text-amber-300 hover:text-amber-900 dark:hover:text-amber-100 transition-colors">
           <RefreshCw className="w-4 h-4" />
         </button>
       </div>
@@ -579,16 +570,7 @@ function PrayerCards({ data, currentIdx, nextIdx, t, prayers }: {
         return (
           <div
             key={prayer.id}
-            className={`rounded-2xl border transition-all ${
-              isCurrent
-                ? "border-border"
-                : isNext
-                ? "border-border"
-                : "border-border"
-            }`}
-            style={{
-              background: isCurrent ? "bg-primary/10" : isNext ? "bg-primary/10" : "bg-card",
-            }}
+            className={`rounded-2xl border transition-all ${isCurrent || isNext ? "border-border bg-primary/10" : "border-border bg-card"}`}
             data-testid={`prayer-row-${prayer.id}`}
           >
             {isCurrent && (
@@ -663,11 +645,10 @@ function LoadingCards({ prayers }: { prayers: PrayerDef[] }) {
 
 function ErrorCard({ locState, onRetry, t }: { locState: LocState; onRetry?: () => void; t: (key: string) => string }) {
   return (
-    <div className="rounded-2xl border border-red-900/40 p-6 text-center space-y-3"
-      style={{ background: "rgba(239,68,68,0.06)" }}>
-      <WifiOff className="w-10 h-10 text-red-700 mx-auto" />
-      <p className="text-red-300 font-semibold">{t("prayer_times_error_title")}</p>
-      <p className="text-red-700 text-sm">
+    <div className="rounded-2xl border border-destructive/40 p-6 text-center space-y-3 bg-destructive/10">
+      <WifiOff className="w-10 h-10 text-destructive mx-auto" />
+      <p className="text-destructive font-semibold">{t("prayer_times_error_title")}</p>
+      <p className="text-destructive/90 text-sm">
         {locState === "manual"
           ? "City not found. Check the spelling or try a different city."
           : "GPS or network error. Try again or search manually."}
@@ -691,8 +672,7 @@ function NoLocationPrompt({ onDetect, onSearch, loading, t }: {
     >
       <div className="h-1 w-full bg-primary" />
       <div className="p-6 text-center space-y-4">
-        <div className="w-16 h-16 rounded-2xl flex items-center justify-center mx-auto"
-          style={{ background: "bg-primary/15" }}>
+        <div className="w-16 h-16 rounded-2xl flex items-center justify-center mx-auto bg-primary/15">
           <Navigation className="w-8 h-8 text-primary" />
         </div>
         <div>

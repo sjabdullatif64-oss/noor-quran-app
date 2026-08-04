@@ -1111,10 +1111,9 @@ export function Updates() {
                 <button key={cat} onClick={() => setActiveCategory(cat)}
                   className={`shrink-0 px-3.5 py-1.5 rounded-full text-xs font-semibold border transition-all ${
                     activeCategory === cat
-                      ? "bg-primary text-primary-foreground border-emerald-600"
+                      ? "bg-primary text-primary-foreground border-primary"
                       : "text-muted-foreground border-border hover:border-primary"
-                  }`}
-                  style={activeCategory === cat ? {} : { background: "rgba(255,255,255,0.04)" }}>
+                  } ${activeCategory === cat ? "" : "bg-card"}`}>
                   {cat}
                 </button>
               ))}
@@ -1125,13 +1124,12 @@ export function Updates() {
           {isLoading && (
             <div className="space-y-4">
               {Array.from({ length: 3 }).map((_, i) => (
-                <div key={i} className="rounded-2xl overflow-hidden border border-border"
-                  style={{ background: "rgba(255,255,255,0.03)" }}>
-                  <div className="w-full h-44 animate-pulse" style={{ background: "rgba(52,211,153,0.06)" }} />
+                <div key={i} className="rounded-2xl overflow-hidden border border-border bg-card">
+                  <div className="w-full h-44 animate-pulse bg-primary/10" />
                   <div className="p-4 space-y-3">
-                    <div className="h-3 w-20 rounded-full animate-pulse" style={{ background: "rgba(52,211,153,0.08)" }} />
-                    <div className="h-5 w-4/5 rounded-full animate-pulse" style={{ background: "rgba(52,211,153,0.06)" }} />
-                    <div className="h-3 w-full rounded-full animate-pulse" style={{ background: "rgba(52,211,153,0.05)" }} />
+                    <div className="h-3 w-20 rounded-full animate-pulse bg-primary/15" />
+                    <div className="h-5 w-4/5 rounded-full animate-pulse bg-primary/10" />
+                    <div className="h-3 w-full rounded-full animate-pulse bg-primary/10" />
                   </div>
                 </div>
               ))}
@@ -1140,14 +1138,12 @@ export function Updates() {
 
           {/* Error */}
           {isError && !isLoading && (
-            <div className="rounded-2xl p-8 text-center border border-red-900/30"
-              style={{ background: "rgba(239,68,68,0.05)" }}>
-              <Wifi className="w-10 h-10 text-red-700 mx-auto mb-3" />
-              <p className="text-red-400 font-semibold text-sm">Could not load updates</p>
-              <p className="text-red-800 text-xs mt-1 mb-4">Check your internet connection</p>
+            <div className="rounded-2xl p-8 text-center border border-destructive/30 bg-destructive/10">
+              <Wifi className="w-10 h-10 text-destructive mx-auto mb-3" />
+              <p className="text-destructive font-semibold text-sm">Could not load updates</p>
+              <p className="text-destructive text-xs mt-1 mb-4">Check your internet connection</p>
               <button onClick={() => refetch()}
-                className="px-5 py-2 rounded-xl text-sm font-semibold text-red-300 border border-red-800/50"
-                style={{ background: "rgba(239,68,68,0.08)" }}>
+                className="px-5 py-2 rounded-xl text-sm font-semibold text-destructive border border-destructive/50 bg-destructive/10 hover:bg-destructive/20">
                 Try Again
               </button>
             </div>

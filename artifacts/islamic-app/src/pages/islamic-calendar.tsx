@@ -300,7 +300,7 @@ export function IslamicCalendar() {
               <div
                 key={wd}
                 className={`text-center py-2 text-xs font-semibold uppercase tracking-wide ${
-                  wd === "Fri" ? "text-amber-500" : wd === "Sun" ? "text-rose-500/70" : "text-muted-foreground"
+                  wd === "Fri" ? "text-amber-700 dark:text-amber-300" : wd === "Sun" ? "text-rose-700 dark:text-rose-300" : "text-muted-foreground"
                 }`}
               >
                 {wd}
@@ -381,21 +381,19 @@ function TodayCard({ todayHijri, today }: { todayHijri: { year: number; month: n
 
   return (
     <div
-      className="rounded-3xl overflow-hidden border border-emerald-700/30"
-      style={{ background: "linear-gradient(135deg, rgba(26,92,56,0.5) 0%, rgba(10,40,20,0.6) 100%)" }}
+      className="rounded-3xl overflow-hidden border border-primary/30 bg-card"
     >
-      <div className="h-1 w-full" style={{ background: "linear-gradient(90deg, #1a5c38, #34d399, #059669, #1a5c38)" }} />
+      <div className="h-1 w-full bg-primary" />
 
       <div className="p-5 flex items-center gap-4">
         {/* Day number */}
         <div className="text-center shrink-0">
           <p
-            className="text-5xl font-bold leading-none"
-            style={{ color: isFriday ? "#fbbf24" : "#34d399" }}
+            className={`text-5xl font-bold leading-none ${isFriday ? "text-amber-700 dark:text-amber-300" : "text-primary"}`}
           >
             {gDay}
           </p>
-          <p className={`text-xs font-semibold mt-1 ${isFriday ? "text-amber-400" : "text-primary"}`}>
+          <p className={`text-xs font-semibold mt-1 ${isFriday ? "text-amber-700 dark:text-amber-300" : "text-primary"}`}>
             {dayName}
           </p>
         </div>
@@ -417,7 +415,7 @@ function TodayCard({ todayHijri, today }: { todayHijri: { year: number; month: n
 
         {/* Hijri */}
         <div className="flex-1 text-right">
-          <p className="text-emerald-200 font-bold text-lg leading-tight">
+          <p className="text-primary font-bold text-lg leading-tight">
             {todayHijri.day} {HIJRI_MONTHS[todayHijri.month - 1]}
           </p>
           <p className="text-muted-foreground text-xs mt-0.5">{todayHijri.year} AH</p>
@@ -435,32 +433,31 @@ function DayCell({ day }: { day: CalDay }) {
   const primaryEvent = day.events[0];
   const eventStyle   = primaryEvent ? EVENT_STYLES[primaryEvent.type] : null;
 
-  let cellBg   = "transparent";
-  let gNumColor = "text-emerald-200";
+  let cellBg   = "";
+  let gNumColor = "text-foreground";
   let hNumColor = "text-muted-foreground";
   let border   = "border border-transparent";
 
   if (day.isToday) {
-    cellBg    = "rgba(52,211,153,0.18)";
+    cellBg    = "bg-primary/20";
     gNumColor = "text-primary-foreground font-bold";
     hNumColor = "text-primary";
     border    = "border border-emerald-500/60";
   } else if (day.isFriday) {
-    cellBg    = "rgba(251,191,36,0.07)";
-    gNumColor = "text-amber-300 font-semibold";
-    hNumColor = "text-amber-700";
-    border    = "border border-amber-800/20";
+    cellBg    = "bg-amber-500/10";
+    gNumColor = "text-amber-700 dark:text-amber-300 font-semibold";
+    hNumColor = "text-amber-800 dark:text-amber-200";
+    border    = "border border-amber-800/20 dark:border-amber-300/30";
   } else if (day.isSunday) {
-    gNumColor = "text-rose-400/70";
+    gNumColor = "text-rose-700 dark:text-rose-300";
   } else if (primaryEvent) {
-    cellBg    = "rgba(52,211,153,0.05)";
+    cellBg    = "bg-primary/5";
     border    = "border border-border";
   }
 
   return (
     <div
-      className={`relative rounded-xl p-1 flex flex-col items-center justify-center min-h-[52px] ${border} transition-all`}
-      style={{ background: cellBg }}
+      className={`relative rounded-xl p-1 flex flex-col items-center justify-center min-h-[52px] ${border} ${cellBg} transition-all`}
     >
       {/* Gregorian day */}
       <span className={`text-sm leading-tight ${gNumColor}`}>{day.gDay}</span>
@@ -516,14 +513,14 @@ function AllEventsSection() {
         </p>
         <p className="text-muted-foreground text-xs mt-0.5">Annual Hijri calendar highlights</p>
       </div>
-      <div className="divide-y divide-emerald-900/20">
+      <div className="divide-y divide-border">
         {ALL_EVENTS_DISPLAY.map((ev, i) => {
           const style = EVENT_STYLES[ev.type];
           return (
             <div key={i} className="px-4 py-3.5 flex items-start gap-3">
               <div
                 className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 mt-0.5 ${style.dot}`}
-                style={{ background: "rgba(0,0,0,0.25)" }}
+                style={{ background: "hsl(var(--muted) / 0.7)" }}
               >
                 <span className={`w-2.5 h-2.5 rounded-full ${style.dot}`} />
               </div>
@@ -533,7 +530,7 @@ function AllEventsSection() {
                   <span className="text-muted-foreground text-xs shrink-0 mt-0.5">{ev.date}</span>
                 </div>
                 <p className="text-muted-foreground text-xs mt-0.5">{ev.desc}</p>
-                <p className="text-muted-foreground/70 text-xs font-arabic mt-0.5">{ev.nameAr}</p>
+                <p className="text-muted-foreground text-xs font-arabic mt-0.5">{ev.nameAr}</p>
               </div>
             </div>
           );
@@ -547,8 +544,7 @@ function AllEventsSection() {
 function HijriMonthsSection() {
   return (
     <div
-      className="rounded-2xl border border-border overflow-hidden"
-      style={{ background: "rgba(255,255,255,0.03)" }}
+      className="rounded-2xl border border-border overflow-hidden bg-card"
     >
       <div className="px-4 py-3 border-b border-border">
         <p className="text-primary text-sm font-semibold uppercase tracking-wider flex items-center gap-2">

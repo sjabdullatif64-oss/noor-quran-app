@@ -813,7 +813,7 @@ export function SurahReader() {
 
                   {/* Transliteration (Roman script) — shown when available */}
                   {ayah.textTranslit && (
-                    <p className="text-[calc(0.875rem*var(--ayah-scale))] text-muted-foreground/70 italic leading-relaxed tracking-wide">
+                    <p className="text-[calc(0.875rem*var(--ayah-scale))] text-muted-foreground italic leading-relaxed tracking-wide">
                       {ayah.textTranslit}
                     </p>
                   )}
@@ -824,12 +824,12 @@ export function SurahReader() {
                       dir={isRtl ? "rtl" : "ltr"}
                       className={`text-[calc(1.125rem*var(--ayah-scale))] md:text-[calc(1.25rem*var(--ayah-scale))] leading-relaxed font-serif transition-colors duration-300 ${
                         isRtl ? "text-right" : "text-left"
-                      } ${isCurrent ? "text-foreground/80" : "text-muted-foreground"}`}
+                      } ${isCurrent ? "text-foreground" : "text-muted-foreground"}`}
                     >
                       {applyExplanatorySetting(ayah.textTranslation)}
                     </p>
                   ) : (
-                    <p className="text-sm text-muted-foreground/50 italic">
+                    <p className="text-sm text-muted-foreground italic">
                       Translation unavailable for this language
                     </p>
                   )}

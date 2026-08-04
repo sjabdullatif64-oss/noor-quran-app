@@ -482,7 +482,7 @@ function NotifSection({ title, subtitle, items, settings, locked, onToggle, onTi
 
   return (
     <div
-      className={`rounded-2xl border border-border overflow-hidden transition-opacity duration-300 bg-card ${locked ? "opacity-50 select-none" : ""}`}
+      className={`rounded-2xl border border-border overflow-hidden transition-opacity duration-300 bg-card ${locked ? "opacity-75 select-none" : ""}`}
     >
       <div className="flex items-center justify-between px-4 py-3 border-b border-border">
         <div>

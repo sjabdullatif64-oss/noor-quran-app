@@ -328,8 +328,7 @@ export function Writing() {
                     </button>
                     <button
                       onClick={() => setDeleteTarget(note.id)}
-                      className="w-8 h-8 rounded-lg flex items-center justify-center text-red-700 hover:text-red-400 transition-colors"
-                      style={{ background: "rgba(239,68,68,0.06)" }}
+                      className="w-8 h-8 rounded-lg flex items-center justify-center text-destructive hover:text-destructive transition-colors bg-destructive/10"
                       data-testid={`button-delete-${note.id}`}
                       aria-label="Delete note"
                     >
@@ -368,7 +367,7 @@ export function Writing() {
               </button>
               <button
                 onClick={() => deleteNote(deleteTarget)}
-                className="flex-1 py-2.5 rounded-xl bg-red-900/60 border border-red-700/50 text-red-300 text-sm font-semibold transition-all hover:bg-red-800/60"
+                className="flex-1 py-2.5 rounded-xl bg-destructive text-destructive-foreground border border-destructive text-sm font-semibold transition-all hover:opacity-90"
                 data-testid="button-confirm-delete"
               >
                 Delete

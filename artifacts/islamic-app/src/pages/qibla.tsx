@@ -243,16 +243,13 @@ export function Qibla() {
   const isStable = compassState === "stable";
 
   return (
-    <div
-      className="min-h-screen flex flex-col items-center pb-28 md:pb-10 pt-4 animate-in fade-in duration-500"
-      style={{ background: "linear-gradient(160deg, #0a1628 0%, #0d1f3c 50%, #0b1f14 100%)" }}
-    >
+      <div className="min-h-screen flex flex-col items-center pb-28 md:pb-10 pt-4 animate-in fade-in duration-500 bg-background text-foreground">
       {/* Header */}
       <div className="w-full max-w-md px-6 pt-4 pb-2 text-center">
-        <h1 className="text-2xl md:text-3xl font-serif font-bold text-amber-300 tracking-wide">
+         <h1 className="text-2xl md:text-3xl font-serif font-bold text-primary tracking-wide">
           Al Haram Direction
         </h1>
-        <p className="text-primary/60 text-sm mt-1">Qibla Compass · Direction to Makkah</p>
+         <p className="text-muted-foreground text-sm mt-1">Qibla Compass · Direction to Makkah</p>
       </div>
 
       <div className="w-full max-w-md px-4 flex flex-col items-center gap-5 mt-2">
@@ -273,8 +270,7 @@ export function Qibla() {
 
           {/* Compass disc — static, never rotates */}
           <div
-            className="w-64 h-64 rounded-full border border-amber-500/20 flex items-center justify-center relative select-none"
-            style={{ background: "radial-gradient(circle at 40% 40%, #0f2745 0%, #091529 100%)" }}
+             className="w-64 h-64 rounded-full border border-border bg-card flex items-center justify-center relative select-none"
           >
             {/* Cardinal labels */}
             {[
@@ -379,7 +375,7 @@ export function Qibla() {
             <RotateCcw className="w-5 h-5 text-amber-400 shrink-0 animate-spin" style={{ animationDuration: "2s" }} />
             <div>
               <p className="text-amber-300 text-sm font-semibold">Calibrating compass…</p>
-              <p className="text-amber-400/60 text-xs mt-0.5">
+              <p className="text-amber-800 dark:text-amber-200 text-xs mt-0.5">
                 Move your phone slowly in a figure-8 motion
               </p>
             </div>
@@ -389,12 +385,11 @@ export function Qibla() {
         {/* Compass unavailable (desktop / sensor-less device) */}
         {showUnavailable && (
           <div
-            className="w-full rounded-2xl px-4 py-3 flex items-center gap-3 border border-white/10"
-            style={{ background: "rgba(255,255,255,0.04)" }}
+            className="w-full rounded-2xl px-4 py-3 flex items-center gap-3 border border-border bg-card"
             data-testid="compass-unavailable-banner"
           >
             <Navigation className="w-5 h-5 text-primary shrink-0" />
-            <p className="text-foreground/60 text-sm">
+            <p className="text-foreground text-sm">
               No compass sensor detected. The Qibla angle is shown below — use it with an external compass.
             </p>
           </div>
@@ -416,11 +411,10 @@ export function Qibla() {
 
             {cityName && (
               <div
-                className="col-span-2 rounded-2xl p-3 flex items-center gap-3 border border-white/10"
-                style={{ background: "rgba(255,255,255,0.04)" }}
+                className="col-span-2 rounded-2xl p-3 flex items-center gap-3 border border-border bg-card"
               >
                 <MapPin className="w-4 h-4 text-amber-400 shrink-0" />
-                <p className="text-foreground/60 text-sm">
+                <p className="text-foreground text-sm">
                   Your location:{" "}
                   <span className="text-foreground font-medium">{cityName}</span>
                 </p>
@@ -428,11 +422,10 @@ export function Qibla() {
             )}
 
             <div
-              className="col-span-2 rounded-2xl p-3 flex items-center gap-3 border border-white/10"
-              style={{ background: "rgba(255,255,255,0.04)" }}
+              className="col-span-2 rounded-2xl p-3 flex items-center gap-3 border border-border bg-card"
             >
               <Navigation className="w-4 h-4 text-primary shrink-0" />
-              <p className="text-foreground/60 text-sm">
+              <p className="text-foreground text-sm">
                 Destination:{" "}
                 <span className="text-foreground font-medium">Masjid Al-Haram, Makkah</span>
               </p>
@@ -444,7 +437,7 @@ export function Qibla() {
         {status === "loading" && (
           <div className="text-center space-y-3 mt-2">
             <div className="w-10 h-10 border-2 border-amber-400/30 border-t-amber-400 rounded-full animate-spin mx-auto" />
-            <p className="text-amber-300/60 text-sm">Detecting your location…</p>
+             <p className="text-muted-foreground text-sm">Detecting your location…</p>
           </div>
         )}
 
@@ -461,7 +454,7 @@ export function Qibla() {
 
         {/* ── CTA / idle ──────────────────────────────────────────────────── */}
         {status === "idle" && (
-          <p className="text-foreground/35 text-sm text-center max-w-xs mt-1">
+             <p className="text-muted-foreground text-sm text-center max-w-xs mt-1">
             Allow location access to calculate the exact Qibla direction from your position.
           </p>
         )}
@@ -485,7 +478,7 @@ export function Qibla() {
         {status === "granted" && (
           <button
             onClick={getLocation}
-            className="flex items-center gap-2 text-amber-400/50 hover:text-amber-300 text-sm transition-colors"
+            className="flex items-center gap-2 text-amber-700 dark:text-amber-300 hover:text-amber-900 dark:hover:text-amber-100 text-sm transition-colors"
             data-testid="button-refresh-qibla"
           >
             <RefreshCw className="w-4 h-4" />
@@ -495,7 +488,7 @@ export function Qibla() {
 
         {/* Hint */}
         {status === "granted" && isStable && (
-          <p className="text-foreground/25 text-xs text-center px-8 -mt-1">
+           <p className="text-muted-foreground text-xs text-center px-8 -mt-1">
             Rotate your device until the golden arrow points straight up.
           </p>
         )}
@@ -515,15 +508,12 @@ function InfoCard({
   accent: "amber" | "emerald";
 }) {
   const colors = {
-    amber: { border: "border-amber-500/20", text: "text-amber-300", sub: "text-amber-400/55" },
-    emerald: { border: "border-emerald-500/20", text: "text-primary", sub: "text-primary/55" },
+     amber: { border: "border-amber-500/30", text: "text-amber-800 dark:text-amber-200", sub: "text-muted-foreground" },
+     emerald: { border: "border-primary/30", text: "text-primary", sub: "text-muted-foreground" },
   }[accent];
 
   return (
-    <div
-      className={`rounded-2xl p-4 text-center border ${colors.border}`}
-      style={{ background: "rgba(255,255,255,0.04)" }}
-    >
+    <div className={`rounded-2xl p-4 text-center border bg-card ${colors.border}`}>
       <p className={`${colors.sub} text-xs uppercase tracking-wider mb-1`}>{label}</p>
       <p className={`text-2xl font-bold font-serif ${colors.text}`}>{value}</p>
     </div>
