@@ -264,3 +264,17 @@ id = "jRfWS8Q_Kw-VfJBlgsK7P"
 uri = "file://artifacts/islamic-app/public/release/noor-quran-1.0.15.apk"
 type = "unspecified"
 title = "Noor Quran v1.0.15 — getSpeechSupport sub-step diagnostics"
+
+[[outputs]]
+id = "VAyzENDgayO5Ltq7bV_OE"
+uri = "file://artifacts/islamic-app/release/NoorQuran-v1.0.17-release.apk"
+type = "unspecified"
+title = "Noor Quran 1.0.17 Release APK"
+description = "Signed production release APK — versionCode 74684550."
+
+[[outputs]]
+id = "EIs_v0dFYmrgEuOgI4nYh"
+uri = "file://artifacts/islamic-app/release/NoorQuran-v1.0.17-release.aab"
+type = "unspecified"
+title = "Noor Quran 1.0.17 Release AAB"
+description = "Signed production release Android App Bundle — versionCode 74684550."

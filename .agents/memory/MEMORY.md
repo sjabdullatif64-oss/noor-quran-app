@@ -11,3 +11,4 @@
 - [Capacitor includePlugins allowlist](capacitor-plugin-allowlist.md) — new plugins silently no-op unless added to includePlugins; also don't trust SpeechRecognizer available() pre-check to gate UI
 - [Disable a Capacitor plugin in the native build](capacitor-disable-plugin.md) — includePlugins/package.json removal is not enough; also clear settings.gradle, app/build.gradle, capacitor.plugins.json, and MainActivity.java imports/registerPlugin calls
 - [Translation language registry](translation-language-registry.md) — adding a Quran language requires registry metadata, storage validation, provider mapping, and same-session preference notifications
+- [Android release build environment](android-release-build.md) — local release builds may need a writable composed Android SDK because Nix SDK stores are immutable
