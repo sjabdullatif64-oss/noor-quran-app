@@ -9,7 +9,7 @@ import {
 import { JUZ_DATA } from "@/lib/juz-data";
 import { getLang } from "@/lib/settings";
 import {
-  TRANSLATION_EDITIONS,
+  fetchTranslationTexts,
   RTL_LANGUAGES,
   TTS_LANG_CODES,
   TRANSLATION_ENGLISH_NAMES,
@@ -151,14 +151,7 @@ async function fetchSurahRange(
     if (offlineTexts) {
       translationAyahs = offlineTexts;
     } else {
-      // Translation not offline — try API
-      const edition = TRANSLATION_EDITIONS[lang];
-      const trData  = await safeFetch(
-        `https://api.alquran.cloud/v1/surah/${surahNumber}/${edition}`
-      );
-      translationAyahs =
-        (trData as { data?: { ayahs?: { text: string }[] } } | null)
-          ?.data?.ayahs?.map((a) => a.text) ?? [];
+      translationAyahs = await fetchTranslationTexts(lang, surahNumber);
     }
 
     const ayahs: JuzAyah[] = offlineSurah.ayahs
@@ -182,10 +175,9 @@ async function fetchSurahRange(
   }
 
   // ── API fallback (bundle unavailable) ────────────────────────────────────
-  const edition = TRANSLATION_EDITIONS[lang];
-  const [arData, trData] = await Promise.all([
+  const [arData, translationAyahs] = await Promise.all([
     safeFetch(`https://api.alquran.cloud/v1/surah/${surahNumber}`),
-    safeFetch(`https://api.alquran.cloud/v1/surah/${surahNumber}/${edition}`),
+    fetchTranslationTexts(lang, surahNumber),
   ]);
 
   type RawAyah = { number: number; numberInSurah: number; text: string };
@@ -199,16 +191,13 @@ async function fetchSurahRange(
   } | null;
   if (!ar?.data?.ayahs) return null;
 
-  const trAyahs =
-    (trData as { data?: { ayahs?: { text: string }[] } } | null)?.data?.ayahs ?? [];
-
   const ayahs: JuzAyah[] = ar.data.ayahs
     .filter((a) => a.numberInSurah >= fromAyah && a.numberInSurah <= toAyah)
     .map((a) => ({
       numberInSurah:   a.numberInSurah,
       globalNumber:    a.number,
       textAr:          a.text,
-      textTranslation: sanitizeTranslation(lang, trAyahs[a.numberInSurah - 1]?.text ?? ""),
+      textTranslation: sanitizeTranslation(lang, translationAyahs[a.numberInSurah - 1] ?? ""),
     }));
 
   if (ayahs.length === 0) return null;

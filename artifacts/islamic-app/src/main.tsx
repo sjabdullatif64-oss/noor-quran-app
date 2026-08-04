@@ -5,7 +5,7 @@ import { registerSW } from "./lib/notifications";
 import { initDefaults } from "./lib/settings";
 import { initNative } from "./lib/native-init";
 
-// Guarantee clean first-launch defaults (Urdu language, etc.)
+// Establish first-launch defaults, including locale-based Quran translation.
 initDefaults();
 
 // Boot native plugins (status bar, splash, notification channel)

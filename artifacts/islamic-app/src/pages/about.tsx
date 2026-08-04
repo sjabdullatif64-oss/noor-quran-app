@@ -8,6 +8,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useI18n } from "@/lib/i18n-context";
 import { nativeShare, openUrl, getLastShareError } from "@/lib/capacitor";
 import { BUILD_INFO } from "@/lib/buildInfo";
+import { ALL_LANGUAGES } from "@/lib/api";
 
 const APP_SHARE_URL = "https://play.google.com/store/apps/details?id=com.sj64noorquran";
 const APP_SHARE_MSG =
@@ -102,8 +103,8 @@ const FEATURES: Feature[] = [
   },
   {
     icon: <Globe className="w-5 h-5" />,
-    label: "10 Languages",
-    description: "Urdu, English, Sindhi, Hindi & more",
+    label: `${ALL_LANGUAGES.length} Languages`,
+    description: "Quran translations with instant language switching",
     accent: "text-cyan-600",
     bg: "rgba(34,211,238,0.12)",
   },
@@ -121,20 +122,6 @@ const FEATURES: Feature[] = [
     accent: "text-violet-600",
     bg: "rgba(139,92,246,0.12)",
   },
-];
-
-// ── Supported languages ───────────────────────────────────────────────────────
-const SUPPORTED_LANGS = [
-  { native: "العربية", english: "Arabic",     flag: "🕋" },
-  { native: "اردو",    english: "Urdu",        flag: "🇵🇰" },
-  { native: "English", english: "English",     flag: "🇬🇧" },
-  { native: "سنڌي",   english: "Sindhi",       flag: "🇵🇰" },
-  { native: "हिन्दी",  english: "Hindi",        flag: "🇮🇳" },
-  { native: "Türkçe",  english: "Turkish",     flag: "🇹🇷" },
-  { native: "বাংলা",   english: "Bengali",     flag: "🇧🇩" },
-  { native: "Bahasa",  english: "Indonesian",  flag: "🇮🇩" },
-  { native: "Français",english: "French",      flag: "🇫🇷" },
-  { native: "Español", english: "Spanish",     flag: "🇪🇸" },
 ];
 
 async function shareApp(toast: ReturnType<typeof useToast>["toast"]) {
@@ -255,20 +242,11 @@ export function About() {
           <div
             className="rounded-2xl border border-border overflow-hidden"
           >
-            <div className="p-3 grid grid-cols-2 gap-1">
-              {SUPPORTED_LANGS.map((lang) => (
-                <div
-                  key={lang.english}
-                  className="flex items-center gap-2.5 px-3 py-2.5 rounded-xl"
-                  style={{ background: "rgba(52,211,153,0.04)" }}
-                >
-                  <span className="text-lg leading-none">{lang.flag}</span>
-                  <div className="min-w-0">
-                    <p className="text-foreground text-xs font-semibold leading-tight">{lang.english}</p>
-                    <p className="text-muted-foreground text-[10px] leading-tight">{lang.native}</p>
-                  </div>
-                </div>
-              ))}
+            <div className="p-5 text-center">
+              <p className="text-foreground text-3xl font-bold">{ALL_LANGUAGES.length}</p>
+              <p className="text-muted-foreground text-sm mt-1">
+                Quran translation languages available
+              </p>
             </div>
             <div className="px-4 py-3 border-t border-border">
               <p className="text-muted-foreground text-xs text-center">
@@ -290,7 +268,7 @@ export function About() {
             <InfoRow label="Package"   value="com.sj64noorquran" />
             <InfoRow label="Platform"  value="Android · Web"     />
             <InfoRow label="Category"  value="Islamic / Religion" />
-            <InfoRow label="Languages" value="10 translations"   />
+            <InfoRow label="Languages" value={`${ALL_LANGUAGES.length} translations`} />
           </div>
         </div>
 

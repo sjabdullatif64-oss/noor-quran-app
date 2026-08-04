@@ -10,3 +10,4 @@
 - [Ayah display scaling pattern](ayah-display-scaling.md) — use per-page CSS var `--ayah-scale` + Tailwind arbitrary calc() classes, not flat inline fontSize, to preserve responsive breakpoints across readers
 - [Capacitor includePlugins allowlist](capacitor-plugin-allowlist.md) — new plugins silently no-op unless added to includePlugins; also don't trust SpeechRecognizer available() pre-check to gate UI
 - [Disable a Capacitor plugin in the native build](capacitor-disable-plugin.md) — includePlugins/package.json removal is not enough; also clear settings.gradle, app/build.gradle, capacitor.plugins.json, and MainActivity.java imports/registerPlugin calls
+- [Translation language registry](translation-language-registry.md) — adding a Quran language requires registry metadata, storage validation, provider mapping, and same-session preference notifications

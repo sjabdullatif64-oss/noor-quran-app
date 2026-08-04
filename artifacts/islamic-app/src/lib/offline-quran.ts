@@ -221,6 +221,10 @@ export async function getOfflineTranslationTexts(
   lang: TranslationLanguage,
   surahNumber: number
 ): Promise<string[] | null> {
+  if (lang === "arabic") {
+    const d = await getOfflineArabic();
+    return d?.[String(surahNumber)]?.ayahs.map((ayah) => ayah.t) ?? null;
+  }
   if (lang === "urdu") {
     const d = await getOfflineUrdu();
     return d?.[String(surahNumber)] ?? null;

@@ -7,6 +7,7 @@ const LANG_KEY    = "noor-lang";
 const GPS_LAT_KEY = "noor-gps-lat";
 const GPS_LNG_KEY = "noor-gps-lng";
 const LOC_SRC_KEY = "noor-loc-src"; // "gps" | "manual"
+export const TRANSLATION_LANGUAGE_CHANGED_EVENT = "noor-translation-language-changed";
 
 // ── City / country (manual search) ───────────────────────────────────────────
 
@@ -159,9 +160,184 @@ export function calcMethodParam(): string {
 // ── Translation language ──────────────────────────────────────────────────────
 
 const VALID_LANGS: TranslationLanguage[] = [
-  "urdu", "english", "sindhi", "hindi", "turkish",
+  "arabic", "urdu", "english", "sindhi", "hindi", "turkish",
   "bengali", "indonesian", "french", "spanish", "malay",
+  "persian", "german", "portuguese", "russian", "chinese",
+  "japanese", "korean", "swahili", "tamil", "telugu", "malayalam",
+  "punjabi", "italian", "dutch", "thai", "vietnamese", "azerbaijani",
+  "bosnian", "somali", "hausa", "uzbek", "kazakh",
 ];
+
+const COUNTRY_TO_TRANSLATION: Record<string, TranslationLanguage> = {
+  PK: "urdu",
+  IN: "hindi",
+  BD: "bengali",
+  ID: "indonesian",
+  MY: "malay",
+  TR: "turkish",
+  IR: "persian",
+  AF: "persian",
+  SA: "arabic",
+  AE: "arabic",
+  QA: "arabic",
+  KW: "arabic",
+  BH: "arabic",
+  OM: "arabic",
+  YE: "arabic",
+  JO: "arabic",
+  IQ: "arabic",
+  SY: "arabic",
+  LB: "arabic",
+  PS: "arabic",
+  EG: "arabic",
+  SD: "arabic",
+  LY: "arabic",
+  TN: "arabic",
+  DZ: "arabic",
+  MA: "arabic",
+  MR: "arabic",
+  FR: "french",
+  DE: "german",
+  ES: "spanish",
+  RU: "russian",
+  CN: "chinese",
+  TW: "chinese",
+  HK: "chinese",
+  JP: "japanese",
+  KR: "korean",
+  IT: "italian",
+  PT: "portuguese",
+  BR: "portuguese",
+  MZ: "portuguese",
+  AO: "portuguese",
+  US: "english",
+  GB: "english",
+  IE: "english",
+  CA: "english",
+  AU: "english",
+  NZ: "english",
+  NL: "dutch",
+  TH: "thai",
+  VN: "vietnamese",
+  AZ: "azerbaijani",
+  BA: "bosnian",
+  SO: "somali",
+  KE: "swahili",
+  TZ: "swahili",
+  UG: "swahili",
+  NG: "hausa",
+  UZ: "uzbek",
+  KZ: "kazakh",
+};
+
+const LANGUAGE_TO_TRANSLATION: Record<string, TranslationLanguage> = {
+  ar: "arabic",
+  ur: "urdu",
+  en: "english",
+  hi: "hindi",
+  bn: "bengali",
+  id: "indonesian",
+  ms: "malay",
+  tr: "turkish",
+  fa: "persian",
+  de: "german",
+  fr: "french",
+  es: "spanish",
+  ru: "russian",
+  zh: "chinese",
+  ja: "japanese",
+  ko: "korean",
+  it: "italian",
+  pt: "portuguese",
+  nl: "dutch",
+  th: "thai",
+  vi: "vietnamese",
+  az: "azerbaijani",
+  bs: "bosnian",
+  so: "somali",
+  sw: "swahili",
+  ha: "hausa",
+  uz: "uzbek",
+  kk: "kazakh",
+  ta: "tamil",
+  te: "telugu",
+  ml: "malayalam",
+  pa: "punjabi",
+};
+
+function localeRegion(locale: string): string | null {
+  try {
+    const region = new Intl.Locale(locale).region;
+    if (region) return region.toUpperCase();
+  } catch {
+    // Fall through for older WebViews without Intl.Locale.
+  }
+  return locale.match(/[-_]([A-Z]{2}|\d{3})$/i)?.[1]?.toUpperCase() ?? null;
+}
+
+function deviceLocales(): string[] {
+  if (typeof navigator === "undefined") return [];
+  const locales = [
+    ...(Array.isArray(navigator.languages) ? navigator.languages : []),
+    navigator.language,
+  ].filter((locale): locale is string => Boolean(locale));
+  try {
+    locales.push(Intl.DateTimeFormat().resolvedOptions().locale);
+  } catch {
+    // Locale is optional; navigator.language is enough when unavailable.
+  }
+  return [...new Set(locales)];
+}
+
+function timezoneTranslation(): TranslationLanguage | null {
+  if (typeof Intl === "undefined") return null;
+  try {
+    const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone ?? "";
+    if (/Karachi|Lahore|Islamabad/i.test(timezone)) return "urdu";
+    if (/Kolkata|Calcutta|Delhi/i.test(timezone)) return "hindi";
+    if (/Dhaka/i.test(timezone)) return "bengali";
+    if (/Jakarta|Makassar|Jayapura/i.test(timezone)) return "indonesian";
+    if (/Istanbul/i.test(timezone)) return "turkish";
+    if (/Tehran/i.test(timezone)) return "persian";
+    if (/Riyadh|Dubai|Doha|Kuwait|Bahrain|Muscat|Amman|Baghdad|Cairo/i.test(timezone)) return "arabic";
+    if (/Paris/i.test(timezone)) return "french";
+    if (/Berlin/i.test(timezone)) return "german";
+    if (/Madrid/i.test(timezone)) return "spanish";
+    if (/Moscow/i.test(timezone)) return "russian";
+    if (/Shanghai|Beijing|Chongqing|Hong_Kong|Taipei/i.test(timezone)) return "chinese";
+    if (/Tokyo/i.test(timezone)) return "japanese";
+    if (/Seoul/i.test(timezone)) return "korean";
+    if (/Rome/i.test(timezone)) return "italian";
+    if (/Lisbon|Sao_Paulo/i.test(timezone)) return "portuguese";
+    if (/Amsterdam/i.test(timezone)) return "dutch";
+    if (/Bangkok/i.test(timezone)) return "thai";
+    if (/Ho_Chi_Minh|Hanoi/i.test(timezone)) return "vietnamese";
+  } catch {
+    // Timezone is only a fallback signal.
+  }
+  return null;
+}
+
+/** Detect a supported translation without requesting location permission. */
+export function detectInitialTranslationLanguage(): TranslationLanguage {
+  const locales = deviceLocales();
+
+  for (const locale of locales) {
+    const region = localeRegion(locale);
+    if (region && COUNTRY_TO_TRANSLATION[region]) {
+      return COUNTRY_TO_TRANSLATION[region];
+    }
+  }
+
+  for (const locale of locales) {
+    const language = locale.split(/[-_]/)[0].toLowerCase();
+    if (LANGUAGE_TO_TRANSLATION[language]) {
+      return LANGUAGE_TO_TRANSLATION[language];
+    }
+  }
+
+  return timezoneTranslation() ?? "urdu";
+}
 
 export function getLang(): TranslationLanguage {
   const v = localStorage.getItem(LANG_KEY) as TranslationLanguage | null;
@@ -171,6 +347,7 @@ export function getLang(): TranslationLanguage {
 
 export function setLang(lang: TranslationLanguage): void {
   localStorage.setItem(LANG_KEY, lang);
+  window.dispatchEvent(new Event(TRANSLATION_LANGUAGE_CHANGED_EVENT));
 }
 
 // ── UI Language (app interface language) ──────────────────────────────────────
@@ -184,11 +361,14 @@ export const UI_LANG_KEY = "noor-ui-lang";
 const INIT_KEY = "noor-defaults-v1";
 
 export function initDefaults(): void {
-  if (localStorage.getItem(INIT_KEY)) return; // already initialized
-  // Guarantee Urdu is default Quran translation language on first launch
-  if (!localStorage.getItem(LANG_KEY)) {
-    localStorage.setItem(LANG_KEY, "urdu");
+  // A saved language is the user's choice. Never auto-detect over it.
+  const savedLanguage = localStorage.getItem(LANG_KEY);
+  if (!savedLanguage || !(VALID_LANGS as string[]).includes(savedLanguage)) {
+    localStorage.setItem(LANG_KEY, detectInitialTranslationLanguage());
   }
+
+  if (localStorage.getItem(INIT_KEY)) return; // other defaults already initialized
+
   // Guarantee English is default UI language on first launch
   if (!localStorage.getItem(UI_LANG_KEY)) {
     localStorage.setItem(UI_LANG_KEY, "english");

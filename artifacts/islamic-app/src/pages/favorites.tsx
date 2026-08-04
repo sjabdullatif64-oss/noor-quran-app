@@ -11,7 +11,8 @@ import {
   removeFavAyah,
 } from "@/lib/favorites";
 import { Input } from "@/components/ui/input";
-import { sanitizeUrduText } from "@/lib/api";
+import { getCurrentTranslationText } from "@/lib/api";
+import { getLang, TRANSLATION_LANGUAGE_CHANGED_EVENT } from "@/lib/settings";
 
 type Tab = "surahs" | "ayahs";
 
@@ -31,7 +32,29 @@ export function Favorites() {
 
   useEffect(() => {
     setSurahs(getFavSurahs().sort((a, b) => b.savedAt - a.savedAt));
-    setAyahs(getFavAyahs().sort((a, b) => b.savedAt - a.savedAt));
+    let cancelled = false;
+    const refreshTranslations = async () => {
+      const savedAyahs = getFavAyahs().sort((a, b) => b.savedAt - a.savedAt);
+      const language = getLang();
+      setAyahs(savedAyahs);
+      const translated = await Promise.all(
+        savedAyahs.map(async (ayah) => ({
+          ...ayah,
+          textTranslation: await getCurrentTranslationText(
+            language,
+            ayah.surahNumber,
+            ayah.ayahNumber,
+          ),
+        })),
+      );
+      if (!cancelled) setAyahs(translated);
+    };
+    void refreshTranslations();
+    window.addEventListener(TRANSLATION_LANGUAGE_CHANGED_EVENT, refreshTranslations);
+    return () => {
+      cancelled = true;
+      window.removeEventListener(TRANSLATION_LANGUAGE_CHANGED_EVENT, refreshTranslations);
+    };
   }, []);
 
   const handleRemoveSurah = (number: number) => {
@@ -160,7 +183,7 @@ export function Favorites() {
                 </p>
                 {ayah.textTranslation && (
                   <p dir="rtl" className="text-sm text-muted-foreground leading-relaxed text-right font-serif line-clamp-2">
-                    {sanitizeUrduText(ayah.textTranslation)}
+                    {ayah.textTranslation}
                   </p>
                 )}
               </Link>

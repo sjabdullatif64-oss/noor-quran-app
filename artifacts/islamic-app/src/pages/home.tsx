@@ -4,7 +4,12 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { MapPin, Clock, BookOpen, ChevronRight, Star, Package, ExternalLink } from "lucide-react";
 import { Link, useLocation } from "wouter";
-import { getCity, getCountry, getLang } from "@/lib/settings";
+import {
+  getCity,
+  getCountry,
+  getLang,
+  TRANSLATION_LANGUAGE_CHANGED_EVENT,
+} from "@/lib/settings";
 import { useI18n } from "@/lib/i18n-context";
 import { useQuery } from "@tanstack/react-query";
 import { noorApi, type NoorProduct } from "@/lib/noor-api";
@@ -171,12 +176,14 @@ export function Home() {
     window.addEventListener("focus", syncTranslationLanguage);
     window.addEventListener("pageshow", syncTranslationLanguage);
     window.addEventListener("storage", syncTranslationLanguage);
+    window.addEventListener(TRANSLATION_LANGUAGE_CHANGED_EVENT, syncTranslationLanguage);
     document.addEventListener("visibilitychange", syncTranslationLanguage);
 
     return () => {
       window.removeEventListener("focus", syncTranslationLanguage);
       window.removeEventListener("pageshow", syncTranslationLanguage);
       window.removeEventListener("storage", syncTranslationLanguage);
+      window.removeEventListener(TRANSLATION_LANGUAGE_CHANGED_EVENT, syncTranslationLanguage);
       document.removeEventListener("visibilitychange", syncTranslationLanguage);
     };
   }, []);

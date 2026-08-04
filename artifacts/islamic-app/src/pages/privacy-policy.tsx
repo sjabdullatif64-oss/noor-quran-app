@@ -3,6 +3,7 @@ import { Link } from "wouter";
 import {
   ChevronLeft, Shield, Wifi, HardDrive, Bell,
   MapPin, Volume2, DollarSign, Lock, Mail, BookOpen,
+  Globe,
 } from "lucide-react";
 import { openUrl } from "@/lib/capacitor";
 
@@ -20,6 +21,22 @@ const SECTIONS = [
         only data stored is your in-app preferences — chosen language, city, dark-mode setting,
         bookmarks, and favorites — and these are stored <em>locally on your device only</em>.
         No personal data is ever transmitted to our servers.
+      </>
+    ),
+  },
+  {
+    icon: <Globe className="w-5 h-5" />,
+    title: "Automatic Translation Language Selection",
+    accent: "text-primary",
+    bg: "rgba(52,211,153,0.07)",
+    border: "border-border",
+    body: (
+      <>
+        During the first launch, Noor Quran may automatically suggest a default Quran
+        translation language based on your device language, region, or country. You can
+        change your preferred Quran translation language at any time from{" "}
+        <strong className="text-primary">Settings</strong>. Once selected, your preference
+        is remembered and always takes priority over automatic detection.
       </>
     ),
   },

@@ -10,6 +10,7 @@ const SECTIONS = [
     body: [
       "Noor Quran is provided for personal, educational, and devotional use.",
       "Features may include Quran reading, translations, Arabic recitation, audio downloads, prayer times, Qibla direction, Islamic calendar, notifications, bookmarks, favorites, search, and digital Tasbeeh.",
+      "Available Quran translation languages may vary by country and may be expanded, updated, or improved in future versions of the app. Users can manually select their preferred Quran translation language at any time from Settings.",
       "Features may be changed, improved, restricted, or removed in future updates.",
     ],
   },

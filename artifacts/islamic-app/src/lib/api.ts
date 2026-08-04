@@ -9,22 +9,20 @@ import {
 import { getCalcMethod, calcMethodParam } from "./settings";
 
 /**
- * The Jalandhry Urdu translation (ur.jalandhry) uses "خدا" wherever the
- * Arabic says "اللہ". The Amroti Sindhi translation (sd.amroti) has the same
- * issue — both use Arabic script, so the same replacement applies.
- * Replace every occurrence so the app always displays the correct name.
+ * The Urdu and Sindhi translations can use localized Arabic-script variants
+ * for the name of Allah. Normalize those explicit name variants to the
+ * canonical Latin spelling used by the app.
  * Applied at the data layer so all consumers receive corrected text.
  */
 export function sanitizeUrduText(text: string): string {
-  return text.replace(/خدا/g, "اللہ");
+  return text.replace(/خدا|اللہ|الله/g, "Allah");
 }
 
 /**
- * The Hindi translation (hi.hindi) sometimes uses "खुदा" instead of "अल्लाह".
- * Replace every occurrence with the correct Islamic name.
+ * Hindi translations can use localized variants for Allah's name.
  */
 export function sanitizeHindiText(text: string): string {
-  return text.replace(/खुदा/g, "अल्लाह");
+  return text.replace(/खुदा|अल्लाह|अल्ला/g, "Allah");
 }
 
 /**
@@ -34,6 +32,32 @@ export function sanitizeHindiText(text: string): string {
 export function sanitizeTranslation(lang: TranslationLanguage, text: string): string {
   if (lang === "urdu" || lang === "sindhi") return sanitizeUrduText(text);
   if (lang === "hindi") return sanitizeHindiText(text);
+  if (lang === "persian") return text.replace(/خداوند|خداى|خدا/g, "Allah");
+  if (lang === "german") return text.replace(/\bGott(?:es|e)?\b/gi, "Allah");
+  if (lang === "portuguese") return text.replace(/\bDeus\b/gi, "Allah");
+  if (lang === "french") return text.replace(/\bDieu\b/gi, "Allah");
+  if (lang === "spanish") return text.replace(/\bDios\b|\bSeñor\b/gi, "Allah");
+  if (lang === "italian") return text.replace(/\bDio\b/gi, "Allah");
+  if (lang === "dutch") return text.replace(/\bGod\b|\bHeer\b/gi, "Allah");
+  if (lang === "russian") return text.replace(/Алла(?:ха|хом|ху)?|Бог(?:а|ом)?/g, "Allah");
+  if (lang === "chinese") return text.replace(/真主|上帝/g, "Allah");
+  if (lang === "japanese") return text.replace(/アッラー|神/g, "Allah");
+  if (lang === "korean") return text.replace(/하나님/g, "Allah");
+  if (lang === "turkish") return text.replace(/\bTanrı\b/gi, "Allah");
+  if (lang === "indonesian" || lang === "malay") {
+    return text.replace(/\bTuhan\b/gi, "Allah");
+  }
+  if (lang === "bengali") return text.replace(/আল্লাহ|খোদা/g, "Allah");
+  if (lang === "swahili") return text.replace(/Mwenyezi Mungu/g, "Allah");
+  if (lang === "tamil") return text.replace(/அல்லாஹ்|இறைவன்/g, "Allah");
+  if (lang === "telugu") return text.replace(/అల్లాహ్|దేవుడు/g, "Allah");
+  if (lang === "malayalam") return text.replace(/അല്ലാഹു|ദൈവം/g, "Allah");
+  if (lang === "punjabi") return text.replace(/ਅੱਲਾਹ|ਰੱਬ/g, "Allah");
+  if (lang === "thai") return text.replace(/อัลลอฮ์|พระเจ้า/g, "Allah");
+  if (lang === "bosnian") return text.replace(/\bAllaha\b|\bBog(?:a|om)?\b/g, "Allah");
+  if (lang === "somali") return text.replace(/\bEebe\b|\bIlaah\b/gi, "Allah");
+  if (lang === "uzbek") return text.replace(/Аллоҳ|Аллах/g, "Allah");
+  if (lang === "kazakh") return text.replace(/Алла(?:ның|ға|мен|дан|да)?/g, "Allah");
   return text;
 }
 
@@ -98,6 +122,7 @@ export interface PrayerData {
 // ── Translation language system ───────────────────────────────────────────────
 
 export type TranslationLanguage =
+  | "arabic"
   | "urdu"
   | "english"
   | "sindhi"
@@ -107,9 +132,32 @@ export type TranslationLanguage =
   | "indonesian"
   | "french"
   | "spanish"
-  | "malay";
+  | "malay"
+  | "persian"
+  | "german"
+  | "portuguese"
+  | "russian"
+  | "chinese"
+  | "japanese"
+  | "korean"
+  | "swahili"
+  | "tamil"
+  | "telugu"
+  | "malayalam"
+  | "punjabi"
+  | "italian"
+  | "dutch"
+  | "thai"
+  | "vietnamese"
+  | "azerbaijani"
+  | "bosnian"
+  | "somali"
+  | "hausa"
+  | "uzbek"
+  | "kazakh";
 
-export const ALL_LANGUAGES: TranslationLanguage[] = [
+/** Original languages, kept in their existing order in the main selectors. */
+export const MAIN_LANGUAGES: TranslationLanguage[] = [
   "urdu",
   "english",
   "sindhi",
@@ -122,8 +170,41 @@ export const ALL_LANGUAGES: TranslationLanguage[] = [
   "malay",
 ];
 
+/** Additional languages shown in the searchable More Languages picker. */
+export const ADDITIONAL_LANGUAGES: TranslationLanguage[] = [
+  "arabic",
+  "persian",
+  "german",
+  "portuguese",
+  "russian",
+  "chinese",
+  "japanese",
+  "korean",
+  "swahili",
+  "tamil",
+  "telugu",
+  "malayalam",
+  "punjabi",
+  "italian",
+  "dutch",
+  "thai",
+  "vietnamese",
+  "azerbaijani",
+  "bosnian",
+  "somali",
+  "hausa",
+  "uzbek",
+  "kazakh",
+];
+
+export const ALL_LANGUAGES: TranslationLanguage[] = [
+  ...MAIN_LANGUAGES,
+  ...ADDITIONAL_LANGUAGES,
+];
+
 /** Native-script display label for each language */
 export const TRANSLATION_LABELS: Record<TranslationLanguage, string> = {
+  arabic:     "العربية",
   urdu:       "اردو",
   english:    "English",
   sindhi:     "سنڌي",
@@ -134,10 +215,33 @@ export const TRANSLATION_LABELS: Record<TranslationLanguage, string> = {
   french:     "Français",
   spanish:    "Español",
   malay:      "Melayu",
+  persian:    "فارسی",
+  german:     "Deutsch",
+  portuguese: "Português",
+  russian:    "Русский",
+  chinese:    "中文",
+  japanese:   "日本語",
+  korean:     "한국어",
+  swahili:    "Kiswahili",
+  tamil:      "தமிழ்",
+  telugu:     "తెలుగు",
+  malayalam:  "മലയാളം",
+  punjabi:    "ਪੰਜਾਬੀ",
+  italian:    "Italiano",
+  dutch:      "Nederlands",
+  thai:       "ไทย",
+  vietnamese: "Tiếng Việt",
+  azerbaijani:"Azərbaycan dili",
+  bosnian:    "Bosanski",
+  somali:     "Soomaali",
+  hausa:      "Hausa",
+  uzbek:      "O‘zbekcha",
+  kazakh:     "Қазақша",
 };
 
 /** English name for display in settings */
 export const TRANSLATION_ENGLISH_NAMES: Record<TranslationLanguage, string> = {
+  arabic:     "Arabic",
   urdu:       "Urdu",
   english:    "English",
   sindhi:     "Sindhi",
@@ -148,10 +252,33 @@ export const TRANSLATION_ENGLISH_NAMES: Record<TranslationLanguage, string> = {
   french:     "French",
   spanish:    "Spanish",
   malay:      "Malay",
+  persian:    "Persian",
+  german:     "German",
+  portuguese: "Portuguese",
+  russian:    "Russian",
+  chinese:    "Chinese",
+  japanese:   "Japanese",
+  korean:     "Korean",
+  swahili:    "Swahili",
+  tamil:      "Tamil",
+  telugu:     "Telugu",
+  malayalam:  "Malayalam",
+  punjabi:    "Punjabi",
+  italian:    "Italian",
+  dutch:      "Dutch",
+  thai:       "Thai",
+  vietnamese: "Vietnamese",
+  azerbaijani:"Azerbaijani",
+  bosnian:    "Bosnian",
+  somali:     "Somali",
+  hausa:      "Hausa",
+  uzbek:      "Uzbek",
+  kazakh:     "Kazakh",
 };
 
 /** AlQuran Cloud edition identifiers */
 export const TRANSLATION_EDITIONS: Record<TranslationLanguage, string> = {
+  arabic:     "ar.alafasy",
   urdu:       "ur.jalandhry",
   english:    "en.sahih",
   sindhi:     "sd.amroti",
@@ -162,6 +289,56 @@ export const TRANSLATION_EDITIONS: Record<TranslationLanguage, string> = {
   french:     "fr.hamidullah",
   spanish:    "es.asad",
   malay:      "ms.basmeih",
+  persian:    "fa.ayati",
+  german:     "de.aburida",
+  portuguese: "pt.elhayek",
+  russian:    "ru.kuliev",
+  chinese:    "zh.jian",
+  japanese:   "ja.japanese",
+  korean:     "ko.korean",
+  swahili:    "sw.barwani",
+  tamil:      "ta.tamil",
+  // Additional editions use the source-aware Quran API below.
+  telugu:     "tel-abdulraheemmoha",
+  malayalam:  "mal-cheriyamundamab",
+  punjabi:    "pan-drmuhamadhabibb",
+  italian:    "it.piccardo",
+  dutch:      "nld-salomokeyzer",
+  thai:       "tha-kingfahadquranc",
+  vietnamese: "vie-hassanabdulkari",
+  azerbaijani:"aze-alikhanmusayev",
+  bosnian:    "bos-korkut",
+  somali:     "som-mahmudmuhammada",
+  hausa:      "hau-abubakarmahmood",
+  uzbek:      "uzb-muhammadsodikmu",
+  kazakh:     "kaz-khalifahaltai",
+};
+
+/** Edition IDs used by the fallback source for languages not in AlQuran Cloud. */
+const QURAN_API_EDITIONS: Partial<Record<TranslationLanguage, string>> = {
+  telugu:     "tel-abdulraheemmoha",
+  malayalam:  "mal-cheriyamundamab",
+  punjabi:    "pan-drmuhamadhabibb",
+  dutch:      "nld-salomokeyzer",
+  thai:       "tha-kingfahadquranc",
+  vietnamese: "vie-hassanabdulkari",
+  azerbaijani:"aze-alikhanmusayev",
+  bosnian:    "bos-korkut",
+  somali:     "som-mahmudmuhammada",
+  hausa:      "hau-abubakarmahmood",
+  uzbek:      "uzb-muhammadsodikmu",
+  kazakh:     "kaz-khalifahaltai",
+};
+
+export const TRANSLATION_FLAGS: Record<TranslationLanguage, string> = {
+  arabic: "🇸🇦", urdu: "🇵🇰", english: "🇬🇧", sindhi: "🇵🇰", hindi: "🇮🇳",
+  turkish: "🇹🇷", bengali: "🇧🇩", indonesian: "🇮🇩", french: "🇫🇷",
+  spanish: "🇪🇸", malay: "🇲🇾", persian: "🇮🇷", german: "🇩🇪",
+  portuguese: "🇵🇹", russian: "🇷🇺", chinese: "🇨🇳", japanese: "🇯🇵",
+  korean: "🇰🇷", swahili: "🇰🇪", tamil: "🇮🇳", telugu: "🇮🇳",
+  malayalam: "🇮🇳", punjabi: "🇮🇳", italian: "🇮🇹", dutch: "🇳🇱",
+  thai: "🇹🇭", vietnamese: "🇻🇳", azerbaijani: "🇦🇿", bosnian: "🇧🇦",
+  somali: "🇸🇴", hausa: "🇳🇬", uzbek: "🇺🇿", kazakh: "🇰🇿",
 };
 
 /**
@@ -170,6 +347,7 @@ export const TRANSLATION_EDITIONS: Record<TranslationLanguage, string> = {
  * device support — the app always shows text regardless.
  */
 export const TTS_LANG_CODES: Record<TranslationLanguage, string> = {
+  arabic:      "ar-SA",
   urdu:       "ur-PK",
   english:    "en-US",
   sindhi:     "sd-PK",
@@ -180,10 +358,32 @@ export const TTS_LANG_CODES: Record<TranslationLanguage, string> = {
   french:     "fr-FR",
   spanish:    "es-ES",
   malay:      "ms-MY",
+  persian:    "fa-IR",
+  german:     "de-DE",
+  portuguese: "pt-PT",
+  russian:    "ru-RU",
+  chinese:    "zh-CN",
+  japanese:   "ja-JP",
+  korean:     "ko-KR",
+  swahili:    "sw-KE",
+  tamil:      "ta-IN",
+  telugu:     "te-IN",
+  malayalam:  "ml-IN",
+  punjabi:    "pa-IN",
+  italian:    "it-IT",
+  dutch:      "nl-NL",
+  thai:       "th-TH",
+  vietnamese: "vi-VN",
+  azerbaijani:"az-AZ",
+  bosnian:    "bs-BA",
+  somali:     "so-SO",
+  hausa:      "ha-NG",
+  uzbek:      "uz-UZ",
+  kazakh:     "kk-KZ",
 };
 
 /** Languages written right-to-left */
-export const RTL_LANGUAGES = new Set<TranslationLanguage>(["urdu", "sindhi"]);
+export const RTL_LANGUAGES = new Set<TranslationLanguage>(["arabic", "urdu", "sindhi", "persian"]);
 
 export const getAudioUrl = (globalAyahNumber: number) =>
   `https://cdn.islamic.network/quran/audio/128/ar.alafasy/${globalAyahNumber}.mp3`;
@@ -223,8 +423,51 @@ async function safeFetch(url: string): Promise<unknown> {
   }
 }
 
+/**
+ * Fetch one surah's translation from the shared source registry.
+ * Existing languages keep using their original AlQuran Cloud editions.
+ * New languages that are not available there use the public Quran API
+ * chapter endpoint instead.
+ */
+export async function fetchTranslationTexts(
+  translation: TranslationLanguage,
+  surahNumber: number,
+): Promise<string[]> {
+  if (translation === "arabic") {
+    const data = await safeFetch(
+      `https://api.alquran.cloud/v1/surah/${surahNumber}`,
+    ) as { data?: { ayahs?: { text: string }[] } } | null;
+    return data?.data?.ayahs?.map((ayah) => ayah.text) ?? [];
+  }
+
+  const quranApiEdition = QURAN_API_EDITIONS[translation];
+  if (quranApiEdition) {
+    const data = await safeFetch(
+      `https://cdn.jsdelivr.net/gh/fawazahmed0/quran-api@1/editions/${quranApiEdition}/${surahNumber}.json`,
+    ) as { chapter?: { verse: number; text: string }[] } | null;
+    return (data?.chapter ?? [])
+      .sort((a, b) => a.verse - b.verse)
+      .map((ayah) => ayah.text);
+  }
+
+  const data = await safeFetch(
+    `https://api.alquran.cloud/v1/surah/${surahNumber}/${TRANSLATION_EDITIONS[translation]}`,
+  ) as { data?: { ayahs?: { text: string }[] } } | null;
+  return data?.data?.ayahs?.map((ayah) => ayah.text) ?? [];
+}
+
+/** Resolve one ayah using the current saved translation language. */
+export async function getCurrentTranslationText(
+  translation: TranslationLanguage,
+  surahNumber: number,
+  ayahNumber: number,
+): Promise<string> {
+  const offlineTexts = await getOfflineTranslationTexts(translation, surahNumber);
+  const texts = offlineTexts ?? await fetchTranslationTexts(translation, surahNumber);
+  return sanitizeTranslation(translation, texts[ayahNumber - 1] ?? "");
+}
+
 export const useSurah = (number: number, translation: TranslationLanguage) => {
-  const edition = TRANSLATION_EDITIONS[translation];
   return useQuery({
     queryKey: ["surah", number, translation],
     queryFn: async () => {
@@ -245,13 +488,7 @@ export const useSurah = (number: number, translation: TranslationLanguage) => {
         if (offlineTexts) {
           translationTexts = offlineTexts;
         } else {
-          // Try online for non-bundled translation
-          const trData = await safeFetch(
-            `https://api.alquran.cloud/v1/surah/${number}/${edition}`
-          );
-          translationTexts =
-            (trData as { data?: { ayahs?: { text: string }[] } } | null)
-              ?.data?.ayahs?.map((a) => a.text) ?? [];
+          translationTexts = await fetchTranslationTexts(translation, number);
         }
 
         const ayahs: AyahData[] = offlineSurah.ayahs.map((ayah, index) => ({
@@ -275,9 +512,9 @@ export const useSurah = (number: number, translation: TranslationLanguage) => {
       }
 
       // ── Full API fallback (bundle unavailable) ────────────────────────────
-      const [arData, trData, transitData] = await Promise.all([
+      const [arData, translationTexts, transitData] = await Promise.all([
         safeFetch(`https://api.alquran.cloud/v1/surah/${number}`),
-        safeFetch(`https://api.alquran.cloud/v1/surah/${number}/${edition}`),
+        fetchTranslationTexts(translation, number),
         safeFetch(`https://api.alquran.cloud/v1/surah/${number}/en.transliteration`),
       ]);
 
@@ -295,8 +532,6 @@ export const useSurah = (number: number, translation: TranslationLanguage) => {
       } | null;
       if (!ar?.data?.ayahs) throw new Error("Arabic surah fetch failed");
 
-      const trAyahs:      { text: string }[] =
-        (trData     as { data?: { ayahs?: { text: string }[] } } | null)?.data?.ayahs ?? [];
       const transitAyahs: { text: string }[] =
         (transitData as { data?: { ayahs?: { text: string }[] } } | null)?.data?.ayahs ?? [];
 
@@ -304,7 +539,7 @@ export const useSurah = (number: number, translation: TranslationLanguage) => {
         numberInSurah:   ayah.numberInSurah,
         globalNumber:    ayah.number,
         textAr:          ayah.text,
-        textTranslation: sanitizeTranslation(translation, trAyahs[index]?.text ?? ""),
+        textTranslation: sanitizeTranslation(translation, translationTexts[index] ?? ""),
         textTranslit:    transitAyahs[index]?.text ?? "",
         audioUrl:        getAudioUrl(ayah.number),
       }));
@@ -441,8 +676,6 @@ export const useRandomAyah = (translation: TranslationLanguage) =>
   useQuery({
     queryKey: ["randomAyah", translation],
     queryFn: async () => {
-      const edition = TRANSLATION_EDITIONS[translation];
-
       // ── Offline-first: use bundled Arabic + selected translation ───────────
       const arabicData = await getOfflineArabic();
 
@@ -459,13 +692,8 @@ export const useRandomAyah = (translation: TranslationLanguage) =>
         // available, otherwise fetch that same selected edition. Never
         // substitute another language.
         if (!selectedTexts) {
-          const translationData = await safeFetch(
-            `https://api.alquran.cloud/v1/surah/${randomSurahNum}/${edition}`,
-          );
-          const translationTexts =
-            (translationData as { data?: { ayahs?: { text: string }[] } } | null)
-              ?.data?.ayahs ?? [];
-          textTranslation = translationTexts[randomAyahIdx]?.text ?? "";
+          const translationTexts = await fetchTranslationTexts(translation, randomSurahNum);
+          textTranslation = translationTexts[randomAyahIdx] ?? "";
         }
 
         return {
@@ -487,14 +715,11 @@ export const useRandomAyah = (translation: TranslationLanguage) =>
       const randomAyahIdx = Math.floor(Math.random() * numAyahs);
       const randomAyah    = data.data.ayahs[randomAyahIdx];
 
-      const [arRes, trRes] = await Promise.all([
+      const [arRes, translationTexts] = await Promise.all([
         fetch(`https://api.alquran.cloud/v1/ayah/${randomAyah.number}`),
-        edition
-          ? fetch(`https://api.alquran.cloud/v1/ayah/${randomAyah.number}/${edition}`)
-          : Promise.resolve(new Response(JSON.stringify({ data: { text: "" } }))),
+        fetchTranslationTexts(translation, randomSurah),
       ]);
       const arData = await arRes.json();
-      const trData = await trRes.json();
 
       return {
         surah:         data.data.englishName,
@@ -502,7 +727,7 @@ export const useRandomAyah = (translation: TranslationLanguage) =>
         numberInSurah: arData.data.numberInSurah as number,
         globalNumber:  randomAyah.number,
         textAr:        arData.data.text,
-        textTranslation: sanitizeTranslation(translation, trData?.data?.text ?? ""),
+        textTranslation: sanitizeTranslation(translation, translationTexts[randomAyahIdx] ?? ""),
         audioUrl:      getAudioUrl(randomAyah.number),
       };
     },

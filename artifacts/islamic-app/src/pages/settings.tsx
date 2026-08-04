@@ -1,6 +1,6 @@
 import { useState, useCallback } from "react";
 import {
-  ChevronLeft, Moon, Globe, MapPin, Bell, Check, Sun, ChevronRight,
+  ChevronLeft, Moon, Globe, MapPin, Bell, Check, Sun, ChevronRight, MoreHorizontal,
   LocateFixed, Loader2, WifiOff, RefreshCw, Languages, Calculator,
 } from "lucide-react";
 import { Link } from "wouter";
@@ -14,7 +14,7 @@ import {
   type CalcMethodSetting,
 } from "@/lib/settings";
 import {
-  ALL_LANGUAGES, TRANSLATION_LABELS, TRANSLATION_ENGLISH_NAMES,
+  MAIN_LANGUAGES, TRANSLATION_LABELS, TRANSLATION_ENGLISH_NAMES, TRANSLATION_FLAGS,
   TranslationLanguage, reverseGeocode,
 } from "@/lib/api";
 import {
@@ -23,26 +23,14 @@ import {
 } from "@/lib/i18n";
 import { useI18n } from "@/lib/i18n-context";
 import { useToast } from "@/hooks/use-toast";
+import { MoreLanguagesDialog } from "@/components/translation-language-picker";
 
 // Badge label for Quran translation languages that need a note
 const QURAN_LANG_BADGE: Partial<Record<TranslationLanguage, string>> = {
   sindhi: "Fixed ✓",
 };
 
-const QURAN_LANG_FLAG: Record<TranslationLanguage, string> = {
-  urdu:       "🇵🇰",
-  english:    "🇬🇧",
-  sindhi:     "🇵🇰",
-  hindi:      "🇮🇳",
-  turkish:    "🇹🇷",
-  bengali:    "🇧🇩",
-  indonesian: "🇮🇩",
-  french:     "🇫🇷",
-  spanish:    "🇪🇸",
-  malay:      "🇲🇾",
-};
-
-const QURAN_LANG_ACCENT: Record<TranslationLanguage, string> = {
+const QURAN_LANG_ACCENT: Partial<Record<TranslationLanguage, string>> = {
   urdu:       "border-emerald-600 bg-emerald-100",
   english:    "border-sky-600 bg-sky-100",
   sindhi:     "border-teal-600 bg-teal-100",
@@ -68,7 +56,6 @@ const UI_LANG_ACCENT: Record<UiLanguage, string> = {
   malay:      "border-lime-600 bg-lime-100",
 };
 
-const QURAN_INITIAL_COUNT = 4;
 const UI_INITIAL_COUNT = 5;
 
 type GpsStatus = "idle" | "detecting" | "granted" | "denied" | "error";
@@ -104,7 +91,7 @@ export function Settings() {
   // ── Quran Translation Language ──────────────────────────────────────────────
   const [defaultLang, setDefaultLang] = useState<TranslationLanguage>(() => getLang());
   const [savedLang, setSavedLang]     = useState(false);
-  const [showAllLangs, setShowAllLangs] = useState(false);
+  const [moreLanguagesOpen, setMoreLanguagesOpen] = useState(false);
 
   const handleLang = (lang: TranslationLanguage) => {
     setDefaultLang(lang);
@@ -117,8 +104,7 @@ export function Settings() {
     });
   };
 
-  const visibleLangs = showAllLangs ? ALL_LANGUAGES : ALL_LANGUAGES.slice(0, QURAN_INITIAL_COUNT);
-  const hiddenCount  = ALL_LANGUAGES.length - QURAN_INITIAL_COUNT;
+  const visibleLangs = MAIN_LANGUAGES;
 
   // ── Location / GPS ──────────────────────────────────────────────────────────
   const [gpsStatus,   setGpsStatus]   = useState<GpsStatus>(readInitialGpsStatus);
@@ -311,6 +297,16 @@ export function Settings() {
           <div className="p-4 space-y-2">
             <p className="text-muted-foreground text-xs mb-3">{t("settings_quran_trans_sub")}</p>
 
+            <button
+              type="button"
+              onClick={() => setMoreLanguagesOpen(true)}
+              className="w-full flex items-center justify-center gap-1.5 py-2.5 text-xs text-muted-foreground hover:text-primary transition-colors border border-dashed border-border rounded-xl"
+              data-testid="button-more-languages-settings"
+            >
+              <MoreHorizontal className="h-3.5 w-3.5" />
+              More Languages
+            </button>
+
             {visibleLangs.map((lang) => {
               const isActive = defaultLang === lang;
               return (
@@ -319,13 +315,13 @@ export function Settings() {
                   onClick={() => handleLang(lang)}
                   className={`w-full flex items-center gap-3 p-4 rounded-xl border transition-all ${
                     isActive
-                      ? QURAN_LANG_ACCENT[lang]
+                      ? (QURAN_LANG_ACCENT[lang] ?? "border-primary bg-primary/10")
                       : "border-border hover:border-border"
                   }`}
                   style={isActive ? {} : undefined}
                   data-testid={`setting-lang-${lang}`}
                 >
-                  <span className="text-xl shrink-0">{QURAN_LANG_FLAG[lang]}</span>
+                  <span className="text-xl shrink-0">{TRANSLATION_FLAGS[lang]}</span>
                   <div className="flex-1 min-w-0 text-left">
                     <div className="flex items-center gap-2">
                       <p className="text-foreground font-semibold text-sm">{TRANSLATION_ENGLISH_NAMES[lang]}</p>
@@ -348,18 +344,6 @@ export function Settings() {
               );
             })}
 
-            <button
-              onClick={() => setShowAllLangs((v) => !v)}
-              className="w-full flex items-center justify-center gap-1.5 py-2.5 text-xs text-muted-foreground hover:text-primary transition-colors"
-              data-testid="button-toggle-all-langs"
-            >
-              <ChevronRight
-                className={`w-3.5 h-3.5 transition-transform ${showAllLangs ? "rotate-90" : ""}`}
-              />
-              {showAllLangs
-                ? t("settings_show_fewer_langs")
-                : `${hiddenCount} ${t("settings_show_more_langs")}`}
-            </button>
           </div>
         </Section>
 
@@ -524,6 +508,12 @@ export function Settings() {
           {t("settings_footer")}
         </p>
       </div>
+      <MoreLanguagesDialog
+        open={moreLanguagesOpen}
+        onOpenChange={setMoreLanguagesOpen}
+        selectedLanguage={defaultLang}
+        onSelect={handleLang}
+      />
     </div>
   );
 }

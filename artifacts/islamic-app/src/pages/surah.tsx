@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useCallback, type CSSProperties } from "react";
 import { useWakeLock } from "@/hooks/useWakeLock";
 import {
-  useSurah, ALL_LANGUAGES, TRANSLATION_LABELS, TRANSLATION_ENGLISH_NAMES,
+  useSurah, MAIN_LANGUAGES, TRANSLATION_LABELS, TRANSLATION_ENGLISH_NAMES,
   TTS_LANG_CODES, RTL_LANGUAGES, TranslationLanguage,
 } from "@/lib/api";
 import { useParams, Link } from "wouter";
@@ -9,7 +9,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import {
   ArrowLeft, Bookmark, BookmarkCheck, ChevronLeft, ChevronRight,
   Heart, Pause, Play, Volume2, Mic, Repeat, Repeat1, Layers2,
-  Loader2, WifiOff, RotateCcw, AlertCircle,
+  Loader2, WifiOff, RotateCcw, AlertCircle, MoreHorizontal,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { getBookmarks, saveBookmark, removeBookmark } from "@/lib/bookmarks";
@@ -21,6 +21,7 @@ import { AyahActionsMenu } from "@/components/ayah-actions-menu";
 import { useAyahDisplaySettings, applyExplanatorySetting } from "@/lib/ayah-display";
 import { usePinchZoom } from "@/hooks/use-pinch-zoom";
 import { useNetworkStatus } from "@/hooks/use-network";
+import { MoreLanguagesDialog } from "@/components/translation-language-picker";
 
 // ── Types ──────────────────────────────────────────────────────────────────────
 type AudioMode  = "arabic" | "translation" | "both";
@@ -97,6 +98,7 @@ export function SurahReader() {
   })();
 
   const [language, setLanguage]     = useState<TranslationLanguage>(() => getLang());
+  const [moreLanguagesOpen, setMoreLanguagesOpen] = useState(false);
   const { data: surah, isLoading }  = useSurah(number, language);
 
   // Bookmarks / Favorites
@@ -630,7 +632,16 @@ export function SurahReader() {
             data-testid="language-switcher"
             style={{ scrollbarWidth: "none" }}
           >
-            {ALL_LANGUAGES.map((lang) => (
+            <button
+              type="button"
+              onClick={() => setMoreLanguagesOpen(true)}
+              className="shrink-0 rounded-full bg-muted/50 px-2.5 py-1 text-xs font-medium text-muted-foreground transition-all hover:text-foreground"
+              data-testid="button-more-languages"
+            >
+              <MoreHorizontal className="mr-1 inline-block h-3.5 w-3.5" />
+              More Languages
+            </button>
+            {MAIN_LANGUAGES.map((lang) => (
               <button
                 key={lang}
                 onClick={() => handleLanguageChange(lang)}
@@ -671,6 +682,13 @@ export function SurahReader() {
           </div>
         )}
       </div>
+
+      <MoreLanguagesDialog
+        open={moreLanguagesOpen}
+        onOpenChange={setMoreLanguagesOpen}
+        selectedLanguage={language}
+        onSelect={handleLanguageChange}
+      />
 
       {/* ── Sindhi text-only notice ────────────────────────────────────── */}
       {isSindhi && !isLoading && (
