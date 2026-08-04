@@ -153,11 +153,33 @@ function IslamicProductsStrip() {
 export function Home() {
   const [city]    = useState(() => getCity());
   const [country] = useState(() => getCountry());
-  const [translationLang] = useState(() => getLang());
+  const [translationLang, setTranslationLang] = useState(() => getLang());
   const { data: prayerData, isLoading: prayerLoading } = usePrayerTimes(city, country);
   const { data: ayahData,   isLoading: ayahLoading }   = useRandomAyah(translationLang);
   const { t } = useI18n();
   const isRtlTranslation = RTL_LANGUAGES.has(translationLang);
+
+  useEffect(() => {
+    const syncTranslationLanguage = () => {
+      const currentLanguage = getLang();
+      setTranslationLang((previousLanguage) =>
+        previousLanguage === currentLanguage ? previousLanguage : currentLanguage,
+      );
+    };
+
+    syncTranslationLanguage();
+    window.addEventListener("focus", syncTranslationLanguage);
+    window.addEventListener("pageshow", syncTranslationLanguage);
+    window.addEventListener("storage", syncTranslationLanguage);
+    document.addEventListener("visibilitychange", syncTranslationLanguage);
+
+    return () => {
+      window.removeEventListener("focus", syncTranslationLanguage);
+      window.removeEventListener("pageshow", syncTranslationLanguage);
+      window.removeEventListener("storage", syncTranslationLanguage);
+      document.removeEventListener("visibilitychange", syncTranslationLanguage);
+    };
+  }, []);
 
   const [nextPrayer, setNextPrayer] = useState<{ name: string; time: string; diffStr: string } | null>(null);
 

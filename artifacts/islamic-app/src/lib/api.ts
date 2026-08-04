@@ -453,8 +453,20 @@ export const useRandomAyah = (translation: TranslationLanguage) =>
         const ayah           = surah.ayahs[randomAyahIdx];
 
         const selectedTexts = await getOfflineTranslationTexts(translation, randomSurahNum);
-        const fallbackTexts = selectedTexts ? null : await getOfflineTranslationTexts("urdu", randomSurahNum);
-        const textTranslation = selectedTexts?.[randomAyahIdx] ?? fallbackTexts?.[randomAyahIdx] ?? "";
+        let textTranslation = selectedTexts?.[randomAyahIdx] ?? "";
+
+        // Match the Quran reader: use the selected translation pack when
+        // available, otherwise fetch that same selected edition. Never
+        // substitute another language.
+        if (!selectedTexts) {
+          const translationData = await safeFetch(
+            `https://api.alquran.cloud/v1/surah/${randomSurahNum}/${edition}`,
+          );
+          const translationTexts =
+            (translationData as { data?: { ayahs?: { text: string }[] } } | null)
+              ?.data?.ayahs ?? [];
+          textTranslation = translationTexts[randomAyahIdx]?.text ?? "";
+        }
 
         return {
           surah:         surah.englishName,
