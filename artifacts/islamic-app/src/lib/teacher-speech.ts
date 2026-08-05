@@ -61,6 +61,44 @@ export function arabicSimilarity(expected: string, actual: string): number {
   return Math.max(0, Math.round((1 - dist / maxLen) * 100));
 }
 
+function arabicSimilarityDetails(expected: string, actual: string): {
+  normalizedExpected: string;
+  normalizedActual: string;
+  distance: number;
+  maxLength: number;
+  score: number;
+} {
+  const normalizedExpected = normalizeArabic(expected);
+  const normalizedActual = normalizeArabic(actual);
+  if (!normalizedExpected.length) {
+    return {
+      normalizedExpected,
+      normalizedActual,
+      distance: normalizedActual.length,
+      maxLength: normalizedActual.length,
+      score: 0,
+    };
+  }
+  if (normalizedExpected === normalizedActual) {
+    return {
+      normalizedExpected,
+      normalizedActual,
+      distance: 0,
+      maxLength: normalizedExpected.length,
+      score: 100,
+    };
+  }
+  const distance = levenshtein(normalizedExpected, normalizedActual);
+  const maxLength = Math.max(normalizedExpected.length, normalizedActual.length);
+  return {
+    normalizedExpected,
+    normalizedActual,
+    distance,
+    maxLength,
+    score: Math.max(0, Math.round((1 - distance / maxLength) * 100)),
+  };
+}
+
 /** Letters of `expected` missing from `actual`, and extra letters said. */
 export function letterDiff(expected: string, actual: string): { missing: string[]; extra: string[] } {
   const e = normalizeArabic(expected).replace(/\s/g, "").split("");
@@ -97,16 +135,48 @@ export interface Assessment {
 /** Score every recognizer alternative against the expected word; keep the best. */
 export function assess(expected: string, alternatives: string[], confidence = -1): Assessment {
   let best = { score: 0, heard: "" };
+  const normalizedExpected = normalizeArabic(expected);
+  teacherDiag("Speech assessment input", {
+    expected,
+    normalizedExpected,
+    matches0: alternatives[0] ?? null,
+    alternatives: JSON.stringify(alternatives),
+    confidence,
+  });
+
   for (const alt of alternatives) {
     // The recognizer may return a phrase — also try each token.
-    const candidates = [alt, ...alt.split(/\s+/)];
-    for (const c of candidates) {
-      const score = arabicSimilarity(expected, c);
-      if (score > best.score) best = { score, heard: c };
-    }
+    const candidates = [alt, ...alt.split(/\s+/).filter(Boolean)];
+    candidates.forEach((c, index) => {
+      const details = arabicSimilarityDetails(expected, c);
+      teacherDiag("Speech assessment candidate", {
+        alternativeIndex: alternatives.indexOf(alt),
+        candidateType: index === 0 ? "full-match" : "token",
+        rawCandidate: c,
+        normalizedExpected: details.normalizedExpected,
+        normalizedActual: details.normalizedActual,
+        distance: details.distance,
+        maxLength: details.maxLength,
+        score: details.score,
+      });
+      if (details.score > best.score) best = { score: details.score, heard: c };
+    });
   }
 
+  teacherDiag("Speech assessment selected", {
+    expected,
+    normalizedExpected,
+    heard: best.heard,
+    normalizedHeard: normalizeArabic(best.heard),
+    score: best.score,
+    confidence,
+  });
+
   const { missing, extra } = letterDiff(expected, best.heard || "");
+  teacherDiag("Speech assessment letter diff", {
+    missing: JSON.stringify(missing),
+    extra: JSON.stringify(extra),
+  });
 
   if (best.score >= PASS_SCORE) {
     return { verdict: "pass", matchScore: best.score, confidence, missing, extra, heard: best.heard };
