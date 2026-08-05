@@ -12,6 +12,7 @@ package com.sj64noorquran;
   import com.capacitorjs.plugins.localnotifications.LocalNotificationsPlugin;
   import com.capacitorjs.plugins.share.SharePlugin;
   import com.capacitorjs.plugins.network.NetworkPlugin;
+  import com.getcapacitor.community.speechrecognition.SpeechRecognition;
   import nl.raphael.settings.NativeSettingsPlugin;
 
   public class MainActivity extends BridgeActivity {
@@ -47,6 +48,9 @@ package com.sj64noorquran;
           // ever drifts (e.g. a stale AdMob entry causing loadPluginClasses()
           // to abort), this call can hang.
           registerPlugin(NetworkPlugin.class);
+          // SpeechRecognition — explicit registration keeps the Teacher mic
+          // flow available even if generated plugin metadata drifts.
+          registerPlugin(SpeechRecognition.class);
           // NativeSettings — explicit registration (same defense-in-depth as Share).
           registerPlugin(NativeSettingsPlugin.class);
           // Project-local Kotlin/Java plugins also registered here (not in plugins.json).
