@@ -11,6 +11,7 @@
 
 import { useState, useEffect } from "react";
 import { Bell, X } from "lucide-react";
+import { useLocation } from "wouter";
 import {
   isSupported,
   getPermissionState,
@@ -28,11 +29,19 @@ function markPrompted(): void {
 }
 
 export function NotificationPrompt() {
+  const [location] = useLocation();
+  const isTeacherRoute = location.startsWith("/teacher");
   const [show, setShow]       = useState(false);
   const [visible, setVisible] = useState(false);
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
+    if (isTeacherRoute) {
+      setShow(false);
+      setVisible(false);
+      return;
+    }
+
     // Only show if: supported + not previously prompted + permission is default
     if (!isSupported())         return;
     if (hasBeenPrompted())      return;
@@ -44,7 +53,7 @@ export function NotificationPrompt() {
       requestAnimationFrame(() => setVisible(true));
     }, 2500);
     return () => clearTimeout(t);
-  }, []);
+  }, [isTeacherRoute, location]);
 
   function dismiss() {
     setVisible(false);
@@ -66,7 +75,7 @@ export function NotificationPrompt() {
     }
   }
 
-  if (!show) return null;
+  if (!show || isTeacherRoute) return null;
 
   return (
     <div

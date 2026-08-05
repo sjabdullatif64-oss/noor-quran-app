@@ -186,7 +186,6 @@ export function TeacherLesson() {
 
   /** Tap "Read Now" → permission (first time) → listen; auto-stops after MAX_RECORD_MS. */
   const onReadNow = useCallback(() => {
-    console.log("[Noor/Teacher] onReadNow() — tapped");
     beginRecording();
   }, [beginRecording]);
 
