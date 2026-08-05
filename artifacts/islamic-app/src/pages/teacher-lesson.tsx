@@ -29,6 +29,10 @@ import {
   type Assessment, type SpeechSupport,
 } from "@/lib/teacher-speech";
 import { isConnected } from "@/lib/capacitor";
+import {
+  installTeacherTouchDiagnostics,
+  teacherDiag,
+} from "@/lib/teacher-touch-diagnostics";
 
 // ── Consent helpers ───────────────────────────────────────────────────────────
 
@@ -72,10 +76,38 @@ export function TeacherLesson() {
 
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const recordTimer = useRef<ReturnType<typeof setInterval> | null>(null);
+  const readNowButtonRef = useRef<HTMLButtonElement | null>(null);
 
   useEffect(() => {
+    teacherDiag("lesson component mounted", {
+      path: window.location.pathname,
+      lessonId: params.id,
+      lessonFound: Boolean(lesson),
+      phase,
+      isNative: Boolean(
+        (window as Window & {
+          Capacitor?: { isNativePlatform?: () => boolean };
+        }).Capacitor?.isNativePlatform?.(),
+      ),
+    });
     getSpeechSupport().then(setSupport).catch(() => setSupport("none"));
   }, []);
+
+  useEffect(() => {
+    teacherDiag("lesson render state", {
+      lessonId: lesson?.id,
+      phase,
+      buttonPresent: Boolean(readNowButtonRef.current),
+      buttonDisabled: readNowButtonRef.current?.disabled,
+      buttonPointerEvents: readNowButtonRef.current
+        ? getComputedStyle(readNowButtonRef.current).pointerEvents
+        : undefined,
+    });
+    return installTeacherTouchDiagnostics(readNowButtonRef.current, {
+      lessonId: lesson?.id ?? String(params.id ?? ""),
+      phase,
+    });
+  }, [lesson?.id, params.id, phase]);
 
   // Reset state when navigating between lessons
   useEffect(() => {
@@ -113,60 +145,124 @@ export function TeacherLesson() {
   // ── Recording flow ──────────────────────────────────────────────────────────
 
   const beginRecording = useCallback(async () => {
-    if (!lesson) return;
+    teacherDiag("beginRecording entered", { lessonId: lesson?.id, phase });
+    if (!lesson) {
+      teacherDiag("beginRecording return: lesson missing");
+      return;
+    }
 
     // Daily-limit gate applies only to NEW lessons
     if (!isLessonCompleted(lesson.id) && getDailyStatus().limitReached) {
+      teacherDiag("beginRecording return: daily limit reached", { lessonId: lesson.id });
       setPhase("limit");
       return;
     }
     if (!hasConsent()) {
+      teacherDiag("beginRecording return: consent required", { lessonId: lesson.id });
       setPhase("consent");
       return;
     }
 
-    const sup = await getSpeechSupport();
+    teacherDiag("beginRecording before getSpeechSupport");
+    let sup: SpeechSupport;
+    try {
+      sup = await getSpeechSupport();
+      teacherDiag("beginRecording after getSpeechSupport", { support: sup });
+    } catch (error) {
+      teacherDiag("beginRecording exception: getSpeechSupport", { error: String(error) });
+      throw error;
+    }
     setSupport(sup);
     if (sup === "none") {
+      teacherDiag("beginRecording return: no speech support");
       setNoMicReason(getSpeechSupportReason());
       setPhase("no-mic");
       return;
     }
 
-    const connected = await isConnected();
+    teacherDiag("beginRecording before isConnected");
+    let connected: boolean;
+    try {
+      connected = await isConnected();
+      teacherDiag("beginRecording after isConnected", { connected });
+    } catch (error) {
+      teacherDiag("beginRecording exception: isConnected", { error: String(error) });
+      throw error;
+    }
     if (!connected) {
+      teacherDiag("beginRecording return: offline");
       setPhase("offline");
       return;
     }
 
-    const perm = await checkSpeechPermission();
+    teacherDiag("beginRecording before checkSpeechPermission");
+    let perm: Awaited<ReturnType<typeof checkSpeechPermission>>;
+    try {
+      perm = await checkSpeechPermission();
+      teacherDiag("beginRecording after checkSpeechPermission", { permission: perm });
+    } catch (error) {
+      teacherDiag("beginRecording exception: checkSpeechPermission", { error: String(error) });
+      throw error;
+    }
     if (perm === "denied") {
+      teacherDiag("beginRecording return: permission denied");
       setPhase("mic-denied");
       return;
     }
 
     if (perm === "prompt" && sup === "native") {
-      const granted = await requestSpeechPermission();
+      teacherDiag("beginRecording before requestSpeechPermission");
+      let granted: Awaited<ReturnType<typeof requestSpeechPermission>>;
+      try {
+        granted = await requestSpeechPermission();
+        teacherDiag("beginRecording after requestSpeechPermission", { permission: granted });
+      } catch (error) {
+        teacherDiag("beginRecording exception: requestSpeechPermission", { error: String(error) });
+        throw error;
+      }
       if (granted !== "granted") {
+        teacherDiag("beginRecording return: permission not granted");
         setPhase("mic-denied");
         return;
       }
     }
 
+    teacherDiag("beginRecording entering recording phase");
     setPhase("recording");
     setRecordMs(0);
     const started = Date.now();
     recordTimer.current = setInterval(() => setRecordMs(Date.now() - started), 100);
 
-    const res = await listenOnce(MAX_RECORD_MS);
+    teacherDiag("beginRecording before listenOnce", { timeoutMs: MAX_RECORD_MS });
+    let res: Awaited<ReturnType<typeof listenOnce>>;
+    try {
+      res = await listenOnce(MAX_RECORD_MS);
+      teacherDiag("beginRecording after listenOnce", {
+        error: res.error,
+        alternatives: res.alternatives.length,
+      });
+    } catch (error) {
+      teacherDiag("beginRecording exception: listenOnce", { error: String(error) });
+      throw error;
+    }
 
     if (recordTimer.current) { clearInterval(recordTimer.current); recordTimer.current = null; }
     setPhase("checking");
 
-    if (res.error === "not-allowed") { setPhase("mic-denied"); return; }
-    if (res.error === "network") { setPhase("offline"); return; }
+    if (res.error === "not-allowed") {
+      teacherDiag("beginRecording return: listen not allowed");
+      setPhase("mic-denied");
+      return;
+    }
+    if (res.error === "network") {
+      teacherDiag("beginRecording return: listen network error");
+      setPhase("offline");
+      return;
+    }
 
+    teacherDiag("beginRecording before assess");
     const a = assess(lesson.expected, res.alternatives, res.confidence);
+    teacherDiag("beginRecording after assess", { verdict: a.verdict, score: a.matchScore });
     setResult(a);
 
     if (a.verdict === "pass") {
@@ -186,8 +282,21 @@ export function TeacherLesson() {
 
   /** Tap "Read Now" → permission (first time) → listen; auto-stops after MAX_RECORD_MS. */
   const onReadNow = useCallback(() => {
-    beginRecording();
-  }, [beginRecording]);
+    teacherDiag("Read Now React onClick ENTERED", {
+      lessonId: lesson?.id,
+      phase,
+      buttonDisabled: readNowButtonRef.current?.disabled,
+    });
+    try {
+      const pending = beginRecording();
+      teacherDiag("Read Now beginRecording invoked", { returnedPromise: Boolean(pending) });
+      pending.catch((error) => {
+        teacherDiag("Read Now beginRecording rejected", { error: String(error) });
+      });
+    } catch (error) {
+      teacherDiag("Read Now handler exception", { error: String(error) });
+    }
+  }, [beginRecording, lesson?.id, phase]);
 
   /** Tap "Stop" while listening → finish early and check what was heard. */
   const onStop = useCallback(() => {
@@ -592,6 +701,7 @@ export function TeacherLesson() {
                 ) : (
                   <>
                     <button
+                      ref={readNowButtonRef}
                       onClick={onReadNow}
                       className="inline-flex items-center gap-2.5 px-8 py-4 rounded-2xl text-base font-bold text-primary-foreground bg-primary active:scale-95 shadow-lg transition-all"
                       data-testid="button-record"

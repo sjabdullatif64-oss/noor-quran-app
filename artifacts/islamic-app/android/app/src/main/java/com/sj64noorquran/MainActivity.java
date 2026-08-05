@@ -4,6 +4,8 @@ package com.sj64noorquran;
   import android.view.Window;
   import android.view.WindowManager;
   import android.graphics.Color;
+  import android.util.Log;
+  import android.view.MotionEvent;
   import androidx.core.splashscreen.SplashScreen;
   import androidx.core.view.WindowCompat;
   import androidx.core.view.WindowInsetsControllerCompat;
@@ -16,6 +18,20 @@ package com.sj64noorquran;
   import nl.raphael.settings.NativeSettingsPlugin;
 
   public class MainActivity extends BridgeActivity {
+
+      // TEMPORARY Teacher touch diagnostics; remove after real-device tracing.
+      @Override
+      public boolean dispatchTouchEvent(MotionEvent event) {
+          int action = event.getActionMasked();
+          if (action == MotionEvent.ACTION_DOWN
+                  || action == MotionEvent.ACTION_UP
+                  || action == MotionEvent.ACTION_CANCEL) {
+              Log.d("NoorTeacherTouch", "Activity.dispatchTouchEvent action="
+                      + action + " x=" + event.getX() + " y=" + event.getY()
+                      + " windowFocus=" + hasWindowFocus());
+          }
+          return super.dispatchTouchEvent(event);
+      }
 
       @Override
       public void onCreate(Bundle savedInstanceState) {
