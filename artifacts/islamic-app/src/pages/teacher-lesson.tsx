@@ -463,7 +463,7 @@ export function TeacherLesson() {
         {/* ── State panels ── */}
 
         {phase === "consent" && (
-          <div className="rounded-2xl border border-border p-5 bg-card" data-testid="panel-consent">
+          <div className="relative z-30 rounded-2xl border border-border p-5 bg-card" data-testid="panel-consent">
             <div className="flex items-center gap-2 mb-3">
               <ShieldCheck className="w-5 h-5 text-primary" />
               <p className="text-foreground font-semibold text-sm">Before you start speaking</p>
@@ -476,6 +476,7 @@ export function TeacherLesson() {
             </ul>
             <div className="flex gap-2">
               <button
+                type="button"
                 onClick={() => {
                   teacherDiag("Consent Continue onClick ENTERED", { lessonId: lesson.id, phase });
                   try {
@@ -489,7 +490,7 @@ export function TeacherLesson() {
                     teacherDiag("Consent Continue handler exception", { error: String(error) }, "error");
                   }
                 }}
-                className="flex-1 py-3 rounded-xl text-sm font-semibold text-primary-foreground bg-primary"
+                className="relative z-30 flex-1 touch-manipulation pointer-events-auto py-3 rounded-xl text-sm font-semibold text-primary-foreground bg-primary"
                 data-testid="button-consent-agree"
               >
                 I understand — continue
