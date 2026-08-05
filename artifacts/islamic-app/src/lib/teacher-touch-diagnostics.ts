@@ -11,6 +11,7 @@ const MAX_ENTRIES = 120;
 
 type DiagnosticValue = string | number | boolean | null | undefined;
 type DiagnosticData = Record<string, DiagnosticValue>;
+export type TeacherDiagnosticLevel = "log" | "warn" | "error";
 
 function describeElement(element: Element | null): DiagnosticData {
   if (!element) return { element: null };
@@ -42,11 +43,31 @@ function readEntries(): string[] {
   }
 }
 
-export function teacherDiag(label: string, data: DiagnosticData = {}): void {
+export function teacherDiag(
+  label: string,
+  data: DiagnosticData = {},
+  level: TeacherDiagnosticLevel = "log",
+): void {
   const entry = `[Noor/TeacherTouch] ${label} ${JSON.stringify(data)}`;
-  console.log(entry);
+  if (level === "error") console.error(entry);
+  else if (level === "warn") console.warn(entry);
+  else console.log(entry);
   try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify([...readEntries(), entry].slice(-MAX_ENTRIES)));
+    window.dispatchEvent(new CustomEvent("noor:teacher-diagnostic", { detail: entry }));
+  } catch {
+    // Diagnostic persistence must never affect the Teacher flow.
+  }
+}
+
+export function getTeacherDiagnosticEntries(): string[] {
+  return readEntries();
+}
+
+export function clearTeacherDiagnosticEntries(): void {
+  try {
+    localStorage.removeItem(STORAGE_KEY);
+    window.dispatchEvent(new CustomEvent("noor:teacher-diagnostic-cleared"));
   } catch {
     // Diagnostic persistence must never affect the Teacher flow.
   }

@@ -14,6 +14,7 @@
 import { Capacitor } from "@capacitor/core";
 import { SpeechRecognition as NativeSpeechRecognition } from "@capacitor-community/speech-recognition";
 import { MIN_CONFIDENCE, PASS_SCORE, SPEECH_LANG } from "./teacher-config";
+import { teacherDiag } from "./teacher-touch-diagnostics";
 
 // ── Arabic normalization ──────────────────────────────────────────────────────
 
@@ -139,13 +140,13 @@ interface SpeechRecognitionPlugin {
  */
 async function getNativePlugin(): Promise<SpeechRecognitionPlugin | null> {
   const isNative = Capacitor.isNativePlatform();
-  console.log("[Noor/Speech] getNativePlugin() — isNative=" + isNative);
+  teacherDiag("Speech getNativePlugin", { isNative });
   if (!isNative) {
-    console.log("[Noor/Speech] getNativePlugin() — web, returning null");
+    teacherDiag("Speech getNativePlugin return: web/null");
     return null;
   }
   const plugin = NativeSpeechRecognition as unknown as SpeechRecognitionPlugin;
-  console.log("[Noor/Speech] getNativePlugin() — native, returning plugin object: " + (plugin ? "PRESENT" : "MISSING"));
+  teacherDiag("Speech getNativePlugin return: native", { plugin: plugin ? "PRESENT" : "MISSING" });
   return plugin;
 }
 
@@ -259,7 +260,7 @@ function withTimeout<T>(promise: Promise<T>, ms: number, fallback: T, label: str
   let timeoutId: ReturnType<typeof setTimeout>;
   const timer = new Promise<T>((resolve) => {
     timeoutId = setTimeout(() => {
-      console.warn("[Noor/Speech] " + label + " — timed out after " + ms + "ms, using fallback");
+      teacherDiag(`Speech ${label} timeout`, { ms, fallback: JSON.stringify(fallback) }, "warn");
       resolve(fallback);
     }, ms);
   });
@@ -268,52 +269,52 @@ function withTimeout<T>(promise: Promise<T>, ms: number, fallback: T, label: str
 
 /** Check mic/speech permission WITHOUT prompting (native only; web reports "prompt"). */
 export async function checkSpeechPermission(): Promise<PermissionState> {
-  console.log("[Noor/Speech] checkSpeechPermission() — start");
+  teacherDiag("Speech checkSpeechPermission start");
   const native = await getNativePlugin();
   if (!native) {
-    console.log("[Noor/Speech] checkSpeechPermission() — no native plugin, returning prompt");
+    teacherDiag("Speech checkSpeechPermission return: no native plugin/prompt");
     return "prompt";
   }
   try {
-    console.log("[Noor/Speech] checkSpeechPermission() — BEFORE native.checkPermissions()");
+    teacherDiag("Speech BEFORE native.checkPermissions");
     const { speechRecognition } = await withTimeout(
       native.checkPermissions(),
       2000,
       { speechRecognition: "prompt" },
       "native.checkPermissions()"
     );
-    console.log("[Noor/Speech] checkSpeechPermission() — AFTER native.checkPermissions(), speechRecognition=" + speechRecognition);
+    teacherDiag("Speech AFTER native.checkPermissions", { speechRecognition });
     if (speechRecognition === "granted") return "granted";
     if (speechRecognition === "denied") return "denied";
     return "prompt";
   } catch (e) {
-    console.error("[Noor/Speech] checkSpeechPermission() — native.checkPermissions() REJECTED:", e);
+    teacherDiag("Speech native.checkPermissions rejected", { error: String(e) }, "error");
     return "prompt";
   }
 }
 
 /** Request mic/speech permission (shows the OS dialog). */
 export async function requestSpeechPermission(): Promise<PermissionState> {
-  console.log("[Noor/Speech] requestSpeechPermission() — start");
+  teacherDiag("Speech requestSpeechPermission start");
   const native = await getNativePlugin();
   if (!native) {
-    console.log("[Noor/Speech] requestSpeechPermission() — no native plugin, returning prompt");
+    teacherDiag("Speech requestSpeechPermission return: no native plugin/prompt");
     return "prompt"; // web: permission is requested implicitly by start()
   }
   try {
-    console.log("[Noor/Speech] requestSpeechPermission() — BEFORE native.requestPermissions()");
+    teacherDiag("Speech BEFORE native.requestPermissions");
     const { speechRecognition } = await withTimeout(
       native.requestPermissions(),
       8000,
       { speechRecognition: "prompt" },
       "native.requestPermissions()"
     );
-    console.log("[Noor/Speech] requestSpeechPermission() — AFTER native.requestPermissions(), speechRecognition=" + speechRecognition);
+    teacherDiag("Speech AFTER native.requestPermissions", { speechRecognition });
     if (speechRecognition === "granted") return "granted";
     if (speechRecognition === "denied") return "denied";
     return "prompt";
   } catch (e) {
-    console.error("[Noor/Speech] requestSpeechPermission() — native.requestPermissions() REJECTED:", e);
+    teacherDiag("Speech native.requestPermissions rejected", { error: String(e) }, "error");
     return "denied";
   }
 }
@@ -332,29 +333,29 @@ let _nativeActive = false;
  * Resolves (never rejects) — errors come back in `error`.
  */
 export async function listenOnce(timeoutMs: number): Promise<ListenResult> {
-  console.log("[Noor/Speech] listenOnce() — start, timeoutMs=" + timeoutMs);
+  teacherDiag("Speech listenOnce start", { timeoutMs });
   const native = await getNativePlugin();
   if (native) {
-    console.log("[Noor/Speech] listenOnce() — native path");
+    teacherDiag("Speech listenOnce native path");
     _nativeActive = true;
     try {
       const timer = new Promise<{ matches?: string[] }>((resolve) =>
         setTimeout(() => {
-          console.log("[Noor/Speech] listenOnce() — timer fired after " + timeoutMs + "ms, stopping recognizer");
+          teacherDiag("Speech listenOnce timer fired; calling native.stop", { timeoutMs });
           native.stop().catch(() => {});
           resolve({ matches: [] });
         }, timeoutMs),
       );
-      console.log("[Noor/Speech] listenOnce() — BEFORE native.start(), options=", JSON.stringify({ language: SPEECH_LANG, maxResults: 5, partialResults: false, popup: false }));
+      teacherDiag("Speech BEFORE native.start", { language: SPEECH_LANG, maxResults: 5, partialResults: false, popup: false });
       const res = await Promise.race([
         native.start({ language: SPEECH_LANG, maxResults: 5, partialResults: false, popup: false }),
         timer,
       ]);
-      console.log("[Noor/Speech] listenOnce() — AFTER native.start() / race, res=", JSON.stringify(res));
+      teacherDiag("Speech AFTER native.start/race", { matches: res?.matches?.length ?? 0 });
       const matches = res?.matches ?? [];
       return { alternatives: matches, confidence: -1, error: matches.length ? undefined : "no-speech" };
     } catch (e) {
-      console.error("[Noor/Speech] listenOnce() — native.start() threw:", e);
+      teacherDiag("Speech native.start rejected/threw", { error: String(e) }, "error");
       const msg = String((e as { message?: string })?.message ?? "").toLowerCase();
       if (msg.includes("permission") || msg.includes("denied")) {
         return { alternatives: [], confidence: -1, error: "not-allowed" };
@@ -368,7 +369,10 @@ export async function listenOnce(timeoutMs: number): Promise<ListenResult> {
 
   // Web Speech API fallback
   const Ctor = getWebRecognizerCtor();
-  if (!Ctor) return { alternatives: [], confidence: -1, error: "unknown" };
+  if (!Ctor) {
+    teacherDiag("Speech listenOnce return: Web Speech constructor missing");
+    return { alternatives: [], confidence: -1, error: "unknown" };
+  }
 
   return new Promise<ListenResult>((resolve) => {
     const rec = new Ctor();
@@ -415,8 +419,11 @@ export async function listenOnce(timeoutMs: number): Promise<ListenResult> {
     rec.onend = () => done({ alternatives: [], confidence: -1, error: "no-speech" });
 
     try {
+      teacherDiag("Speech WebSpeechRecognition calling rec.start");
       rec.start();
-    } catch {
+      teacherDiag("Speech WebSpeechRecognition rec.start returned");
+    } catch (error) {
+      teacherDiag("Speech WebSpeechRecognition rec.start threw", { error: String(error) }, "error");
       done({ alternatives: [], confidence: -1, error: "unknown" });
     }
   });
@@ -424,11 +431,25 @@ export async function listenOnce(timeoutMs: number): Promise<ListenResult> {
 
 /** Stop any in-flight recognition (user released the mic button). */
 export async function stopListening(): Promise<void> {
+  teacherDiag("Speech stopListening start", {
+    webActive: Boolean(_webActive),
+    nativeActive: _nativeActive,
+  });
   if (_webActive) {
-    try { _webActive.stop(); } catch { /* ignore */ }
+    try {
+      _webActive.stop();
+      teacherDiag("Speech WebSpeechRecognition stop returned");
+    } catch (error) {
+      teacherDiag("Speech WebSpeechRecognition stop threw", { error: String(error) }, "error");
+    }
   }
   if (_nativeActive) {
     const native = await getNativePlugin();
-    try { await native?.stop(); } catch { /* ignore */ }
+    try {
+      await native?.stop();
+      teacherDiag("Speech native.stop returned");
+    } catch (error) {
+      teacherDiag("Speech native.stop threw", { error: String(error) }, "error");
+    }
   }
 }

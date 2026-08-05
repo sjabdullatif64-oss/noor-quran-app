@@ -29,7 +29,10 @@ import {
   type Assessment, type SpeechSupport,
 } from "@/lib/teacher-speech";
 import { isConnected } from "@/lib/capacitor";
+import { BUILD_INFO } from "@/lib/buildInfo";
 import {
+  clearTeacherDiagnosticEntries,
+  getTeacherDiagnosticEntries,
   installTeacherTouchDiagnostics,
   teacherDiag,
 } from "@/lib/teacher-touch-diagnostics";
@@ -73,6 +76,8 @@ export function TeacherLesson() {
   const [completedNow, setCompletedNow] = useState<CompleteResult | null>(null);
   const [settingsFailed, setSettingsFailed] = useState(false);
   const [noMicReason, setNoMicReason] = useState<string | null>(null);
+  const [showDiagnostics, setShowDiagnostics] = useState(false);
+  const [diagnosticEntries, setDiagnosticEntries] = useState<string[]>(() => getTeacherDiagnosticEntries());
 
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const recordTimer = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -80,6 +85,8 @@ export function TeacherLesson() {
 
   useEffect(() => {
     teacherDiag("lesson component mounted", {
+      buildVersion: BUILD_INFO.version,
+      buildCommit: BUILD_INFO.commitSha,
       path: window.location.pathname,
       lessonId: params.id,
       lessonFound: Boolean(lesson),
@@ -90,7 +97,15 @@ export function TeacherLesson() {
         }).Capacitor?.isNativePlatform?.(),
       ),
     });
-    getSpeechSupport().then(setSupport).catch(() => setSupport("none"));
+    getSpeechSupport((message) => teacherDiag("Speech support step", { message }))
+      .then((resolved) => {
+        teacherDiag("Speech support initial resolution", { support: resolved });
+        setSupport(resolved);
+      })
+      .catch((error) => {
+        teacherDiag("Speech support initial resolution rejected", { error: String(error) }, "error");
+        setSupport("none");
+      });
   }, []);
 
   useEffect(() => {
@@ -108,6 +123,16 @@ export function TeacherLesson() {
       phase,
     });
   }, [lesson?.id, params.id, phase]);
+
+  useEffect(() => {
+    const refresh = () => setDiagnosticEntries(getTeacherDiagnosticEntries());
+    window.addEventListener("noor:teacher-diagnostic", refresh);
+    window.addEventListener("noor:teacher-diagnostic-cleared", refresh);
+    return () => {
+      window.removeEventListener("noor:teacher-diagnostic", refresh);
+      window.removeEventListener("noor:teacher-diagnostic-cleared", refresh);
+    };
+  }, []);
 
   // Reset state when navigating between lessons
   useEffect(() => {
@@ -451,14 +476,29 @@ export function TeacherLesson() {
             </ul>
             <div className="flex gap-2">
               <button
-                onClick={() => { console.log("[Noor/Teacher] consent — I understand tapped, granting consent"); grantConsent(); setPhase("idle"); beginRecording(); }}
+                onClick={() => {
+                  teacherDiag("Consent Continue onClick ENTERED", { lessonId: lesson.id, phase });
+                  try {
+                    grantConsent();
+                    teacherDiag("Consent granted; setting idle and invoking beginRecording");
+                    setPhase("idle");
+                    beginRecording().catch((error) => {
+                      teacherDiag("Consent beginRecording rejected", { error: String(error) }, "error");
+                    });
+                  } catch (error) {
+                    teacherDiag("Consent Continue handler exception", { error: String(error) }, "error");
+                  }
+                }}
                 className="flex-1 py-3 rounded-xl text-sm font-semibold text-primary-foreground bg-primary"
                 data-testid="button-consent-agree"
               >
                 I understand — continue
               </button>
               <button
-                onClick={() => { console.log("[Noor/Teacher] consent — Listen only selected"); setPhase("no-mic"); }}
+                onClick={() => {
+                  teacherDiag("Consent Listen only onClick ENTERED");
+                  setPhase("no-mic");
+                }}
                 className="px-4 py-3 rounded-xl text-xs font-medium text-muted-foreground border border-border"
               >
                 Listen only
@@ -768,6 +808,50 @@ export function TeacherLesson() {
                 )
               )}
             </div>
+          </div>
+        )}
+      </div>
+
+      <div className="px-4 pb-8 max-w-2xl mx-auto">
+        <button
+          type="button"
+          onClick={() => {
+            teacherDiag("Diagnostic panel toggled", { open: !showDiagnostics });
+            setShowDiagnostics((open) => !open);
+          }}
+          className="w-full rounded-xl border border-border px-3 py-2 text-left text-[11px] text-muted-foreground"
+          data-testid="button-teacher-diagnostics"
+        >
+          {showDiagnostics ? "Hide diagnostic log" : `Show diagnostic log (${diagnosticEntries.length} entries)`}
+        </button>
+        {showDiagnostics && (
+          <div className="mt-2 rounded-xl border border-border bg-card p-3">
+            <div className="flex gap-2 mb-2">
+              <button
+                type="button"
+                onClick={() => {
+                  const text = diagnosticEntries.join("\n");
+                  navigator.clipboard?.writeText(text).catch(() => {});
+                  teacherDiag("Diagnostic log copy requested", { entries: diagnosticEntries.length });
+                }}
+                className="rounded-lg bg-primary px-3 py-1.5 text-[11px] font-semibold text-primary-foreground"
+              >
+                Copy log
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  clearTeacherDiagnosticEntries();
+                  setDiagnosticEntries([]);
+                }}
+                className="rounded-lg border border-border px-3 py-1.5 text-[11px] text-muted-foreground"
+              >
+                Clear log
+              </button>
+            </div>
+            <pre className="max-h-72 overflow-auto whitespace-pre-wrap break-words text-[9px] leading-relaxed text-muted-foreground">
+              {diagnosticEntries.length ? diagnosticEntries.join("\n") : "No diagnostic entries yet."}
+            </pre>
           </div>
         )}
       </div>
