@@ -164,8 +164,8 @@ jobs:
           else
             VER_CODE="$EXISTING_CODE"
           fi
-          if [[ ! "$VER_CODE" =~ ^[0-9]+$ ]] || (( VER_CODE <= 74684549 )); then
-            echo "❌ versionCode must be an integer greater than 74684549."
+          if [[ ! "$VER_CODE" =~ ^[0-9]+$ ]] || (( VER_CODE <= 79678051 )); then
+            echo "❌ versionCode must be an integer greater than 79678051."
             exit 1
           fi
           echo "name=$VER_NAME" >> $GITHUB_OUTPUT

@@ -12,7 +12,7 @@ android {
         minSdk rootProject.ext.minSdkVersion
         // targetSdk 36 = Android 16 — meets Google Play targetSdk requirement
         targetSdk 36
-        versionCode 74684550
+        versionCode 79678052
         versionName "1.0.17"
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         multiDexEnabled true
