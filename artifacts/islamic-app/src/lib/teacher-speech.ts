@@ -12,7 +12,10 @@
  */
 
 import { Capacitor } from "@capacitor/core";
-import { SpeechRecognition as NativeSpeechRecognition } from "@capacitor-community/speech-recognition";
+import {
+  SpeechRecognition as NativeSpeechRecognition,
+  type SpeechRecognitionPlugin,
+} from "@capacitor-community/speech-recognition";
 import { MIN_CONFIDENCE, PASS_SCORE, SPEECH_LANG } from "./teacher-config";
 import { teacherDiag } from "./teacher-touch-diagnostics";
 
@@ -119,26 +122,13 @@ export function assess(expected: string, alternatives: string[], confidence = -1
 
 export type SpeechSupport = "native" | "web" | "none";
 
-interface SpeechRecognitionPlugin {
-  available(): Promise<{ available: boolean }>;
-  checkPermissions(): Promise<{ speechRecognition: string }>;
-  requestPermissions(): Promise<{ speechRecognition: string }>;
-  start(options: {
-    language?: string;
-    maxResults?: number;
-    partialResults?: boolean;
-    popup?: boolean;
-  }): Promise<{ matches?: string[] }>;
-  stop(): Promise<void>;
-}
-
 /**
  * Statically imported (bundled into the main chunk) so it can NEVER fail to
  * load at runtime inside the Android WebView. A previous dynamic
  * `import(...)` could fail on-device and the failure was cached, which made
  * the whole Teacher flow silently fall back to listen-only mode.
  */
-async function getNativePlugin(): Promise<SpeechRecognitionPlugin | null> {
+function getNativePlugin(): SpeechRecognitionPlugin | null {
   const isNative = Capacitor.isNativePlatform();
   teacherDiag("Speech getNativePlugin", { isNative });
   if (!isNative) {
@@ -270,7 +260,7 @@ function withTimeout<T>(promise: Promise<T>, ms: number, fallback: T, label: str
 /** Check mic/speech permission WITHOUT prompting (native only; web reports "prompt"). */
 export async function checkSpeechPermission(): Promise<PermissionState> {
   teacherDiag("Speech checkSpeechPermission start");
-  const native = await getNativePlugin();
+  const native = getNativePlugin();
   if (!native) {
     teacherDiag("Speech checkSpeechPermission return: no native plugin/prompt");
     return "prompt";
@@ -296,7 +286,7 @@ export async function checkSpeechPermission(): Promise<PermissionState> {
 /** Request mic/speech permission (shows the OS dialog). */
 export async function requestSpeechPermission(): Promise<PermissionState> {
   teacherDiag("Speech requestSpeechPermission start");
-  const native = await getNativePlugin();
+  const native = getNativePlugin();
   if (!native) {
     teacherDiag("Speech requestSpeechPermission return: no native plugin/prompt");
     return "prompt"; // web: permission is requested implicitly by start()
@@ -334,7 +324,7 @@ let _nativeActive = false;
  */
 export async function listenOnce(timeoutMs: number): Promise<ListenResult> {
   teacherDiag("Speech listenOnce start", { timeoutMs });
-  const native = await getNativePlugin();
+  const native = getNativePlugin();
   if (native) {
     teacherDiag("Speech listenOnce native path");
     _nativeActive = true;
@@ -444,7 +434,7 @@ export async function stopListening(): Promise<void> {
     }
   }
   if (_nativeActive) {
-    const native = await getNativePlugin();
+    const native = getNativePlugin();
     try {
       await native?.stop();
       teacherDiag("Speech native.stop returned");
