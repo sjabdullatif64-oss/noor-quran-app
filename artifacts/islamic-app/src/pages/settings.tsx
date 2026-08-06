@@ -1,7 +1,7 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import {
   ChevronLeft, Moon, Globe, MapPin, Bell, Check, Sun, ChevronRight, MoreHorizontal,
-  LocateFixed, Loader2, WifiOff, RefreshCw, Languages, Calculator,
+  LocateFixed, Loader2, WifiOff, RefreshCw, Languages, Calculator, Copy, KeyRound,
 } from "lucide-react";
 import { Link } from "wouter";
 import { useTheme } from "@/components/theme-provider";
@@ -24,6 +24,10 @@ import {
 import { useI18n } from "@/lib/i18n-context";
 import { useToast } from "@/hooks/use-toast";
 import { MoreLanguagesDialog } from "@/components/translation-language-picker";
+import {
+  getStoredTeacherRecoveryKey,
+  restoreTeacherAccount,
+} from "@/lib/teacher-account";
 
 // Badge label for Quran translation languages that need a note
 const QURAN_LANG_BADGE: Partial<Record<TranslationLanguage, string>> = {
@@ -70,6 +74,212 @@ export function Settings() {
   const { theme, setTheme } = useTheme();
   const { toast } = useToast();
   const { t, lang: uiLang, setLang: setUiLang } = useI18n();
+  const [recoveryKey, setRecoveryKey] = useState(getStoredTeacherRecoveryKey);
+  const [restoreOpen, setRestoreOpen] = useState(false);
+  const [restoreInput, setRestoreInput] = useState("");
+  const [restoreBusy, setRestoreBusy] = useState(false);
+  const [restoreMessage, setRestoreMessage] = useState<"success" | "error" | null>(null);
+
+  const recoveryCopy = {
+    english: {
+      description: "Keep this key somewhere safe. It restores your AI Teacher account and all progress.",
+      copy: "Copy",
+      copied: "Recovery Key copied",
+      restore: "Restore User",
+      restoreDescription: "Already have a Recovery Key? Restore your AI Teacher account on this device.",
+      placeholder: "Enter your Recovery Key",
+      confirm: "Restore Account",
+      cancel: "Cancel",
+      success: "Your AI Teacher account and progress were restored successfully.",
+      invalid: "That Recovery Key is invalid. Check it and try again.",
+      failed: "We could not restore your account. Please try again.",
+      required: "Enter your Recovery Key.",
+    },
+    arabic: {
+      description: "احتفظ بهذا المفتاح في مكان آمن. يعيد حساب معلم الذكاء الاصطناعي وتقدمك بالكامل.",
+      copy: "نسخ",
+      copied: "تم نسخ مفتاح الاسترداد",
+      restore: "استعادة المستخدم",
+      restoreDescription: "لديك مفتاح استرداد؟ استعد حساب معلم الذكاء الاصطناعي على هذا الجهاز.",
+      placeholder: "أدخل مفتاح الاسترداد",
+      confirm: "استعادة الحساب",
+      cancel: "إلغاء",
+      success: "تمت استعادة حساب معلم الذكاء الاصطناعي وتقدمك بنجاح.",
+      invalid: "مفتاح الاسترداد غير صالح. تحقق منه وحاول مرة أخرى.",
+      failed: "تعذر استعادة الحساب. حاول مرة أخرى.",
+      required: "أدخل مفتاح الاسترداد.",
+    },
+    urdu: {
+      description: "اس کلید کو محفوظ جگہ پر رکھیں۔ یہ آپ کا AI Teacher اکاؤنٹ اور تمام پیش رفت بحال کرتی ہے۔",
+      copy: "کاپی",
+      copied: "Recovery Key کاپی ہو گئی",
+      restore: "صارف بحال کریں",
+      restoreDescription: "Recovery Key موجود ہے؟ اس ڈیوائس پر اپنا AI Teacher اکاؤنٹ بحال کریں۔",
+      placeholder: "Recovery Key درج کریں",
+      confirm: "اکاؤنٹ بحال کریں",
+      cancel: "منسوخ",
+      success: "آپ کا AI Teacher اکاؤنٹ اور پیش رفت کامیابی سے بحال ہو گئی۔",
+      invalid: "Recovery Key درست نہیں۔ اسے چیک کر کے دوبارہ کوشش کریں۔",
+      failed: "اکاؤنٹ بحال نہیں ہو سکا۔ دوبارہ کوشش کریں۔",
+      required: "Recovery Key درج کریں۔",
+    },
+    hindi: {
+      description: "इस कुंजी को सुरक्षित रखें। यह आपका AI Teacher खाता और पूरी प्रगति वापस लाती है।",
+      copy: "कॉपी",
+      copied: "Recovery Key कॉपी हो गई",
+      restore: "यूज़र पुनर्स्थापित करें",
+      restoreDescription: "Recovery Key है? इस डिवाइस पर अपना AI Teacher खाता पुनर्स्थापित करें।",
+      placeholder: "Recovery Key दर्ज करें",
+      confirm: "खाता पुनर्स्थापित करें",
+      cancel: "रद्द करें",
+      success: "आपका AI Teacher खाता और प्रगति सफलतापूर्वक पुनर्स्थापित हो गई।",
+      invalid: "Recovery Key अमान्य है। जाँच कर फिर कोशिश करें।",
+      failed: "खाता पुनर्स्थापित नहीं हो सका। फिर कोशिश करें।",
+      required: "Recovery Key दर्ज करें।",
+    },
+    bengali: {
+      description: "এই কীটি নিরাপদে রাখুন। এটি আপনার AI Teacher অ্যাকাউন্ট ও সব অগ্রগতি ফিরিয়ে আনে।",
+      copy: "কপি",
+      copied: "Recovery Key কপি হয়েছে",
+      restore: "ব্যবহারকারী পুনরুদ্ধার",
+      restoreDescription: "Recovery Key আছে? এই ডিভাইসে আপনার AI Teacher অ্যাকাউন্ট পুনরুদ্ধার করুন।",
+      placeholder: "Recovery Key লিখুন",
+      confirm: "অ্যাকাউন্ট পুনরুদ্ধার",
+      cancel: "বাতিল",
+      success: "আপনার AI Teacher অ্যাকাউন্ট ও অগ্রগতি সফলভাবে পুনরুদ্ধার হয়েছে।",
+      invalid: "Recovery Key সঠিক নয়। পরীক্ষা করে আবার চেষ্টা করুন।",
+      failed: "অ্যাকাউন্ট পুনরুদ্ধার করা যায়নি। আবার চেষ্টা করুন।",
+      required: "Recovery Key লিখুন।",
+    },
+    turkish: {
+      description: "Bu anahtarı güvenli bir yerde saklayın. AI Öğretmen hesabınızı ve tüm ilerlemenizi geri getirir.",
+      copy: "Kopyala",
+      copied: "Recovery Key kopyalandı",
+      restore: "Kullanıcıyı Geri Yükle",
+      restoreDescription: "Recovery Key'niz var mı? AI Öğretmen hesabınızı bu cihazda geri yükleyin.",
+      placeholder: "Recovery Key girin",
+      confirm: "Hesabı Geri Yükle",
+      cancel: "İptal",
+      success: "AI Öğretmen hesabınız ve ilerlemeniz başarıyla geri yüklendi.",
+      invalid: "Recovery Key geçersiz. Kontrol edip tekrar deneyin.",
+      failed: "Hesabınız geri yüklenemedi. Lütfen tekrar deneyin.",
+      required: "Recovery Key girin.",
+    },
+    indonesian: {
+      description: "Simpan kunci ini di tempat aman. Kunci ini memulihkan akun AI Teacher dan seluruh progres Anda.",
+      copy: "Salin",
+      copied: "Recovery Key disalin",
+      restore: "Pulihkan Pengguna",
+      restoreDescription: "Punya Recovery Key? Pulihkan akun AI Teacher di perangkat ini.",
+      placeholder: "Masukkan Recovery Key",
+      confirm: "Pulihkan Akun",
+      cancel: "Batal",
+      success: "Akun AI Teacher dan progres Anda berhasil dipulihkan.",
+      invalid: "Recovery Key tidak valid. Periksa lalu coba lagi.",
+      failed: "Akun tidak dapat dipulihkan. Silakan coba lagi.",
+      required: "Masukkan Recovery Key.",
+    },
+    french: {
+      description: "Conservez cette clé en lieu sûr. Elle restaure votre compte AI Teacher et toute votre progression.",
+      copy: "Copier",
+      copied: "Recovery Key copiée",
+      restore: "Restaurer l’utilisateur",
+      restoreDescription: "Vous avez une Recovery Key ? Restaurez votre compte AI Teacher sur cet appareil.",
+      placeholder: "Saisissez votre Recovery Key",
+      confirm: "Restaurer le compte",
+      cancel: "Annuler",
+      success: "Votre compte AI Teacher et votre progression ont été restaurés.",
+      invalid: "Cette Recovery Key est invalide. Vérifiez-la et réessayez.",
+      failed: "Impossible de restaurer le compte. Réessayez.",
+      required: "Saisissez votre Recovery Key.",
+    },
+    spanish: {
+      description: "Guarda esta clave en un lugar seguro. Restaura tu cuenta de AI Teacher y todo tu progreso.",
+      copy: "Copiar",
+      copied: "Recovery Key copiada",
+      restore: "Restaurar usuario",
+      restoreDescription: "¿Tienes una Recovery Key? Restaura tu cuenta de AI Teacher en este dispositivo.",
+      placeholder: "Introduce tu Recovery Key",
+      confirm: "Restaurar cuenta",
+      cancel: "Cancelar",
+      success: "Tu cuenta de AI Teacher y tu progreso se restauraron correctamente.",
+      invalid: "La Recovery Key no es válida. Compruébala e inténtalo de nuevo.",
+      failed: "No se pudo restaurar la cuenta. Inténtalo de nuevo.",
+      required: "Introduce tu Recovery Key.",
+    },
+    malay: {
+      description: "Simpan kunci ini di tempat yang selamat. Ia memulihkan akaun AI Teacher dan semua kemajuan anda.",
+      copy: "Salin",
+      copied: "Recovery Key disalin",
+      restore: "Pulihkan Pengguna",
+      restoreDescription: "Ada Recovery Key? Pulihkan akaun AI Teacher anda pada peranti ini.",
+      placeholder: "Masukkan Recovery Key",
+      confirm: "Pulihkan Akaun",
+      cancel: "Batal",
+      success: "Akaun AI Teacher dan kemajuan anda berjaya dipulihkan.",
+      invalid: "Recovery Key tidak sah. Semak dan cuba lagi.",
+      failed: "Akaun tidak dapat dipulihkan. Sila cuba lagi.",
+      required: "Masukkan Recovery Key.",
+    },
+  }[uiLang] ?? {
+    description: "Keep this key somewhere safe. It restores your AI Teacher account and all progress.",
+    copy: "Copy",
+    copied: "Recovery Key copied",
+    restore: "Restore User",
+    restoreDescription: "Already have a Recovery Key? Restore your AI Teacher account on this device.",
+    placeholder: "Enter your Recovery Key",
+    confirm: "Restore Account",
+    cancel: "Cancel",
+    success: "Your AI Teacher account and progress were restored successfully.",
+    invalid: "That Recovery Key is invalid. Check it and try again.",
+    failed: "We could not restore your account. Please try again.",
+    required: "Enter your Recovery Key.",
+  };
+
+  useEffect(() => {
+    const onReady = () => setRecoveryKey(getStoredTeacherRecoveryKey());
+    window.addEventListener("noor:teacher-account-ready", onReady);
+    return () => window.removeEventListener("noor:teacher-account-ready", onReady);
+  }, []);
+
+  async function handleCopyRecoveryKey() {
+    if (!recoveryKey) return;
+    try {
+      await navigator.clipboard.writeText(recoveryKey);
+      toast({ title: recoveryCopy.copied });
+    } catch {
+      toast({ title: recoveryCopy.failed, variant: "destructive" });
+    }
+  }
+
+  async function handleRestore() {
+    const value = restoreInput.trim();
+    if (!value) {
+      setRestoreMessage("error");
+      toast({ title: recoveryCopy.required, variant: "destructive" });
+      return;
+    }
+    setRestoreBusy(true);
+    setRestoreMessage(null);
+    try {
+      await restoreTeacherAccount(value);
+      setRecoveryKey(getStoredTeacherRecoveryKey());
+      setRestoreInput("");
+      setRestoreOpen(false);
+      setRestoreMessage("success");
+      toast({ title: recoveryCopy.success });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "";
+      const isInvalid = message === "Invalid Recovery Key";
+      setRestoreMessage("error");
+      toast({
+        title: isInvalid ? recoveryCopy.invalid : recoveryCopy.failed,
+        variant: "destructive",
+      });
+    } finally {
+      setRestoreBusy(false);
+    }
+  }
 
   // ── App Language ────────────────────────────────────────────────────────────
   const [showAllUiLangs, setShowAllUiLangs] = useState(false);
@@ -207,6 +417,93 @@ export function Settings() {
       </div>
 
       <div className="px-4 space-y-4">
+
+        {/* ── AI Teacher account recovery ───────────────────────────────────── */}
+        <Section title="AI Teacher" icon={<KeyRound className="w-4 h-4" />}>
+          <div className="p-4 space-y-3">
+            <div>
+              <p className="text-foreground text-sm font-semibold">Recovery Key</p>
+              <p className="text-muted-foreground text-xs mt-1 leading-relaxed">
+                {recoveryCopy.description}
+              </p>
+            </div>
+
+            {recoveryKey ? (
+              <div className="flex items-center gap-2 rounded-xl border border-border bg-background p-2">
+                <code
+                  className="flex-1 min-w-0 px-2 text-foreground text-xs font-semibold tracking-wider break-all"
+                  data-testid="text-recovery-key"
+                >
+                  {recoveryKey}
+                </code>
+                <button
+                  type="button"
+                  onClick={handleCopyRecoveryKey}
+                  className="shrink-0 flex items-center gap-1.5 rounded-lg bg-primary px-3 py-2 text-xs font-semibold text-primary-foreground"
+                  data-testid="button-copy-recovery-key"
+                >
+                  <Copy className="w-3.5 h-3.5" />
+                  {recoveryCopy.copy}
+                </button>
+              </div>
+            ) : (
+              <div className="rounded-xl border border-border bg-background px-3 py-2.5 text-xs text-muted-foreground">
+                Loading your Recovery Key…
+              </div>
+            )}
+
+            <button
+              type="button"
+              onClick={() => { setRestoreOpen((open) => !open); setRestoreMessage(null); }}
+              className="w-full flex items-center justify-between rounded-xl border border-border px-3 py-3 text-left"
+              data-testid="button-open-restore-user"
+            >
+              <span>
+                <span className="block text-foreground text-sm font-semibold">{recoveryCopy.restore}</span>
+                <span className="block text-muted-foreground text-xs mt-0.5">{recoveryCopy.restoreDescription}</span>
+              </span>
+              <ChevronRight className={`w-4 h-4 text-muted-foreground transition-transform ${restoreOpen ? "rotate-90" : ""}`} />
+            </button>
+
+            {restoreOpen && (
+              <div className="space-y-2 rounded-xl border border-border bg-background p-3">
+                <input
+                  value={restoreInput}
+                  onChange={(event) => setRestoreInput(event.target.value.toUpperCase())}
+                  placeholder={recoveryCopy.placeholder}
+                  autoComplete="off"
+                  spellCheck={false}
+                  className="w-full rounded-lg border border-border bg-card px-3 py-3 text-sm text-foreground outline-none focus:ring-2 focus:ring-primary"
+                  data-testid="input-recovery-key"
+                />
+                <div className="flex gap-2">
+                  <button
+                    type="button"
+                    onClick={handleRestore}
+                    disabled={restoreBusy}
+                    className="flex-1 rounded-lg bg-primary px-3 py-2.5 text-xs font-semibold text-primary-foreground disabled:opacity-60"
+                    data-testid="button-restore-user"
+                  >
+                    {restoreBusy ? "…" : recoveryCopy.confirm}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => { setRestoreOpen(false); setRestoreInput(""); setRestoreMessage(null); }}
+                    className="rounded-lg border border-border px-3 py-2.5 text-xs font-semibold text-muted-foreground"
+                  >
+                    {recoveryCopy.cancel}
+                  </button>
+                </div>
+                {restoreMessage === "success" && (
+                  <p className="text-xs text-primary" role="status">{recoveryCopy.success}</p>
+                )}
+                {restoreMessage === "error" && (
+                  <p className="text-xs text-destructive" role="alert">{recoveryCopy.invalid}</p>
+                )}
+              </div>
+            )}
+          </div>
+        </Section>
 
         {/* ── App Language ──────────────────────────────────────────────────── */}
         <Section

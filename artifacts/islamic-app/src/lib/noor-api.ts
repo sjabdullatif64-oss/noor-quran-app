@@ -33,6 +33,18 @@ export interface NoorUser {
   createdAt: string;
 }
 
+export interface NoorTeacherAccount {
+  id: string;
+  userId: string;
+  recoveryKey: string;
+  account: {
+    storage?: Record<string, string>;
+    progress?: Record<string, unknown> | null;
+    practice?: Record<string, unknown> | null;
+  };
+  updatedAt: string;
+}
+
 export interface NoorProduct {
   id: string;
   userId: string;
@@ -70,10 +82,34 @@ export const noorApi = {
   async register(
     deviceId: string,
     referredById?: string,
-  ): Promise<{ user: NoorUser; isNew: boolean }> {
+    persistentDeviceId?: string,
+  ): Promise<{ user: NoorUser; isNew: boolean; teacherAccount: NoorTeacherAccount }> {
     return noorFetch("/users/register", {
       method: "POST",
-      body: JSON.stringify({ deviceId, referredById }),
+      body: JSON.stringify({ deviceId, referredById, persistentDeviceId }),
+    });
+  },
+
+  async saveTeacherAccount(
+    deviceId: string,
+    recoveryKey: string,
+    storage: Record<string, string>,
+    progress: Record<string, unknown> | null,
+    practice: Record<string, unknown> | null,
+  ): Promise<{ teacherAccount: NoorTeacherAccount }> {
+    return noorFetch("/users/teacher-account", {
+      method: "POST",
+      body: JSON.stringify({ deviceId, recoveryKey, storage, progress, practice }),
+    });
+  },
+
+  async restoreTeacherAccount(
+    deviceId: string,
+    recoveryKey: string,
+  ): Promise<{ teacherAccount: NoorTeacherAccount }> {
+    return noorFetch("/users/restore-teacher", {
+      method: "POST",
+      body: JSON.stringify({ deviceId, recoveryKey }),
     });
   },
 

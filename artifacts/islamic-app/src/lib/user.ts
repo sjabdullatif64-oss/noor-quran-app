@@ -1,25 +1,13 @@
 import { Capacitor } from "@capacitor/core";
 import { noorApi, type NoorUser } from "./noor-api";
+import {
+  applyTeacherAccount,
+  getPersistentDeviceId,
+} from "./teacher-account";
+import { getDeviceId } from "./device-identity";
 
-const DEVICE_ID_KEY  = "noor-device-id";
 const PENDING_REF_KEY = "noor-pending-ref";
-
-function generateDeviceId(): string {
-  return "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, (c) => {
-    const r = (Math.random() * 16) | 0;
-    const v = c === "x" ? r : (r & 0x3) | 0x8;
-    return v.toString(16);
-  });
-}
-
-export function getDeviceId(): string {
-  let id = localStorage.getItem(DEVICE_ID_KEY);
-  if (!id) {
-    id = generateDeviceId();
-    localStorage.setItem(DEVICE_ID_KEY, id);
-  }
-  return id;
-}
+export { getDeviceId } from "./device-identity";
 
 // ── Referral code helpers ─────────────────────────────────────────────────────
 
@@ -97,9 +85,15 @@ export async function ensureRegistered(): Promise<NoorUser | null> {
     await captureNativeLaunchRef();
 
     const deviceId    = getDeviceId();
+    const persistentDeviceId = await getPersistentDeviceId();
     const referredById = getPendingRef();
     try {
-      const { user } = await noorApi.register(deviceId, referredById);
+      const { user, teacherAccount } = await noorApi.register(
+        deviceId,
+        referredById,
+        persistentDeviceId,
+      );
+      applyTeacherAccount(teacherAccount);
       // Clear the pending ref after the registration call succeeds.
       // New user with ref: ref was applied. Existing user: ref cannot be applied retroactively.
       try { localStorage.removeItem(PENDING_REF_KEY); } catch {}

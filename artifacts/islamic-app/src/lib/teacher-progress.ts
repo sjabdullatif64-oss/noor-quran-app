@@ -12,7 +12,8 @@ import {
   DAILY_LIMIT, REVISION_SIZE, TEACHER_PRACTICE_KEY, TEACHER_PROGRESS_KEY, TEACHER_REVISION_KEY,
 } from "./teacher-config";
 import { CURRICULUM } from "./teacher-curriculum";
-import { getDeviceId } from "./user";
+import { getDeviceId } from "./device-identity";
+import { queueTeacherAccountSave } from "./teacher-account";
 
 export interface LessonRecord {
   /** First-completion date, YYYY-MM-DD local. */
@@ -120,6 +121,7 @@ function saveProgress(p: TeacherProgress): void {
     localStorage.setItem(TEACHER_PROGRESS_KEY, JSON.stringify(p));
   } catch { /* storage full — non-fatal */ }
   notify();
+  queueTeacherAccountSave();
 }
 
 // ── Pub/sub so dashboard reacts to lesson-screen changes ─────────────────────
@@ -129,6 +131,10 @@ const listeners = new Set<Listener>();
 
 function notify(): void {
   listeners.forEach((fn) => fn());
+}
+
+if (typeof window !== "undefined") {
+  window.addEventListener("noor:teacher-progress-changed", notify);
 }
 
 export function subscribeProgress(fn: Listener): () => void {
@@ -223,6 +229,7 @@ export function addStudyTime(ms: number): void {
   try {
     localStorage.setItem(TEACHER_PROGRESS_KEY, JSON.stringify(p));
   } catch { /* non-fatal */ }
+  queueTeacherAccountSave();
   // No notify() — time updates shouldn't force re-renders mid-lesson
 }
 
@@ -243,6 +250,7 @@ export function resetAllProgress(): void {
     localStorage.removeItem(TEACHER_REVISION_KEY);
   } catch { /* ignore */ }
   notify();
+  queueTeacherAccountSave();
 }
 
 // ── Practice Mode statistics ───────────────────────────────────────────────────
@@ -286,6 +294,7 @@ function savePracticeStats(stats: PracticeStats): void {
     localStorage.setItem(TEACHER_PRACTICE_KEY, JSON.stringify(stats));
   } catch { /* storage full — non-fatal */ }
   notify();
+  queueTeacherAccountSave();
 }
 
 export function getPracticeStats(lessonId: string): PracticeLessonStats {

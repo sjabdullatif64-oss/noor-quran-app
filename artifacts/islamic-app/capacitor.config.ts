@@ -20,6 +20,7 @@ const config: CapacitorConfig = {
   includePlugins: [
     "@capacitor/app",
     "@capacitor/browser",
+    "@capacitor/device",
     "@capacitor/filesystem",
     "@capacitor/haptics",
     "@capacitor/local-notifications",

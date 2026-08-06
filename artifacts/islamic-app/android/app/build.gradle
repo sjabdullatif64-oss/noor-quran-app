@@ -103,6 +103,7 @@ dependencies {
     implementation project(':capacitor-network')
     implementation project(':capacitor-share')
     implementation project(':capacitor-browser')
+    implementation project(':capacitor-device')
     implementation project(':capacitor-community-speech-recognition')
 
     // Native Settings — open app settings for app settings screens

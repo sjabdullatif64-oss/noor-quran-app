@@ -168,7 +168,7 @@ importers:
     dependencies:
       '@replit/connectors-sdk':
         specifier: latest
-        version: 0.4.1
+        version: 0.4.2
       '@workspace/api-zod':
         specifier: workspace:*
         version: link:../../lib/api-zod
@@ -222,6 +222,9 @@ importers:
         specifier: ^7.0.1
         version: 7.0.1(@capacitor/core@8.3.3)
       '@capacitor/browser':
+        specifier: ^8.0.3
+        version: 8.0.3(@capacitor/core@8.3.3)
+      '@capacitor/device':
         specifier: ^8.0.3
         version: 8.0.3(@capacitor/core@8.3.3)
       '@capacitor/share':
@@ -809,6 +812,11 @@ packages:
 
   '@capacitor/core@8.3.3':
     resolution: {integrity: sha512-xx1FIriZQ5jwqEkZwmWQHfXNEn5a9ZLOtdFoJXslh0ian6T/EU+QJtRmZw3KRsmcUV6p5ufczBrzF1rVP8Nu3A==}
+
+  '@capacitor/device@8.0.3':
+    resolution: {integrity: sha512-rliPCCZwxtjU6200jJNDAsQhioyozV3fGgiP+NgRqtDOI7i+Jdz+DYNwEup+3MGZZ4NEmkuFaBeWLM3T01vJRg==}
+    peerDependencies:
+      '@capacitor/core': '>=8.0.0'
 
   '@capacitor/filesystem@8.1.2':
     resolution: {integrity: sha512-doaaMfGoFR2hWU6aV6u83I+5ZsGyJVq+Gz4r9lMpJzUKMm1eMu0hLnFdV1aXZlU9FlK/RndFrVD8oRZfNOqWgQ==}
@@ -1654,8 +1662,8 @@ packages:
     engines: {node: '>=18.0.0'}
     hasBin: true
 
-  '@replit/connectors-sdk@0.4.1':
-    resolution: {integrity: sha512-iw0uy95+Qul8MPc/bBo8hBfYk1wm6RpBZ9sHyCpcA9A9T4zcUT9deSQxdyMyI0w3sv3+5uGmdfq1TpFTMrjD1g==}
+  '@replit/connectors-sdk@0.4.2':
+    resolution: {integrity: sha512-1FZsc7IWsvtogvTiWJod58cWmdebk5O7Qu5cbe3xp1CVSErmZxKmti5AIgMtKTcuCaFiGQ4JkKWDcPed69PRDg==}
 
   '@replit/vite-plugin-cartographer@0.5.1':
     resolution: {integrity: sha512-KiaQMx4ssTM8hSjMFscyIV1PN1bRVCWCFqN3fXOfXa39uFFCKUaeL3VvH/sxuy7S7ET+MCFOt+J7lLtL56bRrA==}
@@ -3736,6 +3744,10 @@ snapshots:
     dependencies:
       tslib: 2.8.1
 
+  '@capacitor/device@8.0.3(@capacitor/core@8.3.3)':
+    dependencies:
+      '@capacitor/core': 8.3.3
+
   '@capacitor/filesystem@8.1.2(@capacitor/core@8.3.3)':
     dependencies:
       '@capacitor/core': 8.3.3
@@ -4730,7 +4742,7 @@ snapshots:
       minimist: 1.2.8
       typescript: 4.2.4
 
-  '@replit/connectors-sdk@0.4.1': {}
+  '@replit/connectors-sdk@0.4.2': {}
 
   '@replit/vite-plugin-cartographer@0.5.1':
     dependencies:

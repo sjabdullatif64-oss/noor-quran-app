@@ -76,6 +76,17 @@ export interface WelcomeCampaign {
   enabled: boolean;
 }
 
+export interface TeacherAccount {
+  id: string;
+  userId: string;
+  recoveryKeyHash: string;
+  recoveryKeyCiphertext: string;
+  deviceIds: string[];
+  accountJson: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
 function isValidWelcomeCampaignUrl(value: string): boolean {
   try {
     const parsed = new URL(value.trim());
@@ -92,6 +103,7 @@ function isValidWelcomeCampaignUrl(value: string): boolean {
 
 const SHEETS = {
   Users:            ["id","deviceId","coinsBalance","totalCoinsEarned","totalReferrals","referredById","createdAt"],
+  TeacherAccounts:  ["id","userId","recoveryKeyHash","recoveryKeyCiphertext","deviceIds","accountJson","createdAt","updatedAt"],
   CoinTransactions: ["id","userId","amount","reason","eventKey","createdAt"],
   DailyCheckins:    ["id","userId","date","createdAt"],
   AyahRewards:      ["id","userId","surahNumber","ayahNumber","date","createdAt"],
@@ -261,6 +273,16 @@ export async function findUserById(id: string): Promise<User | null> {
   return r ? rowToUser(r) : null;
 }
 
+export async function rebindUserDeviceId(id: string, deviceId: string): Promise<User> {
+  const rows = await readAllRows("Users");
+  const idx = rows.findIndex((x) => x.id === id);
+  if (idx === -1) throw new Error(`User ${id} not found`);
+  const current = rowToUser(rows[idx]);
+  const updated = { ...current, deviceId };
+  await updateRowByDataIndex("Users", idx, userToRow(updated));
+  return updated;
+}
+
 export async function createUser(data: Omit<User, "id" | "createdAt">): Promise<User> {
   const user: User = { id: crypto.randomUUID(), createdAt: new Date().toISOString(), ...data };
   await appendRow("Users", userToRow(user));
@@ -274,6 +296,275 @@ export async function updateUser(id: string, updates: Partial<Omit<User, "id" | 
   const updated: User = { ...rowToUser(rows[idx]), ...updates };
   await updateRowByDataIndex("Users", idx, userToRow(updated));
   return updated;
+}
+
+// ─── AI Teacher accounts ─────────────────────────────────────────────────────
+
+const RECOVERY_KEY_ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+
+function recoverySecret(): Buffer {
+  const secret = process.env.SESSION_SECRET;
+  if (!secret) throw new Error("SESSION_SECRET is required for Teacher Recovery Keys");
+  return crypto.createHash("sha256").update(secret).digest();
+}
+
+function normalizeRecoveryKey(value: string): string {
+  return value.trim().toUpperCase().replace(/[\s-]/g, "");
+}
+
+export function hashRecoveryKey(value: string): string {
+  return crypto.createHmac("sha256", recoverySecret()).update(normalizeRecoveryKey(value)).digest("hex");
+}
+
+function encryptRecoveryKey(value: string): string {
+  const iv = crypto.randomBytes(12);
+  const cipher = crypto.createCipheriv("aes-256-gcm", recoverySecret(), iv);
+  const encrypted = Buffer.concat([cipher.update(value, "utf8"), cipher.final()]);
+  return [
+    iv.toString("base64url"),
+    cipher.getAuthTag().toString("base64url"),
+    encrypted.toString("base64url"),
+  ].join(".");
+}
+
+function decryptRecoveryKey(value: string): string {
+  const [ivText, tagText, dataText] = value.split(".");
+  if (!ivText || !tagText || !dataText) throw new Error("Invalid encrypted Recovery Key");
+  const decipher = crypto.createDecipheriv(
+    "aes-256-gcm",
+    recoverySecret(),
+    Buffer.from(ivText, "base64url"),
+  );
+  decipher.setAuthTag(Buffer.from(tagText, "base64url"));
+  return Buffer.concat([
+    decipher.update(Buffer.from(dataText, "base64url")),
+    decipher.final(),
+  ]).toString("utf8");
+}
+
+function encryptTeacherSnapshot(snapshot: Record<string, unknown>): string {
+  const iv = crypto.randomBytes(12);
+  const cipher = crypto.createCipheriv("aes-256-gcm", recoverySecret(), iv);
+  const encrypted = Buffer.concat([
+    cipher.update(JSON.stringify(snapshot), "utf8"),
+    cipher.final(),
+  ]);
+  return [
+    "enc",
+    iv.toString("base64url"),
+    cipher.getAuthTag().toString("base64url"),
+    encrypted.toString("base64url"),
+  ].join(".");
+}
+
+function decryptTeacherSnapshot(value: string): Record<string, unknown> {
+  if (!value.startsWith("enc.")) {
+    try {
+      const legacy = JSON.parse(value || "{}");
+      return legacy && typeof legacy === "object" && !Array.isArray(legacy) ? legacy : {};
+    } catch {
+      return {};
+    }
+  }
+  const [, ivText, tagText, dataText] = value.split(".");
+  if (!ivText || !tagText || !dataText) return {};
+  try {
+    const decipher = crypto.createDecipheriv(
+      "aes-256-gcm",
+      recoverySecret(),
+      Buffer.from(ivText, "base64url"),
+    );
+    decipher.setAuthTag(Buffer.from(tagText, "base64url"));
+    const plain = Buffer.concat([
+      decipher.update(Buffer.from(dataText, "base64url")),
+      decipher.final(),
+    ]).toString("utf8");
+    const parsed = JSON.parse(plain);
+    return parsed && typeof parsed === "object" && !Array.isArray(parsed) ? parsed : {};
+  } catch {
+    return {};
+  }
+}
+
+function generateRecoveryKey(): string {
+  const bytes = crypto.randomBytes(24);
+  let body = "";
+  for (const byte of bytes) body += RECOVERY_KEY_ALPHABET[byte % RECOVERY_KEY_ALPHABET.length];
+  return `NQ-${body.slice(0, 8)}-${body.slice(8, 16)}-${body.slice(16, 24)}`;
+}
+
+function parseDeviceIds(value: string): string[] {
+  try {
+    const parsed = JSON.parse(value || "[]");
+    return Array.isArray(parsed)
+      ? parsed.filter((item): item is string => typeof item === "string" && item.length > 0)
+      : [];
+  } catch {
+    return [];
+  }
+}
+
+function rowToTeacherAccount(r: Record<string, string>): TeacherAccount {
+  return {
+    id: r.id,
+    userId: r.userId,
+    recoveryKeyHash: r.recoveryKeyHash,
+    recoveryKeyCiphertext: r.recoveryKeyCiphertext,
+    deviceIds: parseDeviceIds(r.deviceIds),
+    accountJson: r.accountJson || "{}",
+    createdAt: r.createdAt,
+    updatedAt: r.updatedAt,
+  };
+}
+
+function teacherAccountToRow(account: TeacherAccount): string[] {
+  return [
+    account.id,
+    account.userId,
+    account.recoveryKeyHash,
+    account.recoveryKeyCiphertext,
+    JSON.stringify(account.deviceIds),
+    account.accountJson,
+    account.createdAt,
+    account.updatedAt,
+  ];
+}
+
+export function teacherAccountClient(account: TeacherAccount): {
+  id: string;
+  userId: string;
+  recoveryKey: string;
+  account: Record<string, unknown>;
+  updatedAt: string;
+} {
+  return {
+    id: account.id,
+    userId: account.userId,
+    recoveryKey: decryptRecoveryKey(account.recoveryKeyCiphertext),
+    account: decryptTeacherSnapshot(account.accountJson),
+    updatedAt: account.updatedAt,
+  };
+}
+
+export async function findTeacherAccountByUserId(userId: string): Promise<TeacherAccount | null> {
+  const rows = await readAllRows("TeacherAccounts");
+  const row = rows.find((item) => item.userId === userId);
+  return row ? rowToTeacherAccount(row) : null;
+}
+
+export async function findTeacherAccountByRecoveryKey(value: string): Promise<TeacherAccount | null> {
+  const hash = hashRecoveryKey(value);
+  const rows = await readAllRows("TeacherAccounts");
+  const row = rows.find((item) => item.recoveryKeyHash === hash);
+  return row ? rowToTeacherAccount(row) : null;
+}
+
+export async function findTeacherAccountByDeviceId(deviceId: string): Promise<TeacherAccount | null> {
+  if (!deviceId) return null;
+  const rows = await readAllRows("TeacherAccounts");
+  const row = rows.find((item) => parseDeviceIds(item.deviceIds).includes(deviceId));
+  return row ? rowToTeacherAccount(row) : null;
+}
+
+export async function findTeacherAccountByRecoveryKeyAndDeviceId(
+  recoveryKey: string,
+  deviceId: string,
+): Promise<TeacherAccount | null> {
+  const account = await findTeacherAccountByRecoveryKey(recoveryKey);
+  if (!account || !account.deviceIds.includes(deviceId)) return null;
+  return account;
+}
+
+async function updateTeacherAccount(account: TeacherAccount): Promise<TeacherAccount> {
+  const rows = await readAllRows("TeacherAccounts");
+  const idx = rows.findIndex((item) => item.id === account.id);
+  if (idx === -1) throw new Error(`Teacher account ${account.id} not found`);
+  await updateRowByDataIndex("TeacherAccounts", idx, teacherAccountToRow(account));
+  return account;
+}
+
+export async function deleteTeacherAccount(id: string): Promise<void> {
+  const rows = await readAllRows("TeacherAccounts");
+  const idx = rows.findIndex((item) => item.id === id);
+  if (idx !== -1) await deleteRowByDataIndex("TeacherAccounts", idx);
+}
+
+async function bindTeacherDevices(account: TeacherAccount, deviceIds: string[]): Promise<TeacherAccount> {
+  const nextIds = [...new Set([...account.deviceIds, ...deviceIds].filter(Boolean))];
+  if (nextIds.length === account.deviceIds.length && nextIds.every((id) => account.deviceIds.includes(id))) {
+    return account;
+  }
+  return updateTeacherAccount({
+    ...account,
+    deviceIds: nextIds,
+    updatedAt: new Date().toISOString(),
+  });
+}
+
+let teacherAccountCreationQueue: Promise<unknown> = Promise.resolve();
+
+async function createTeacherAccountOnce(
+  userId: string,
+  deviceIds: string[],
+): Promise<TeacherAccount> {
+  const task = teacherAccountCreationQueue.then(async () => {
+    // Re-check inside the queue. A concurrent registration may have created
+    // this user's account while the first read was still in flight.
+    const existing = await findTeacherAccountByUserId(userId);
+    if (existing) return bindTeacherDevices(existing, deviceIds);
+
+    // The collision check is intentional: Recovery Keys are unique identities,
+    // not merely random display strings.
+    for (let attempt = 0; attempt < 5; attempt++) {
+      const recoveryKey = generateRecoveryKey();
+      if (await findTeacherAccountByRecoveryKey(recoveryKey)) continue;
+      const now = new Date().toISOString();
+      const account: TeacherAccount = {
+        id: crypto.randomUUID(),
+        userId,
+        recoveryKeyHash: hashRecoveryKey(recoveryKey),
+        recoveryKeyCiphertext: encryptRecoveryKey(recoveryKey),
+        deviceIds: [...new Set(deviceIds.filter(Boolean))],
+        accountJson: "{}",
+        createdAt: now,
+        updatedAt: now,
+      };
+      await appendRow("TeacherAccounts", teacherAccountToRow(account));
+      return account;
+    }
+    throw new Error("Could not allocate a unique Teacher Recovery Key");
+  });
+  teacherAccountCreationQueue = task.catch(() => undefined);
+  return task;
+}
+
+export async function getOrCreateTeacherAccount(
+  userId: string,
+  deviceIds: string[],
+): Promise<TeacherAccount> {
+  const existing = await findTeacherAccountByUserId(userId);
+  if (existing) return bindTeacherDevices(existing, deviceIds);
+  return createTeacherAccountOnce(userId, deviceIds);
+}
+
+export async function saveTeacherAccountSnapshot(
+  account: TeacherAccount,
+  snapshot: Record<string, unknown>,
+): Promise<TeacherAccount> {
+  return updateTeacherAccount({
+    ...account,
+    accountJson: encryptTeacherSnapshot(snapshot),
+    updatedAt: new Date().toISOString(),
+  });
+}
+
+export async function restoreTeacherAccountToDevice(
+  recoveryKey: string,
+  deviceId: string,
+): Promise<TeacherAccount | null> {
+  const account = await findTeacherAccountByRecoveryKey(recoveryKey);
+  if (!account) return null;
+  return bindTeacherDevices(account, [deviceId]);
 }
 
 // ─── CoinTransactions ─────────────────────────────────────────────────────────

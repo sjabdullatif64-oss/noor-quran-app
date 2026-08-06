@@ -12,6 +12,7 @@ package com.sj64noorquran;
   import com.capacitorjs.plugins.localnotifications.LocalNotificationsPlugin;
   import com.capacitorjs.plugins.share.SharePlugin;
   import com.capacitorjs.plugins.network.NetworkPlugin;
+  import com.capacitorjs.plugins.device.DevicePlugin;
   import com.getcapacitor.community.speechrecognition.SpeechRecognition;
   import nl.raphael.settings.NativeSettingsPlugin;
 
@@ -48,6 +49,7 @@ package com.sj64noorquran;
           // ever drifts (e.g. a stale AdMob entry causing loadPluginClasses()
           // to abort), this call can hang.
           registerPlugin(NetworkPlugin.class);
+          registerPlugin(DevicePlugin.class);
           // SpeechRecognition — explicit registration keeps the Teacher mic
           // flow available even if generated plugin metadata drifts.
           registerPlugin(SpeechRecognition.class);
