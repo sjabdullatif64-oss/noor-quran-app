@@ -113,16 +113,6 @@ export const noorApi = {
     });
   },
 
-  async deleteAccount(
-    recoveryKey: string,
-    deviceId?: string,
-  ): Promise<{ deleted: true }> {
-    return noorFetch("/users/delete-account", {
-      method: "POST",
-      body: JSON.stringify({ recoveryKey, deviceId }),
-    });
-  },
-
   async ayahReward(
     deviceId: string,
     surahNumber: number,

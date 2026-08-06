@@ -165,11 +165,9 @@ const SECTIONS = [
     body: (
       <>
         Local preferences remain on your device until you clear app storage or uninstall Noor
-        Quran. AI Teacher accounts retain the encrypted recovery snapshot and associated account
-        records until you delete them. To permanently delete that server-side account and its
-        associated data, use <strong className="text-amber-300">Settings → Account &amp; Data
-        Deletion</strong> in the app or submit the request at{" "}
-        <Link href="/account-deletion" className="text-primary underline">the account deletion page</Link>.
+        Quran. If you use AI Teacher, the encrypted recovery snapshot and associated
+        device-linked progress remain on the server to support recovery after reinstalling. Noor
+        Quran does not use email accounts, passwords, or user-created login accounts.
       </>
     ),
   },

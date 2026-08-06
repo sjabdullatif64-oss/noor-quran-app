@@ -6,6 +6,7 @@ android {
     // compileSdk must be 36: androidx.core:core:1.17.0 (Capacitor dep) requires it.
     // compileSdk != targetSdk — this is intentional and normal for Play Store submissions.
     compileSdk 36
+    buildToolsVersion "36.0.0"
 
     defaultConfig {
         applicationId "com.sj64noorquran"

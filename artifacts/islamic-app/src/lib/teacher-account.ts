@@ -175,20 +175,3 @@ export async function restoreTeacherAccount(recoveryKey: string): Promise<void> 
   applyTeacherAccount(teacherAccount, { overwrite: true });
   queueTeacherAccountSave();
 }
-
-export async function deleteTeacherAccount(recoveryKey: string): Promise<void> {
-  const normalized = recoveryKey.trim().toUpperCase();
-  await noorApi.deleteAccount(normalized, getDeviceId());
-  if (saveTimer) clearTimeout(saveTimer);
-  saveTimer = null;
-  activeAccount = null;
-  try {
-    for (let index = localStorage.length - 1; index >= 0; index--) {
-      const key = localStorage.key(index);
-      if (key?.startsWith("noor-teacher-")) localStorage.removeItem(key);
-    }
-  } catch {
-    // The server deletion is authoritative even if local storage is unavailable.
-  }
-  window.dispatchEvent(new Event("noor:teacher-account-deleted"));
-}

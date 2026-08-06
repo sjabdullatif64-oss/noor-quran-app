@@ -243,17 +243,6 @@ async function deleteRowByDataIndex(sheet: SheetName, dataIdx: number): Promise<
   );
 }
 
-async function deleteRowsWhere(
-  sheet: SheetName,
-  predicate: (row: Record<string, string>) => boolean,
-): Promise<void> {
-  const rows = await readAllRows(sheet);
-  // Delete from the bottom so each remaining data index stays valid.
-  for (let index = rows.length - 1; index >= 0; index--) {
-    if (predicate(rows[index])) await deleteRowByDataIndex(sheet, index);
-  }
-}
-
 // ─── Users ────────────────────────────────────────────────────────────────────
 
 function rowToUser(r: Record<string, string>): User {
@@ -498,29 +487,6 @@ export async function deleteTeacherAccount(id: string): Promise<void> {
   const rows = await readAllRows("TeacherAccounts");
   const idx = rows.findIndex((item) => item.id === id);
   if (idx !== -1) await deleteRowByDataIndex("TeacherAccounts", idx);
-}
-
-/**
- * Permanently removes the account and all server-side records owned by it.
- * The Recovery Key is the only account credential available in this
- * device-identity-based app, so the caller must have already supplied it.
- */
-export async function deleteUserAccountByRecoveryKey(recoveryKey: string): Promise<boolean> {
-  const teacherAccount = await findTeacherAccountByRecoveryKey(recoveryKey);
-  if (!teacherAccount) return false;
-
-  const userId = teacherAccount.userId;
-  await deleteRowsWhere("TeacherAccounts", (row) => row.userId === userId);
-  await deleteRowsWhere("CoinTransactions", (row) => row.userId === userId);
-  await deleteRowsWhere("DailyCheckins", (row) => row.userId === userId);
-  await deleteRowsWhere("AyahRewards", (row) => row.userId === userId);
-  await deleteRowsWhere(
-    "Referrals",
-    (row) => row.referrerId === userId || row.refereeId === userId,
-  );
-  await deleteRowsWhere("Products", (row) => row.userId === userId);
-  await deleteRowsWhere("Users", (row) => row.id === userId);
-  return true;
 }
 
 async function bindTeacherDevices(account: TeacherAccount, deviceIds: string[]): Promise<TeacherAccount> {
