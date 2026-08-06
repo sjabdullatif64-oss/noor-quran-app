@@ -50,7 +50,7 @@ jobs:
   build:
     name: >
       Build ${{ github.event.inputs.build_type || 'release' }}
-      v${{ github.event.inputs.version_name || '1.0.17' }}
+       v${{ github.event.inputs.version_name || '1.0.18' }}
     runs-on: ubuntu-latest
     timeout-minutes: 60        # first build ~20 min; cached ~8 min
 
@@ -122,7 +122,7 @@ jobs:
           BASE_PATH: /
           NODE_ENV: production
           VITE_COMMIT_SHA: ${{ github.sha }}
-          VITE_BUILD_VERSION: ${{ github.event.inputs.version_name || '1.0.17' }}
+           VITE_BUILD_VERSION: ${{ github.event.inputs.version_name || '1.0.18' }}
 
       # ── 7. Capacitor sync ────────────────────────────────────────────────────
       - name: Sync Capacitor Android
