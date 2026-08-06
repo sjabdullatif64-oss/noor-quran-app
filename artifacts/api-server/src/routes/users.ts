@@ -19,6 +19,8 @@ import {
   teacherAccountClient,
   rebindUserDeviceId,
   deleteTeacherAccount,
+  findTeacherAccountByRecoveryKey,
+  deleteUserAccountByRecoveryKey,
 } from "../lib/sheets";
 
 const router = Router();
@@ -180,6 +182,36 @@ router.post("/restore-teacher", async (req, res) => {
     await rebindUserDeviceId(originalUser.id, parsed.data.deviceId);
   }
   res.json({ teacherAccount: teacherAccountClient(account) });
+});
+
+const deleteAccountSchema = z.object({
+  recoveryKey: z.string().min(10).max(100),
+  deviceId: z.string().min(1).max(300).optional(),
+});
+
+router.post("/delete-account", async (req, res) => {
+  const parsed = deleteAccountSchema.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ error: "Invalid account deletion request" });
+    return;
+  }
+
+  const account = await findTeacherAccountByRecoveryKey(parsed.data.recoveryKey);
+  if (!account) {
+    res.status(404).json({ error: "Invalid Recovery Key" });
+    return;
+  }
+  if (parsed.data.deviceId && !account.deviceIds.includes(parsed.data.deviceId)) {
+    res.status(404).json({ error: "Invalid Recovery Key" });
+    return;
+  }
+
+  const deleted = await deleteUserAccountByRecoveryKey(parsed.data.recoveryKey);
+  if (!deleted) {
+    res.status(404).json({ error: "Invalid Recovery Key" });
+    return;
+  }
+  res.json({ deleted: true });
 });
 
 router.get("/:deviceId/profile", async (req, res) => {

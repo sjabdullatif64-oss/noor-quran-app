@@ -3,7 +3,7 @@ import { Link } from "wouter";
 import {
   ChevronLeft, Shield, Wifi, HardDrive, Bell,
   MapPin, Volume2, DollarSign, Lock, Mail, BookOpen,
-  Globe,
+  Globe, Mic,
 } from "lucide-react";
 import { openUrl } from "@/lib/capacitor";
 
@@ -16,11 +16,13 @@ const SECTIONS = [
     border: "border-border",
     body: (
       <>
-        Noor Quran does <strong className="text-primary">not</strong> collect any personally
-        identifiable information (PII) such as your name, email address, or phone number. The
-        only data stored is your in-app preferences — chosen language, city, dark-mode setting,
-        bookmarks, and favorites — and these are stored <em>locally on your device only</em>.
-        No personal data is ever transmitted to our servers.
+        Noor Quran does <strong className="text-primary">not</strong> ask for your name, email
+        address, or phone number. Core app preferences — chosen language, city, dark-mode setting,
+        bookmarks, and favorites — remain stored locally on your device. If you use AI Teacher,
+        the app creates a device-associated account and sends your Teacher progress, practice
+        scores, lesson history, and encrypted recovery snapshot to Noor Quran&apos;s server so
+        it can be restored after reinstalling the app. We do not sell this data or use it for
+        advertising.
       </>
     ),
   },
@@ -108,6 +110,21 @@ const SECTIONS = [
     ),
   },
   {
+    icon: <Mic className="w-5 h-5" />,
+    title: "AI Teacher Microphone & Speech",
+    accent: "text-violet-400",
+    bg: "rgba(139,92,246,0.07)",
+    border: "border-violet-900/40",
+    body: (
+      <>
+        AI Teacher requests microphone access only when you start a recitation check. Speech is
+        processed by the device&apos;s speech recognizer. Noor Quran does not record, store, or
+        upload raw audio; the temporary recognized transcript is used for on-device feedback and
+        then discarded.
+      </>
+    ),
+  },
+  {
     icon: <HardDrive className="w-5 h-5" />,
     title: "Local Storage & Offline Data",
     accent: "text-teal-400",
@@ -147,11 +164,12 @@ const SECTIONS = [
     border: "border-amber-900/40",
     body: (
       <>
-        Because Noor Quran has no accounts and no servers, we hold{" "}
-        <strong className="text-amber-300">no data about you to retain</strong>. Everything —
-        preferences, bookmarks, favorites, Tasbeeh counts, downloaded surah text and audio — lives
-        on your device and is kept only until you delete it. To delete: use in-app remove/delete
-        options, or clear the app&apos;s storage in Android settings, or uninstall the app.
+        Local preferences remain on your device until you clear app storage or uninstall Noor
+        Quran. AI Teacher accounts retain the encrypted recovery snapshot and associated account
+        records until you delete them. To permanently delete that server-side account and its
+        associated data, use <strong className="text-amber-300">Settings → Account &amp; Data
+        Deletion</strong> in the app or submit the request at{" "}
+        <Link href="/account-deletion" className="text-primary underline">the account deletion page</Link>.
       </>
     ),
   },
@@ -164,8 +182,9 @@ const SECTIONS = [
     body: (
       <>
         All permissions are optional: <strong className="text-sky-300">Location</strong> (only
-        for automatic prayer times and Qibla — you can type your city instead) and{" "}
-        <strong className="text-sky-300">Notifications</strong> (only for Azan and reminders).
+        for automatic prayer times and Qibla — you can type your city instead),{" "}
+        <strong className="text-sky-300">Microphone</strong> (only for AI Teacher recitation
+        checks), and <strong className="text-sky-300">Notifications</strong> (only for Azan and reminders).
         You can grant, deny, or revoke any permission at any time in your device&apos;s app
         settings, and the rest of the app keeps working.
       </>

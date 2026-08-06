@@ -1,7 +1,7 @@
 import { useState, useCallback, useEffect } from "react";
 import {
   ChevronLeft, Moon, Globe, MapPin, Bell, Check, Sun, ChevronRight, MoreHorizontal,
-  LocateFixed, Loader2, WifiOff, RefreshCw, Languages, Calculator, Copy, KeyRound,
+  LocateFixed, Loader2, WifiOff, RefreshCw, Languages, Calculator, Copy, KeyRound, Trash2,
 } from "lucide-react";
 import { Link } from "wouter";
 import { useTheme } from "@/components/theme-provider";
@@ -27,6 +27,7 @@ import { MoreLanguagesDialog } from "@/components/translation-language-picker";
 import {
   getStoredTeacherRecoveryKey,
   restoreTeacherAccount,
+  deleteTeacherAccount,
 } from "@/lib/teacher-account";
 
 // Badge label for Quran translation languages that need a note
@@ -79,6 +80,8 @@ export function Settings() {
   const [restoreInput, setRestoreInput] = useState("");
   const [restoreBusy, setRestoreBusy] = useState(false);
   const [restoreMessage, setRestoreMessage] = useState<"success" | "error" | null>(null);
+  const [deleteAccountOpen, setDeleteAccountOpen] = useState(false);
+  const [deleteAccountBusy, setDeleteAccountBusy] = useState(false);
 
   const recoveryCopy = {
     english: {
@@ -278,6 +281,24 @@ export function Settings() {
       });
     } finally {
       setRestoreBusy(false);
+    }
+  }
+
+  async function handleDeleteAccount() {
+    if (!recoveryKey || deleteAccountBusy) return;
+    setDeleteAccountBusy(true);
+    try {
+      await deleteTeacherAccount(recoveryKey);
+      window.location.reload();
+    } catch (error) {
+      toast({
+        title: error instanceof Error && error.message === "Invalid Recovery Key"
+          ? "Account deletion could not be verified"
+          : "Could not delete your account",
+        description: "Please check your Recovery Key and try again.",
+        variant: "destructive",
+      });
+      setDeleteAccountBusy(false);
     }
   }
 
@@ -502,6 +523,56 @@ export function Settings() {
                 )}
               </div>
             )}
+          </div>
+        </Section>
+
+        <Section title="Account & Data Deletion" icon={<Trash2 className="w-4 h-4" />}>
+          <div className="p-4 space-y-3">
+            <p className="text-muted-foreground text-xs leading-relaxed">
+              Permanently delete your AI Teacher account, server backup, progress, rewards,
+              and marketplace records. This cannot be undone.
+            </p>
+            {deleteAccountOpen ? (
+              <div className="rounded-xl border border-destructive/50 bg-destructive/5 p-3 space-y-3">
+                <p className="text-destructive text-xs font-semibold">
+                  Delete this account and all associated data permanently?
+                </p>
+                <div className="flex gap-2">
+                  <button
+                    type="button"
+                    onClick={handleDeleteAccount}
+                    disabled={deleteAccountBusy || !recoveryKey}
+                    className="flex-1 rounded-lg bg-destructive px-3 py-2.5 text-xs font-semibold text-destructive-foreground disabled:opacity-60"
+                    data-testid="button-confirm-delete-account"
+                  >
+                    {deleteAccountBusy ? "Deleting…" : "Yes, delete my account"}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setDeleteAccountOpen(false)}
+                    disabled={deleteAccountBusy}
+                    className="rounded-lg border border-border px-3 py-2.5 text-xs font-semibold text-muted-foreground"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <button
+                type="button"
+                onClick={() => setDeleteAccountOpen(true)}
+                className="w-full rounded-xl border border-destructive/50 px-3 py-3 text-left text-xs font-semibold text-destructive"
+                data-testid="button-open-delete-account"
+              >
+                Delete my account and data
+              </button>
+            )}
+            <p className="text-muted-foreground text-[11px] leading-relaxed">
+              You can also submit a deletion request from the public{" "}
+              <Link href="/account-deletion" className="text-primary underline">
+                account deletion page
+              </Link>.
+            </p>
           </div>
         </Section>
 
