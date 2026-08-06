@@ -7,8 +7,11 @@
  * uploads raw audio. Only the recognized transcript is used — for instant
  * feedback — then discarded.
  *
- * Matching is client-side: Arabic normalization (strip diacritics,
- * unify alef/ya/ta-marbuta) + letter-level Levenshtein similarity.
+ * Matching is client-side: Arabic normalization (strip diacritics and
+ * punctuation, unify Arabic letter forms) + weighted letter-level
+ * Levenshtein similarity. Long-vowel insertions/deletions are penalized,
+ * but less than consonant errors because speech recognition commonly writes
+ * short-vowel pronunciation differences as extra ا/و/ي letters.
  */
 
 import { Capacitor } from "@capacitor/core";
@@ -17,59 +20,145 @@ import {
   type SpeechRecognitionPlugin,
 } from "@capacitor-community/speech-recognition";
 import { MIN_CONFIDENCE, PASS_SCORE, SPEECH_LANG } from "./teacher-config";
-import { teacherDiag } from "./teacher-touch-diagnostics";
 
 // ── Arabic normalization ──────────────────────────────────────────────────────
 
-/** Strip harakat/tanween/superscript alef & tatweel; unify letter variants. */
+const LONG_VOWELS = new Set(["ا", "و", "ي"]);
+
+/**
+ * Strip Arabic marks/tatweel/punctuation and unify letter variants.
+ *
+ * NFKC handles Arabic presentation forms. NFD + \p{M} removes harakat,
+ * tanween, Quranic annotation marks, and decomposed hamza/maddah marks.
+ * Hamza carriers are mapped to their underlying pronunciation letters so
+ * expected Quran text and speech-recognizer output use the same alphabet.
+ */
 export function normalizeArabic(s: string): string {
   return s
-    .replace(/[\u064B-\u0652\u0670\u0640\u06D6-\u06ED]/g, "") // diacritics, dagger alef, tatweel, Quranic marks
-    .replace(/[أإآٱ]/g, "ا")
+    .normalize("NFKC")
+    .normalize("NFD")
+    .replace(/\p{M}+/gu, "")
+    .replace(/\u0640/g, "")
+    .replace(/[\p{P}\p{S}]+/gu, " ")
+    .replace(/[أإآٱء]/g, "ا")
+    .replace(/ؤ/g, "و")
+    .replace(/ئ/g, "ي")
     .replace(/ى/g, "ي")
-    .replace(/ة/g, "ه")
+    .replace(/[ةۀە]/g, "ه")
+    .replace(/[\u200C\u200D]/g, "")
     .replace(/\s+/g, " ")
     .trim();
 }
 
-function levenshtein(a: string, b: string): number {
-  const m = a.length;
-  const n = b.length;
-  if (m === 0) return n;
-  if (n === 0) return m;
-  let prev = Array.from({ length: n + 1 }, (_, j) => j);
-  const curr = new Array<number>(n + 1);
-  for (let i = 1; i <= m; i++) {
-    curr[0] = i;
-    for (let j = 1; j <= n; j++) {
-      const cost = a[i - 1] === b[j - 1] ? 0 : 1;
-      curr[j] = Math.min(curr[j - 1] + 1, prev[j] + 1, prev[j - 1] + cost);
-    }
-    prev = [...curr];
-  }
-  return prev[n];
+const RECOGNIZER_PLACEHOLDER =
+  /^(?:didn['’]?t understand|couldn['’]?t understand|could not understand|no speech|no match|لم أفهم(?:ك)?)$/i;
+
+export type SpeechInputStatus =
+  | "recognized"
+  | "silence"
+  | "timeout"
+  | "recognition-failure";
+
+/** Android can return a localized placeholder instead of an empty match list. */
+export function isUsableTranscript(transcript: string): boolean {
+  const value = transcript.trim().replace(/\s+/g, " ");
+  return value.length > 0 && !RECOGNIZER_PLACEHOLDER.test(value);
 }
 
-/** 0–100 similarity between two normalized Arabic strings. */
-export function arabicSimilarity(expected: string, actual: string): number {
-  const e = normalizeArabic(expected);
-  const a = normalizeArabic(actual);
-  if (!e.length) return 0;
-  if (e === a) return 100;
-  const dist = levenshtein(e, a);
-  const maxLen = Math.max(e.length, a.length);
-  return Math.max(0, Math.round((1 - dist / maxLen) * 100));
+export function statusForAlternatives(alternatives: string[]): SpeechInputStatus {
+  return alternatives.some(isUsableTranscript) ? "recognized" : "silence";
 }
 
-function arabicSimilarityDetails(expected: string, actual: string): {
+export type EditOperationCounts = {
+  insertions: number;
+  deletions: number;
+  substitutions: number;
+};
+
+export interface ArabicSimilarityDetails {
   normalizedExpected: string;
   normalizedActual: string;
   distance: number;
   maxLength: number;
   score: number;
-} {
+  operations: EditOperationCounts;
+}
+
+type EditCell = {
+  cost: number;
+  operations: EditOperationCounts;
+};
+
+function operationTotal(operations: EditOperationCounts): number {
+  return operations.insertions + operations.deletions + operations.substitutions;
+}
+
+function betterEditCell(candidate: EditCell, current: EditCell | undefined): EditCell {
+  if (!current || candidate.cost < current.cost) return candidate;
+  if (candidate.cost > current.cost) return current;
+  return operationTotal(candidate.operations) < operationTotal(current.operations) ? candidate : current;
+}
+
+function addOperation(
+  base: EditCell,
+  operation: keyof EditOperationCounts,
+  cost: number,
+): EditCell {
+  return {
+    cost: base.cost + cost,
+    operations: {
+      ...base.operations,
+      [operation]: base.operations[operation] + 1,
+    },
+  };
+}
+
+/**
+ * Weighted edit distance. Long-vowel insertions/deletions still lower the
+ * score, but cost 0.5 instead of 1.0. Substitutions and consonant edits keep
+ * full cost, preventing a wrong consonant from looking like a close match.
+ */
+function weightedEditDistance(a: string, b: string): EditCell {
+  const rows: EditCell[][] = Array.from({ length: a.length + 1 }, () =>
+    Array.from({ length: b.length + 1 }, () => ({
+      cost: 0,
+      operations: { insertions: 0, deletions: 0, substitutions: 0 },
+    })),
+  );
+
+  for (let i = 1; i <= a.length; i++) {
+    rows[i][0] = addOperation(rows[i - 1][0], "deletions", LONG_VOWELS.has(a[i - 1]) ? 0.5 : 1);
+  }
+  for (let j = 1; j <= b.length; j++) {
+    rows[0][j] = addOperation(rows[0][j - 1], "insertions", LONG_VOWELS.has(b[j - 1]) ? 0.5 : 1);
+  }
+
+  for (let i = 1; i <= a.length; i++) {
+    for (let j = 1; j <= b.length; j++) {
+      const expectedChar = a[i - 1];
+      const actualChar = b[j - 1];
+      let best =
+        expectedChar === actualChar
+          ? rows[i - 1][j - 1]
+          : addOperation(rows[i - 1][j - 1], "substitutions", 1);
+      best = betterEditCell(
+        addOperation(rows[i - 1][j], "deletions", LONG_VOWELS.has(expectedChar) ? 0.5 : 1),
+        best,
+      );
+      best = betterEditCell(
+        addOperation(rows[i][j - 1], "insertions", LONG_VOWELS.has(actualChar) ? 0.5 : 1),
+        best,
+      );
+      rows[i][j] = best;
+    }
+  }
+  return rows[a.length][b.length];
+}
+
+export function arabicSimilarityDetails(expected: string, actual: string): ArabicSimilarityDetails {
   const normalizedExpected = normalizeArabic(expected);
   const normalizedActual = normalizeArabic(actual);
+  const maxLength = Math.max(normalizedExpected.length, normalizedActual.length);
   if (!normalizedExpected.length) {
     return {
       normalizedExpected,
@@ -77,26 +166,28 @@ function arabicSimilarityDetails(expected: string, actual: string): {
       distance: normalizedActual.length,
       maxLength: normalizedActual.length,
       score: 0,
+      operations: {
+        insertions: normalizedActual.length,
+        deletions: 0,
+        substitutions: 0,
+      },
     };
   }
-  if (normalizedExpected === normalizedActual) {
-    return {
-      normalizedExpected,
-      normalizedActual,
-      distance: 0,
-      maxLength: normalizedExpected.length,
-      score: 100,
-    };
-  }
-  const distance = levenshtein(normalizedExpected, normalizedActual);
-  const maxLength = Math.max(normalizedExpected.length, normalizedActual.length);
+
+  const result = weightedEditDistance(normalizedExpected, normalizedActual);
   return {
     normalizedExpected,
     normalizedActual,
-    distance,
+    distance: result.cost,
     maxLength,
-    score: Math.max(0, Math.round((1 - distance / maxLength) * 100)),
+    score: Math.max(0, Math.round((1 - result.cost / maxLength) * 100)),
+    operations: result.operations,
   };
+}
+
+/** 0–100 similarity between two Arabic strings after normalization. */
+export function arabicSimilarity(expected: string, actual: string): number {
+  return arabicSimilarityDetails(expected, actual).score;
 }
 
 /** Letters of `expected` missing from `actual`, and extra letters said. */
@@ -126,66 +217,67 @@ export interface Assessment {
   matchScore: number;
   /** Recognizer confidence 0–1 (best alternative), -1 if not reported. */
   confidence: number;
+  /** Whether the recognizer produced speech, timed out, or failed. */
+  inputStatus: SpeechInputStatus;
   missing: string[];
   extra: string[];
   /** Best transcript heard (normalized display form). */
   heard: string;
 }
 
-/** Score every recognizer alternative against the expected word; keep the best. */
-export function assess(expected: string, alternatives: string[], confidence = -1): Assessment {
+/** Score every usable recognizer alternative against the expected word; keep the best. */
+export function assess(
+  expected: string,
+  alternatives: string[],
+  confidence = -1,
+  inputStatus = statusForAlternatives(alternatives),
+): Assessment {
   let best = { score: 0, heard: "" };
-  const normalizedExpected = normalizeArabic(expected);
-  teacherDiag("Speech assessment input", {
-    expected,
-    normalizedExpected,
-    matches0: alternatives[0] ?? null,
-    alternatives: JSON.stringify(alternatives),
-    confidence,
-  });
 
   for (const alt of alternatives) {
+    if (!isUsableTranscript(alt)) continue;
     // The recognizer may return a phrase — also try each token.
     const candidates = [alt, ...alt.split(/\s+/).filter(Boolean)];
     candidates.forEach((c, index) => {
       const details = arabicSimilarityDetails(expected, c);
-      teacherDiag("Speech assessment candidate", {
-        alternativeIndex: alternatives.indexOf(alt),
-        candidateType: index === 0 ? "full-match" : "token",
-        rawCandidate: c,
-        normalizedExpected: details.normalizedExpected,
-        normalizedActual: details.normalizedActual,
-        distance: details.distance,
-        maxLength: details.maxLength,
-        score: details.score,
-      });
       if (details.score > best.score) best = { score: details.score, heard: c };
     });
   }
 
-  teacherDiag("Speech assessment selected", {
-    expected,
-    normalizedExpected,
-    heard: best.heard,
-    normalizedHeard: normalizeArabic(best.heard),
-    score: best.score,
-    confidence,
-  });
-
   const { missing, extra } = letterDiff(expected, best.heard || "");
-  teacherDiag("Speech assessment letter diff", {
-    missing: JSON.stringify(missing),
-    extra: JSON.stringify(extra),
-  });
 
   if (best.score >= PASS_SCORE) {
-    return { verdict: "pass", matchScore: best.score, confidence, missing, extra, heard: best.heard };
+    return {
+      verdict: "pass",
+      matchScore: best.score,
+      confidence,
+      inputStatus,
+      missing,
+      extra,
+      heard: best.heard,
+    };
   }
   // Nothing intelligible or very low confidence → don't mark wrong.
-  if (!alternatives.length || (confidence >= 0 && confidence < MIN_CONFIDENCE) || best.score < 20) {
-    return { verdict: "unclear", matchScore: best.score, confidence, missing, extra, heard: best.heard };
+  if (inputStatus !== "recognized" || (confidence >= 0 && confidence < MIN_CONFIDENCE) || best.score < 20) {
+    return {
+      verdict: "unclear",
+      matchScore: best.score,
+      confidence,
+      inputStatus,
+      missing,
+      extra,
+      heard: best.heard,
+    };
   }
-  return { verdict: "retry", matchScore: best.score, confidence, missing, extra, heard: best.heard };
+  return {
+    verdict: "retry",
+    matchScore: best.score,
+    confidence,
+    inputStatus,
+    missing,
+    extra,
+    heard: best.heard,
+  };
 }
 
 // ── Recognizer abstraction ────────────────────────────────────────────────────
@@ -200,13 +292,10 @@ export type SpeechSupport = "native" | "web" | "none";
  */
 function getNativePlugin(): SpeechRecognitionPlugin | null {
   const isNative = Capacitor.isNativePlatform();
-  teacherDiag("Speech getNativePlugin", { isNative });
   if (!isNative) {
-    teacherDiag("Speech getNativePlugin return: web/null");
     return null;
   }
   const plugin = NativeSpeechRecognition as unknown as SpeechRecognitionPlugin;
-  teacherDiag("Speech getNativePlugin return: native", { plugin: plugin ? "PRESENT" : "MISSING" });
   return plugin;
 }
 
@@ -320,7 +409,6 @@ function withTimeout<T>(promise: Promise<T>, ms: number, fallback: T, label: str
   let timeoutId: ReturnType<typeof setTimeout>;
   const timer = new Promise<T>((resolve) => {
     timeoutId = setTimeout(() => {
-      teacherDiag(`Speech ${label} timeout`, { ms, fallback: JSON.stringify(fallback) }, "warn");
       resolve(fallback);
     }, ms);
   });
@@ -329,52 +417,42 @@ function withTimeout<T>(promise: Promise<T>, ms: number, fallback: T, label: str
 
 /** Check mic/speech permission WITHOUT prompting (native only; web reports "prompt"). */
 export async function checkSpeechPermission(): Promise<PermissionState> {
-  teacherDiag("Speech checkSpeechPermission start");
   const native = getNativePlugin();
   if (!native) {
-    teacherDiag("Speech checkSpeechPermission return: no native plugin/prompt");
     return "prompt";
   }
   try {
-    teacherDiag("Speech BEFORE native.checkPermissions");
     const { speechRecognition } = await withTimeout(
       native.checkPermissions(),
       2000,
       { speechRecognition: "prompt" },
       "native.checkPermissions()"
     );
-    teacherDiag("Speech AFTER native.checkPermissions", { speechRecognition });
     if (speechRecognition === "granted") return "granted";
     if (speechRecognition === "denied") return "denied";
     return "prompt";
   } catch (e) {
-    teacherDiag("Speech native.checkPermissions rejected", { error: String(e) }, "error");
     return "prompt";
   }
 }
 
 /** Request mic/speech permission (shows the OS dialog). */
 export async function requestSpeechPermission(): Promise<PermissionState> {
-  teacherDiag("Speech requestSpeechPermission start");
   const native = getNativePlugin();
   if (!native) {
-    teacherDiag("Speech requestSpeechPermission return: no native plugin/prompt");
     return "prompt"; // web: permission is requested implicitly by start()
   }
   try {
-    teacherDiag("Speech BEFORE native.requestPermissions");
     const { speechRecognition } = await withTimeout(
       native.requestPermissions(),
       8000,
       { speechRecognition: "prompt" },
       "native.requestPermissions()"
     );
-    teacherDiag("Speech AFTER native.requestPermissions", { speechRecognition });
     if (speechRecognition === "granted") return "granted";
     if (speechRecognition === "denied") return "denied";
     return "prompt";
   } catch (e) {
-    teacherDiag("Speech native.requestPermissions rejected", { error: String(e) }, "error");
     return "denied";
   }
 }
@@ -382,7 +460,8 @@ export async function requestSpeechPermission(): Promise<PermissionState> {
 export interface ListenResult {
   alternatives: string[];
   confidence: number; // -1 when the engine doesn't report it
-  error?: "no-speech" | "not-allowed" | "network" | "aborted" | "unknown";
+  status: SpeechInputStatus;
+  error?: "no-speech" | "timeout" | "not-allowed" | "network" | "aborted" | "unknown";
 }
 
 let _webActive: WebSpeechRecognition | null = null;
@@ -393,35 +472,40 @@ let _nativeActive = false;
  * Resolves (never rejects) — errors come back in `error`.
  */
 export async function listenOnce(timeoutMs: number): Promise<ListenResult> {
-  teacherDiag("Speech listenOnce start", { timeoutMs });
   const native = getNativePlugin();
   if (native) {
-    teacherDiag("Speech listenOnce native path");
     _nativeActive = true;
     try {
-      const timer = new Promise<{ matches?: string[] }>((resolve) =>
+      const timer = new Promise<{ matches: string[]; timedOut: true }>((resolve) =>
         setTimeout(() => {
-          teacherDiag("Speech listenOnce timer fired; calling native.stop", { timeoutMs });
           native.stop().catch(() => {});
-          resolve({ matches: [] });
+          resolve({ matches: [], timedOut: true });
         }, timeoutMs),
       );
-      teacherDiag("Speech BEFORE native.start", { language: SPEECH_LANG, maxResults: 5, partialResults: false, popup: false });
       const res = await Promise.race([
         native.start({ language: SPEECH_LANG, maxResults: 5, partialResults: false, popup: false }),
         timer,
       ]);
-      teacherDiag("Speech AFTER native.start/race", { matches: res?.matches?.length ?? 0 });
       const matches = res?.matches ?? [];
-      return { alternatives: matches, confidence: -1, error: matches.length ? undefined : "no-speech" };
+      if ("timedOut" in res && res.timedOut) {
+        return { alternatives: matches, confidence: -1, status: "timeout", error: "timeout" };
+      }
+      const status = statusForAlternatives(matches);
+      return {
+        alternatives: matches,
+        confidence: -1,
+        status,
+        error: status === "silence" ? "no-speech" : undefined,
+      };
     } catch (e) {
-      teacherDiag("Speech native.start rejected/threw", { error: String(e) }, "error");
       const msg = String((e as { message?: string })?.message ?? "").toLowerCase();
       if (msg.includes("permission") || msg.includes("denied")) {
-        return { alternatives: [], confidence: -1, error: "not-allowed" };
+        return { alternatives: [], confidence: -1, status: "recognition-failure", error: "not-allowed" };
       }
-      if (msg.includes("network")) return { alternatives: [], confidence: -1, error: "network" };
-      return { alternatives: [], confidence: -1, error: "unknown" };
+      if (msg.includes("network")) {
+        return { alternatives: [], confidence: -1, status: "recognition-failure", error: "network" };
+      }
+      return { alternatives: [], confidence: -1, status: "recognition-failure", error: "unknown" };
     } finally {
       _nativeActive = false;
     }
@@ -430,14 +514,14 @@ export async function listenOnce(timeoutMs: number): Promise<ListenResult> {
   // Web Speech API fallback
   const Ctor = getWebRecognizerCtor();
   if (!Ctor) {
-    teacherDiag("Speech listenOnce return: Web Speech constructor missing");
-    return { alternatives: [], confidence: -1, error: "unknown" };
+    return { alternatives: [], confidence: -1, status: "recognition-failure", error: "unknown" };
   }
 
   return new Promise<ListenResult>((resolve) => {
     const rec = new Ctor();
     _webActive = rec;
     let settled = false;
+    let timedOut = false;
     const done = (r: ListenResult) => {
       if (settled) return;
       settled = true;
@@ -446,9 +530,10 @@ export async function listenOnce(timeoutMs: number): Promise<ListenResult> {
       resolve(r);
     };
     const timer = setTimeout(() => {
+      timedOut = true;
       try { rec.stop(); } catch { /* ignore */ }
-      // onresult/onend may still fire; if not, resolve as no-speech shortly after
-      setTimeout(() => done({ alternatives: [], confidence: -1, error: "no-speech" }), 800);
+      // onresult/onend may still fire; if not, resolve as timeout shortly after.
+      setTimeout(() => done({ alternatives: [], confidence: -1, status: "timeout", error: "timeout" }), 800);
     }, timeoutMs);
 
     rec.lang = SPEECH_LANG;
@@ -464,7 +549,13 @@ export async function listenOnce(timeoutMs: number): Promise<ListenResult> {
         alts.push(first[i].transcript);
         if (i === 0 && typeof first[i].confidence === "number") conf = first[i].confidence;
       }
-      done({ alternatives: alts, confidence: conf });
+      const status = statusForAlternatives(alts);
+      done({
+        alternatives: alts,
+        confidence: conf,
+        status,
+        error: status === "silence" ? "no-speech" : undefined,
+      });
     };
     rec.onerror = (e) => {
       const map: Record<string, ListenResult["error"]> = {
@@ -474,42 +565,43 @@ export async function listenOnce(timeoutMs: number): Promise<ListenResult> {
         network: "network",
         aborted: "aborted",
       };
-      done({ alternatives: [], confidence: -1, error: map[e.error] ?? "unknown" });
+      const error = map[e.error] ?? "unknown";
+      done({
+        alternatives: [],
+        confidence: -1,
+        status: error === "no-speech" ? "silence" : "recognition-failure",
+        error,
+      });
     };
-    rec.onend = () => done({ alternatives: [], confidence: -1, error: "no-speech" });
+    rec.onend = () => {
+      if (timedOut) {
+        done({ alternatives: [], confidence: -1, status: "timeout", error: "timeout" });
+      } else {
+        done({ alternatives: [], confidence: -1, status: "silence", error: "no-speech" });
+      }
+    };
 
     try {
-      teacherDiag("Speech WebSpeechRecognition calling rec.start");
       rec.start();
-      teacherDiag("Speech WebSpeechRecognition rec.start returned");
     } catch (error) {
-      teacherDiag("Speech WebSpeechRecognition rec.start threw", { error: String(error) }, "error");
-      done({ alternatives: [], confidence: -1, error: "unknown" });
+      done({ alternatives: [], confidence: -1, status: "recognition-failure", error: "unknown" });
     }
   });
 }
 
 /** Stop any in-flight recognition (user released the mic button). */
 export async function stopListening(): Promise<void> {
-  teacherDiag("Speech stopListening start", {
-    webActive: Boolean(_webActive),
-    nativeActive: _nativeActive,
-  });
   if (_webActive) {
     try {
       _webActive.stop();
-      teacherDiag("Speech WebSpeechRecognition stop returned");
-    } catch (error) {
-      teacherDiag("Speech WebSpeechRecognition stop threw", { error: String(error) }, "error");
+    } catch {
     }
   }
   if (_nativeActive) {
     const native = getNativePlugin();
     try {
       await native?.stop();
-      teacherDiag("Speech native.stop returned");
-    } catch (error) {
-      teacherDiag("Speech native.stop threw", { error: String(error) }, "error");
+    } catch {
     }
   }
 }

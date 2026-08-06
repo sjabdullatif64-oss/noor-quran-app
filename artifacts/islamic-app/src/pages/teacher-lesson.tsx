@@ -29,13 +29,6 @@ import {
   type Assessment, type SpeechSupport,
 } from "@/lib/teacher-speech";
 import { isConnected } from "@/lib/capacitor";
-import { BUILD_INFO } from "@/lib/buildInfo";
-import {
-  clearTeacherDiagnosticEntries,
-  getTeacherDiagnosticEntries,
-  installTeacherTouchDiagnostics,
-  teacherDiag,
-} from "@/lib/teacher-touch-diagnostics";
 
 // ── Consent helpers ───────────────────────────────────────────────────────────
 
@@ -76,62 +69,13 @@ export function TeacherLesson() {
   const [completedNow, setCompletedNow] = useState<CompleteResult | null>(null);
   const [settingsFailed, setSettingsFailed] = useState(false);
   const [noMicReason, setNoMicReason] = useState<string | null>(null);
-  const [showDiagnostics, setShowDiagnostics] = useState(false);
-  const [diagnosticEntries, setDiagnosticEntries] = useState<string[]>(() => getTeacherDiagnosticEntries());
 
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const recordTimer = useRef<ReturnType<typeof setInterval> | null>(null);
-  const readNowButtonRef = useRef<HTMLButtonElement | null>(null);
-
   useEffect(() => {
-    teacherDiag("lesson component mounted", {
-      buildVersion: BUILD_INFO.version,
-      buildCommit: BUILD_INFO.commitSha,
-      path: window.location.pathname,
-      lessonId: params.id,
-      lessonFound: Boolean(lesson),
-      phase,
-      isNative: Boolean(
-        (window as Window & {
-          Capacitor?: { isNativePlatform?: () => boolean };
-        }).Capacitor?.isNativePlatform?.(),
-      ),
-    });
-    getSpeechSupport((message) => teacherDiag("Speech support step", { message }))
-      .then((resolved) => {
-        teacherDiag("Speech support initial resolution", { support: resolved });
-        setSupport(resolved);
-      })
-      .catch((error) => {
-        teacherDiag("Speech support initial resolution rejected", { error: String(error) }, "error");
-        setSupport("none");
-      });
-  }, []);
-
-  useEffect(() => {
-    teacherDiag("lesson render state", {
-      lessonId: lesson?.id,
-      phase,
-      buttonPresent: Boolean(readNowButtonRef.current),
-      buttonDisabled: readNowButtonRef.current?.disabled,
-      buttonPointerEvents: readNowButtonRef.current
-        ? getComputedStyle(readNowButtonRef.current).pointerEvents
-        : undefined,
-    });
-    return installTeacherTouchDiagnostics(readNowButtonRef.current, {
-      lessonId: lesson?.id ?? String(params.id ?? ""),
-      phase,
-    });
-  }, [lesson?.id, params.id, phase]);
-
-  useEffect(() => {
-    const refresh = () => setDiagnosticEntries(getTeacherDiagnosticEntries());
-    window.addEventListener("noor:teacher-diagnostic", refresh);
-    window.addEventListener("noor:teacher-diagnostic-cleared", refresh);
-    return () => {
-      window.removeEventListener("noor:teacher-diagnostic", refresh);
-      window.removeEventListener("noor:teacher-diagnostic-cleared", refresh);
-    };
+    getSpeechSupport()
+      .then(setSupport)
+      .catch(() => setSupport("none"));
   }, []);
 
   // Reset state when navigating between lessons
@@ -170,104 +114,77 @@ export function TeacherLesson() {
   // ── Recording flow ──────────────────────────────────────────────────────────
 
   const beginRecording = useCallback(async () => {
-    teacherDiag("beginRecording entered", { lessonId: lesson?.id, phase });
     if (!lesson) {
-      teacherDiag("beginRecording return: lesson missing");
       return;
     }
 
     // Daily-limit gate applies only to NEW lessons
     if (!isLessonCompleted(lesson.id) && getDailyStatus().limitReached) {
-      teacherDiag("beginRecording return: daily limit reached", { lessonId: lesson.id });
       setPhase("limit");
       return;
     }
     if (!hasConsent()) {
-      teacherDiag("beginRecording return: consent required", { lessonId: lesson.id });
       setPhase("consent");
       return;
     }
 
-    teacherDiag("beginRecording before getSpeechSupport");
     let sup: SpeechSupport;
     try {
       sup = await getSpeechSupport();
-      teacherDiag("beginRecording after getSpeechSupport", { support: sup });
     } catch (error) {
-      teacherDiag("beginRecording exception: getSpeechSupport", { error: String(error) });
       throw error;
     }
     setSupport(sup);
     if (sup === "none") {
-      teacherDiag("beginRecording return: no speech support");
       setNoMicReason(getSpeechSupportReason());
       setPhase("no-mic");
       return;
     }
 
-    teacherDiag("beginRecording before isConnected");
     let connected: boolean;
     try {
       connected = await isConnected();
-      teacherDiag("beginRecording after isConnected", { connected });
     } catch (error) {
-      teacherDiag("beginRecording exception: isConnected", { error: String(error) });
       throw error;
     }
     if (!connected) {
-      teacherDiag("beginRecording return: offline");
       setPhase("offline");
       return;
     }
 
-    teacherDiag("beginRecording before checkSpeechPermission");
     let perm: Awaited<ReturnType<typeof checkSpeechPermission>>;
     try {
       perm = await checkSpeechPermission();
-      teacherDiag("beginRecording after checkSpeechPermission", { permission: perm });
     } catch (error) {
-      teacherDiag("beginRecording exception: checkSpeechPermission", { error: String(error) });
       throw error;
     }
     if (perm === "denied") {
-      teacherDiag("beginRecording return: permission denied");
       setPhase("mic-denied");
       return;
     }
 
     if (perm === "prompt" && sup === "native") {
-      teacherDiag("beginRecording before requestSpeechPermission");
       let granted: Awaited<ReturnType<typeof requestSpeechPermission>>;
       try {
         granted = await requestSpeechPermission();
-        teacherDiag("beginRecording after requestSpeechPermission", { permission: granted });
       } catch (error) {
-        teacherDiag("beginRecording exception: requestSpeechPermission", { error: String(error) });
         throw error;
       }
       if (granted !== "granted") {
-        teacherDiag("beginRecording return: permission not granted");
         setPhase("mic-denied");
         return;
       }
     }
 
-    teacherDiag("beginRecording entering recording phase");
     setPhase("recording");
     setRecordMs(0);
     const started = Date.now();
     recordTimer.current = setInterval(() => setRecordMs(Date.now() - started), 100);
 
-    teacherDiag("beginRecording before listenOnce", { timeoutMs: MAX_RECORD_MS });
     let res: Awaited<ReturnType<typeof listenOnce>>;
     try {
       res = await listenOnce(MAX_RECORD_MS);
-      teacherDiag("beginRecording after listenOnce", {
-        error: res.error,
-        alternatives: res.alternatives.length,
-      });
     } catch (error) {
-      teacherDiag("beginRecording exception: listenOnce", { error: String(error) });
       throw error;
     }
 
@@ -275,19 +192,15 @@ export function TeacherLesson() {
     setPhase("checking");
 
     if (res.error === "not-allowed") {
-      teacherDiag("beginRecording return: listen not allowed");
       setPhase("mic-denied");
       return;
     }
     if (res.error === "network") {
-      teacherDiag("beginRecording return: listen network error");
       setPhase("offline");
       return;
     }
 
-    teacherDiag("beginRecording before assess");
-    const a = assess(lesson.expected, res.alternatives, res.confidence);
-    teacherDiag("beginRecording after assess", { verdict: a.verdict, score: a.matchScore });
+    const a = assess(lesson.expected, res.alternatives, res.confidence, res.status);
     setResult(a);
 
     if (a.verdict === "pass") {
@@ -307,21 +220,8 @@ export function TeacherLesson() {
 
   /** Tap "Read Now" → permission (first time) → listen; auto-stops after MAX_RECORD_MS. */
   const onReadNow = useCallback(() => {
-    teacherDiag("Read Now React onClick ENTERED", {
-      lessonId: lesson?.id,
-      phase,
-      buttonDisabled: readNowButtonRef.current?.disabled,
-    });
-    try {
-      const pending = beginRecording();
-      teacherDiag("Read Now beginRecording invoked", { returnedPromise: Boolean(pending) });
-      pending.catch((error) => {
-        teacherDiag("Read Now beginRecording rejected", { error: String(error) });
-      });
-    } catch (error) {
-      teacherDiag("Read Now handler exception", { error: String(error) });
-    }
-  }, [beginRecording, lesson?.id, phase]);
+    beginRecording().catch(() => {});
+  }, [beginRecording]);
 
   /** Tap "Stop" while listening → finish early and check what was heard. */
   const onStop = useCallback(() => {
@@ -478,16 +378,11 @@ export function TeacherLesson() {
               <button
                 type="button"
                 onClick={() => {
-                  teacherDiag("Consent Continue onClick ENTERED", { lessonId: lesson.id, phase });
                   try {
                     grantConsent();
-                    teacherDiag("Consent granted; setting idle and invoking beginRecording");
                     setPhase("idle");
-                    beginRecording().catch((error) => {
-                      teacherDiag("Consent beginRecording rejected", { error: String(error) }, "error");
-                    });
-                  } catch (error) {
-                    teacherDiag("Consent Continue handler exception", { error: String(error) }, "error");
+                    beginRecording().catch(() => {});
+                  } catch {
                   }
                 }}
                 className="relative z-30 flex-1 touch-manipulation pointer-events-auto py-3 rounded-xl text-sm font-semibold text-primary-foreground bg-primary"
@@ -497,7 +392,6 @@ export function TeacherLesson() {
               </button>
               <button
                 onClick={() => {
-                  teacherDiag("Consent Listen only onClick ENTERED");
                   setPhase("no-mic");
                 }}
                 className="px-4 py-3 rounded-xl text-xs font-medium text-muted-foreground border border-border"
@@ -742,7 +636,6 @@ export function TeacherLesson() {
                 ) : (
                   <>
                     <button
-                      ref={readNowButtonRef}
                       onClick={onReadNow}
                       className="inline-flex items-center gap-2.5 px-8 py-4 rounded-2xl text-base font-bold text-primary-foreground bg-primary active:scale-95 shadow-lg transition-all"
                       data-testid="button-record"
@@ -809,50 +702,6 @@ export function TeacherLesson() {
                 )
               )}
             </div>
-          </div>
-        )}
-      </div>
-
-      <div className="px-4 pb-8 max-w-2xl mx-auto">
-        <button
-          type="button"
-          onClick={() => {
-            teacherDiag("Diagnostic panel toggled", { open: !showDiagnostics });
-            setShowDiagnostics((open) => !open);
-          }}
-          className="w-full rounded-xl border border-border px-3 py-2 text-left text-[11px] text-muted-foreground"
-          data-testid="button-teacher-diagnostics"
-        >
-          {showDiagnostics ? "Hide diagnostic log" : `Show diagnostic log (${diagnosticEntries.length} entries)`}
-        </button>
-        {showDiagnostics && (
-          <div className="mt-2 rounded-xl border border-border bg-card p-3">
-            <div className="flex gap-2 mb-2">
-              <button
-                type="button"
-                onClick={() => {
-                  const text = diagnosticEntries.join("\n");
-                  navigator.clipboard?.writeText(text).catch(() => {});
-                  teacherDiag("Diagnostic log copy requested", { entries: diagnosticEntries.length });
-                }}
-                className="rounded-lg bg-primary px-3 py-1.5 text-[11px] font-semibold text-primary-foreground"
-              >
-                Copy log
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  clearTeacherDiagnosticEntries();
-                  setDiagnosticEntries([]);
-                }}
-                className="rounded-lg border border-border px-3 py-1.5 text-[11px] text-muted-foreground"
-              >
-                Clear log
-              </button>
-            </div>
-            <pre className="max-h-72 overflow-auto whitespace-pre-wrap break-words text-[9px] leading-relaxed text-muted-foreground">
-              {diagnosticEntries.length ? diagnosticEntries.join("\n") : "No diagnostic entries yet."}
-            </pre>
           </div>
         )}
       </div>
