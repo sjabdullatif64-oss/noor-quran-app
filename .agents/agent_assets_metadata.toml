@@ -278,3 +278,10 @@ uri = "file://artifacts/islamic-app/release/NoorQuran-v1.0.17-release.aab"
 type = "unspecified"
 title = "Noor Quran 1.0.17 Release AAB"
 description = "Signed production release Android App Bundle — versionCode 74684550."
+
+[[outputs]]
+id = "Byg0xMm4JalKEUYY158jc"
+uri = "file://artifacts/islamic-app/NoorQuran-latest-signed-release.apk"
+type = "unspecified"
+title = "Noor Quran latest signed release APK"
+description = "Release-signed APK built from commit d9a64b1be5fddf10b13dfda61fe73d2653fdc4eb. SHA-256: d9c368c31d1083e189f6eb9c2fa2c5a20e35b5b3e83cfbee8d6b00d814871132. APK Signature Scheme v2 verified; not tested on a physical device."
