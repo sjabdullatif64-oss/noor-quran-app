@@ -292,3 +292,17 @@ uri = "file://artifacts/islamic-app/android/app/build/outputs/apk/release/app-re
 type = "unspecified"
 title = "Noor Quran signed Android APK v1.0.17"
 description = "Signed release APK built from the current codebase. Package: com.sj64noorquran. Version code: 79845453. SHA-256: 86e8263cb7592c8f7b164914b4782f4dc540fbd5be173cb239e4e12d618bc94e. APK signature scheme v2 and zip alignment verified."
+
+[[outputs]]
+id = "0qOGpnrbkEKlPj6qf-RFy"
+uri = "file://.agents/outputs/noor-quran-1.0.18/noor-quran-1.0.18.apk"
+type = "unspecified"
+title = "Noor Quran 1.0.18 — Signed APK"
+description = "Signed Android APK built by GitHub Actions. Version code: 79845454. Install directly on Android devices."
+
+[[outputs]]
+id = "856i3dsx89WYmPBjPo1gF"
+uri = "file://.agents/outputs/noor-quran-1.0.18/noor-quran-1.0.18.aab"
+type = "unspecified"
+title = "Noor Quran 1.0.18 — Play Store AAB"
+description = "Signed Android App Bundle built by GitHub Actions. Version code: 79845454. Upload this file to Google Play Console."
