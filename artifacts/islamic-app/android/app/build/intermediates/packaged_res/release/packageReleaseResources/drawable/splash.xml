@@ -1,14 +1,15 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!--
-    Splash screen background for Noor Quran.
-    Plain solid dark-green fill only — no <bitmap> tag.
+  <!--
+      Splash screen background for Noor Quran.
+      Plain solid dark-green fill only — no <bitmap> tag.
 
-    The <bitmap> element was removed because @mipmap/ic_launcher resolves to
-    an adaptive-icon XML file on API 26+ devices, and BitmapDrawable cannot
-    inflate an XML-format drawable as a bitmap src, causing:
-        Resources$NotFoundException: File res/<name>.xml from drawable resource ID
-    A solid colour is safe on all API levels and matches the app launch colour.
--->
-<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
-    <item android:drawable="@color/splash_background" />
-</layer-list>
+      The <bitmap> element was removed because @mipmap/ic_launcher resolves to
+      an adaptive-icon XML file on API 26+ devices, and BitmapDrawable cannot
+      inflate an XML-format drawable as a bitmap src, causing:
+          Resources$NotFoundException / XmlPullParserException: requires a valid 'src' attribute
+      A solid colour is safe on all API levels and matches the app launch colour.
+  -->
+  <layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+      <item android:drawable="@color/splash_background" />
+  </layer-list>
+  

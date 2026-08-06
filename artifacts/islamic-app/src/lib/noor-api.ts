@@ -53,6 +53,19 @@ export interface NoorProduct {
   rejectionReason: string | null;
 }
 
+export interface NoorWelcomeCampaign {
+  id: string;
+  imageUrl: string | null;
+  gifUrl: string | null;
+  videoUrl: string | null;
+  title: string;
+  description: string;
+  buttonText: string | null;
+  url: string | null;
+  durationSeconds: number;
+  enabled: boolean;
+}
+
 export const noorApi = {
   async register(
     deviceId: string,
@@ -81,6 +94,10 @@ export const noorApi = {
 
   async getFeaturedProducts(): Promise<{ products: NoorProduct[] }> {
     return noorFetch("/products/featured");
+  },
+
+  async getWelcomeCampaigns(): Promise<{ campaigns: NoorWelcomeCampaign[] }> {
+    return noorFetch("/campaigns/welcome");
   },
 
   async adminGetPending(

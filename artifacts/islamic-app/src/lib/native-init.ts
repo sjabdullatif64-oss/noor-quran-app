@@ -40,8 +40,10 @@ export async function initNative(): Promise<void> {
     //    link after the app is in the background.
     listenForDeepLinkRef();
 
-    // 6. Hide splash after the app has fully painted
-    setTimeout(() => hideSplash(), 800);
+    // 6. WelcomeCampaignGate hides the splash after campaign loading completes.
+    // Keep a bounded fallback so a network or plugin issue can never strand the
+    // native splash screen indefinitely.
+    setTimeout(() => hideSplash(), 5000);
   } catch {
     // Never block app startup on native init failures.
   }

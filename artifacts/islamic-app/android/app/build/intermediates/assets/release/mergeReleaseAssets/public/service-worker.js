@@ -51,7 +51,7 @@ let tickInterval = null;
 // ── Lifecycle ──────────────────────────────────────────────────────────────
 
 // ── Cache config ───────────────────────────────────────────────────────────
-const CACHE_NAME = "noor-quran-shell-v1";
+const CACHE_NAME = "noor-quran-shell-v3";
 
 // App-shell assets to pre-cache on install
 const PRECACHE_URLS = [

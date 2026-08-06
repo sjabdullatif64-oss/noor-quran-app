@@ -54,10 +54,92 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <script type="module" crossorigin src="/assets/index-TRJ7bG6J.js"></script>
-    <link rel="stylesheet" crossorigin href="/assets/index-Dhz4Idx4.css">
+    <script type="module" crossorigin src="/assets/index-CtXLAvaD.js"></script>
+    <link rel="stylesheet" crossorigin href="/assets/index-Cpuu8ya-.css">
   </head>
   <body>
     <div id="root"></div>
+
+    <!--
+      Android App Link / referral web fallback.
+      Runs only in a real browser (not inside the Capacitor WebView).
+      When someone opens a referral link on Android:
+        1. If the app is installed → Android intercepts it via intent-filter (never reaches here)
+        2. If not installed → browser loads this page; script shows an install/open banner
+      On iOS or desktop: shows the banner linking to the Play Store.
+    -->
+    <script>
+      (function () {
+        try {
+          // Skip inside Capacitor WebView — native bridge handles the URL
+          if (window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform()) return;
+
+          var params = new URLSearchParams(window.location.search);
+          var ref = params.get('ref');
+          if (!ref) return; // no referral param — nothing to do
+
+          var PACKAGE = 'com.sj64noorquran';
+          var PLAY_URL = 'https://play.google.com/store/apps/details?id=' + PACKAGE;
+          // Android Intent URL: opens the app if installed, falls back to Play Store
+          var INTENT_URL = 'intent://noor-quran.replit.app/?ref=' + encodeURIComponent(ref)
+            + '#Intent;scheme=https;package=' + PACKAGE
+            + ';S.browser_fallback_url=' + encodeURIComponent(PLAY_URL) + ';end';
+
+          var isAndroid = /android/i.test(navigator.userAgent);
+
+          // Build a minimal banner — styled inline so it works before React mounts
+          var banner = document.createElement('div');
+          banner.id = 'noor-app-banner';
+          banner.style.cssText = [
+            'position:fixed', 'bottom:0', 'left:0', 'right:0', 'z-index:99999',
+            'background:#071a0e', 'border-top:1px solid #1a5c38',
+            'padding:14px 16px', 'display:flex', 'align-items:center',
+            'gap:12px', 'font-family:system-ui,sans-serif',
+          ].join(';');
+
+          var text = document.createElement('span');
+          text.style.cssText = 'color:#d1fae5;font-size:14px;flex:1;line-height:1.4';
+          text.textContent = 'Open in Noor Quran to accept your invitation \uD83C\uDF19';
+
+          var btn = document.createElement('a');
+          btn.style.cssText = [
+            'background:#1a5c38', 'color:#fff', 'border-radius:10px',
+            'padding:9px 18px', 'font-size:14px', 'font-weight:600',
+            'text-decoration:none', 'white-space:nowrap', 'flex-shrink:0',
+          ].join(';');
+
+          if (isAndroid) {
+            btn.href = INTENT_URL;
+            btn.textContent = 'Open App';
+          } else {
+            btn.href = PLAY_URL;
+            btn.target = '_blank';
+            btn.rel = 'noopener noreferrer';
+            btn.textContent = 'Get the App';
+          }
+
+          var close = document.createElement('button');
+          close.textContent = '\u00D7';
+          close.style.cssText = [
+            'background:none', 'border:none', 'color:#6ee7b7',
+            'font-size:20px', 'cursor:pointer', 'padding:0 4px', 'flex-shrink:0',
+          ].join(';');
+          close.onclick = function () { banner.remove(); };
+
+          banner.appendChild(text);
+          banner.appendChild(btn);
+          banner.appendChild(close);
+
+          // Show after DOM is ready
+          if (document.body) {
+            document.body.appendChild(banner);
+          } else {
+            document.addEventListener('DOMContentLoaded', function () {
+              document.body.appendChild(banner);
+            });
+          }
+        } catch (e) { /* never block page load */ }
+      })();
+    </script>
   </body>
 </html>

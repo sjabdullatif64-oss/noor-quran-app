@@ -34,6 +34,7 @@ import { JuzReader } from "@/pages/juz-reader";
 import { Teacher } from "@/pages/teacher";
 import { TeacherLesson } from "@/pages/teacher-lesson";
 import { TeacherPractice } from "@/pages/teacher-practice";
+import { WelcomeCampaignGate } from "@/components/welcome-campaign-gate";
 import { useEffect } from "react";
 import { AI_TEACHER_ENABLED } from "@/lib/teacher-config";
 import { ensureRegistered, reportAyahComplete } from "@/lib/user";
@@ -135,9 +136,11 @@ function App() {
               <AndroidBackHandler />
               <NoorInitializer />
 
-              <Layout>
-                <Router />
-              </Layout>
+              <WelcomeCampaignGate>
+                <Layout>
+                  <Router />
+                </Layout>
+              </WelcomeCampaignGate>
 
               <NotificationPrompt />
             </WouterRouter>

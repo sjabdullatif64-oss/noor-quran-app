@@ -1,27 +1,10 @@
 {
     "logs": [
         {
-            "outputFile": "com.sj64noorquran.app-mergeReleaseResources-46:/values-en-rCA/values-en-rCA.xml",
+            "outputFile": "com.sj64noorquran.app-mergeReleaseResources-38:/values-en-rCA/values-en-rCA.xml",
             "map": [
                 {
-                    "source": "/home/runner/.gradle/caches/8.11.1/transforms/a39d9c6e2997913ca9123c3dd61cbcf3/transformed/core-1.17.0/res/values-en-rCA/values-en-rCA.xml",
-                    "from": {
-                        "startLines": "2,3,4,5,6,7,8,9",
-                        "startColumns": "4,4,4,4,4,4,4,4",
-                        "startOffsets": "55,151,253,352,451,555,657,773",
-                        "endColumns": "95,101,98,98,103,101,115,100",
-                        "endOffsets": "146,248,347,446,550,652,768,869"
-                    },
-                    "to": {
-                        "startLines": "29,30,31,32,33,34,35,41",
-                        "startColumns": "4,4,4,4,4,4,4,4",
-                        "startOffsets": "2762,2858,2960,3059,3158,3262,3364,3966",
-                        "endColumns": "95,101,98,98,103,101,115,100",
-                        "endOffsets": "2853,2955,3054,3153,3257,3359,3475,4062"
-                    }
-                },
-                {
-                    "source": "/home/runner/.gradle/caches/8.11.1/transforms/d8f90b97591d362760e827056ffdda8b/transformed/browser-1.8.0/res/values-en-rCA/values-en-rCA.xml",
+                    "source": "/home/runner/.gradle/caches/8.13/transforms/22f425e14083064aea8d9bbd7a23b6f4/transformed/browser-1.9.0/res/values-en-rCA/values-en-rCA.xml",
                     "from": {
                         "startLines": "2,3,4,5",
                         "startColumns": "4,4,4,4",
@@ -38,7 +21,24 @@
                     }
                 },
                 {
-                    "source": "/home/runner/.gradle/caches/8.11.1/transforms/2a390fc34f80f4009984c8fe178a6acb/transformed/appcompat-1.7.0/res/values-en-rCA/values-en-rCA.xml",
+                    "source": "/home/runner/.gradle/caches/8.13/transforms/3da973771b070872e5ba765b2a3cb24d/transformed/core-1.17.0/res/values-en-rCA/values-en-rCA.xml",
+                    "from": {
+                        "startLines": "2,3,4,5,6,7,8,9",
+                        "startColumns": "4,4,4,4,4,4,4,4",
+                        "startOffsets": "55,151,253,352,451,555,657,773",
+                        "endColumns": "95,101,98,98,103,101,115,100",
+                        "endOffsets": "146,248,347,446,550,652,768,869"
+                    },
+                    "to": {
+                        "startLines": "29,30,31,32,33,34,35,41",
+                        "startColumns": "4,4,4,4,4,4,4,4",
+                        "startOffsets": "2762,2858,2960,3059,3158,3262,3364,3966",
+                        "endColumns": "95,101,98,98,103,101,115,100",
+                        "endOffsets": "2853,2955,3054,3153,3257,3359,3475,4062"
+                    }
+                },
+                {
+                    "source": "/home/runner/.gradle/caches/8.13/transforms/3063ed440995062933a6bf8c544841cd/transformed/appcompat-1.7.0/res/values-en-rCA/values-en-rCA.xml",
                     "from": {
                         "startLines": "2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29",
                         "startColumns": "4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4",

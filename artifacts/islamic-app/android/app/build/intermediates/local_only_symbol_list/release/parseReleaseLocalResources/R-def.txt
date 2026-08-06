@@ -10,6 +10,10 @@ drawable splash
 mipmap ic_launcher
 mipmap ic_launcher_foreground
 mipmap ic_launcher_round
+raw azan_default
+raw azan_madinah
+raw azan_makkah
+raw azan_mishary
 raw azan_short
 string app_name
 string custom_url_scheme

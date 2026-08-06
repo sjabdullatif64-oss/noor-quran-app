@@ -2,6 +2,19 @@
 	"appId": "com.sj64noorquran",
 	"appName": "Noor Quran",
 	"webDir": "dist/public",
+	"includePlugins": [
+		"@capacitor/app",
+		"@capacitor/browser",
+		"@capacitor/filesystem",
+		"@capacitor/haptics",
+		"@capacitor/local-notifications",
+		"@capacitor/network",
+		"@capacitor/share",
+		"@capacitor/splash-screen",
+		"@capacitor/status-bar",
+		"@capacitor-community/speech-recognition",
+		"capacitor-native-settings"
+	],
 	"server": {
 		"androidScheme": "https",
 		"cleartext": false
@@ -39,9 +52,6 @@
 		"Keyboard": {
 			"resize": "body",
 			"style": "dark"
-		},
-		"AdMob": {
-			"initializeForTesting": false
 		}
 	}
 }

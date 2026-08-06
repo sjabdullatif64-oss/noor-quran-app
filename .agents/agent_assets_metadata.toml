@@ -285,3 +285,10 @@ uri = "file://artifacts/islamic-app/NoorQuran-latest-signed-release.apk"
 type = "unspecified"
 title = "Noor Quran latest signed release APK"
 description = "Release-signed APK built from commit d9a64b1be5fddf10b13dfda61fe73d2653fdc4eb. SHA-256: d9c368c31d1083e189f6eb9c2fa2c5a20e35b5b3e83cfbee8d6b00d814871132. APK Signature Scheme v2 verified; not tested on a physical device."
+
+[[outputs]]
+id = "ci73hQKl5ovfQYp_AKfkl"
+uri = "file://artifacts/islamic-app/android/app/build/outputs/apk/release/app-release.apk"
+type = "unspecified"
+title = "Noor Quran signed Android APK v1.0.17"
+description = "Signed release APK built from the current codebase. Package: com.sj64noorquran. Version code: 79845453. SHA-256: 86e8263cb7592c8f7b164914b4782f4dc540fbd5be173cb239e4e12d618bc94e. APK signature scheme v2 and zip alignment verified."

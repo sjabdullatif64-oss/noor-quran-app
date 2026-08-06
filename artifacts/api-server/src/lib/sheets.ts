@@ -63,6 +63,31 @@ export interface Product {
   createdAt: string;
 }
 
+export interface WelcomeCampaign {
+  id: string;
+  imageUrl: string | null;
+  gifUrl: string | null;
+  videoUrl: string | null;
+  title: string;
+  description: string;
+  buttonText: string | null;
+  url: string | null;
+  durationSeconds: number;
+  enabled: boolean;
+}
+
+function isValidWelcomeCampaignUrl(value: string): boolean {
+  try {
+    const parsed = new URL(value.trim());
+    if (parsed.protocol === "http:" || parsed.protocol === "https:") {
+      return Boolean(parsed.hostname);
+    }
+    return ["mailto:", "tel:", "market:"].includes(parsed.protocol);
+  } catch {
+    return false;
+  }
+}
+
 // ─── Sheet column definitions ─────────────────────────────────────────────────
 
 const SHEETS = {
@@ -72,6 +97,7 @@ const SHEETS = {
   AyahRewards:      ["id","userId","surahNumber","ayahNumber","date","createdAt"],
   Referrals:        ["id","referrerId","refereeId","createdAt"],
   Products:         ["id","userId","title","description","imageUrl","contactInfo","productLink","category","status","promotionType","coinsSpent","submittedBy","approvedAt","rejectedAt","rejectionReason","promotionExpiry","createdAt"],
+  WelcomeCampaigns: ["id","imageUrl","gifUrl","videoUrl","title","description","buttonText","url","durationSeconds","enabled"],
 } as const;
 
 type SheetName = keyof typeof SHEETS;
@@ -406,6 +432,36 @@ export async function deleteProduct(id: string): Promise<void> {
   const idx = rows.findIndex((x) => x.id === id);
   if (idx === -1) throw new Error(`Product ${id} not found`);
   await deleteRowByDataIndex("Products", idx);
+}
+
+// ─── Welcome campaigns ────────────────────────────────────────────────────────
+
+function parseEnabled(value: string): boolean {
+  return ["true", "1", "yes", "y", "enabled", "active", "on"].includes(value.trim().toLowerCase());
+}
+
+function rowToWelcomeCampaign(r: Record<string, string>): WelcomeCampaign {
+  const duration = Number(r.durationSeconds);
+  return {
+    id: r.id.trim(),
+    imageUrl: r.imageUrl.trim() || null,
+    gifUrl: r.gifUrl.trim() || null,
+    videoUrl: r.videoUrl.trim() || null,
+    title: r.title.trim(),
+    description: r.description.trim(),
+    buttonText: r.buttonText.trim() || null,
+    url: isValidWelcomeCampaignUrl(r.url) ? r.url.trim() : null,
+    durationSeconds: Number.isFinite(duration) && duration > 0 ? Math.round(duration) : 6,
+    enabled: parseEnabled(r.enabled),
+  };
+}
+
+export async function getActiveWelcomeCampaigns(): Promise<WelcomeCampaign[]> {
+  const rows = await readAllRows("WelcomeCampaigns");
+  return rows
+    .map(rowToWelcomeCampaign)
+    .filter((campaign) => campaign.enabled && campaign.id && campaign.title)
+    .sort((a, b) => a.id.localeCompare(b.id));
 }
 
 // ─── Helper: add coins + record transaction ───────────────────────────────────

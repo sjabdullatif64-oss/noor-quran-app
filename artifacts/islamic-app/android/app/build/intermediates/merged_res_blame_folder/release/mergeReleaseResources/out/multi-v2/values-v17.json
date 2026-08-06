@@ -1,10 +1,10 @@
 {
     "logs": [
         {
-            "outputFile": "com.sj64noorquran.app-mergeReleaseResources-46:/values-v17/values-v17.xml",
+            "outputFile": "com.sj64noorquran.app-mergeReleaseResources-38:/values-v17/values-v17.xml",
             "map": [
                 {
-                    "source": "/home/runner/.gradle/caches/8.11.1/transforms/2a390fc34f80f4009984c8fe178a6acb/transformed/appcompat-1.7.0/res/values-v17/values-v17.xml",
+                    "source": "/home/runner/.gradle/caches/8.13/transforms/3063ed440995062933a6bf8c544841cd/transformed/appcompat-1.7.0/res/values-v17/values-v17.xml",
                     "from": {
                         "startLines": "2,5,9,12,15,18,22,25,29,33,37,40,43,46,50,53,57",
                         "startColumns": "4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4",
