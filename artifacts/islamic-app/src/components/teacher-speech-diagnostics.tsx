@@ -9,6 +9,7 @@ import { getLang } from "@/lib/settings";
 import { getTeacherSpeechCopy } from "@/lib/teacher-speech-copy";
 import { SPEECH_LANG } from "@/lib/teacher-config";
 import type { Assessment, ListenResult } from "@/lib/teacher-speech";
+import { TeacherSpeechListenButton } from "@/components/teacher-speech-message";
 
 interface TeacherSpeechDiagnosticsProps {
   open: boolean;
@@ -37,7 +38,15 @@ export function TeacherSpeechDiagnostics({
       <DialogContent className="max-w-md bg-card border-border">
         <DialogHeader className="text-left">
           <DialogTitle className="text-foreground">{copy.diagnosticsTitle}</DialogTitle>
-          <DialogDescription>{copy.diagnosticsDescription}</DialogDescription>
+          <DialogDescription className="flex items-center justify-between gap-2">
+            <span>{copy.diagnosticsDescription}</span>
+            <TeacherSpeechListenButton
+              text={copy.diagnosticsDescription}
+              language={getLang()}
+              label={copy.listen}
+              testId="button-listen-diagnostics-description"
+            />
+          </DialogDescription>
         </DialogHeader>
         <div className="space-y-3 text-sm" dir={getLang() === "arabic" || getLang() === "urdu" ? "rtl" : "ltr"}>
           <div className="grid grid-cols-2 gap-3">
@@ -51,7 +60,15 @@ export function TeacherSpeechDiagnostics({
             <DiagnosticValue label={copy.status} value={speech?.status || "—"} />
           </div>
           <div className="rounded-xl border border-border bg-background/60 p-3">
-            <p className="text-muted-foreground text-xs mb-1">{copy.errors}</p>
+            <div className="flex items-start justify-between gap-2">
+              <p className="text-muted-foreground text-xs mb-1">{copy.errors}</p>
+              <TeacherSpeechListenButton
+                text={errorText}
+                language={getLang()}
+                label={copy.listen}
+                testId="button-listen-diagnostics-errors"
+              />
+            </div>
             <p className="text-foreground text-xs leading-relaxed">{errorText}</p>
           </div>
         </div>

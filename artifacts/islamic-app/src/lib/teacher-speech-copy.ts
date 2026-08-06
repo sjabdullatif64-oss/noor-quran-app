@@ -53,6 +53,15 @@ export interface TeacherSpeechCopy {
   recognizedTextOnly: string;
   deleteLearningData: string;
   backgroundNoiseOkay: string;
+  lessonHint: string;
+  lessonNotFound: string;
+  backToTeacher: string;
+  lockedTitle: string;
+  lockedBody: string;
+  goToCurrentLesson: string;
+  limitTitle: string;
+  limitBody: string;
+  backToDashboard: string;
   lessonProgress: string;
   reason: string;
   recordingAutoStop: string;
@@ -112,6 +121,15 @@ const english: TeacherSpeechCopy = {
   recognizedTextOnly: "Only recognized text is used for instant feedback, then discarded.",
   deleteLearningData: "You can delete all learning data from the Teacher home screen.",
   backgroundNoiseOkay: "A little background noise is okay.",
+  lessonHint: "Listen to the example, then repeat the word naturally and slowly.",
+  lessonNotFound: "This lesson could not be found.",
+  backToTeacher: "Back to Teacher",
+  lockedTitle: "This lesson is still locked.",
+  lockedBody: "Lessons unlock one at a time as you pass them. Step by step is how strong reading is built.",
+  goToCurrentLesson: "Go to your current lesson",
+  limitTitle: "Masha'Allah — today's lessons are complete.",
+  limitBody: "Rest is part of learning. You can still review completed lessons and listen as much as you like. New lessons unlock at midnight.",
+  backToDashboard: "Back to dashboard",
   lessonProgress: "Lesson",
   reason: "Reason",
   recordingAutoStop: "stops automatically",
@@ -147,6 +165,15 @@ const copy = (overrides: Partial<TeacherSpeechCopy>): TeacherSpeechCopy => {
   merged.recognizedTextOnly = merged.diagnosticsDescription;
   merged.deleteLearningData = merged.listenOnlyAvailable;
   merged.backgroundNoiseOkay = merged.retryBody;
+  merged.lessonHint = merged.retryBody;
+  merged.lessonNotFound = merged.unclearTitle;
+  merged.backToTeacher = merged.readyMicrophone;
+  merged.lockedTitle = merged.unclearTitle;
+  merged.lockedBody = merged.retryBody;
+  merged.goToCurrentLesson = merged.readyMicrophone;
+  merged.limitTitle = merged.passedCorrect;
+  merged.limitBody = merged.retryGuidance;
+  merged.backToDashboard = merged.listenOnlyTitle;
   merged.lessonProgress = merged.status;
   merged.reason = merged.status;
   merged.recordingAutoStop = merged.status;

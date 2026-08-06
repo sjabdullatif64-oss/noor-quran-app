@@ -7,7 +7,7 @@ import { useEffect, useState } from "react";
 import { Link, useLocation } from "wouter";
 import {
   GraduationCap, Play, Flame, Target, BookOpen, RotateCcw,
-  History, Trash2, ChevronRight, CheckCircle2, Lock, Sparkles, Clock, TrendingUp,
+  History, Trash2, ChevronRight, CheckCircle2, Lock, Sparkles, Clock, TrendingUp, ListChecks,
 } from "lucide-react";
 import { DAILY_LIMIT } from "@/lib/teacher-config";
 import { CURRICULUM, LEVELS, getLesson, getLevelLessons } from "@/lib/teacher-curriculum";
@@ -242,6 +242,24 @@ export function Teacher() {
             </div>
           </button>
         )}
+
+        {/* Practice completed lessons */}
+        <Link
+          href="/teacher/practice"
+          className="w-full rounded-2xl p-5 border border-border text-left transition-all active:scale-[0.99] bg-card flex items-center gap-4"
+          data-testid="button-practice-completed-lessons"
+        >
+          <div className="w-11 h-11 rounded-2xl flex items-center justify-center border border-border shrink-0 bg-primary/10">
+            <ListChecks className="w-5 h-5 text-primary" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="text-foreground font-semibold text-sm mb-0.5">Practice Completed Lessons</p>
+            <p className="text-muted-foreground text-xs leading-relaxed">
+              Repeat completed lessons with unlimited AI pronunciation practice.
+            </p>
+          </div>
+          <ChevronRight className="w-4 h-4 text-muted-foreground shrink-0" />
+        </Link>
 
         {/* Levels overview */}
         <div className="space-y-2">

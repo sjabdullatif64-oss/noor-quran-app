@@ -21,6 +21,7 @@ import {
   completeLesson, clearMistake, recordMistake, getDailyStatus,
   isLessonCompleted, isLessonUnlocked, getNextUncompleted,
   addStudyTime, getRevisionInfo, nextRevisionLesson,
+  recordPracticeScore, startPracticeSession,
   type CompleteResult,
 } from "@/lib/teacher-progress";
 import {
@@ -33,6 +34,7 @@ import { isConnected } from "@/lib/capacitor";
 import { getLang, TRANSLATION_LANGUAGE_CHANGED_EVENT } from "@/lib/settings";
 import { getTeacherSpeechCopy } from "@/lib/teacher-speech-copy";
 import { TeacherSpeechDiagnostics } from "@/components/teacher-speech-diagnostics";
+import { TeacherSpeechListenButton, TeacherSpeechMessage } from "@/components/teacher-speech-message";
 
 // ── Consent helpers ───────────────────────────────────────────────────────────
 
@@ -61,8 +63,9 @@ type Phase =
 
 export function TeacherLesson() {
   const params = useParams<{ id: string }>();
-  const [, navigate] = useLocation();
+  const [location, navigate] = useLocation();
   const lesson = getLesson(params.id ?? "");
+  const isPracticeMode = location.startsWith("/teacher/practice/");
 
   const [phase, setPhase] = useState<Phase>("idle");
   const [attempts, setAttempts] = useState(0);
@@ -75,8 +78,10 @@ export function TeacherLesson() {
   const [noMicReason, setNoMicReason] = useState<string | null>(null);
   const [speechResult, setSpeechResult] = useState<ListenResult | null>(null);
   const [diagnosticsOpen, setDiagnosticsOpen] = useState(false);
+  const practiceSessionStarted = useRef(false);
   const [translationLanguage, setTranslationLanguage] = useState(() => getLang());
   const copy = getTeacherSpeechCopy(translationLanguage);
+  const lessonGuidance = translationLanguage === "english" ? lesson?.tip ?? copy.lessonHint : copy.lessonHint;
 
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const recordTimer = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -101,14 +106,17 @@ export function TeacherLesson() {
     setDiagnosticsOpen(false);
     setCompletedNow(null);
     setRecordMs(0);
+    practiceSessionStarted.current = false;
     window.scrollTo({ top: 0 });
-  }, [params.id]);
+  }, [params.id, isPracticeMode]);
 
   // Track time spent learning (per lesson visit)
   useEffect(() => {
     const start = Date.now();
-    return () => addStudyTime(Date.now() - start);
-  }, [params.id]);
+    return () => {
+      if (!isPracticeMode) addStudyTime(Date.now() - start);
+    };
+  }, [params.id, isPracticeMode]);
 
   useEffect(() => () => {
     audioRef.current?.pause();
@@ -134,8 +142,8 @@ export function TeacherLesson() {
       return;
     }
 
-    // Daily-limit gate applies only to NEW lessons
-    if (!isLessonCompleted(lesson.id) && getDailyStatus().limitReached) {
+    // Daily-limit gate applies only to NEW lessons, never Practice Mode.
+    if (!isPracticeMode && !isLessonCompleted(lesson.id) && getDailyStatus().limitReached) {
       setPhase("limit");
       return;
     }
@@ -192,6 +200,11 @@ export function TeacherLesson() {
       }
     }
 
+    if (isPracticeMode && !practiceSessionStarted.current) {
+      startPracticeSession(lesson.id);
+      practiceSessionStarted.current = true;
+    }
+
     setPhase("recording");
     setRecordMs(0);
     const started = Date.now();
@@ -220,7 +233,18 @@ export function TeacherLesson() {
     setSpeechResult(res);
     setResult(a);
 
-    if (a.verdict === "pass") {
+    if (isPracticeMode) {
+      recordPracticeScore(lesson.id, a.matchScore);
+      if (a.verdict === "pass") {
+        setCompletedNow(null);
+        setPhase("passed");
+      } else if (a.verdict === "unclear") {
+        setPhase("unclear");
+      } else {
+        setAttempts((n) => n + 1);
+        setPhase("feedback");
+      }
+    } else if (a.verdict === "pass") {
       const cr = completeLesson(lesson.id, a.matchScore);
       clearMistake(lesson.id);
       setCompletedNow(cr);
@@ -233,7 +257,7 @@ export function TeacherLesson() {
       recordMistake(lesson.id);
       setPhase("feedback");
     }
-  }, [lesson]);
+  }, [isPracticeMode, lesson]);
 
   /** Tap "Read Now" → permission (first time) → listen; auto-stops after MAX_RECORD_MS. */
   const onReadNow = useCallback(() => {
@@ -260,36 +284,80 @@ export function TeacherLesson() {
     </button>
   );
 
+  const listenButton = (text: string, testId?: string) => (
+    <TeacherSpeechListenButton
+      text={text}
+      language={translationLanguage}
+      label={copy.listen}
+      testId={testId}
+    />
+  );
+
   // ── Guards ──────────────────────────────────────────────────────────────────
 
   if (!lesson) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center gap-4 px-6 bg-background">
-        <p className="text-muted-foreground text-sm">Lesson not found.</p>
-        <Link href="/teacher" className="text-primary text-sm underline">Back to Teacher</Link>
+        <TeacherSpeechMessage
+          spokenText={copy.lessonNotFound}
+          language={translationLanguage}
+          listenLabel={copy.listen}
+          testId="button-listen-lesson-not-found"
+          contentClassName="text-muted-foreground text-sm"
+        >
+          <p>{copy.lessonNotFound}</p>
+        </TeacherSpeechMessage>
+        <Link href="/teacher" className="text-primary text-sm underline">{copy.backToTeacher}</Link>
       </div>
     );
   }
 
   // Structured progression: only completed lessons (review) and the next
   // uncompleted lesson are accessible. Everything ahead is locked.
-  if (!isLessonUnlocked(lesson.id)) {
+  if (isPracticeMode && !isLessonCompleted(lesson.id)) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center gap-3 px-6 text-center bg-background">
+        <p className="text-foreground font-semibold text-sm">Practice is available after completion</p>
+        <p className="text-muted-foreground text-xs max-w-xs leading-relaxed">
+          Complete this lesson in the main learning path before practicing it here.
+        </p>
+        <Link href="/teacher/practice" className="mt-2 px-5 py-2.5 rounded-xl text-xs font-semibold text-primary-foreground bg-primary">
+          Back to Practice
+        </Link>
+      </div>
+    );
+  }
+
+  if (!isPracticeMode && !isLessonUnlocked(lesson.id)) {
     const nextAllowed = getNextUncompleted();
     return (
       <div className="min-h-screen flex flex-col items-center justify-center gap-3 px-6 text-center bg-background"
         data-testid="panel-locked">
-        <p className="text-foreground font-semibold text-sm">This lesson is still locked</p>
-        <p className="text-muted-foreground text-xs max-w-xs leading-relaxed">
-          Lessons unlock one at a time as you pass them — step by step is how strong reading is
-          built.
-        </p>
+        <TeacherSpeechMessage
+          spokenText={copy.lockedTitle}
+          language={translationLanguage}
+          listenLabel={copy.listen}
+          testId="button-listen-locked-title"
+          contentClassName="text-foreground font-semibold text-sm"
+        >
+          <p>{copy.lockedTitle}</p>
+        </TeacherSpeechMessage>
+        <TeacherSpeechMessage
+          spokenText={copy.lockedBody}
+          language={translationLanguage}
+          listenLabel={copy.listen}
+          testId="button-listen-locked-body"
+          contentClassName="text-muted-foreground text-xs max-w-xs leading-relaxed"
+        >
+          <p>{copy.lockedBody}</p>
+        </TeacherSpeechMessage>
         {nextAllowed && (
           <Link href={`/teacher/lesson/${nextAllowed}`}
             className="mt-2 px-5 py-2.5 rounded-xl text-xs font-semibold text-primary-foreground bg-primary">
-            Go to your current lesson
+            {copy.goToCurrentLesson}
           </Link>
         )}
-        <Link href="/teacher" className="text-primary text-xs underline mt-1">Back to Teacher</Link>
+        <Link href="/teacher" className="text-primary text-xs underline mt-1">{copy.backToTeacher}</Link>
       </div>
     );
   }
@@ -299,11 +367,13 @@ export function TeacherLesson() {
   const next = getNextLesson(lesson.id);
   const alreadyDone = isLessonCompleted(lesson.id);
   // Smart Revision session (queue of weakest lessons)
-  const revision = getRevisionInfo(lesson.id);
+  const revision = isPracticeMode ? null : getRevisionInfo(lesson.id);
   // Strict gate: "Pass & Next" unlocks only after the AI check passes THIS visit.
   // Outside revision, an already-completed lesson may be skipped forward (review).
   // In revision, a fresh pass is always required.
-  const passed = phase === "passed" || (!revision && alreadyDone && phase === "idle");
+  const passed = isPracticeMode
+    ? phase === "passed"
+    : phase === "passed" || (!revision && alreadyDone && phase === "idle");
 
   // Highlight the target letter inside the word (letter/harakat lessons)
   const wordDisplay = lesson.highlight ? (
@@ -328,8 +398,8 @@ export function TeacherLesson() {
       {/* Header */}
       <div className="sticky top-0 z-20 px-4 pt-6 pb-3 bg-background/95 backdrop-blur-sm">
         <div className="flex items-center gap-3 max-w-2xl mx-auto">
-          <Link
-            href="/teacher"
+              <Link
+                href={isPracticeMode ? "/teacher/practice" : "/teacher"}
             className="flex items-center justify-center w-9 h-9 rounded-full border border-border text-muted-foreground"
             data-testid="link-back-teacher"
           >
@@ -340,7 +410,9 @@ export function TeacherLesson() {
               Level {lesson.level}: {levelInfo.title}
             </p>
             <p className="text-muted-foreground text-[11px]">
-              {revision
+               {isPracticeMode
+                 ? "Practice Mode"
+                 : revision
                 ? `Smart Revision · ${revision.index} of ${revision.total}`
                 : `Lesson ${lesson.order} of ${levelLessons.length}${alreadyDone ? " · completed" : ""}`}
             </p>
@@ -383,13 +455,29 @@ export function TeacherLesson() {
             {playing ? <Loader2 className="w-4 h-4 animate-spin" /> : <Volume2 className="w-4 h-4" />}
             {copy.listen}
           </button>
-            <p className="text-muted-foreground text-[10px] mt-2">{copy.verifiedRecitation}</p>
+            <TeacherSpeechMessage
+              spokenText={copy.verifiedRecitation}
+              language={translationLanguage}
+              listenLabel={copy.listen}
+              testId="button-listen-verified-recitation"
+              contentClassName="text-muted-foreground text-[10px] mt-2"
+            >
+              <p>{copy.verifiedRecitation}</p>
+            </TeacherSpeechMessage>
         </div>
 
         {/* Tip */}
         <div className="rounded-2xl border border-border p-4 flex gap-3 bg-card">
           <Sparkles className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
-          <p className="text-muted-foreground text-xs leading-relaxed">{lesson.tip}</p>
+          <TeacherSpeechMessage
+            spokenText={lessonGuidance}
+            language={translationLanguage}
+            listenLabel={copy.listen}
+            testId="button-listen-lesson-hint"
+            contentClassName="text-muted-foreground text-xs leading-relaxed"
+          >
+            <p>{lessonGuidance}</p>
+          </TeacherSpeechMessage>
         </div>
 
         {/* ── State panels ── */}
@@ -398,13 +486,33 @@ export function TeacherLesson() {
           <div className="relative z-30 rounded-2xl border border-border p-5 bg-card" data-testid="panel-consent">
             <div className="flex items-center gap-2 mb-3">
               <ShieldCheck className="w-5 h-5 text-primary" />
-              <p className="text-foreground font-semibold text-sm">{copy.consentTitle}</p>
+              <TeacherSpeechMessage
+                spokenText={copy.consentTitle}
+                language={translationLanguage}
+                listenLabel={copy.listen}
+                testId="button-listen-consent-title"
+                contentClassName="text-foreground font-semibold text-sm"
+              >
+                <p>{copy.consentTitle}</p>
+              </TeacherSpeechMessage>
             </div>
             <ul className="text-muted-foreground text-xs leading-relaxed space-y-2 mb-4 list-disc pl-4">
-              <li>{copy.permissionData}</li>
-              <li>{copy.noVoiceStorage}</li>
-              <li>{copy.recognizedTextOnly}</li>
-              <li>{copy.deleteLearningData}</li>
+              <li className="flex items-start gap-2">
+                <span className="min-w-0 flex-1">{copy.permissionData}</span>
+                {listenButton(copy.permissionData, "button-listen-consent-permission")}
+              </li>
+              <li className="flex items-start gap-2">
+                <span className="min-w-0 flex-1">{copy.noVoiceStorage}</span>
+                {listenButton(copy.noVoiceStorage, "button-listen-consent-storage")}
+              </li>
+              <li className="flex items-start gap-2">
+                <span className="min-w-0 flex-1">{copy.recognizedTextOnly}</span>
+                {listenButton(copy.recognizedTextOnly, "button-listen-consent-text")}
+              </li>
+              <li className="flex items-start gap-2">
+                <span className="min-w-0 flex-1">{copy.deleteLearningData}</span>
+                {listenButton(copy.deleteLearningData, "button-listen-consent-delete")}
+              </li>
             </ul>
             <div className="flex gap-2">
               <button
@@ -438,29 +546,55 @@ export function TeacherLesson() {
         {phase === "passed" && result && (
           <div className="rounded-2xl border border-border p-5 text-center bg-card" data-testid="panel-passed">
             <CheckCircle2 className="w-10 h-10 text-primary mx-auto mb-2" />
-            <p className="text-foreground font-bold text-base">
-              {result.matchScore >= 90 ? copy.passedExcellent : copy.passedCorrect}
-            </p>
-            <p className="text-muted-foreground text-xs mt-1">
-              {copy.wordMatch}: {result.matchScore}%
-            </p>
+            <TeacherSpeechMessage
+              spokenText={result.matchScore >= 90 ? copy.passedExcellent : copy.passedCorrect}
+              language={translationLanguage}
+              listenLabel={copy.listen}
+              testId="button-listen-passed-message"
+              contentClassName="text-foreground font-bold text-base"
+            >
+              <p>{result.matchScore >= 90 ? copy.passedExcellent : copy.passedCorrect}</p>
+            </TeacherSpeechMessage>
+            <TeacherSpeechMessage
+              spokenText={`${copy.wordMatch}: ${result.matchScore}%`}
+              language={translationLanguage}
+              listenLabel={copy.listen}
+              testId="button-listen-passed-score"
+              contentClassName="text-muted-foreground text-xs mt-1"
+            >
+              <p>{copy.wordMatch}: {result.matchScore}%</p>
+            </TeacherSpeechMessage>
             {advancedButton("button-advanced-passed")}
           </div>
         )}
 
         {alreadyDone && phase === "idle" && (
           <div className="rounded-2xl border border-border p-3 text-center bg-card">
-            <p className="text-muted-foreground text-xs flex items-center justify-center gap-2">
-               <CheckCircle2 className="w-3.5 h-3.5" /> {copy.completedPractice}
-            </p>
+            <TeacherSpeechMessage
+              spokenText={copy.completedPractice}
+              language={translationLanguage}
+              listenLabel={copy.listen}
+              testId="button-listen-completed-practice"
+              contentClassName="text-muted-foreground text-xs"
+            >
+              <p className="flex items-center justify-center gap-2">
+                <CheckCircle2 className="w-3.5 h-3.5" /> {copy.completedPractice}
+              </p>
+            </TeacherSpeechMessage>
           </div>
         )}
 
         {phase === "feedback" && result && (
           <div className="rounded-2xl border border-border p-5 animate-in fade-in slide-in-from-bottom-2 duration-300 bg-card" data-testid="panel-feedback">
-            <p className="text-foreground font-semibold text-sm mb-2">
-              {copy.retryTitle}
-            </p>
+            <TeacherSpeechMessage
+              spokenText={copy.retryTitle}
+              language={translationLanguage}
+              listenLabel={copy.listen}
+              testId="button-listen-retry-title"
+              contentClassName="text-foreground font-semibold text-sm mb-2"
+            >
+              <p>{copy.retryTitle}</p>
+            </TeacherSpeechMessage>
             {/* Word match bar */}
             <div className="flex items-center gap-2 mb-3">
                 <div className="flex-1 h-1.5 rounded-full bg-muted overflow-hidden">
@@ -483,37 +617,77 @@ export function TeacherLesson() {
                     );
                   })}
                 </p>
-                <p className="text-muted-foreground text-[11px] mt-2">
-                  {copy.focusSounds}
-                </p>
+                <TeacherSpeechMessage
+                  spokenText={copy.focusSounds}
+                  language={translationLanguage}
+                  listenLabel={copy.listen}
+                  testId="button-listen-focus-sounds"
+                  contentClassName="text-muted-foreground text-[11px] mt-2"
+                >
+                  <p>{copy.focusSounds}</p>
+                </TeacherSpeechMessage>
               </div>
             )}
             {result.heard && (
-              <p className="text-muted-foreground text-xs mb-1">
-                {copy.heard}: <span className="font-arabic text-sm" dir="rtl">{result.heard}</span>
-              </p>
+              <TeacherSpeechMessage
+                spokenText={`${copy.heard}: ${result.heard}`}
+                language={translationLanguage}
+                listenLabel={copy.listen}
+                testId="button-listen-heard"
+                contentClassName="text-muted-foreground text-xs mb-1"
+              >
+                <p>{copy.heard}: <span className="font-arabic text-sm" dir="rtl">{result.heard}</span></p>
+              </TeacherSpeechMessage>
             )}
             {result.missing.length > 0 && (
-              <p className="text-muted-foreground text-xs mb-1">
-                {copy.focusSounds}:{" "}
-                <span className="font-arabic text-base text-amber-300" dir="rtl">
-                  {result.missing.join(" ، ")}
-                </span>
-              </p>
+              <TeacherSpeechMessage
+                spokenText={`${copy.focusSounds}: ${result.missing.join("، ")}`}
+                language={translationLanguage}
+                listenLabel={copy.listen}
+                testId="button-listen-missing-sounds"
+                contentClassName="text-muted-foreground text-xs mb-1"
+              >
+                <p>{copy.focusSounds}:{" "}
+                  <span className="font-arabic text-base text-amber-300" dir="rtl">
+                    {result.missing.join(" ، ")}
+                  </span>
+                </p>
+              </TeacherSpeechMessage>
             )}
             {result.extra.length > 0 && (
-              <p className="text-muted-foreground text-xs mb-1">
-                {copy.extraSounds}:{" "}
-                <span className="font-arabic text-base text-amber-300" dir="rtl">
-                  {result.extra.join(" ، ")}
-                </span>
-              </p>
+              <TeacherSpeechMessage
+                spokenText={`${copy.extraSounds}: ${result.extra.join("، ")}`}
+                language={translationLanguage}
+                listenLabel={copy.listen}
+                testId="button-listen-extra-sounds"
+                contentClassName="text-muted-foreground text-xs mb-1"
+              >
+                <p>{copy.extraSounds}:{" "}
+                  <span className="font-arabic text-base text-amber-300" dir="rtl">
+                    {result.extra.join(" ، ")}
+                  </span>
+                </p>
+              </TeacherSpeechMessage>
             )}
-              <p className="text-muted-foreground text-xs mt-2 leading-relaxed">{lesson.tip}</p>
+            <TeacherSpeechMessage
+              spokenText={lessonGuidance}
+              language={translationLanguage}
+              listenLabel={copy.listen}
+              testId="button-listen-feedback-hint"
+              contentClassName="text-muted-foreground text-xs mt-2 leading-relaxed"
+            >
+              <p>{lessonGuidance}</p>
+            </TeacherSpeechMessage>
             {attempts >= MAX_RETRIES && (
-                <p className="text-muted-foreground text-xs mt-3 leading-relaxed border-t border-border pt-3">
-                {copy.retryGuidance}
-              </p>
+              <TeacherSpeechMessage
+                spokenText={copy.retryGuidance}
+                language={translationLanguage}
+                listenLabel={copy.listen}
+                testId="button-listen-retry-guidance"
+                contentClassName="text-muted-foreground text-xs mt-3 leading-relaxed border-t border-border pt-3"
+              >
+                <p>{copy.retryGuidance}</p>
+              </TeacherSpeechMessage>
             )}
             <button
               onClick={playAudio}
@@ -528,10 +702,24 @@ export function TeacherLesson() {
         {phase === "unclear" && (
           <div className="rounded-2xl border border-border p-4 text-center bg-card" data-testid="panel-unclear">
             <Ear className="w-6 h-6 text-sky-400 mx-auto mb-2" />
-            <p className="text-sky-300 text-sm font-medium">{copy.unclearTitle}</p>
-            <p className="text-sky-600 text-xs mt-1">
-              {copy.unclearBody}
-            </p>
+            <TeacherSpeechMessage
+              spokenText={copy.unclearTitle}
+              language={translationLanguage}
+              listenLabel={copy.listen}
+              testId="button-listen-unclear-title"
+              contentClassName="text-sky-300 text-sm font-medium"
+            >
+              <p>{copy.unclearTitle}</p>
+            </TeacherSpeechMessage>
+            <TeacherSpeechMessage
+              spokenText={copy.unclearBody}
+              language={translationLanguage}
+              listenLabel={copy.listen}
+              testId="button-listen-unclear-body"
+              contentClassName="text-sky-600 text-xs mt-1"
+            >
+              <p>{copy.unclearBody}</p>
+            </TeacherSpeechMessage>
             {advancedButton("button-advanced-unclear")}
           </div>
         )}
@@ -540,11 +728,25 @@ export function TeacherLesson() {
           <div className="rounded-2xl border border-border p-4 bg-card" data-testid="panel-denied">
             <div className="flex items-center gap-2 mb-2">
               <MicOff className="w-4 h-4 text-rose-400" />
-              <p className="text-foreground text-sm font-medium">{copy.microphoneTitle}</p>
+              <TeacherSpeechMessage
+                spokenText={copy.microphoneTitle}
+                language={translationLanguage}
+                listenLabel={copy.listen}
+                testId="button-listen-mic-title"
+                contentClassName="text-foreground text-sm font-medium"
+              >
+                <p>{copy.microphoneTitle}</p>
+              </TeacherSpeechMessage>
             </div>
-            <p className="text-rose-500/80 text-xs leading-relaxed">
-              {copy.microphoneBody}
-            </p>
+            <TeacherSpeechMessage
+              spokenText={copy.microphoneBody}
+              language={translationLanguage}
+              listenLabel={copy.listen}
+              testId="button-listen-mic-body"
+              contentClassName="text-rose-500/80 text-xs leading-relaxed"
+            >
+              <p>{copy.microphoneBody}</p>
+            </TeacherSpeechMessage>
             <div className="flex gap-2 mt-3">
               <button
                 onClick={async () => {
@@ -565,9 +767,15 @@ export function TeacherLesson() {
               </button>
             </div>
             {settingsFailed && (
-              <p className="text-rose-400/80 text-[11px] mt-2 leading-relaxed" data-testid="text-settings-fallback">
-                {copy.settingsFailed}
-              </p>
+              <TeacherSpeechMessage
+                spokenText={copy.settingsFailed}
+                language={translationLanguage}
+                listenLabel={copy.listen}
+                testId="button-listen-settings-failed"
+                contentClassName="text-rose-400/80 text-[11px] mt-2 leading-relaxed"
+              >
+                <p data-testid="text-settings-fallback">{copy.settingsFailed}</p>
+              </TeacherSpeechMessage>
             )}
             {advancedButton("button-advanced-mic-denied")}
           </div>
@@ -577,17 +785,35 @@ export function TeacherLesson() {
           <div className="rounded-2xl border border-border p-4 bg-card" data-testid="panel-nomic">
             <div className="flex items-center gap-2 mb-2">
               <Ear className="w-4 h-4 text-primary" />
-              <p className="text-foreground text-sm font-medium">{copy.listenOnlyTitle}</p>
+              <TeacherSpeechMessage
+                spokenText={copy.listenOnlyTitle}
+                language={translationLanguage}
+                listenLabel={copy.listen}
+                testId="button-listen-listen-only-title"
+                contentClassName="text-foreground text-sm font-medium"
+              >
+                <p>{copy.listenOnlyTitle}</p>
+              </TeacherSpeechMessage>
             </div>
-            <p className="text-muted-foreground text-xs leading-relaxed">
-              {support === "none"
-                ? copy.listenOnlyUnavailable
-                : copy.listenOnlyAvailable}
-            </p>
+            <TeacherSpeechMessage
+              spokenText={support === "none" ? copy.listenOnlyUnavailable : copy.listenOnlyAvailable}
+              language={translationLanguage}
+              listenLabel={copy.listen}
+              testId="button-listen-listen-only-body"
+              contentClassName="text-muted-foreground text-xs leading-relaxed"
+            >
+              <p>{support === "none" ? copy.listenOnlyUnavailable : copy.listenOnlyAvailable}</p>
+            </TeacherSpeechMessage>
             {noMicReason && (
-              <p className="text-muted-foreground text-[10px] mt-2 leading-relaxed" data-testid="text-nomic-reason">
-                 {copy.reason}: {noMicReason}
-              </p>
+              <TeacherSpeechMessage
+                spokenText={`${copy.reason}: ${noMicReason}`}
+                language={translationLanguage}
+                listenLabel={copy.listen}
+                testId="button-listen-nomic-reason"
+                contentClassName="text-muted-foreground text-[10px] mt-2 leading-relaxed"
+              >
+                <p data-testid="text-nomic-reason">{copy.reason}: {noMicReason}</p>
+              </TeacherSpeechMessage>
             )}
             {support !== "none" && (
               <button
@@ -605,10 +831,24 @@ export function TeacherLesson() {
         {phase === "offline" && (
           <div className="rounded-2xl border border-border p-4 text-center bg-card" data-testid="panel-offline">
             <WifiOff className="w-6 h-6 text-muted-foreground mx-auto mb-2" />
-            <p className="text-foreground text-sm font-medium">{copy.offlineTitle}</p>
-            <p className="text-muted-foreground text-xs mt-1">
-              {copy.offlineBody}
-            </p>
+            <TeacherSpeechMessage
+              spokenText={copy.offlineTitle}
+              language={translationLanguage}
+              listenLabel={copy.listen}
+              testId="button-listen-offline-title"
+              contentClassName="text-foreground text-sm font-medium"
+            >
+              <p>{copy.offlineTitle}</p>
+            </TeacherSpeechMessage>
+            <TeacherSpeechMessage
+              spokenText={copy.offlineBody}
+              language={translationLanguage}
+              listenLabel={copy.listen}
+              testId="button-listen-offline-body"
+              contentClassName="text-muted-foreground text-xs mt-1"
+            >
+              <p>{copy.offlineBody}</p>
+            </TeacherSpeechMessage>
             {advancedButton("button-advanced-offline")}
           </div>
         )}
@@ -616,16 +856,27 @@ export function TeacherLesson() {
         {phase === "limit" && (
           <div className="rounded-2xl border border-border p-5 text-center bg-card" data-testid="panel-limit">
             <CheckCircle2 className="w-8 h-8 text-primary mx-auto mb-2" />
-            <p className="text-foreground font-semibold text-sm">
-              Masha&apos;Allah — today&apos;s {getDailyStatus().limit} lessons are complete!
-            </p>
-            <p className="text-muted-foreground text-xs mt-1 leading-relaxed">
-              Rest is part of learning. You can still review completed lessons and listen as much
-              as you like. New lessons unlock at midnight.
-            </p>
+            <TeacherSpeechMessage
+              spokenText={`${copy.limitTitle} ${getDailyStatus().limit}`}
+              language={translationLanguage}
+              listenLabel={copy.listen}
+              testId="button-listen-limit-title"
+              contentClassName="text-foreground font-semibold text-sm"
+            >
+              <p>{copy.limitTitle}</p>
+            </TeacherSpeechMessage>
+            <TeacherSpeechMessage
+              spokenText={copy.limitBody}
+              language={translationLanguage}
+              listenLabel={copy.listen}
+              testId="button-listen-limit-body"
+              contentClassName="text-muted-foreground text-xs mt-1 leading-relaxed"
+            >
+              <p>{copy.limitBody}</p>
+            </TeacherSpeechMessage>
             <Link href="/teacher"
               className="inline-block mt-3 px-5 py-2.5 rounded-xl text-xs font-semibold text-primary-foreground border border-border bg-primary">
-              Back to dashboard
+              {copy.backToDashboard}
             </Link>
           </div>
         )}
@@ -643,12 +894,24 @@ export function TeacherLesson() {
                       data-testid="indicator-recording">
                       <Mic className="w-7 h-7 text-primary-foreground" />
                     </div>
-                    <p className="text-rose-300 text-sm font-medium mt-3" data-testid="text-listening">
-                       {copy.listening}
-                    </p>
-                    <p className="text-muted-foreground text-[11px] mt-1">
-                       {(recordMs / 1000).toFixed(1)}s · {copy.recordingAutoStop}
-                    </p>
+                     <TeacherSpeechMessage
+                       spokenText={copy.listening}
+                       language={translationLanguage}
+                       listenLabel={copy.listen}
+                       testId="button-listen-listening"
+                       contentClassName="text-rose-300 text-sm font-medium mt-3"
+                     >
+                       <p data-testid="text-listening">{copy.listening}</p>
+                     </TeacherSpeechMessage>
+                     <TeacherSpeechMessage
+                       spokenText={`${(recordMs / 1000).toFixed(1)} seconds. ${copy.recordingAutoStop}`}
+                       language={translationLanguage}
+                       listenLabel={copy.listen}
+                       testId="button-listen-recording-auto-stop"
+                       contentClassName="text-muted-foreground text-[11px] mt-1"
+                     >
+                       <p>{(recordMs / 1000).toFixed(1)}s · {copy.recordingAutoStop}</p>
+                     </TeacherSpeechMessage>
                     <button
                       onClick={onStop}
                       className="mt-3 inline-flex items-center gap-2 px-6 py-2.5 rounded-xl text-xs font-semibold text-primary-foreground border border-border bg-primary active:scale-95 transition-all"
@@ -662,7 +925,15 @@ export function TeacherLesson() {
                     <div className="w-20 h-20 rounded-full inline-flex items-center justify-center bg-primary opacity-60 shadow-lg">
                       <Loader2 className="w-7 h-7 text-primary-foreground animate-spin" />
                     </div>
-                     <p className="text-muted-foreground text-xs mt-3">{copy.checking}</p>
+                      <TeacherSpeechMessage
+                        spokenText={copy.checking}
+                        language={translationLanguage}
+                        listenLabel={copy.listen}
+                        testId="button-listen-checking"
+                        contentClassName="text-muted-foreground text-xs mt-3"
+                      >
+                        <p>{copy.checking}</p>
+                      </TeacherSpeechMessage>
                   </>
                 ) : (
                   <>
@@ -673,9 +944,15 @@ export function TeacherLesson() {
                     >
                        <Mic className="w-5 h-5" /> {copy.readNow}
                     </button>
-                    <p className="text-muted-foreground text-xs mt-3">
-                       {copy.tapToRead}
-                    </p>
+                     <TeacherSpeechMessage
+                       spokenText={copy.tapToRead}
+                       language={translationLanguage}
+                       listenLabel={copy.listen}
+                       testId="button-listen-tap-to-read"
+                       contentClassName="text-muted-foreground text-xs mt-3"
+                     >
+                       <p>{copy.tapToRead}</p>
+                     </TeacherSpeechMessage>
                   </>
                 )}
               </div>
@@ -691,7 +968,15 @@ export function TeacherLesson() {
                    <RotateCcw className="w-4 h-4" /> {copy.tryAgain}
                 </button>
               )}
-              {revision ? (
+              {isPracticeMode ? (
+                <Link
+                  href="/teacher/practice"
+                  className="flex-1 py-3.5 rounded-2xl text-sm font-semibold text-primary-foreground text-center bg-primary"
+                  data-testid="link-back-to-practice"
+                >
+                  Back to Practice
+                </Link>
+              ) : revision ? (
                 <button
                   onClick={() => {
                     const nid = nextRevisionLesson(lesson.id);

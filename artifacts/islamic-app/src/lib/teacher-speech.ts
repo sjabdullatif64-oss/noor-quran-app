@@ -19,6 +19,7 @@ import {
   SpeechRecognition as NativeSpeechRecognition,
   type SpeechRecognitionPlugin,
 } from "@capacitor-community/speech-recognition";
+import type { PluginListenerHandle } from "@capacitor/core";
 import {
   PASS_SCORE,
   RECOGNITION_RETRY_DELAY_MS,
@@ -311,12 +312,21 @@ type WebSpeechRecognition = {
   maxAlternatives: number;
   interimResults: boolean;
   continuous: boolean;
-  onresult: ((e: { results: ArrayLike<ArrayLike<{ transcript: string; confidence: number }>> }) => void) | null;
+  onresult: ((e: {
+    results: ArrayLike<WebSpeechResult>;
+  }) => void) | null;
   onerror: ((e: { error: string }) => void) | null;
   onend: (() => void) | null;
   start(): void;
   stop(): void;
   abort(): void;
+};
+
+type WebSpeechResult = ArrayLike<{
+  transcript: string;
+  confidence: number;
+}> & {
+  isFinal?: boolean;
 };
 
 function getWebRecognizerCtor(): (new () => WebSpeechRecognition) | null {
@@ -485,28 +495,104 @@ export async function listenOnce(timeoutMs: number): Promise<ListenResult> {
   if (native) {
     _nativeActive = true;
     let timerId: ReturnType<typeof setTimeout> | undefined;
-    try {
-      const timer = new Promise<{ matches: string[]; timedOut: true }>((resolve) =>
-        timerId = setTimeout(() => {
-          native.stop().catch(() => {});
-          resolve({ matches: [], timedOut: true });
-        }, timeoutMs),
-      );
-      const res = await Promise.race([
-        native.start({ language: SPEECH_LANG, maxResults: 5, partialResults: false, popup: false }),
-        timer,
-      ]);
-      const matches = res?.matches ?? [];
-      if ("timedOut" in res && res.timedOut) {
-        return { alternatives: matches, confidence: -1, status: "timeout", error: "timeout" };
+    let partialHandle: PluginListenerHandle | undefined;
+    let listeningHandle: PluginListenerHandle | undefined;
+    let settleTimer: ReturnType<typeof setTimeout> | undefined;
+    let settled = false;
+    const collectedMatches: string[] = [];
+
+    const addMatches = (matches: string[] | undefined) => {
+      for (const match of matches ?? []) {
+        if (match && !collectedMatches.includes(match)) collectedMatches.push(match);
       }
-      const status = statusForAlternatives(matches);
-      return {
-        alternatives: matches,
-        confidence: -1,
-        status,
-        error: status === "silence" ? "no-speech" : undefined,
-      };
+    };
+
+    const cleanup = async () => {
+      await Promise.all([
+        partialHandle?.remove().catch(() => {}),
+        listeningHandle?.remove().catch(() => {}),
+      ]);
+      partialHandle = undefined;
+      listeningHandle = undefined;
+    };
+
+    const finish = async (
+      resolve: (result: ListenResult) => void,
+      result: ListenResult,
+    ) => {
+      if (settled) return;
+      settled = true;
+      if (timerId) clearTimeout(timerId);
+      if (settleTimer) clearTimeout(settleTimer);
+      await cleanup();
+      resolve(result);
+    };
+
+    try {
+      return await new Promise<ListenResult>((resolve) => {
+        const resolveNative = (result: ListenResult) => {
+          finish(resolve, result).catch(() => resolve(result));
+        };
+        const handleNativeError = (error: unknown) => {
+          const msg = String((error as { message?: string })?.message ?? error).toLowerCase();
+          if (msg.includes("permission") || msg.includes("denied")) {
+            resolveNative({ alternatives: collectedMatches, confidence: -1, status: "recognition-failure", error: "not-allowed" });
+          } else if (msg.includes("network")) {
+            resolveNative({ alternatives: collectedMatches, confidence: -1, status: "recognition-failure", error: "network" });
+          } else if (msg.includes("no speech") || msg.includes("no match") || msg.includes("timeout")) {
+            resolveNative({ alternatives: collectedMatches, confidence: -1, status: "silence", error: "no-speech" });
+          } else {
+            resolveNative({ alternatives: collectedMatches, confidence: -1, status: "recognition-failure", error: "unknown" });
+          }
+        };
+
+        const finishAfterNativeStop = () => {
+          // Android emits listeningState("stopped") at end-of-speech and can
+          // deliver its last partial/final result a moment later.
+          settleTimer = setTimeout(() => {
+            const recognized = statusForAlternatives(collectedMatches) === "recognized";
+            resolveNative({
+              alternatives: collectedMatches,
+              confidence: -1,
+              status: recognized ? "recognized" : "silence",
+              error: recognized ? undefined : "no-speech",
+            });
+          }, 300);
+        };
+
+        const setupAndStart = async () => {
+          partialHandle = await native.addListener("partialResults", ({ matches }) => {
+            addMatches(matches);
+          });
+          listeningHandle = await native.addListener("listeningState", ({ status }) => {
+            if (status === "stopped") finishAfterNativeStop();
+          });
+
+          timerId = setTimeout(() => {
+            native.stop().catch(() => {});
+            settleTimer = setTimeout(() => {
+              const recognized = statusForAlternatives(collectedMatches) === "recognized";
+              resolveNative({
+                alternatives: collectedMatches,
+                confidence: -1,
+                status: recognized ? "recognized" : "timeout",
+                error: recognized ? undefined : "timeout",
+              });
+            }, 350);
+          }, timeoutMs);
+
+          // Partial results let us retain useful speech even when Android's
+          // final callback is delayed or ends early around background noise.
+          await native.start({
+            language: SPEECH_LANG,
+            maxResults: 5,
+            partialResults: true,
+            popup: false,
+          });
+        };
+
+        setupAndStart().catch(handleNativeError);
+      });
     } catch (e) {
       const msg = String((e as { message?: string })?.message ?? "").toLowerCase();
       if (msg.includes("permission") || msg.includes("denied")) {
@@ -536,6 +622,8 @@ export async function listenOnce(timeoutMs: number): Promise<ListenResult> {
     _webActive = rec;
     let settled = false;
     let timedOut = false;
+    let latestAlternatives: string[] = [];
+    let latestConfidence = -1;
     const done = (r: ListenResult) => {
       if (settled) return;
       settled = true;
@@ -547,29 +635,42 @@ export async function listenOnce(timeoutMs: number): Promise<ListenResult> {
       timedOut = true;
       try { rec.stop(); } catch { /* ignore */ }
       // onresult/onend may still fire; if not, resolve as timeout shortly after.
-      setTimeout(() => done({ alternatives: [], confidence: -1, status: "timeout", error: "timeout" }), 800);
+      setTimeout(() => done({
+        alternatives: latestAlternatives,
+        confidence: latestConfidence,
+        status: latestAlternatives.some(isUsableTranscript) ? "recognized" : "timeout",
+        error: latestAlternatives.some(isUsableTranscript) ? undefined : "timeout",
+      }), 800);
     }, timeoutMs);
 
     rec.lang = SPEECH_LANG;
     rec.maxAlternatives = 5;
-    rec.interimResults = false;
-    rec.continuous = false;
+    rec.interimResults = true;
+    rec.continuous = true;
 
     rec.onresult = (e) => {
-      const first = e.results[0];
       const alts: string[] = [];
       let conf = -1;
-      for (let i = 0; i < first.length; i++) {
-        alts.push(first[i].transcript);
-        if (i === 0 && typeof first[i].confidence === "number") conf = first[i].confidence;
+      let finalResult = false;
+      for (let resultIndex = 0; resultIndex < e.results.length; resultIndex++) {
+        const speechResult = e.results[resultIndex];
+        finalResult = finalResult || speechResult.isFinal === true;
+        for (let i = 0; i < speechResult.length; i++) {
+          alts.push(speechResult[i].transcript);
+          if (resultIndex === e.results.length - 1 && i === 0 && typeof speechResult[i].confidence === "number") {
+            conf = speechResult[i].confidence;
+         }
       }
+      }
+       if (!alts.length) return;
       const status = statusForAlternatives(alts);
-      done({
-        alternatives: alts,
-        confidence: conf,
-        status,
-        error: status === "silence" ? "no-speech" : undefined,
-      });
+      if (status === "recognized") {
+        // Keep the best usable interim transcript even if the browser ends
+        // before it emits a final result.
+        latestAlternatives = alts;
+        latestConfidence = conf;
+        if (finalResult) done({ alternatives: alts, confidence: conf, status, error: undefined });
+      }
     };
     rec.onerror = (e) => {
       const map: Record<string, ListenResult["error"]> = {
@@ -580,16 +681,26 @@ export async function listenOnce(timeoutMs: number): Promise<ListenResult> {
         aborted: "aborted",
       };
       const error = map[e.error] ?? "unknown";
-      done({
-        alternatives: [],
-        confidence: -1,
-        status: error === "no-speech" ? "silence" : "recognition-failure",
-        error,
-      });
+      if (latestAlternatives.some(isUsableTranscript)) {
+        done({ alternatives: latestAlternatives, confidence: latestConfidence, status: "recognized" });
+      } else {
+        done({
+          alternatives: [],
+          confidence: -1,
+          status: error === "no-speech" ? "silence" : "recognition-failure",
+          error,
+        });
+      }
     };
     rec.onend = () => {
-      if (timedOut) {
-        done({ alternatives: [], confidence: -1, status: "timeout", error: "timeout" });
+       if (latestAlternatives.some(isUsableTranscript)) {
+         done({
+           alternatives: latestAlternatives,
+           confidence: latestConfidence,
+           status: "recognized",
+         });
+       } else if (timedOut) {
+         done({ alternatives: [], confidence: -1, status: "timeout", error: "timeout" });
       } else {
         done({ alternatives: [], confidence: -1, status: "silence", error: "no-speech" });
       }

@@ -33,6 +33,7 @@ import { AdminProducts } from "@/pages/admin-products";
 import { JuzReader } from "@/pages/juz-reader";
 import { Teacher } from "@/pages/teacher";
 import { TeacherLesson } from "@/pages/teacher-lesson";
+import { TeacherPractice } from "@/pages/teacher-practice";
 import { useEffect } from "react";
 import { AI_TEACHER_ENABLED } from "@/lib/teacher-config";
 import { ensureRegistered, reportAyahComplete } from "@/lib/user";
@@ -105,13 +106,17 @@ function Router() {
       <Route path="/juz/:number" component={JuzReader} />
       {AI_TEACHER_ENABLED ? (
         <>
-          <Route path="/teacher" component={Teacher} />
+          <Route path="/teacher/practice/:id" component={TeacherLesson} />
+          <Route path="/teacher/practice" component={TeacherPractice} />
           <Route path="/teacher/lesson/:id" component={TeacherLesson} />
+          <Route path="/teacher" component={Teacher} />
         </>
       ) : (
         <>
-          <Route path="/teacher" component={RedirectHome} />
+          <Route path="/teacher/practice/:id" component={RedirectHome} />
+          <Route path="/teacher/practice" component={RedirectHome} />
           <Route path="/teacher/lesson/:id" component={RedirectHome} />
+          <Route path="/teacher" component={RedirectHome} />
         </>
       )}
 

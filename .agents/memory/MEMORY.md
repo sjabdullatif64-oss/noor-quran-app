@@ -15,3 +15,4 @@
 - [Arabic pronunciation scoring](arabic-pronunciation-scoring.md) — weighted long-vowel edits and explicit silence/timeout/failure statuses prevent fair Arabic transcripts from being rejected
 - [Android release build environment](android-release-build.md) — local release builds may need a writable composed Android SDK because Nix SDK stores are immutable
 - [Vite browser-only test imports](vite-test-imports.md) — standalone Node/tsx tests cannot import modules that evaluate import.meta.env; keep tests on browser-independent modules
+- [Service-worker app-shell cache](service-worker-app-shell-cache.md) — bump the shell cache version after route/UI changes or previews can serve stale bundles despite a fresh Vite workflow

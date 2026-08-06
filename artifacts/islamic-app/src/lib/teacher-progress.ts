@@ -9,7 +9,7 @@
  */
 
 import {
-  DAILY_LIMIT, REVISION_SIZE, TEACHER_PROGRESS_KEY, TEACHER_REVISION_KEY,
+  DAILY_LIMIT, REVISION_SIZE, TEACHER_PRACTICE_KEY, TEACHER_PROGRESS_KEY, TEACHER_REVISION_KEY,
 } from "./teacher-config";
 import { CURRICULUM } from "./teacher-curriculum";
 import { getDeviceId } from "./user";
@@ -46,6 +46,17 @@ export interface TeacherProgress {
   /** Total time spent on lesson screens, in milliseconds. */
   timeSpentMs?: number;
 }
+
+export interface PracticeLessonStats {
+  /** Number of distinct Practice Again sessions started for this lesson. */
+  sessions: number;
+  /** Best pronunciation score achieved in Practice Mode. */
+  bestScore: number | null;
+  /** ISO timestamp of the most recent practice session or score. */
+  lastPracticedAt: string | null;
+}
+
+export type PracticeStats = Record<string, PracticeLessonStats>;
 
 // ── Date helpers (local time) ─────────────────────────────────────────────────
 
@@ -228,9 +239,86 @@ export function clearMistake(lessonId: string): void {
 export function resetAllProgress(): void {
   try {
     localStorage.removeItem(TEACHER_PROGRESS_KEY);
+    localStorage.removeItem(TEACHER_PRACTICE_KEY);
     localStorage.removeItem(TEACHER_REVISION_KEY);
   } catch { /* ignore */ }
   notify();
+}
+
+// ── Practice Mode statistics ───────────────────────────────────────────────────
+
+function emptyPracticeStats(): PracticeStats {
+  return {};
+}
+
+export function loadPracticeStats(): PracticeStats {
+  try {
+    const raw = localStorage.getItem(TEACHER_PRACTICE_KEY);
+    if (!raw) return emptyPracticeStats();
+    const parsed = JSON.parse(raw) as PracticeStats;
+    if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
+      return emptyPracticeStats();
+    }
+    return Object.fromEntries(
+      Object.entries(parsed).flatMap(([lessonId, value]) => {
+        if (!value || typeof value !== "object") return [];
+        const sessions = Number(value.sessions);
+        const bestScore = value.bestScore === null ? null : Number(value.bestScore);
+        const lastPracticedAt =
+          typeof value.lastPracticedAt === "string" ? value.lastPracticedAt : null;
+        if (!Number.isFinite(sessions) || sessions < 0) return [];
+        return [[lessonId, {
+          sessions: Math.floor(sessions),
+          bestScore: bestScore !== null && Number.isFinite(bestScore)
+            ? Math.max(0, Math.min(100, bestScore))
+            : null,
+          lastPracticedAt,
+        }]];
+      }),
+    );
+  } catch {
+    return emptyPracticeStats();
+  }
+}
+
+function savePracticeStats(stats: PracticeStats): void {
+  try {
+    localStorage.setItem(TEACHER_PRACTICE_KEY, JSON.stringify(stats));
+  } catch { /* storage full — non-fatal */ }
+  notify();
+}
+
+export function getPracticeStats(lessonId: string): PracticeLessonStats {
+  return loadPracticeStats()[lessonId] ?? {
+    sessions: 0,
+    bestScore: null,
+    lastPracticedAt: null,
+  };
+}
+
+/** Count one new Practice Again visit without changing learning progress. */
+export function startPracticeSession(lessonId: string): void {
+  const stats = loadPracticeStats();
+  const current = stats[lessonId] ?? getPracticeStats(lessonId);
+  stats[lessonId] = {
+    ...current,
+    sessions: current.sessions + 1,
+    lastPracticedAt: new Date().toISOString(),
+  };
+  savePracticeStats(stats);
+}
+
+/** Save a Practice Mode score without touching the original lesson record. */
+export function recordPracticeScore(lessonId: string, score: number): void {
+  if (!Number.isFinite(score)) return;
+  const stats = loadPracticeStats();
+  const current = stats[lessonId] ?? getPracticeStats(lessonId);
+  stats[lessonId] = {
+    ...current,
+    bestScore: current.bestScore === null ? score : Math.max(current.bestScore, score),
+    lastPracticedAt: new Date().toISOString(),
+  };
+  savePracticeStats(stats);
 }
 
 // ── Derived queries ───────────────────────────────────────────────────────────

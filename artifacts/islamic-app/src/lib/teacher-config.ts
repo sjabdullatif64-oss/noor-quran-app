@@ -50,6 +50,7 @@ export const REVISION_SIZE = 5;
 
 // ── Storage keys (all Teacher data uses the noor-teacher- prefix) ────────────
 export const TEACHER_PROGRESS_KEY = "noor-teacher-progress-v1";
+export const TEACHER_PRACTICE_KEY = "noor-teacher-practice-v1";
 export const TEACHER_CONSENT_KEY = "noor-teacher-consent";
 export const TEACHER_REVISION_KEY = "noor-teacher-revision-queue";
 

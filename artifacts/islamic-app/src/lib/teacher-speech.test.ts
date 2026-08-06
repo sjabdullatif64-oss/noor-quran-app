@@ -8,6 +8,7 @@ import {
   statusForAlternatives,
 } from "./teacher-speech";
 import type { TranslationLanguage } from "./api";
+import { TTS_LANG_CODES } from "./translation-language-metadata";
 import { getTeacherSpeechCopy } from "./teacher-speech-copy";
 
 const translationLanguages: TranslationLanguage[] = [
@@ -131,6 +132,10 @@ function testLocalizedCopyRegistry(): void {
     assert.ok(copy.recognizedText.length > 0, `${language} recognized-text label is empty`);
     assert.ok(copy.errors.length > 0, `${language} errors label is empty`);
     assert.ok(copy.errorLabels["no-speech"], `${language} no-speech copy is missing`);
+    assert.ok(copy.lessonHint.length > 0, `${language} lesson hint is empty`);
+    assert.ok(copy.lockedBody.length > 0, `${language} locked guidance is empty`);
+    assert.ok(copy.limitBody.length > 0, `${language} limit guidance is empty`);
+    assert.ok(TTS_LANG_CODES[language], `${language} TTS language code is missing`);
   }
 }
 
