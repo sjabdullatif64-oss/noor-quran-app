@@ -12,4 +12,5 @@
 - [Capacitor plugin thenable trap](capacitor-plugin-thenable-trap.md) — never return a registered plugin proxy from an async helper; Promise assimilation can invoke an unsupported `.then` on Android
 - [Disable a Capacitor plugin in the native build](capacitor-disable-plugin.md) — includePlugins/package.json removal is not enough; also clear settings.gradle, app/build.gradle, capacitor.plugins.json, and MainActivity.java imports/registerPlugin calls
 - [Translation language registry](translation-language-registry.md) — adding a Quran language requires registry metadata, storage validation, provider mapping, and same-session preference notifications
+- [Arabic pronunciation scoring](arabic-pronunciation-scoring.md) — weighted long-vowel edits and explicit silence/timeout/failure statuses prevent fair Arabic transcripts from being rejected
 - [Android release build environment](android-release-build.md) — local release builds may need a writable composed Android SDK because Nix SDK stores are immutable
