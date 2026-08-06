@@ -19,7 +19,11 @@ import {
   SpeechRecognition as NativeSpeechRecognition,
   type SpeechRecognitionPlugin,
 } from "@capacitor-community/speech-recognition";
-import { MIN_CONFIDENCE, PASS_SCORE, SPEECH_LANG } from "./teacher-config";
+import {
+  PASS_SCORE,
+  RECOGNITION_RETRY_DELAY_MS,
+  SPEECH_LANG,
+} from "./teacher-config";
 
 // ── Arabic normalization ──────────────────────────────────────────────────────
 
@@ -257,8 +261,11 @@ export function assess(
       heard: best.heard,
     };
   }
-  // Nothing intelligible or very low confidence → don't mark wrong.
-  if (inputStatus !== "recognized" || (confidence >= 0 && confidence < MIN_CONFIDENCE) || best.score < 20) {
+  // Only a missing/failed recognizer result is unclear. If the recognizer
+  // produced usable speech, show the normal retry feedback even when the
+  // word match is poor: background noise and accent differences can lower
+  // confidence without meaning that nothing was understood.
+  if (inputStatus !== "recognized") {
     return {
       verdict: "unclear",
       matchScore: best.score,
@@ -462,6 +469,8 @@ export interface ListenResult {
   confidence: number; // -1 when the engine doesn't report it
   status: SpeechInputStatus;
   error?: "no-speech" | "timeout" | "not-allowed" | "network" | "aborted" | "unknown";
+  errors?: string[];
+  attempts?: number;
 }
 
 let _webActive: WebSpeechRecognition | null = null;
@@ -475,9 +484,10 @@ export async function listenOnce(timeoutMs: number): Promise<ListenResult> {
   const native = getNativePlugin();
   if (native) {
     _nativeActive = true;
+    let timerId: ReturnType<typeof setTimeout> | undefined;
     try {
       const timer = new Promise<{ matches: string[]; timedOut: true }>((resolve) =>
-        setTimeout(() => {
+        timerId = setTimeout(() => {
           native.stop().catch(() => {});
           resolve({ matches: [], timedOut: true });
         }, timeoutMs),
@@ -505,8 +515,12 @@ export async function listenOnce(timeoutMs: number): Promise<ListenResult> {
       if (msg.includes("network")) {
         return { alternatives: [], confidence: -1, status: "recognition-failure", error: "network" };
       }
+      if (msg.includes("no speech") || msg.includes("no match") || msg.includes("timeout")) {
+        return { alternatives: [], confidence: -1, status: "silence", error: "no-speech" };
+      }
       return { alternatives: [], confidence: -1, status: "recognition-failure", error: "unknown" };
     } finally {
+      if (timerId) clearTimeout(timerId);
       _nativeActive = false;
     }
   }
@@ -587,6 +601,57 @@ export async function listenOnce(timeoutMs: number): Promise<ListenResult> {
       done({ alternatives: [], confidence: -1, status: "recognition-failure", error: "unknown" });
     }
   });
+}
+
+function isRetryableSpeechResult(result: ListenResult): boolean {
+  return result.status === "silence" || result.status === "timeout";
+}
+
+/**
+ * Give the recognizer one bounded second chance for transient no-speech
+ * results. This avoids showing the unclear panel when Android ends the first
+ * listening window early because of a pause or ordinary background noise.
+ */
+export async function listenWithRetries(
+  timeoutMs: number,
+  maxAttempts = 2,
+  listen: (timeoutMs: number) => Promise<ListenResult> = listenOnce,
+): Promise<ListenResult> {
+  let latest: ListenResult = {
+    alternatives: [],
+    confidence: -1,
+    status: "recognition-failure",
+    error: "unknown",
+    errors: ["recognition-not-started"],
+    attempts: 0,
+  };
+  const errors: string[] = [];
+
+  for (let attempt = 1; attempt <= Math.max(1, maxAttempts); attempt++) {
+    const result = await listen(timeoutMs);
+    latest = {
+      ...result,
+      attempts: attempt,
+      errors: [...(result.errors ?? [])],
+    };
+    if (result.error) errors.push(result.error);
+
+    if (!isRetryableSpeechResult(result) || result.alternatives.some(isUsableTranscript)) {
+      return {
+        ...latest,
+        errors: [...new Set([...errors, ...(result.errors ?? [])])],
+      };
+    }
+
+    if (attempt < maxAttempts) {
+      await new Promise((resolve) => setTimeout(resolve, RECOGNITION_RETRY_DELAY_MS));
+    }
+  }
+
+  return {
+    ...latest,
+    errors: [...new Set([...errors, ...(latest.errors ?? [])])],
+  };
 }
 
 /** Stop any in-flight recognition (user released the mic button). */

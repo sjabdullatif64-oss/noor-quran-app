@@ -3,9 +3,20 @@ import {
   arabicSimilarityDetails,
   assess,
   isUsableTranscript,
+  listenWithRetries,
   normalizeArabic,
   statusForAlternatives,
 } from "./teacher-speech";
+import type { TranslationLanguage } from "./api";
+import { getTeacherSpeechCopy } from "./teacher-speech-copy";
+
+const translationLanguages: TranslationLanguage[] = [
+  "english", "arabic", "urdu", "hindi", "bengali", "turkish", "indonesian",
+  "french", "spanish", "malay", "sindhi", "persian", "german", "portuguese",
+  "russian", "italian", "chinese", "japanese", "korean", "swahili", "tamil",
+  "telugu", "malayalam", "punjabi", "dutch", "thai", "vietnamese",
+  "azerbaijani", "bosnian", "somali", "hausa", "uzbek", "kazakh",
+];
 
 function testArabicNormalization(): void {
   assert.equal(normalizeArabic("بِسْمِ"), "بسم");
@@ -62,8 +73,72 @@ function testNoTranscriptStatuses(): void {
   assert.equal(failure.inputStatus, "recognition-failure");
 }
 
+function testRecognizedLowConfidenceIsRetryableFeedback(): void {
+  const result = assess("بسم", ["مرحبا"], 0.1, "recognized");
+  assert.equal(result.verdict, "retry");
+  assert.equal(result.inputStatus, "recognized");
+}
+
+async function testBoundedRecognitionRetries(): Promise<void> {
+  const silence = () => Promise.resolve({
+    alternatives: [],
+    confidence: -1,
+    status: "silence" as const,
+    error: "no-speech" as const,
+  });
+  const afterSilence = await listenWithRetries(18000, 2, async (timeoutMs) => {
+    assert.equal(timeoutMs, 18000);
+    return silence();
+  });
+  assert.equal(afterSilence.attempts, 2);
+  assert.equal(afterSilence.status, "silence");
+  assert.deepEqual(afterSilence.errors, ["no-speech"]);
+
+  let timeoutCalls = 0;
+  const afterTimeout = await listenWithRetries(18000, 2, async () => {
+    timeoutCalls++;
+    return {
+      alternatives: [],
+      confidence: -1,
+      status: "timeout" as const,
+      error: "timeout" as const,
+    };
+  });
+  assert.equal(timeoutCalls, 2);
+  assert.equal(afterTimeout.attempts, 2);
+  assert.equal(afterTimeout.status, "timeout");
+
+  let recognizedCalls = 0;
+  const recognized = await listenWithRetries(18000, 2, async () => {
+    recognizedCalls++;
+    return {
+      alternatives: ["بسم"],
+      confidence: 0.1,
+      status: "recognized" as const,
+    };
+  });
+  assert.equal(recognizedCalls, 1);
+  assert.equal(recognized.attempts, 1);
+  assert.deepEqual(recognized.alternatives, ["بسم"]);
+}
+
+function testLocalizedCopyRegistry(): void {
+  assert.equal(translationLanguages.length, 33);
+  for (const language of translationLanguages) {
+    const copy = getTeacherSpeechCopy(language);
+    assert.ok(copy.advanced.length > 0, `${language} advanced copy is empty`);
+    assert.ok(copy.diagnosticsTitle.length > 0, `${language} diagnostics title is empty`);
+    assert.ok(copy.recognizedText.length > 0, `${language} recognized-text label is empty`);
+    assert.ok(copy.errors.length > 0, `${language} errors label is empty`);
+    assert.ok(copy.errorLabels["no-speech"], `${language} no-speech copy is missing`);
+  }
+}
+
 testArabicNormalization();
 testSpeechRecognizerInsertionScoring();
 testHardErrorsRemainMeaningful();
 testNoTranscriptStatuses();
+testRecognizedLowConfidenceIsRetryableFeedback();
+testLocalizedCopyRegistry();
+await testBoundedRecognitionRetries();
 console.log("teacher-speech tests passed");

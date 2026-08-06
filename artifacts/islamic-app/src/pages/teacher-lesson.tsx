@@ -11,7 +11,7 @@ import {
   CheckCircle2, Ear, MicOff, WifiOff, Sparkles, Loader2,
 } from "lucide-react";
 import {
-  MAX_RECORD_MS, MAX_RETRIES, TEACHER_CONSENT_KEY,
+  MAX_RECORD_MS, MAX_RECOGNITION_ATTEMPTS, MAX_RETRIES, TEACHER_CONSENT_KEY,
 } from "@/lib/teacher-config";
 import {
   getLesson, getLevelLessons, getNextLesson, lessonAudioUrl, LEVELS,
@@ -25,10 +25,14 @@ import {
 } from "@/lib/teacher-progress";
 import {
   assess, getSpeechSupport, checkSpeechPermission, requestSpeechPermission,
-  listenOnce, stopListening, normalizeArabic, openAppSettings, getSpeechSupportReason,
+  listenWithRetries, stopListening, normalizeArabic, openAppSettings, getSpeechSupportReason,
   type Assessment, type SpeechSupport,
+  type ListenResult,
 } from "@/lib/teacher-speech";
 import { isConnected } from "@/lib/capacitor";
+import { getLang, TRANSLATION_LANGUAGE_CHANGED_EVENT } from "@/lib/settings";
+import { getTeacherSpeechCopy } from "@/lib/teacher-speech-copy";
+import { TeacherSpeechDiagnostics } from "@/components/teacher-speech-diagnostics";
 
 // ── Consent helpers ───────────────────────────────────────────────────────────
 
@@ -69,6 +73,10 @@ export function TeacherLesson() {
   const [completedNow, setCompletedNow] = useState<CompleteResult | null>(null);
   const [settingsFailed, setSettingsFailed] = useState(false);
   const [noMicReason, setNoMicReason] = useState<string | null>(null);
+  const [speechResult, setSpeechResult] = useState<ListenResult | null>(null);
+  const [diagnosticsOpen, setDiagnosticsOpen] = useState(false);
+  const [translationLanguage, setTranslationLanguage] = useState(() => getLang());
+  const copy = getTeacherSpeechCopy(translationLanguage);
 
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const recordTimer = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -78,11 +86,19 @@ export function TeacherLesson() {
       .catch(() => setSupport("none"));
   }, []);
 
+  useEffect(() => {
+    const syncTranslationLanguage = () => setTranslationLanguage(getLang());
+    window.addEventListener(TRANSLATION_LANGUAGE_CHANGED_EVENT, syncTranslationLanguage);
+    return () => window.removeEventListener(TRANSLATION_LANGUAGE_CHANGED_EVENT, syncTranslationLanguage);
+  }, []);
+
   // Reset state when navigating between lessons
   useEffect(() => {
     setPhase("idle");
     setAttempts(0);
     setResult(null);
+    setSpeechResult(null);
+    setDiagnosticsOpen(false);
     setCompletedNow(null);
     setRecordMs(0);
     window.scrollTo({ top: 0 });
@@ -181,9 +197,9 @@ export function TeacherLesson() {
     const started = Date.now();
     recordTimer.current = setInterval(() => setRecordMs(Date.now() - started), 100);
 
-    let res: Awaited<ReturnType<typeof listenOnce>>;
+    let res: Awaited<ReturnType<typeof listenWithRetries>>;
     try {
-      res = await listenOnce(MAX_RECORD_MS);
+      res = await listenWithRetries(MAX_RECORD_MS, MAX_RECOGNITION_ATTEMPTS);
     } catch (error) {
       throw error;
     }
@@ -201,6 +217,7 @@ export function TeacherLesson() {
     }
 
     const a = assess(lesson.expected, res.alternatives, res.confidence, res.status);
+    setSpeechResult(res);
     setResult(a);
 
     if (a.verdict === "pass") {
@@ -227,6 +244,21 @@ export function TeacherLesson() {
   const onStop = useCallback(() => {
     stopListening().catch(() => {});
   }, []);
+
+  const openDiagnostics = useCallback(() => {
+    setDiagnosticsOpen(true);
+  }, []);
+
+  const advancedButton = (testId: string) => (
+    <button
+      type="button"
+      onClick={openDiagnostics}
+      className="mt-3 w-full rounded-xl border border-border py-2.5 text-xs font-semibold text-muted-foreground"
+      data-testid={testId}
+    >
+      {copy.advanced}
+    </button>
+  );
 
   // ── Guards ──────────────────────────────────────────────────────────────────
 
@@ -349,9 +381,9 @@ export function TeacherLesson() {
             data-testid="button-listen"
           >
             {playing ? <Loader2 className="w-4 h-4 animate-spin" /> : <Volume2 className="w-4 h-4" />}
-            Listen
+            {copy.listen}
           </button>
-          <p className="text-muted-foreground text-[10px] mt-2">Verified recitation — listen as many times as you like</p>
+            <p className="text-muted-foreground text-[10px] mt-2">{copy.verifiedRecitation}</p>
         </div>
 
         {/* Tip */}
@@ -366,13 +398,13 @@ export function TeacherLesson() {
           <div className="relative z-30 rounded-2xl border border-border p-5 bg-card" data-testid="panel-consent">
             <div className="flex items-center gap-2 mb-3">
               <ShieldCheck className="w-5 h-5 text-primary" />
-              <p className="text-foreground font-semibold text-sm">Before you start speaking</p>
+              <p className="text-foreground font-semibold text-sm">{copy.consentTitle}</p>
             </div>
             <ul className="text-muted-foreground text-xs leading-relaxed space-y-2 mb-4 list-disc pl-4">
-              <li>Your recitation is processed by <strong className="text-primary">your device&apos;s speech-recognition service</strong> — on most Android devices this is provided by Google and audio may be processed on Google&apos;s servers.</li>
-              <li>Noor Quran itself <strong className="text-primary">never saves or uploads</strong> audio files of your voice.</li>
-              <li>Only the recognized text is used — for instant feedback — then discarded.</li>
-              <li>You can delete all learning data anytime from the Teacher home screen.</li>
+              <li>{copy.permissionData}</li>
+              <li>{copy.noVoiceStorage}</li>
+              <li>{copy.recognizedTextOnly}</li>
+              <li>{copy.deleteLearningData}</li>
             </ul>
             <div className="flex gap-2">
               <button
@@ -388,7 +420,7 @@ export function TeacherLesson() {
                 className="relative z-30 flex-1 touch-manipulation pointer-events-auto py-3 rounded-xl text-sm font-semibold text-primary-foreground bg-primary"
                 data-testid="button-consent-agree"
               >
-                I understand — continue
+                {copy.consentAgree}
               </button>
               <button
                 onClick={() => {
@@ -396,9 +428,10 @@ export function TeacherLesson() {
                 }}
                 className="px-4 py-3 rounded-xl text-xs font-medium text-muted-foreground border border-border"
               >
-                Listen only
+                {copy.listenOnly}
               </button>
             </div>
+            {advancedButton("button-advanced-consent")}
           </div>
         )}
 
@@ -406,19 +439,19 @@ export function TeacherLesson() {
           <div className="rounded-2xl border border-border p-5 text-center bg-card" data-testid="panel-passed">
             <CheckCircle2 className="w-10 h-10 text-primary mx-auto mb-2" />
             <p className="text-foreground font-bold text-base">
-              {result.matchScore >= 90 ? "Excellent! Masha'Allah!" : "Well done! That was correct."}
+              {result.matchScore >= 90 ? copy.passedExcellent : copy.passedCorrect}
             </p>
             <p className="text-muted-foreground text-xs mt-1">
-              Word match: {result.matchScore}%
-              {completedNow === "review" && " · review practice (already completed)"}
+              {copy.wordMatch}: {result.matchScore}%
             </p>
+            {advancedButton("button-advanced-passed")}
           </div>
         )}
 
         {alreadyDone && phase === "idle" && (
           <div className="rounded-2xl border border-border p-3 text-center bg-card">
             <p className="text-muted-foreground text-xs flex items-center justify-center gap-2">
-              <CheckCircle2 className="w-3.5 h-3.5" /> You completed this lesson — practice again anytime.
+               <CheckCircle2 className="w-3.5 h-3.5" /> {copy.completedPractice}
             </p>
           </div>
         )}
@@ -426,7 +459,7 @@ export function TeacherLesson() {
         {phase === "feedback" && result && (
           <div className="rounded-2xl border border-border p-5 animate-in fade-in slide-in-from-bottom-2 duration-300 bg-card" data-testid="panel-feedback">
             <p className="text-foreground font-semibold text-sm mb-2">
-              Good try — let&apos;s polish it together.
+              {copy.retryTitle}
             </p>
             {/* Word match bar */}
             <div className="flex items-center gap-2 mb-3">
@@ -451,18 +484,18 @@ export function TeacherLesson() {
                   })}
                 </p>
                 <p className="text-muted-foreground text-[11px] mt-2">
-                  The <span className="text-rose-400 font-semibold">highlighted letters</span> were not heard clearly — listen again and focus on those sounds.
+                  {copy.focusSounds}
                 </p>
               </div>
             )}
             {result.heard && (
               <p className="text-muted-foreground text-xs mb-1">
-                I heard: <span className="font-arabic text-sm" dir="rtl">{result.heard}</span>
+                {copy.heard}: <span className="font-arabic text-sm" dir="rtl">{result.heard}</span>
               </p>
             )}
             {result.missing.length > 0 && (
               <p className="text-muted-foreground text-xs mb-1">
-                Sounds to focus on:{" "}
+                {copy.focusSounds}:{" "}
                 <span className="font-arabic text-base text-amber-300" dir="rtl">
                   {result.missing.join(" ، ")}
                 </span>
@@ -470,7 +503,7 @@ export function TeacherLesson() {
             )}
             {result.extra.length > 0 && (
               <p className="text-muted-foreground text-xs mb-1">
-                Extra sounds I heard (not in the word):{" "}
+                {copy.extraSounds}:{" "}
                 <span className="font-arabic text-base text-amber-300" dir="rtl">
                   {result.extra.join(" ، ")}
                 </span>
@@ -479,28 +512,27 @@ export function TeacherLesson() {
               <p className="text-muted-foreground text-xs mt-2 leading-relaxed">{lesson.tip}</p>
             {attempts >= MAX_RETRIES && (
                 <p className="text-muted-foreground text-xs mt-3 leading-relaxed border-t border-border pt-3">
-                This one is tricky — that&apos;s completely normal. Tap <strong>Listen</strong> a few
-                more times and repeat slowly, sound by sound. You can also continue in
-                listen-only mode and come back later.
+                {copy.retryGuidance}
               </p>
             )}
             <button
               onClick={playAudio}
               className="mt-3 inline-flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-semibold text-primary-foreground border border-border bg-primary"
             >
-              <Volume2 className="w-3.5 h-3.5" /> Hear it again
+              <Volume2 className="w-3.5 h-3.5" /> {copy.hearAgain}
             </button>
+            {advancedButton("button-advanced-feedback")}
           </div>
         )}
 
         {phase === "unclear" && (
           <div className="rounded-2xl border border-border p-4 text-center bg-card" data-testid="panel-unclear">
             <Ear className="w-6 h-6 text-sky-400 mx-auto mb-2" />
-            <p className="text-sky-300 text-sm font-medium">I couldn&apos;t clearly understand that.</p>
+            <p className="text-sky-300 text-sm font-medium">{copy.unclearTitle}</p>
             <p className="text-sky-600 text-xs mt-1">
-              No worries — this doesn&apos;t count against you. Try again in a quieter place,
-              holding the phone a little closer.
+              {copy.unclearBody}
             </p>
+            {advancedButton("button-advanced-unclear")}
           </div>
         )}
 
@@ -508,12 +540,10 @@ export function TeacherLesson() {
           <div className="rounded-2xl border border-border p-4 bg-card" data-testid="panel-denied">
             <div className="flex items-center gap-2 mb-2">
               <MicOff className="w-4 h-4 text-rose-400" />
-              <p className="text-foreground text-sm font-medium">Microphone permission needed</p>
+              <p className="text-foreground text-sm font-medium">{copy.microphoneTitle}</p>
             </div>
             <p className="text-rose-500/80 text-xs leading-relaxed">
-              To check your recitation, the app needs microphone access. Allow it under
-              Permissions → Microphone. Until then, you can keep learning in listen-only mode —
-              tap Listen and repeat aloud.
+              {copy.microphoneBody}
             </p>
             <div className="flex gap-2 mt-3">
               <button
@@ -524,22 +554,22 @@ export function TeacherLesson() {
                 className="flex-1 py-2.5 rounded-xl text-xs font-semibold text-primary-foreground border border-border bg-primary"
                 data-testid="button-open-settings"
               >
-                Open Settings
+                {copy.openSettings}
               </button>
               <button
                 onClick={() => { setPhase("idle"); setResult(null); setSettingsFailed(false); }}
                 className="flex-1 py-2.5 rounded-xl text-xs font-semibold text-muted-foreground border border-border"
                 data-testid="button-denied-retry"
               >
-                Try Again
+                {copy.tryAgain}
               </button>
             </div>
             {settingsFailed && (
               <p className="text-rose-400/80 text-[11px] mt-2 leading-relaxed" data-testid="text-settings-fallback">
-                Couldn&apos;t open settings automatically. Please go to: Settings → Apps →
-                Noor Quran → Permissions → Microphone → Allow.
+                {copy.settingsFailed}
               </p>
             )}
+            {advancedButton("button-advanced-mic-denied")}
           </div>
         )}
 
@@ -547,16 +577,16 @@ export function TeacherLesson() {
           <div className="rounded-2xl border border-border p-4 bg-card" data-testid="panel-nomic">
             <div className="flex items-center gap-2 mb-2">
               <Ear className="w-4 h-4 text-primary" />
-              <p className="text-foreground text-sm font-medium">Listen-only practice</p>
+              <p className="text-foreground text-sm font-medium">{copy.listenOnlyTitle}</p>
             </div>
             <p className="text-muted-foreground text-xs leading-relaxed">
               {support === "none"
-                ? "Recitation checking isn't available in this browser — it works in the Noor Quran Android app. For now: tap Listen, repeat aloud, and compare with your own ears — it's how students have learned for centuries."
-                : "Tap Listen and repeat aloud as many times as you like. To pass this lesson and unlock the next one, the AI needs to hear your recitation — allow the microphone when you're ready."}
+                ? copy.listenOnlyUnavailable
+                : copy.listenOnlyAvailable}
             </p>
             {noMicReason && (
               <p className="text-muted-foreground text-[10px] mt-2 leading-relaxed" data-testid="text-nomic-reason">
-                Reason: {noMicReason}
+                 {copy.reason}: {noMicReason}
               </p>
             )}
             {support !== "none" && (
@@ -565,20 +595,21 @@ export function TeacherLesson() {
                 className="mt-3 w-full py-2.5 rounded-xl text-xs font-semibold text-primary-foreground border border-border bg-primary"
                 data-testid="button-back-to-mic"
               >
-                I&apos;m ready — try with the microphone
+                {copy.readyMicrophone}
               </button>
             )}
+            {advancedButton("button-advanced-no-mic")}
           </div>
         )}
 
         {phase === "offline" && (
           <div className="rounded-2xl border border-border p-4 text-center bg-card" data-testid="panel-offline">
             <WifiOff className="w-6 h-6 text-muted-foreground mx-auto mb-2" />
-            <p className="text-foreground text-sm font-medium">No internet connection</p>
+            <p className="text-foreground text-sm font-medium">{copy.offlineTitle}</p>
             <p className="text-muted-foreground text-xs mt-1">
-              Speech checking needs a connection on most devices. You can still practice in
-              listen-only mode with downloaded audio.
+              {copy.offlineBody}
             </p>
+            {advancedButton("button-advanced-offline")}
           </div>
         )}
 
@@ -613,17 +644,17 @@ export function TeacherLesson() {
                       <Mic className="w-7 h-7 text-primary-foreground" />
                     </div>
                     <p className="text-rose-300 text-sm font-medium mt-3" data-testid="text-listening">
-                      Listening… Read the letter or word now.
+                       {copy.listening}
                     </p>
                     <p className="text-muted-foreground text-[11px] mt-1">
-                      {(recordMs / 1000).toFixed(1)}s · stops automatically
+                       {(recordMs / 1000).toFixed(1)}s · {copy.recordingAutoStop}
                     </p>
                     <button
                       onClick={onStop}
                       className="mt-3 inline-flex items-center gap-2 px-6 py-2.5 rounded-xl text-xs font-semibold text-primary-foreground border border-border bg-primary active:scale-95 transition-all"
                       data-testid="button-stop"
                     >
-                      <span className="w-2.5 h-2.5 rounded-[3px] bg-rose-400 inline-block" /> Stop — I&apos;m done
+                       <span className="w-2.5 h-2.5 rounded-[3px] bg-rose-400 inline-block" /> {copy.stop}
                     </button>
                   </>
                 ) : phase === "checking" ? (
@@ -631,7 +662,7 @@ export function TeacherLesson() {
                     <div className="w-20 h-20 rounded-full inline-flex items-center justify-center bg-primary opacity-60 shadow-lg">
                       <Loader2 className="w-7 h-7 text-primary-foreground animate-spin" />
                     </div>
-                    <p className="text-muted-foreground text-xs mt-3">Checking your recitation…</p>
+                     <p className="text-muted-foreground text-xs mt-3">{copy.checking}</p>
                   </>
                 ) : (
                   <>
@@ -640,10 +671,10 @@ export function TeacherLesson() {
                       className="inline-flex items-center gap-2.5 px-8 py-4 rounded-2xl text-base font-bold text-primary-foreground bg-primary active:scale-95 shadow-lg transition-all"
                       data-testid="button-record"
                     >
-                      <Mic className="w-5 h-5" /> Read Now
+                       <Mic className="w-5 h-5" /> {copy.readNow}
                     </button>
                     <p className="text-muted-foreground text-xs mt-3">
-                      Tap, then read the {lesson.highlight ? "letter" : "word"} aloud
+                       {copy.tapToRead}
                     </p>
                   </>
                 )}
@@ -657,7 +688,7 @@ export function TeacherLesson() {
                   className="flex-1 py-3.5 rounded-2xl text-sm font-semibold text-primary border border-border flex items-center justify-center gap-2"
                   data-testid="button-try-again"
                 >
-                  <RotateCcw className="w-4 h-4" /> Try Again
+                   <RotateCcw className="w-4 h-4" /> {copy.tryAgain}
                 </button>
               )}
               {revision ? (
@@ -705,6 +736,12 @@ export function TeacherLesson() {
           </div>
         )}
       </div>
+      <TeacherSpeechDiagnostics
+        open={diagnosticsOpen}
+        onOpenChange={setDiagnosticsOpen}
+        assessment={result}
+        speech={speechResult}
+      />
 
     </div>
   );

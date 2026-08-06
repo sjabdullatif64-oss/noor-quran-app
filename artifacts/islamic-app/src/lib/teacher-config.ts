@@ -25,7 +25,13 @@ export const MAX_RETRIES = 3;
 export const MIN_CONFIDENCE = 0.3;
 
 /** Max recording duration (ms) for the press-and-hold mic. */
-export const MAX_RECORD_MS = 10000;
+export const MAX_RECORD_MS = 18000;
+
+/** Bounded second chance for transient silence/no-speech recognizer results. */
+export const MAX_RECOGNITION_ATTEMPTS = 2;
+
+/** Short pause between bounded recognition attempts. */
+export const RECOGNITION_RETRY_DELAY_MS = 250;
 
 /** Curriculum levels enabled in this phase. Levels 5–7 are future phases. */
 export const ENABLED_LEVELS = [1, 2, 3, 4] as const;
