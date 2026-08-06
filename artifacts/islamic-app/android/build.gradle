@@ -5,6 +5,7 @@ buildscript {
         // Build.VERSION_CODES.VANILLA_ICE_CREAM (API 35) in SystemBars.java.
         // Setting this lower causes "cannot find symbol: VANILLA_ICE_CREAM".
         compileSdkVersion = 36
+        buildToolsVersion = '36.0.0'
         // targetSdk 36 = Android 16; meets Google Play targetSdk requirement
         targetSdkVersion  = 36
         minSdkVersion     = 24
@@ -54,19 +55,27 @@ allprojects {
 // so we cannot inspect the current value.  Instead we target the specific
 // subproject names we know need the override.
 subprojects { sub ->
-    if (sub.name in ['capacitor-community-admob',
-                     'capacitor-cordova-android-plugins']) {
-        sub.afterEvaluate {
-            def androidExt = sub.extensions.findByName('android')
-            if (androidExt == null) return
-            androidExt.compileOptions {
-                sourceCompatibility JavaVersion.VERSION_17
-                targetCompatibility JavaVersion.VERSION_17
-            }
+    sub.afterEvaluate {
+        def androidExt = sub.extensions.findByName('android')
+        if (androidExt == null) return
+        androidExt.buildToolsVersion = rootProject.ext.buildToolsVersion
+        androidExt.compileOptions {
+            sourceCompatibility JavaVersion.VERSION_17
+            targetCompatibility JavaVersion.VERSION_17
+        }
+        if (sub.name in ['capacitor-community-admob',
+                         'capacitor-cordova-android-plugins']) {
             try {
                 androidExt.kotlinOptions { jvmTarget = '17' }
             } catch (ignored) {
                 // admob uses Kotlin but cordova-plugins is pure-Java
+            }
+        }
+        if (sub.plugins.hasPlugin('org.jetbrains.kotlin.android')) {
+            try {
+                sub.kotlin { jvmToolchain(17) }
+            } catch (ignored) {
+                // Java-only Android modules do not expose the Kotlin extension.
             }
         }
     }

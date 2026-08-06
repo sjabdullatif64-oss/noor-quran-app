@@ -306,3 +306,10 @@ uri = "file://.agents/outputs/noor-quran-1.0.18/noor-quran-1.0.18.aab"
 type = "unspecified"
 title = "Noor Quran 1.0.18 — Play Store AAB"
 description = "Signed Android App Bundle built by GitHub Actions. Version code: 79845454. Upload this file to Google Play Console."
+
+[[outputs]]
+id = "myrah7GHDT5jkzFMpSqKd"
+uri = "file://.agents/outputs/noor-quran-1.0.19-debug/noor-quran-1.0.19-debug.apk"
+type = "unspecified"
+title = "Noor Quran 1.0.19 Debug APK"
+description = "Locally built debug APK for testing. Package: com.sj64noorquran; versionCode: 79845455; versionName: 1.0.19; compile/target SDK: 36. SHA-256: 55cd13d283503a27142a2ffb820471d168d768e93b5ccafdeae3f105010f969c."
