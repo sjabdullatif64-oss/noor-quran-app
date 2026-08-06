@@ -102,25 +102,52 @@ const SECTIONS = [
       <>
         To support the free development of Noor Quran, ads provided by{" "}
         <strong className="text-rose-300">Google AdMob</strong> may be displayed when the app
-        runs as a native Android application. Google may use your device&apos;s advertising ID
-        (GAID) for ad personalisation in accordance with Google&apos;s Privacy Policy. You can
-        opt out of personalised ads through your Android device settings under{" "}
+        runs as a native Android application. Before your first AI Teacher lesson, the app may
+        show a full-screen rewarded advertisement. The ad may be unavailable, may fail to load,
+        and is not guaranteed to appear on every device or in every region. Google may process
+        device and advertising information, including your device&apos;s advertising ID (GAID),
+        for ad delivery, measurement, and personalisation in accordance with Google&apos;s Privacy
+        Policy. You can opt out of personalised ads through your Android device settings under{" "}
         <em>Google &rarr; Ads</em>. The web version of Noor Quran does not serve AdMob ads.
       </>
     ),
   },
   {
     icon: <Mic className="w-5 h-5" />,
-    title: "AI Teacher Microphone & Speech",
+    title: "AI Teacher Speech Recognition & Pronunciation Assessment",
     accent: "text-violet-400",
     bg: "rgba(139,92,246,0.07)",
     border: "border-violet-900/40",
     body: (
       <>
-        AI Teacher requests microphone access only when you start a recitation check. Speech is
-        processed by the device&apos;s speech recognizer. Noor Quran does not record, store, or
-        upload raw audio; the temporary recognized transcript is used for on-device feedback and
-        then discarded.
+        AI Teacher requests microphone access only when you choose to start a speech exercise.
+        Speech is processed by the device&apos;s speech recognizer using the Arabic (Saudi Arabia)
+        setting (<strong className="text-violet-300">ar-SA</strong>). Depending on your device
+        and operating-system speech service, spoken responses may be processed by that service to
+        produce recognition results. Noor Quran does <strong className="text-violet-300">not
+        record, store, or upload raw microphone audio</strong>. The temporary recognized
+        transcript is compared with the lesson target to produce an approximate pronunciation
+        score, pass/retry result, and automated feedback, then discarded from the active
+        recognition flow.
+      </>
+    ),
+  },
+  {
+    icon: <BookOpen className="w-5 h-5" />,
+    title: "AI Teacher Progress & Feedback",
+    accent: "text-fuchsia-400",
+    bg: "rgba(217,70,239,0.07)",
+    border: "border-fuchsia-900/40",
+    body: (
+      <>
+        If you use AI Teacher, the app may save your lesson completion status, pronunciation
+        scores, practice scores and timestamps, retry and lesson history, revision information,
+        and related learning preferences. These records help provide daily lesson limits,
+        completed-lesson practice, Smart Revision, progress displays, and recovery after
+        reinstalling. The records are associated with a device-linked Teacher identity rather
+        than an email/password login account. Encrypted recovery snapshots may be synchronized to
+        Noor Quran&apos;s server as described below. Feedback is automated learning guidance and
+        should not be treated as a formal religious certification.
       </>
     ),
   },
@@ -252,8 +279,10 @@ export function PrivacyPolicy() {
           </div>
           <p className="text-muted-foreground text-sm leading-relaxed mb-4">
             Noor Quran was built as a free service to the Muslim community. We take your privacy
-            seriously — we do not collect personal data, we do not track you, and we do not sell
-            your information. This policy explains exactly what we do and do not do.
+            seriously — we do not ask for email/password accounts, we do not sell your information,
+            and we do not use an analytics or tracking SDK. If you use AI Teacher, limited
+            device-linked learning records and encrypted recovery data are handled as described
+            below. This policy explains exactly what we do and do not do.
           </p>
           <div className="border-t border-border pt-3">
             <p className="text-muted-foreground text-xs font-arabic text-right leading-loose mb-1" dir="rtl">
@@ -350,7 +379,7 @@ export function PrivacyPolicy() {
 
         {/* Effective date */}
         <p className="text-muted-foreground text-xs text-center pt-2">
-          Last updated: July 19, 2026 &nbsp;·&nbsp; Effective immediately
+          Last updated: August 6, 2026 &nbsp;·&nbsp; Effective immediately
         </p>
 
         {/* Close button */}

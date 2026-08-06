@@ -313,3 +313,10 @@ uri = "file://.agents/outputs/noor-quran-1.0.19-debug/noor-quran-1.0.19-debug.ap
 type = "unspecified"
 title = "Noor Quran 1.0.19 Debug APK"
 description = "Locally built debug APK for testing. Package: com.sj64noorquran; versionCode: 79845455; versionName: 1.0.19; compile/target SDK: 36. SHA-256: 55cd13d283503a27142a2ffb820471d168d768e93b5ccafdeae3f105010f969c."
+
+[[outputs]]
+id = "l7HpSANSmRekO3Ck2Kmx4"
+uri = "file://.agents/outputs/noor-quran-1.0.19-ai-teacher-legal-debug/noor-quran-1.0.19-ai-teacher-legal-debug.apk"
+type = "unspecified"
+title = "Noor Quran 1.0.19 — AI Teacher Legal Update Debug APK"
+description = "Testing APK built after updating the existing Terms of Service and Privacy Policy with AI Teacher speech recognition, microphone permission, pronunciation assessment, automated feedback, progress handling, and rewarded-ad disclosures. Package: com.sj64noorquran; versionCode: 79845455; target SDK: 36; SHA-256: 972c351448922561f72c4125909dd11f76d1fbf9c1079519cb60ebe8fa6450c8."

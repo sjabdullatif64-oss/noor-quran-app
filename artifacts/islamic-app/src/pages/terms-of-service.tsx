@@ -56,10 +56,23 @@ const SECTIONS = [
     ],
   },
   {
+    icon: "🎙",
+    title: "AI Teacher, Speech Recognition & Pronunciation Practice",
+    body: [
+      "Noor Quran’s AI Teacher provides educational Quran-reading practice. It may ask you to pronounce Arabic words or passages aloud and uses speech recognition to assess the spoken response.",
+      "The AI Teacher requests microphone permission only when you choose to start a speech exercise. You may deny or revoke microphone permission, but speech-based pronunciation checks will not work while access is unavailable; other app features remain available.",
+      "Speech recognition uses the Arabic (Saudi Arabia) recognition setting (ar-SA). Recognition can be affected by accent, pronunciation, background noise, device settings, internet availability, or the speech-recognition service.",
+      "The app compares the recognized response with the lesson target and generates an approximate pronunciation score, pass/retry result, and instructional feedback. These results are learning aids, not a formal tajweed certification, medical assessment, or substitute for a qualified Quran teacher.",
+      "The Teacher may offer bounded retries, listen-only guidance, completed-lesson review, practice sessions, Smart Revision, and daily new-lesson limits. Scores, timestamps, lesson history, and related Teacher progress may be saved locally and synchronized as described in the Privacy Policy.",
+      "AI Teacher feedback and pronunciation scores are automated and may be incomplete or inaccurate. Verify recitation with the Quran text, a trusted reciter, and a qualified teacher when accuracy matters.",
+    ],
+  },
+  {
     icon: "$",
     title: "Third-Party Services & Advertising",
     body: [
       "Noor Quran may use third-party APIs, hosting services, content providers, and Google AdMob to provide translations, audio, prayer information, and advertisements.",
+      "Before the first AI Teacher lesson, the app may show a full-screen rewarded advertisement. The advertisement is provided by Google AdMob, may require the ad to load, and may not be available on every device or in every region. You may close or skip it when the ad provider permits; ad availability does not guarantee a reward or uninterrupted access.",
       "These services operate under their own terms and privacy policies.",
       "We are not responsible for third-party outages, content errors, policy changes, advertisements, or service availability.",
     ],
@@ -228,7 +241,7 @@ export function TermsOfService() {
           className="text-muted-foreground text-xs text-center pt-2"
           data-testid="text-terms-updated"
         >
-          Last updated: 21 July 2026 · Effective immediately
+           Last updated: 6 August 2026 · Effective immediately
         </p>
 
         {/* Copyright */}
