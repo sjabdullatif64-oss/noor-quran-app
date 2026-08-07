@@ -35,6 +35,7 @@ import { Teacher } from "@/pages/teacher";
 import { TeacherLesson } from "@/pages/teacher-lesson";
 import { TeacherPractice } from "@/pages/teacher-practice";
 import { WelcomeCampaignGate } from "@/components/welcome-campaign-gate";
+import { ConsentGate } from "@/components/consent-gate";
 import { useEffect } from "react";
 import { AI_TEACHER_ENABLED } from "@/lib/teacher-config";
 import { ensureRegistered, reportAyahComplete } from "@/lib/user";
@@ -133,16 +134,18 @@ function App() {
         <QueryClientProvider client={queryClient}>
           <TooltipProvider>
             <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, "")}>
-              <AndroidBackHandler />
-              <NoorInitializer />
+              <ConsentGate>
+                <AndroidBackHandler />
+                <NoorInitializer />
 
-              <WelcomeCampaignGate>
-                <Layout>
-                  <Router />
-                </Layout>
-              </WelcomeCampaignGate>
+                <WelcomeCampaignGate>
+                  <Layout>
+                    <Router />
+                  </Layout>
+                </WelcomeCampaignGate>
 
-              <NotificationPrompt />
+                <NotificationPrompt />
+              </ConsentGate>
             </WouterRouter>
             <Toaster />
           </TooltipProvider>
