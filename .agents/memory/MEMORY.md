@@ -18,3 +18,4 @@
 - [Service-worker app-shell cache](service-worker-app-shell-cache.md) — bump the shell cache version after route/UI changes or previews can serve stale bundles despite a fresh Vite workflow
 - [AI Teacher Recovery Key](teacher-recovery-key.md) — server-backed encrypted snapshots plus native device identity restore Teacher data without changing lesson flow
 - [Legal consent gate](legal-consent-gate.md) — gate the app shell until versioned local consent is accepted, while keeping existing legal pages reachable for review
+- [Divine Name translation display](translation-language-registry.md) — normalize only explicit Allah-name spellings; preserve semantic words like God, Lord, and خدا

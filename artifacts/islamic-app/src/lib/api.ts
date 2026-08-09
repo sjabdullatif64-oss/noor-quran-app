@@ -7,58 +7,22 @@ import {
   getOfflineTranslationTexts,
 } from "./offline-quran";
 import { getCalcMethod, calcMethodParam } from "./settings";
+import { localizeDivineName } from "./divine-name-localization";
 
-/**
- * The Urdu and Sindhi translations can use localized Arabic-script variants
- * for the name of Allah. Normalize those explicit name variants to the
- * canonical Latin spelling used by the app.
- * Applied at the data layer so all consumers receive corrected text.
- */
+/** Apply only written Divine Name localization; never translate semantic words. */
 export function sanitizeUrduText(text: string): string {
-  return text.replace(/خدا|اللہ|الله/g, "Allah");
+  return localizeDivineName("urdu", text);
 }
 
-/**
- * Hindi translations can use localized variants for Allah's name.
- */
 export function sanitizeHindiText(text: string): string {
-  return text.replace(/खुदा|अल्लाह|अल्ला/g, "Allah");
+  return localizeDivineName("hindi", text);
 }
 
-/**
- * Central sanitiser — picks the right replacement based on translation language.
- * Safe to call on any language; no-ops for languages that don't need it.
- */
-export function sanitizeTranslation(lang: TranslationLanguage, text: string): string {
-  if (lang === "urdu" || lang === "sindhi") return sanitizeUrduText(text);
-  if (lang === "hindi") return sanitizeHindiText(text);
-  if (lang === "persian") return text.replace(/خداوند|خداى|خدا/g, "Allah");
-  if (lang === "german") return text.replace(/\bGott(?:es|e)?\b/gi, "Allah");
-  if (lang === "portuguese") return text.replace(/\bDeus\b/gi, "Allah");
-  if (lang === "french") return text.replace(/\bDieu\b/gi, "Allah");
-  if (lang === "spanish") return text.replace(/\bDios\b|\bSeñor\b/gi, "Allah");
-  if (lang === "italian") return text.replace(/\bDio\b/gi, "Allah");
-  if (lang === "dutch") return text.replace(/\bGod\b|\bHeer\b/gi, "Allah");
-  if (lang === "russian") return text.replace(/Алла(?:ха|хом|ху)?|Бог(?:а|ом)?/g, "Allah");
-  if (lang === "chinese") return text.replace(/真主|上帝/g, "Allah");
-  if (lang === "japanese") return text.replace(/アッラー|神/g, "Allah");
-  if (lang === "korean") return text.replace(/하나님/g, "Allah");
-  if (lang === "turkish") return text.replace(/\bTanrı\b/gi, "Allah");
-  if (lang === "indonesian" || lang === "malay") {
-    return text.replace(/\bTuhan\b/gi, "Allah");
-  }
-  if (lang === "bengali") return text.replace(/আল্লাহ|খোদা/g, "Allah");
-  if (lang === "swahili") return text.replace(/Mwenyezi Mungu/g, "Allah");
-  if (lang === "tamil") return text.replace(/அல்லாஹ்|இறைவன்/g, "Allah");
-  if (lang === "telugu") return text.replace(/అల్లాహ్|దేవుడు/g, "Allah");
-  if (lang === "malayalam") return text.replace(/അല്ലാഹു|ദൈവം/g, "Allah");
-  if (lang === "punjabi") return text.replace(/ਅੱਲਾਹ|ਰੱਬ/g, "Allah");
-  if (lang === "thai") return text.replace(/อัลลอฮ์|พระเจ้า/g, "Allah");
-  if (lang === "bosnian") return text.replace(/\bAllaha\b|\bBog(?:a|om)?\b/g, "Allah");
-  if (lang === "somali") return text.replace(/\bEebe\b|\bIlaah\b/gi, "Allah");
-  if (lang === "uzbek") return text.replace(/Аллоҳ|Аллах/g, "Allah");
-  if (lang === "kazakh") return text.replace(/Алла(?:ның|ға|мен|дан|да)?/g, "Allah");
-  return text;
+export function sanitizeTranslation(
+  lang: TranslationLanguage,
+  text: string,
+): string {
+  return localizeDivineName(lang, text);
 }
 
 export interface Ayah {
