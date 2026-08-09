@@ -15,6 +15,7 @@ import {
   getDailyStatus, getStats, getNextUncompleted, getMistakeLessons,
   getHistory, loadProgress, resetAllProgress, subscribeProgress,
   startRevision, hasRevisableLessons, endRevision,
+  getPracticeWordCount,
 } from "@/lib/teacher-progress";
 
 function useTeacherState() {
@@ -216,6 +217,22 @@ export function Teacher() {
           </div>
         </div>
 
+        {/* Progressive passage length */}
+        <div
+          className="rounded-2xl p-4 border border-border bg-card flex items-center justify-between gap-4"
+          data-testid="card-practice-progression"
+        >
+          <div>
+            <p className="text-foreground font-semibold text-sm">Practice progression</p>
+            <p className="text-muted-foreground text-xs mt-1">
+              Passages grow as you complete more Quran Teacher lessons.
+            </p>
+          </div>
+          <p className="text-primary font-bold text-sm whitespace-nowrap">
+            {getPracticeWordCount()} word{getPracticeWordCount() === 1 ? "" : "s"}
+          </p>
+        </div>
+
         {/* Smart Revision */}
         {hasRevisableLessons() && (
           <button
@@ -413,7 +430,7 @@ export function Teacher() {
         </div>
 
         <p className="text-center text-muted-foreground text-[11px] pb-4">
-          {CURRICULUM.length} lessons · Levels 1–4 · Your voice is never recorded or uploaded
+          {CURRICULUM.length} lessons · Full Quran path · Your voice is never recorded or uploaded
         </p>
       </div>
     </div>

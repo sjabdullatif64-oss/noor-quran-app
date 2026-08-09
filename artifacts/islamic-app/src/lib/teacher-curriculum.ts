@@ -1,21 +1,42 @@
 /**
- * Noor Quran — AI Quran Teacher: bundled curriculum (Levels 1–4)
+ * Noor Quran — AI Quran Teacher: bundled curriculum (Levels 1–5)
  *
  * Every lesson references REAL verified Quranic recitation audio — never TTS.
  * - "wbw" audio: word-by-word MP3s from Quran.com CDN (surah/ayah/word position)
  * - Letter & harakat lessons map to a real Quranic word CONTAINING the target
  *   sound; the UI highlights the target letter inside the word.
  *
- * Schema includes level + ordering so Levels 5–7 can be appended later
- * without any logic changes.
+ * Level 5 is generated from the bundled verified Quran text. Its passages are
+ * stable and ordered, while their length follows the completed-lesson
+ * progression defined below.
  */
 
-import { wbwAudioUrl } from "./teacher-config";
+import {
+  PRACTICE_MAX_WORDS,
+  PRACTICE_MIN_WORDS,
+  PRACTICE_WORD_STEP,
+  wbwAudioUrl,
+} from "./teacher-config";
+import quranArabicData from "../../public/quran-data/quran-arabic.json";
+
+type QuranAyahData = {
+  n: number;
+  g: number;
+  t: string;
+};
+
+type QuranSurahData = {
+  name: string;
+  englishName: string;
+  ayahs: QuranAyahData[];
+};
+
+type QuranArabicData = Record<string, QuranSurahData>;
 
 export interface TeacherLesson {
   /** Stable unique id, e.g. "l1-ba", "l4-w07". Used as the progress key. */
   id: string;
-  level: 1 | 2 | 3 | 4;
+  level: 1 | 2 | 3 | 4 | 5;
   /** Order within the level (1-based). */
   order: number;
   /** What is being learned — a letter, a harakah symbol, or a word. */
@@ -29,13 +50,19 @@ export interface TeacherLesson {
   /** Friendly pronunciation tip. */
   tip: string;
   /** Verified audio reference. */
-  audio: { surah: number; ayah: number; word: number };
+  audio: {
+    surah: number;
+    ayah: number;
+    word: number;
+    /** Full word-by-word sequence for generated multi-word passages. */
+    sequence?: Array<{ surah: number; ayah: number; word: number }>;
+  };
   /** What the learner is expected to SAY (the full word — recognizers work on words). */
   expected: string;
 }
 
 export interface TeacherLevel {
-  level: 1 | 2 | 3 | 4;
+  level: 1 | 2 | 3 | 4 | 5;
   title: string;
   subtitle: string;
 }
@@ -45,6 +72,7 @@ export const LEVELS: TeacherLevel[] = [
   { level: 2, title: "Harakat (Vowel Marks)", subtitle: "Fatha, Kasra, Damma, Sukoon, Shadda" },
   { level: 3, title: "Small Words", subtitle: "Short Quranic words you already heard" },
   { level: 4, title: "Surah Al-Fatihah", subtitle: "Word by word — the opening of the Quran" },
+  { level: 5, title: "Full Quran Reading", subtitle: "Progressive passages from Al-Baqarah to An-Naas" },
 ];
 
 // ── Level 1 — the 28 Arabic letters ──────────────────────────────────────────
@@ -190,10 +218,26 @@ function buildLessons(): TeacherLesson[] {
     });
   });
 
+  lessons.push(...buildFullQuranLessons());
   return lessons;
 }
 
 export const CURRICULUM: TeacherLesson[] = buildLessons();
+
+/**
+ * Number of words in a new practice passage after a given number of lessons
+ * have already been completed. The first 30 lessons are single-word
+ * exercises; the target increases every 30 completed lessons and stops at 10.
+ */
+export function practiceWordCount(completedLessons: number): number {
+  const completed = Number.isFinite(completedLessons)
+    ? Math.max(0, Math.floor(completedLessons))
+    : 0;
+  return Math.min(
+    PRACTICE_MAX_WORDS,
+    PRACTICE_MIN_WORDS + Math.floor(completed / PRACTICE_WORD_STEP),
+  );
+}
 
 export function getLesson(id: string): TeacherLesson | undefined {
   return CURRICULUM.find((l) => l.id === id);
@@ -212,4 +256,117 @@ export function getNextLesson(id: string): TeacherLesson | undefined {
 
 export function lessonAudioUrl(lesson: TeacherLesson): string {
   return wbwAudioUrl(lesson.audio.surah, lesson.audio.ayah, lesson.audio.word);
+}
+
+/** Verified word-by-word audio for the complete expected passage. */
+export function lessonAudioUrls(lesson: TeacherLesson): string[] {
+  const sequence = lesson.audio.sequence ?? [lesson.audio];
+  return sequence.map((word) => wbwAudioUrl(word.surah, word.ayah, word.word));
+}
+
+type FullQuranWord = {
+  text: string;
+  surah: number;
+  ayah: number;
+  word: number;
+  surahName: string;
+  englishName: string;
+};
+
+/**
+ * The bundled Quran file is also used by the main Quran reader. Importing it
+ * here keeps the Teacher catalog synchronous and deterministic, so lesson
+ * routes do not need a new async loading state and existing progress IDs stay
+ * compatible.
+ */
+function cleanQuranWords(text: string): Array<{ text: string; position: number }> {
+  const tokens = text
+    .replace(/[\u200A\u200B\u200C\u200D\u2060]/g, "")
+    .replace(/\s+/g, " ")
+    .trim()
+    .split(" ")
+    .filter(Boolean);
+  const words: Array<{ text: string; position: number }> = [];
+  for (const token of tokens) {
+    // Some bundled Quran marks are separated from their carrier letter by a
+    // whitespace introduced during data generation (for example, a maddah
+    // before ط). They are still one recited word and one WBW audio position.
+    if (/^\p{M}/u.test(token) && words.length > 0) {
+      words[words.length - 1].text += token;
+    } else {
+      words.push({ text: token, position: words.length + 1 });
+    }
+  }
+  return words;
+}
+
+function getFullQuranWords(): FullQuranWord[] {
+  const data = quranArabicData as QuranArabicData;
+  return Object.entries(data)
+    .filter(([surah]) => Number(surah) >= 2)
+    .flatMap(([surah, value]) => {
+      const surahNumber = Number(surah);
+      return value.ayahs.flatMap((ayah) =>
+        cleanQuranWords(ayah.t).map(({ text, position }) => ({
+          text,
+          surah: surahNumber,
+          ayah: ayah.n,
+          word: position,
+          surahName: value.name,
+          englishName: value.englishName,
+        })),
+      );
+    });
+}
+
+function passageReference(words: FullQuranWord[]): string {
+  const first = words[0];
+  const last = words[words.length - 1];
+  const end = first.ayah === last.ayah
+    ? `${first.ayah}:${first.word}-${last.word}`
+    : `${first.ayah}:${first.word}–${last.ayah}:${last.word}`;
+  return `${first.englishName} ${end}`;
+}
+
+function buildFullQuranLessons(): TeacherLesson[] {
+  const words = getFullQuranWords();
+  const lessons: TeacherLesson[] = [];
+  let cursor = 0;
+  let order = 1;
+  const legacyLessonCount = L1.length + L2.length + L3.length + L4.length;
+
+  while (cursor < words.length) {
+    const targetWords = practiceWordCount(legacyLessonCount + order - 1);
+    const passage = words.slice(cursor, cursor + targetWords);
+    const first = passage[0];
+    if (!first) break;
+    const expected = passage.map((word) => word.text).join(" ");
+
+    lessons.push({
+      id: `quran-${String(order).padStart(4, "0")}`,
+      level: 5,
+      order,
+      arabic: expected,
+      word: expected,
+      highlight: "",
+      transliteration: `Quran passage · ${passageReference(passage)}`,
+      meaning: `Read ${passage.length} word${passage.length === 1 ? "" : "s"} from the Quran`,
+      tip: `Listen to the complete ${passage.length}-word passage, then recite it naturally.`,
+      audio: {
+        surah: first.surah,
+        ayah: first.ayah,
+        word: first.word,
+        sequence: passage.map((word) => ({
+          surah: word.surah,
+          ayah: word.ayah,
+          word: word.word,
+        })),
+      },
+      expected,
+    });
+    cursor += passage.length;
+    order += 1;
+  }
+
+  return lessons;
 }

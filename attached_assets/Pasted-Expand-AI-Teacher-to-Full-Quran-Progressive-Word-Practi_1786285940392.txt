@@ -1,0 +1,61 @@
+Expand AI Teacher to Full Quran + Progressive Word Practice
+
+The current AI Teacher is limited to only 4 levels. Please expand the learning system so the user can eventually practice the entire Quran, not just the current four levels.
+
+1. Full Quran Learning
+
+- Remove the artificial limit of 4 levels.
+- Add the remaining Quran lessons in the same existing Teacher structure and UI.
+- The user should be able to progress lesson-by-lesson through the complete Quran.
+- Do not change the existing Teacher layout, speech-recognition plugin, scoring system, or completed-lesson history unnecessarily.
+- Keep the existing progression/unlocking behavior where appropriate.
+
+2. Progressive Word Practice
+
+Introduce a gradual reading-length progression based on completed lessons.
+
+- Lessons 1–30: practice 1 word at a time.
+- After the user completes 30 lessons, increase the practice target to 2 words at a time.
+- After each additional 30 completed lessons, increase the target by 1 word:
+  - 30 lessons → 2 words
+  - 60 lessons → 3 words
+  - 90 lessons → 4 words
+  - 120 lessons → 5 words
+  - 150 lessons → 6 words
+  - 180 lessons → 7 words
+  - 210 lessons → 8 words
+  - 240 lessons → 9 words
+  - 270 lessons → 10 words
+- Once the user reaches 10 words, keep the practice target at 10 words for all subsequent lessons. Do not increase it beyond 10.
+
+The progression must be based on the user's actual completed AI Teacher lessons, not simply the current lesson ID or level number.
+
+3. Important Behavior
+
+- Existing completed lessons must remain completed.
+- Do not reset the user's existing progress.
+- The system should automatically select an appropriate Quran passage according to the current word target.
+- Pronunciation scoring should continue working exactly as it does now, but the expected text may contain 1–10 words depending on the user's progress.
+- Keep the existing retry, feedback, pronunciation assessment, and AI Teacher behavior intact.
+- Make the progression deterministic and persistent so reopening the app or changing devices does not incorrectly reset the user's learning stage.
+
+4. UI
+
+Update the Teacher screen so the user can see that more Quran lessons are available beyond the current four levels.
+
+If appropriate, show the current practice progression, for example:
+Practice length: 3 words
+
+Do not redesign the Teacher screen. Keep the existing visual style and layout.
+
+5. Verification
+
+After implementation:
+
+- Verify that the full Quran lesson sequence is accessible.
+- Verify the 30-lesson progression thresholds.
+- Verify that 10 words is the maximum.
+- Verify that existing progress is preserved.
+- Run tests, typecheck, and production build.
+- Check the Teacher screen in the running preview.
+- Do not change unrelated features.

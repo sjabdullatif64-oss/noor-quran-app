@@ -45,6 +45,21 @@ function testSpeechRecognizerInsertionScoring(): void {
   assert.equal(result.inputStatus, "recognized");
 }
 
+function testProgressivePassagesRequireTheWholePhrase(): void {
+  const singleWord = assess("بِسْمِ", ["بِسْمِ"], 0.9);
+  assert.equal(singleWord.verdict, "pass");
+
+  const oneWordOfPassage = assess("بِسْمِ اللَّهِ الرَّحْمَٰنِ", ["بِسْمِ"], 0.9);
+  assert.notEqual(oneWordOfPassage.verdict, "pass");
+
+  const completePassage = assess(
+    "بِسْمِ اللَّهِ الرَّحْمَٰنِ",
+    ["بِسْمِ اللَّهِ الرَّحْمَٰنِ"],
+    0.9,
+  );
+  assert.equal(completePassage.verdict, "pass");
+}
+
 function testHardErrorsRemainMeaningful(): void {
   const consonantError = arabicSimilarityDetails("بسم", "حسم");
   assert.equal(consonantError.operations.substitutions, 1);
@@ -141,6 +156,7 @@ function testLocalizedCopyRegistry(): void {
 
 testArabicNormalization();
 testSpeechRecognizerInsertionScoring();
+testProgressivePassagesRequireTheWholePhrase();
 testHardErrorsRemainMeaningful();
 testNoTranscriptStatuses();
 testRecognizedLowConfidenceIsRetryableFeedback();

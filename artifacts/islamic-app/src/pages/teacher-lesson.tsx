@@ -14,7 +14,7 @@ import {
   MAX_RECORD_MS, MAX_RECOGNITION_ATTEMPTS, MAX_RETRIES, TEACHER_CONSENT_KEY,
 } from "@/lib/teacher-config";
 import {
-  getLesson, getLevelLessons, getNextLesson, lessonAudioUrl, LEVELS,
+  getLesson, getLevelLessons, getNextLesson, lessonAudioUrls, LEVELS,
   type TeacherLesson,
 } from "@/lib/teacher-curriculum";
 import {
@@ -84,6 +84,8 @@ export function TeacherLesson() {
   const lessonGuidance = translationLanguage === "english" ? lesson?.tip ?? copy.lessonHint : copy.lessonHint;
 
   const audioRef = useRef<HTMLAudioElement | null>(null);
+  const audioQueueRef = useRef<string[]>([]);
+  const audioQueueIndexRef = useRef(0);
   const recordTimer = useRef<ReturnType<typeof setInterval> | null>(null);
   useEffect(() => {
     getSpeechSupport()
@@ -120,6 +122,8 @@ export function TeacherLesson() {
 
   useEffect(() => () => {
     audioRef.current?.pause();
+    audioQueueRef.current = [];
+    audioQueueIndexRef.current = 0;
     stopListening().catch(() => {});
     if (recordTimer.current) clearInterval(recordTimer.current);
   }, []);
@@ -127,12 +131,27 @@ export function TeacherLesson() {
   const playAudio = useCallback(() => {
     if (!lesson) return;
     audioRef.current?.pause();
-    const audio = new Audio(lessonAudioUrl(lesson));
-    audioRef.current = audio;
+    const urls = lessonAudioUrls(lesson);
+    audioQueueRef.current = urls;
+    audioQueueIndexRef.current = 0;
     setPlaying(true);
-    audio.onended = () => setPlaying(false);
-    audio.onerror = () => setPlaying(false);
-    audio.play().catch(() => setPlaying(false));
+
+    const playNext = () => {
+      const url = audioQueueRef.current[audioQueueIndexRef.current];
+      if (!url) {
+        setPlaying(false);
+        return;
+      }
+      const audio = new Audio(url);
+      audioRef.current = audio;
+      audio.onended = () => {
+        audioQueueIndexRef.current += 1;
+        playNext();
+      };
+      audio.onerror = () => setPlaying(false);
+      audio.play().catch(() => setPlaying(false));
+    };
+    playNext();
   }, [lesson]);
 
   // ── Recording flow ──────────────────────────────────────────────────────────

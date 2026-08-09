@@ -1,0 +1,119 @@
+Fix AI Teacher Microphone Start/Stop Reliability
+
+The current AI Teacher microphone has two serious reliability issues:
+
+1. Sometimes recording/listening starts immediately, but sometimes it starts very late around the 18-second timeout.
+2. Pressing the Stop button does not reliably stop the active speech-recognition session.
+
+Please fix the speech-recognition lifecycle without changing the Teacher UI, scoring system, lesson progression, or existing SpeechRecognition plugin.
+
+Required behavior
+
+1. Recording must start immediately
+
+When the user presses the microphone button:
+
+- Start the native speech-recognition session immediately.
+- Do NOT wait for the 18-second timeout before starting recognition.
+- The 18-second value must be treated only as the maximum listening/timeout duration, never as a delayed start.
+- Make sure multiple "start()" calls cannot happen for the same attempt.
+- Prevent old timers, callbacks, retries, or previous recognition sessions from starting a new recording unexpectedly.
+
+2. Stop button must work immediately
+
+When the user presses Stop:
+
+- Immediately call the native SpeechRecognition "stop()"/appropriate cancellation method.
+- Invalidate the current recognition attempt/session so that an old callback cannot restart it.
+- Cancel the timeout timer.
+- Cancel any pending automatic retry.
+- Do not allow any delayed "start()" callback from the previous attempt.
+- Change the UI out of the recording state immediately.
+- The stopped attempt must be processed only once.
+
+The Stop button must remain reliable even if recognition is:
+
+- starting,
+- actively listening,
+- waiting for a result,
+- returning an error,
+- or waiting for the timeout.
+
+3. Fix the 18-second timeout/retry race
+
+The existing bounded retry behavior must remain, but it must be strictly controlled:
+
+- "start()" → listening begins immediately.
+- Maximum listening timeout → stop the current attempt.
+- Only transient silence/no-match/timeout may trigger the existing bounded retry.
+- A retry must start only after the previous recognition session has completely ended.
+- Never allow two recognition sessions to run simultaneously.
+- Never allow an old timeout to trigger "start()" after the user has already pressed Stop.
+- Never allow an old "onResult", "onError", or "onEnd" callback to modify a newer attempt.
+
+Use a unique attempt/session ID or equivalent cancellation mechanism so stale callbacks are ignored.
+
+4. Native lifecycle handling
+
+Audit the existing native SpeechRecognition wrapper and make sure:
+
+"start → result/error/end → stop/cancel"
+
+is handled as one controlled lifecycle.
+
+The implementation should correctly handle:
+
+- successful recognition,
+- no speech,
+- no match,
+- timeout,
+- native start rejection,
+- native stop,
+- user cancellation,
+- Android recognition service delays.
+
+Do not simply increase the timeout again. The problem is lifecycle/race handling, not just the timeout length.
+
+5. Preserve existing functionality
+
+Do NOT change:
+
+- Teacher layout
+- lesson progression
+- pronunciation scoring
+- retry feedback
+- translation-language behavior
+- existing Capacitor SpeechRecognition plugin
+- existing 18-second maximum listening requirement
+- existing bounded automatic retry behavior
+
+Only make the recognition start/stop behavior reliable.
+
+Regression tests
+
+Add deterministic tests for:
+
+1. Microphone press starts recognition immediately.
+2. 18-second timeout does not delay recognition start.
+3. Stop immediately calls native stop/cancel.
+4. Stop cancels the timeout.
+5. Stop cancels a pending retry.
+6. A stale timeout cannot restart recognition.
+7. A stale "onEnd" cannot restart recognition after Stop.
+8. A stale result cannot update a newer attempt.
+9. Only one recognition session can be active at a time.
+10. Successful speech result is processed exactly once.
+11. Timeout/silence follows the existing bounded retry behavior.
+12. Stop during recognition never automatically starts another attempt.
+
+After the fix, run:
+
+- speech tests
+- TypeScript/typecheck
+- production build
+- "git diff --check"
+- running Teacher preview
+
+Do not modify unrelated features.
+
+Most importantly: pressing the microphone should start listening immediately, and pressing Stop should stop it immediately. The 18-second timer must never be responsible for starting the microphone.

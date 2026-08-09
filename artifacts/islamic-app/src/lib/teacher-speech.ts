@@ -238,11 +238,16 @@ export function assess(
   inputStatus = statusForAlternatives(alternatives),
 ): Assessment {
   let best = { score: 0, heard: "" };
+  const expectedWordCount = normalizeArabic(expected).split(/\s+/).filter(Boolean).length;
 
   for (const alt of alternatives) {
     if (!isUsableTranscript(alt)) continue;
-    // The recognizer may return a phrase — also try each token.
-    const candidates = [alt, ...alt.split(/\s+/).filter(Boolean)];
+    // Single-word lessons retain the original tolerant behavior. Progressive
+    // passages must be assessed as a complete phrase; accepting an individual
+    // token would let a learner pass a 3–10 word lesson after saying one word.
+    const candidates = expectedWordCount > 1
+      ? [alt]
+      : [alt, ...alt.split(/\s+/).filter(Boolean)];
     candidates.forEach((c, index) => {
       const details = arabicSimilarityDetails(expected, c);
       if (details.score > best.score) best = { score: details.score, heard: c };

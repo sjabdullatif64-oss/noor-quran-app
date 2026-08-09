@@ -33,8 +33,13 @@ export const MAX_RECOGNITION_ATTEMPTS = 2;
 /** Short pause between bounded recognition attempts. */
 export const RECOGNITION_RETRY_DELAY_MS = 250;
 
-/** Curriculum levels enabled in this phase. Levels 5–7 are future phases. */
-export const ENABLED_LEVELS = [1, 2, 3, 4] as const;
+/** All curriculum levels are enabled; Level 5 contains the full Quran path. */
+export const ENABLED_LEVELS = [1, 2, 3, 4, 5] as const;
+
+/** Progressive practice passage limits. */
+export const PRACTICE_WORD_STEP = 30;
+export const PRACTICE_MIN_WORDS = 1;
+export const PRACTICE_MAX_WORDS = 10;
 
 /** Speech recognizer language (Arabic — Saudi Arabia). */
 export const SPEECH_LANG = "ar-SA";

@@ -11,7 +11,7 @@
 import {
   DAILY_LIMIT, REVISION_SIZE, TEACHER_PRACTICE_KEY, TEACHER_PROGRESS_KEY, TEACHER_REVISION_KEY,
 } from "./teacher-config";
-import { CURRICULUM } from "./teacher-curriculum";
+import { CURRICULUM, getLesson, practiceWordCount } from "./teacher-curriculum";
 import { getDeviceId } from "./device-identity";
 import { queueTeacherAccountSave } from "./teacher-account";
 
@@ -368,7 +368,13 @@ export interface TeacherStats {
 export function getStats(): TeacherStats {
   const p = loadProgress();
   const records = Object.entries(p.completed);
-  const wordLessons = records.filter(([id]) => id.startsWith("l3-") || id.startsWith("l4-"));
+  const wordsLearned = records.reduce((total, [id]) => {
+    const lesson = getLesson(id);
+    // Preserve the original metric: Levels 1–2 teach letters/harakat, not
+    // vocabulary. Full-Quran passages (Level 5) contribute their word count.
+    if (!lesson || lesson.level < 3) return total;
+    return total + lesson.expected.trim().split(/\s+/).filter(Boolean).length;
+  }, 0);
   // Accuracy is only meaningful for lessons that were actually checked by the recognizer
   const checked = records.filter(([, r]) => !r.selfAssessed);
   const avg = checked.length
@@ -378,7 +384,7 @@ export function getStats(): TeacherStats {
   const active =
     p.streak.lastDate === todayStr() || p.streak.lastDate === yesterdayStr();
   return {
-    wordsLearned: wordLessons.length,
+    wordsLearned,
     lessonsCompleted: records.length,
     streak: active ? p.streak.count : 0,
     avgAccuracy: avg,
@@ -389,6 +395,13 @@ export function getStats(): TeacherStats {
     totalRetries: p.totalRetries ?? 0,
     timeSpentMs: p.timeSpentMs ?? 0,
   };
+}
+
+/** Current passage length, derived from the persisted completed-lesson count. */
+export function getPracticeWordCount(): number {
+  const completed = loadProgress().completed;
+  const completedLessonCount = CURRICULUM.filter((lesson) => Boolean(completed[lesson.id])).length;
+  return practiceWordCount(completedLessonCount);
 }
 
 /** The first not-yet-completed lesson in curriculum order (Continue Learning). */
