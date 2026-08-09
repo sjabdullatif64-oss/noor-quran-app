@@ -320,3 +320,17 @@ uri = "file://.agents/outputs/noor-quran-1.0.19-ai-teacher-legal-debug/noor-qura
 type = "unspecified"
 title = "Noor Quran 1.0.19 — AI Teacher Legal Update Debug APK"
 description = "Testing APK built after updating the existing Terms of Service and Privacy Policy with AI Teacher speech recognition, microphone permission, pronunciation assessment, automated feedback, progress handling, and rewarded-ad disclosures. Package: com.sj64noorquran; versionCode: 79845455; target SDK: 36; SHA-256: 972c351448922561f72c4125909dd11f76d1fbf9c1079519cb60ebe8fa6450c8."
+
+[[outputs]]
+id = "nUGG3qe_gbLa80llI3Z0r"
+uri = "file://artifacts/islamic-app/android/final-builds/noor-quran-v1.0.20-debug.apk"
+type = "unspecified"
+title = "Noor Quran v1.0.20 Debug APK"
+description = "Debug APK for testing. Version code 79845456."
+
+[[outputs]]
+id = "jJowgXoTFLMJLwJxiiwl6"
+uri = "file://artifacts/islamic-app/android/final-builds/noor-quran-v1.0.20-release.aab"
+type = "unspecified"
+title = "Noor Quran v1.0.20 Release AAB"
+description = "Signed release Android App Bundle for Google Play. Version code 79845456."
