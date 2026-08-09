@@ -87,6 +87,8 @@ export function TeacherLesson() {
   const audioQueueRef = useRef<string[]>([]);
   const audioQueueIndexRef = useRef(0);
   const recordTimer = useRef<ReturnType<typeof setInterval> | null>(null);
+  const recordingControllerRef = useRef<AbortController | null>(null);
+  const recordingRunRef = useRef(0);
   useEffect(() => {
     getSpeechSupport()
       .then(setSupport)
@@ -101,6 +103,14 @@ export function TeacherLesson() {
 
   // Reset state when navigating between lessons
   useEffect(() => {
+    recordingRunRef.current += 1;
+    recordingControllerRef.current?.abort();
+    recordingControllerRef.current = null;
+    stopListening().catch(() => {});
+    if (recordTimer.current) {
+      clearInterval(recordTimer.current);
+      recordTimer.current = null;
+    }
     setPhase("idle");
     setAttempts(0);
     setResult(null);
@@ -121,6 +131,9 @@ export function TeacherLesson() {
   }, [params.id, isPracticeMode]);
 
   useEffect(() => () => {
+    recordingRunRef.current += 1;
+    recordingControllerRef.current?.abort();
+    recordingControllerRef.current = null;
     audioRef.current?.pause();
     audioQueueRef.current = [];
     audioQueueIndexRef.current = 0;
@@ -160,14 +173,27 @@ export function TeacherLesson() {
     if (!lesson) {
       return;
     }
+    // A second tap must not create a second permission/start chain.
+    if (recordingControllerRef.current && !recordingControllerRef.current.signal.aborted) {
+      return;
+    }
+
+    const controller = new AbortController();
+    const runId = recordingRunRef.current + 1;
+    recordingRunRef.current = runId;
+    recordingControllerRef.current = controller;
+    const isCurrentRun = () =>
+      recordingRunRef.current === runId && !controller.signal.aborted;
 
     // Daily-limit gate applies only to NEW lessons, never Practice Mode.
     if (!isPracticeMode && !isLessonCompleted(lesson.id) && getDailyStatus().limitReached) {
       setPhase("limit");
+      recordingControllerRef.current = null;
       return;
     }
     if (!hasConsent()) {
       setPhase("consent");
+      recordingControllerRef.current = null;
       return;
     }
 
@@ -177,10 +203,12 @@ export function TeacherLesson() {
     } catch (error) {
       throw error;
     }
+    if (!isCurrentRun()) return;
     setSupport(sup);
     if (sup === "none") {
       setNoMicReason(getSpeechSupportReason());
       setPhase("no-mic");
+      recordingControllerRef.current = null;
       return;
     }
 
@@ -190,8 +218,10 @@ export function TeacherLesson() {
     } catch (error) {
       throw error;
     }
+    if (!isCurrentRun()) return;
     if (!connected) {
       setPhase("offline");
+      recordingControllerRef.current = null;
       return;
     }
 
@@ -201,8 +231,10 @@ export function TeacherLesson() {
     } catch (error) {
       throw error;
     }
+    if (!isCurrentRun()) return;
     if (perm === "denied") {
       setPhase("mic-denied");
+      recordingControllerRef.current = null;
       return;
     }
 
@@ -213,8 +245,10 @@ export function TeacherLesson() {
       } catch (error) {
         throw error;
       }
+      if (!isCurrentRun()) return;
       if (granted !== "granted") {
         setPhase("mic-denied");
+        recordingControllerRef.current = null;
         return;
       }
     }
@@ -224,27 +258,40 @@ export function TeacherLesson() {
       practiceSessionStarted.current = true;
     }
 
+    if (!isCurrentRun()) return;
     setPhase("recording");
     setRecordMs(0);
     const started = Date.now();
+    if (recordTimer.current) clearInterval(recordTimer.current);
     recordTimer.current = setInterval(() => setRecordMs(Date.now() - started), 100);
 
     let res: Awaited<ReturnType<typeof listenWithRetries>>;
     try {
-      res = await listenWithRetries(MAX_RECORD_MS, MAX_RECOGNITION_ATTEMPTS);
+      res = await listenWithRetries(
+        MAX_RECORD_MS,
+        MAX_RECOGNITION_ATTEMPTS,
+        undefined,
+        controller.signal,
+      );
     } catch (error) {
       throw error;
     }
 
-    if (recordTimer.current) { clearInterval(recordTimer.current); recordTimer.current = null; }
+    if (recordTimer.current) {
+      clearInterval(recordTimer.current);
+      recordTimer.current = null;
+    }
+    if (!isCurrentRun() || res.error === "aborted") return;
     setPhase("checking");
 
     if (res.error === "not-allowed") {
       setPhase("mic-denied");
+      recordingControllerRef.current = null;
       return;
     }
     if (res.error === "network") {
       setPhase("offline");
+      recordingControllerRef.current = null;
       return;
     }
 
@@ -276,15 +323,36 @@ export function TeacherLesson() {
       recordMistake(lesson.id);
       setPhase("feedback");
     }
+    recordingControllerRef.current = null;
   }, [isPracticeMode, lesson]);
 
   /** Tap "Read Now" → permission (first time) → listen; auto-stops after MAX_RECORD_MS. */
   const onReadNow = useCallback(() => {
-    beginRecording().catch(() => {});
+    beginRecording().catch(() => {
+      // A rejected permission/plugin call must not leave the duplicate-tap
+      // guard armed for the rest of the lesson.
+      recordingControllerRef.current?.abort();
+      recordingControllerRef.current = null;
+      if (recordTimer.current) {
+        clearInterval(recordTimer.current);
+        recordTimer.current = null;
+      }
+    });
   }, [beginRecording]);
 
   /** Tap "Stop" while listening → finish early and check what was heard. */
   const onStop = useCallback(() => {
+    recordingRunRef.current += 1;
+    recordingControllerRef.current?.abort();
+    recordingControllerRef.current = null;
+    if (recordTimer.current) {
+      clearInterval(recordTimer.current);
+      recordTimer.current = null;
+    }
+    // Leave the recording state immediately. The aborted promise is ignored
+    // by beginRecording and cannot enter checking/scoring afterward.
+    setRecordMs(0);
+    setPhase("idle");
     stopListening().catch(() => {});
   }, []);
 

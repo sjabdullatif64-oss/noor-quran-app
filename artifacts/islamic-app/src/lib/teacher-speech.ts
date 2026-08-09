@@ -491,11 +491,55 @@ export interface ListenResult {
 let _webActive: WebSpeechRecognition | null = null;
 let _nativeActive = false;
 
+type RecognitionSession = {
+  cancel: () => void;
+};
+
+let _activeSession: RecognitionSession | null = null;
+
+const abortedListenResult = (): ListenResult => ({
+  alternatives: [],
+  confidence: -1,
+  status: "recognition-failure",
+  error: "aborted",
+  errors: ["recognition-cancelled"],
+});
+
+function isAborted(signal?: AbortSignal): boolean {
+  return signal?.aborted === true;
+}
+
+function waitForRetry(ms: number, signal?: AbortSignal): Promise<boolean> {
+  if (isAborted(signal)) return Promise.resolve(false);
+  return new Promise((resolve) => {
+    let settled = false;
+    const finish = (value: boolean) => {
+      if (settled) return;
+      settled = true;
+      clearTimeout(timer);
+      signal?.removeEventListener("abort", onAbort);
+      resolve(value);
+    };
+    const onAbort = () => finish(false);
+    const timer = setTimeout(() => finish(true), ms);
+    signal?.addEventListener("abort", onAbort, { once: true });
+  });
+}
+
 /**
  * Listen once and return recognized alternatives.
  * Resolves (never rejects) — errors come back in `error`.
  */
-export async function listenOnce(timeoutMs: number): Promise<ListenResult> {
+export async function listenOnce(
+  timeoutMs: number,
+  signal?: AbortSignal,
+): Promise<ListenResult> {
+  if (isAborted(signal)) return abortedListenResult();
+
+  // A new session must never overlap an older one. Cancellation calls the
+  // recognizer's stop immediately; the old promise then settles exactly once.
+  _activeSession?.cancel();
+
   const native = getNativePlugin();
   if (native) {
     _nativeActive = true;
@@ -504,6 +548,11 @@ export async function listenOnce(timeoutMs: number): Promise<ListenResult> {
     let listeningHandle: PluginListenerHandle | undefined;
     let settleTimer: ReturnType<typeof setTimeout> | undefined;
     let settled = false;
+    let cancelled = false;
+    let startCalled = false;
+    let timedOut = false;
+    let resolvePromise: ((result: ListenResult) => void) | null = null;
+    let abortHandler: (() => void) | null = null;
     const collectedMatches: string[] = [];
 
     const addMatches = (matches: string[] | undefined) => {
@@ -521,99 +570,107 @@ export async function listenOnce(timeoutMs: number): Promise<ListenResult> {
       listeningHandle = undefined;
     };
 
-    const finish = async (
-      resolve: (result: ListenResult) => void,
-      result: ListenResult,
-    ) => {
+    const finish = (result: ListenResult) => {
       if (settled) return;
       settled = true;
       if (timerId) clearTimeout(timerId);
       if (settleTimer) clearTimeout(settleTimer);
-      await cleanup();
-      resolve(result);
+      if (abortHandler) signal?.removeEventListener("abort", abortHandler);
+      if (_activeSession === session) _activeSession = null;
+      resolvePromise?.(result);
+      void cleanup();
     };
 
-    try {
-      return await new Promise<ListenResult>((resolve) => {
-        const resolveNative = (result: ListenResult) => {
-          finish(resolve, result).catch(() => resolve(result));
-        };
-        const handleNativeError = (error: unknown) => {
-          const msg = String((error as { message?: string })?.message ?? error).toLowerCase();
-          if (msg.includes("permission") || msg.includes("denied")) {
-            resolveNative({ alternatives: collectedMatches, confidence: -1, status: "recognition-failure", error: "not-allowed" });
-          } else if (msg.includes("network")) {
-            resolveNative({ alternatives: collectedMatches, confidence: -1, status: "recognition-failure", error: "network" });
-          } else if (msg.includes("no speech") || msg.includes("no match") || msg.includes("timeout")) {
-            resolveNative({ alternatives: collectedMatches, confidence: -1, status: "silence", error: "no-speech" });
-          } else {
-            resolveNative({ alternatives: collectedMatches, confidence: -1, status: "recognition-failure", error: "unknown" });
-          }
-        };
+    const session: RecognitionSession = {
+      cancel: () => {
+        if (settled) return;
+        cancelled = true;
+        if (timerId) clearTimeout(timerId);
+        if (settleTimer) clearTimeout(settleTimer);
+        // Stop before listener cleanup so Stop works while addListener/start
+        // is still pending.
+        native.stop().catch(() => {});
+        finish(abortedListenResult());
+      },
+    };
+    _activeSession = session;
 
-        const finishAfterNativeStop = () => {
-          // Android emits listeningState("stopped") at end-of-speech and can
-          // deliver its last partial/final result a moment later.
-          settleTimer = setTimeout(() => {
-            const recognized = statusForAlternatives(collectedMatches) === "recognized";
-            resolveNative({
-              alternatives: collectedMatches,
-              confidence: -1,
-              status: recognized ? "recognized" : "silence",
-              error: recognized ? undefined : "no-speech",
-            });
-          }, 300);
-        };
+    return new Promise<ListenResult>((resolve) => {
+      resolvePromise = resolve;
+      abortHandler = () => session.cancel();
+      if (signal) {
+        if (signal.aborted) {
+          session.cancel();
+          return;
+        }
+        signal.addEventListener("abort", abortHandler, { once: true });
+      }
 
-        const setupAndStart = async () => {
-          partialHandle = await native.addListener("partialResults", ({ matches }) => {
-            addMatches(matches);
+      const handleNativeError = (error: unknown) => {
+        if (cancelled || settled) return;
+        const msg = String((error as { message?: string })?.message ?? error).toLowerCase();
+        if (msg.includes("permission") || msg.includes("denied")) {
+          finish({ alternatives: collectedMatches, confidence: -1, status: "recognition-failure", error: "not-allowed" });
+        } else if (msg.includes("network")) {
+          finish({ alternatives: collectedMatches, confidence: -1, status: "recognition-failure", error: "network" });
+        } else if (msg.includes("no speech") || msg.includes("no match") || msg.includes("timeout")) {
+          finish({ alternatives: collectedMatches, confidence: -1, status: "silence", error: "no-speech" });
+        } else {
+          finish({ alternatives: collectedMatches, confidence: -1, status: "recognition-failure", error: "unknown" });
+        }
+      };
+
+      const finishAfterNativeStop = () => {
+        if (cancelled || settled) return;
+        // Android can deliver the final partial result just after stopped.
+        settleTimer = setTimeout(() => {
+          if (cancelled || settled) return;
+          const recognized = statusForAlternatives(collectedMatches) === "recognized";
+          finish({
+            alternatives: collectedMatches,
+            confidence: -1,
+            status: recognized ? "recognized" : timedOut ? "timeout" : "silence",
+            error: recognized ? undefined : timedOut ? "timeout" : "no-speech",
           });
-          listeningHandle = await native.addListener("listeningState", ({ status }) => {
-            if (status === "stopped") finishAfterNativeStop();
-          });
+        }, 300);
+      };
 
-          timerId = setTimeout(() => {
-            native.stop().catch(() => {});
-            settleTimer = setTimeout(() => {
-              const recognized = statusForAlternatives(collectedMatches) === "recognized";
-              resolveNative({
-                alternatives: collectedMatches,
-                confidence: -1,
-                status: recognized ? "recognized" : "timeout",
-                error: recognized ? undefined : "timeout",
-              });
-            }, 350);
-          }, timeoutMs);
+      const setupAndStart = async () => {
+        partialHandle = await native.addListener("partialResults", ({ matches }) => {
+          if (!cancelled && !settled) addMatches(matches);
+        });
+        listeningHandle = await native.addListener("listeningState", ({ status }) => {
+          if (!cancelled && !settled && status === "stopped") finishAfterNativeStop();
+        });
 
-          // Partial results let us retain useful speech even when Android's
-          // final callback is delayed or ends early around background noise.
-          await native.start({
-            language: SPEECH_LANG,
-            maxResults: 5,
-            partialResults: true,
-            popup: false,
-          });
-        };
+        if (cancelled || settled) {
+          void cleanup();
+          return;
+        }
 
-        setupAndStart().catch(handleNativeError);
+        timerId = setTimeout(() => {
+          if (cancelled || settled) return;
+          timedOut = true;
+          native.stop().catch(() => {});
+          finishAfterNativeStop();
+        }, timeoutMs);
+
+        // This is the only start call for this attempt. timeoutMs is only a
+        // maximum duration and never participates in starting recognition.
+        if (cancelled || settled || startCalled) return;
+        startCalled = true;
+        await native.start({
+          language: SPEECH_LANG,
+          maxResults: 5,
+          partialResults: true,
+          popup: false,
+        });
+      };
+
+      setupAndStart().catch(handleNativeError).finally(() => {
+        _nativeActive = false;
       });
-    } catch (e) {
-      const msg = String((e as { message?: string })?.message ?? "").toLowerCase();
-      if (msg.includes("permission") || msg.includes("denied")) {
-        return { alternatives: [], confidence: -1, status: "recognition-failure", error: "not-allowed" };
-      }
-      if (msg.includes("network")) {
-        return { alternatives: [], confidence: -1, status: "recognition-failure", error: "network" };
-      }
-      if (msg.includes("no speech") || msg.includes("no match") || msg.includes("timeout")) {
-        return { alternatives: [], confidence: -1, status: "silence", error: "no-speech" };
-      }
-      return { alternatives: [], confidence: -1, status: "recognition-failure", error: "unknown" };
-    } finally {
-      if (timerId) clearTimeout(timerId);
-      _nativeActive = false;
-    }
+    });
   }
 
   // Web Speech API fallback
@@ -627,20 +684,44 @@ export async function listenOnce(timeoutMs: number): Promise<ListenResult> {
     _webActive = rec;
     let settled = false;
     let timedOut = false;
+    let cancelled = false;
     let latestAlternatives: string[] = [];
     let latestConfidence = -1;
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    let timeoutFallback: ReturnType<typeof setTimeout> | undefined;
+    let abortHandler: (() => void) | null = null;
     const done = (r: ListenResult) => {
       if (settled) return;
       settled = true;
       _webActive = null;
-      clearTimeout(timer);
+      if (timer) clearTimeout(timer);
+      if (timeoutFallback) clearTimeout(timeoutFallback);
+      if (abortHandler) signal?.removeEventListener("abort", abortHandler);
+      if (_activeSession?.cancel === cancel) _activeSession = null;
       resolve(r);
     };
-    const timer = setTimeout(() => {
+    const cancel = () => {
+      if (settled) return;
+      cancelled = true;
+      try { rec.stop(); } catch { /* ignore */ }
+      done(abortedListenResult());
+    };
+    const session: RecognitionSession = { cancel };
+    _activeSession = session;
+    abortHandler = () => session.cancel();
+    if (signal) {
+      if (signal.aborted) {
+        cancel();
+        return;
+      }
+      signal.addEventListener("abort", abortHandler, { once: true });
+    }
+    timer = setTimeout(() => {
+      if (cancelled || settled) return;
       timedOut = true;
       try { rec.stop(); } catch { /* ignore */ }
       // onresult/onend may still fire; if not, resolve as timeout shortly after.
-      setTimeout(() => done({
+      timeoutFallback = setTimeout(() => done({
         alternatives: latestAlternatives,
         confidence: latestConfidence,
         status: latestAlternatives.some(isUsableTranscript) ? "recognized" : "timeout",
@@ -654,6 +735,7 @@ export async function listenOnce(timeoutMs: number): Promise<ListenResult> {
     rec.continuous = true;
 
     rec.onresult = (e) => {
+      if (cancelled || settled) return;
       const alts: string[] = [];
       let conf = -1;
       let finalResult = false;
@@ -678,6 +760,7 @@ export async function listenOnce(timeoutMs: number): Promise<ListenResult> {
       }
     };
     rec.onerror = (e) => {
+      if (cancelled || settled) return;
       const map: Record<string, ListenResult["error"]> = {
         "no-speech": "no-speech",
         "not-allowed": "not-allowed",
@@ -698,6 +781,7 @@ export async function listenOnce(timeoutMs: number): Promise<ListenResult> {
       }
     };
     rec.onend = () => {
+       if (cancelled || settled) return;
        if (latestAlternatives.some(isUsableTranscript)) {
          done({
            alternatives: latestAlternatives,
@@ -712,6 +796,7 @@ export async function listenOnce(timeoutMs: number): Promise<ListenResult> {
     };
 
     try {
+      if (cancelled || settled) return;
       rec.start();
     } catch (error) {
       done({ alternatives: [], confidence: -1, status: "recognition-failure", error: "unknown" });
@@ -731,7 +816,8 @@ function isRetryableSpeechResult(result: ListenResult): boolean {
 export async function listenWithRetries(
   timeoutMs: number,
   maxAttempts = 2,
-  listen: (timeoutMs: number) => Promise<ListenResult> = listenOnce,
+  listen: (timeoutMs: number, signal?: AbortSignal) => Promise<ListenResult> = listenOnce,
+  signal?: AbortSignal,
 ): Promise<ListenResult> {
   let latest: ListenResult = {
     alternatives: [],
@@ -744,7 +830,8 @@ export async function listenWithRetries(
   const errors: string[] = [];
 
   for (let attempt = 1; attempt <= Math.max(1, maxAttempts); attempt++) {
-    const result = await listen(timeoutMs);
+    if (isAborted(signal)) return abortedListenResult();
+    const result = await listen(timeoutMs, signal);
     latest = {
       ...result,
       attempts: attempt,
@@ -760,7 +847,9 @@ export async function listenWithRetries(
     }
 
     if (attempt < maxAttempts) {
-      await new Promise((resolve) => setTimeout(resolve, RECOGNITION_RETRY_DELAY_MS));
+      if (!(await waitForRetry(RECOGNITION_RETRY_DELAY_MS, signal))) {
+        return abortedListenResult();
+      }
     }
   }
 
@@ -772,17 +861,18 @@ export async function listenWithRetries(
 
 /** Stop any in-flight recognition (user released the mic button). */
 export async function stopListening(): Promise<void> {
+  // The active session owns its timeout, listeners, promise, and recognizer.
+  // Cancel first so stale callbacks cannot schedule a retry or mutate a later
+  // attempt, then keep the direct fallback for a plugin that is still starting.
+  const active = _activeSession;
+  if (active) {
+    active.cancel();
+    return;
+  }
   if (_webActive) {
-    try {
-      _webActive.stop();
-    } catch {
-    }
+    try { _webActive.stop(); } catch { /* ignore */ }
   }
   if (_nativeActive) {
-    const native = getNativePlugin();
-    try {
-      await native?.stop();
-    } catch {
-    }
+    try { await getNativePlugin()?.stop(); } catch { /* ignore */ }
   }
 }

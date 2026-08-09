@@ -3,6 +3,7 @@ import {
   arabicSimilarityDetails,
   assess,
   isUsableTranscript,
+  listenOnce,
   listenWithRetries,
   normalizeArabic,
   statusForAlternatives,
@@ -138,6 +139,92 @@ async function testBoundedRecognitionRetries(): Promise<void> {
   assert.deepEqual(recognized.alternatives, ["بسم"]);
 }
 
+async function testRecognitionLifecycleCancellation(): Promise<void> {
+  type FakeRecognition = {
+    startCalls: number;
+    stopCalls: number;
+    onresult: ((event: { results: ArrayLike<unknown> }) => void) | null;
+    onerror: ((event: { error: string }) => void) | null;
+    onend: (() => void) | null;
+  };
+  const instances: FakeRecognition[] = [];
+  class FakeSpeechRecognition implements FakeRecognition {
+    startCalls = 0;
+    stopCalls = 0;
+    onresult: FakeRecognition["onresult"] = null;
+    onerror: FakeRecognition["onerror"] = null;
+    onend: FakeRecognition["onend"] = null;
+    constructor() {
+      instances.push(this);
+    }
+    start(): void {
+      this.startCalls += 1;
+    }
+    stop(): void {
+      this.stopCalls += 1;
+    }
+  }
+
+  const previousWindow = (globalThis as { window?: unknown }).window;
+  (globalThis as { window?: unknown }).window = {
+    SpeechRecognition: FakeSpeechRecognition,
+  };
+  try {
+    const controller = new AbortController();
+    const pending = listenOnce(18000, controller.signal);
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    assert.equal(instances.length, 1);
+    assert.equal(instances[0].startCalls, 1, "recognition starts without waiting for timeout");
+
+    controller.abort();
+    const stopped = await pending;
+    assert.equal(stopped.error, "aborted");
+    assert.equal(instances[0].stopCalls, 1, "abort immediately stops recognition");
+
+    // Late native callbacks from the cancelled recognizer are ignored.
+    instances[0].onresult?.({ results: [] });
+    instances[0].onend?.();
+    assert.equal(instances[0].stopCalls, 1);
+
+    const timeoutController = new AbortController();
+    const timeoutPending = listenOnce(20, timeoutController.signal);
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    assert.equal(instances[1].startCalls, 1, "timeout is not a delayed start");
+    timeoutController.abort();
+    const timeoutStopped = await timeoutPending;
+    assert.equal(timeoutStopped.error, "aborted");
+    await new Promise((resolve) => setTimeout(resolve, 40));
+    assert.equal(instances[1].startCalls, 1, "stale timeout cannot start another session");
+  } finally {
+    (globalThis as { window?: unknown }).window = previousWindow;
+  }
+}
+
+async function testRetryCancellation(): Promise<void> {
+  const controller = new AbortController();
+  let calls = 0;
+  const pending = listenWithRetries(
+    18000,
+    2,
+    async (_timeoutMs, signal) => {
+      calls += 1;
+      assert.equal(signal, controller.signal);
+      return {
+        alternatives: [],
+        confidence: -1,
+        status: "silence" as const,
+        error: "no-speech" as const,
+      };
+    },
+    controller.signal,
+  );
+  await new Promise((resolve) => setTimeout(resolve, 10));
+  controller.abort();
+  const result = await pending;
+  assert.equal(result.error, "aborted");
+  assert.equal(calls, 1, "cancellation prevents the bounded retry");
+}
+
 function testLocalizedCopyRegistry(): void {
   assert.equal(translationLanguages.length, 33);
   for (const language of translationLanguages) {
@@ -162,4 +249,6 @@ testNoTranscriptStatuses();
 testRecognizedLowConfidenceIsRetryableFeedback();
 testLocalizedCopyRegistry();
 await testBoundedRecognitionRetries();
+await testRecognitionLifecycleCancellation();
+await testRetryCancellation();
 console.log("teacher-speech tests passed");

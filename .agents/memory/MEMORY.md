@@ -20,3 +20,4 @@
 - [Legal consent gate](legal-consent-gate.md) — gate the app shell until versioned local consent is accepted, while keeping existing legal pages reachable for review
 - [Divine Name translation display](translation-language-registry.md) — normalize only explicit Allah-name spellings; preserve semantic words like God, Lord, and خدا
 - [AI Teacher full-Quran curriculum](teacher-full-quran-curriculum.md) — preserve legacy lesson IDs; append deterministic bundled-Quran passages with capped word progression
+- [AI Teacher microphone lifecycle](teacher-microphone-lifecycle.md) — recognition attempts need one cancellable session, abortable retry, and stale-callback guards
