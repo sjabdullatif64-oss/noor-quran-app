@@ -2,9 +2,9 @@ import { useMemo, useState } from "react";
 import { Search } from "lucide-react";
 import {
   ADDITIONAL_LANGUAGES,
+  type TranslationLanguage,
   TRANSLATION_ENGLISH_NAMES,
   TRANSLATION_LABELS,
-  type TranslationLanguage,
 } from "@/lib/api";
 import {
   Dialog,
@@ -20,6 +20,9 @@ interface MoreLanguagesDialogProps {
   onOpenChange: (open: boolean) => void;
   selectedLanguage: TranslationLanguage;
   onSelect: (language: TranslationLanguage) => void;
+  languages?: TranslationLanguage[];
+  title?: string;
+  description?: string;
 }
 
 export function MoreLanguagesDialog({
@@ -27,19 +30,22 @@ export function MoreLanguagesDialog({
   onOpenChange,
   selectedLanguage,
   onSelect,
+  languages = ADDITIONAL_LANGUAGES,
+  title = "More Languages",
+  description = "Search and choose a Quran translation language.",
 }: MoreLanguagesDialogProps) {
   const [search, setSearch] = useState("");
   const query = search.trim().toLocaleLowerCase();
-  const languages = useMemo(
+  const filteredLanguages = useMemo(
     () =>
-      ADDITIONAL_LANGUAGES.filter((language) => {
+      languages.filter((language) => {
         if (!query) return true;
         return (
           TRANSLATION_ENGLISH_NAMES[language].toLocaleLowerCase().includes(query) ||
           TRANSLATION_LABELS[language].toLocaleLowerCase().includes(query)
         );
       }),
-    [query],
+    [languages, query],
   );
 
   return (
@@ -52,10 +58,8 @@ export function MoreLanguagesDialog({
     >
       <DialogContent className="max-w-md overflow-hidden p-0">
         <DialogHeader className="border-b border-border px-5 pb-4 pt-5 text-left">
-          <DialogTitle>More Languages</DialogTitle>
-          <DialogDescription>
-            Search and choose a Quran translation language.
-          </DialogDescription>
+          <DialogTitle>{title}</DialogTitle>
+          <DialogDescription>{description}</DialogDescription>
         </DialogHeader>
 
         <div className="px-4 pt-3">
@@ -73,13 +77,13 @@ export function MoreLanguagesDialog({
         </div>
 
         <div className="max-h-[min(55vh,420px)] overflow-y-auto px-4 pb-4 pt-3">
-          {languages.length === 0 ? (
+          {filteredLanguages.length === 0 ? (
             <p className="py-8 text-center text-sm text-muted-foreground">
               No languages found.
             </p>
           ) : (
             <div className="space-y-2">
-              {languages.map((language) => {
+              {filteredLanguages.map((language) => {
                 const selected = selectedLanguage === language;
                 return (
                   <button

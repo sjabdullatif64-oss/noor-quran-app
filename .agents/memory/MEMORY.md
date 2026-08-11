@@ -1,7 +1,6 @@
 - [Screenshot caching for theme verification](screenshot-theme-cache.md) — Screenshot tool can return cached images; always use a cache-busting query parameter when verifying visual changes like light/dark mode
 - [Capacitor external URL opening](capacitor-external-links.md) — window.open(_blank) is broken in Capacitor WebView; use openUrl() helper from @/lib/capacitor (wraps @capacitor/browser)
-- [Coins & Marketplace system](coins-marketplace.md) — server-side coins, marketplace, admin, referrals; key gotchas on zod and DB exports
-- [Google Sheets coin audit](coins-sheets-audit.md) — append-only transaction history can contain orphaned users; join to current Users before attributing active rewards
+- [Google Sheets coin audit](coins-sheets-audit.md) — active coin ledger uses append-only transactions; preserve historical Users columns and join transactions to current users when auditing
 - [AdMob safe init pattern](admob-safe-init.md) — selective MobileAdsInitProvider removal via tools:node="merge" preserves WorkManager; full InitializationProvider removal breaks it
 - [Git push and GitHub Actions in Replit](git-push-actions.md) — git push is blocked in bash; use GitHub REST API (blob→tree→commit→ref PATCH) in code_execution to push; workflow auto-triggers on push to main
 - [Rebase conflict strategy](rebase-conflict-strategy.md) — when rebasing local fixes onto origin diagnostic commits, always keep HEAD (ours) for Android config files; diagnostic commits are older interim states
@@ -23,3 +22,4 @@
 - [AI Teacher full-Quran curriculum](teacher-full-quran-curriculum.md) — preserve legacy lesson IDs; append deterministic bundled-Quran passages with capped word progression
 - [AI Teacher microphone lifecycle](teacher-microphone-lifecycle.md) — recognition attempts need one cancellable session, abortable retry, and stale-callback guards
 - [Noor Quran legacy cleanup boundary](noor-quran-legacy-cleanup.md) — Google Sheets and routed Vite pages are active; the old admin, Drizzle DB, Expo scaffold, and unrouted pages are not
+- [Quran reader display controls](quran-reader-display-controls.md) — shared persisted visibility settings and the existing translation registry drive Surah/Juz ayah menus

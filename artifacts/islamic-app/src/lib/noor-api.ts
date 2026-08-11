@@ -26,9 +26,7 @@ async function noorFetch<T>(path: string, opts: RequestInit = {}): Promise<T> {
 export interface NoorUser {
   id: string;
   deviceId: string;
-  referredById: string | null;
   coinsBalance: number;
-  totalReferrals: number;
   totalCoinsEarned: number;
   createdAt: string;
 }
@@ -81,12 +79,11 @@ export interface NoorWelcomeCampaign {
 export const noorApi = {
   async register(
     deviceId: string,
-    referredById?: string,
     persistentDeviceId?: string,
   ): Promise<{ user: NoorUser; isNew: boolean; teacherAccount: NoorTeacherAccount }> {
     return noorFetch("/users/register", {
       method: "POST",
-      body: JSON.stringify({ deviceId, referredById, persistentDeviceId }),
+      body: JSON.stringify({ deviceId, persistentDeviceId }),
     });
   },
 

@@ -1,0 +1,35 @@
+Please improve the Quran verse display controls shown in the attached screen.
+
+For each ayah, use the existing three-dot menu to provide professional display options:
+
+1. Show/Hide Transliteration
+   
+   - The current English transliteration (for example, “Alhamdu lillaahi Rabbil 'aalameen”) should be optionally visible or hidden.
+   - The user must be able to read the transliteration even when using any other Quran translation language.
+
+2. Show/Hide Translation
+   
+   - Add a separate option to show or hide the translation text.
+   - Transliteration and translation must have independent visibility controls.
+   - The user should be able to show both, show only transliteration, show only translation, or hide both.
+
+3. Translation Language
+   
+   - Add a “Translation Language” option in the same three-dot menu.
+   - The user can select any supported Quran translation language directly from there.
+   - When selected, the translation displayed under the ayah must use that language.
+   - Save the user's selected translation language persistently so it remains selected until the user changes it.
+   - Do not reset it when navigating between surahs, reopening the Quran screen, or restarting the app.
+
+4. Professional UX
+   
+   - Keep the existing Quran Arabic text and verse layout unchanged.
+   - Do not add unnecessary buttons directly beside every ayah.
+   - Use the existing three-dot menu for these controls to keep the interface clean.
+   - Clearly indicate the current state of Show/Hide options.
+   - Clearly indicate the currently selected translation language.
+   - The selected language should apply consistently wherever Quran translations are displayed, including saved/favorite/random ayah views if they use the same translation system.
+
+Do not modify the Quran Arabic source text or transliteration content. Reuse the existing supported-language registry and translation system instead of creating a separate language list.
+
+After implementation, verify that the controls work correctly and that the selected language persists after app restart.

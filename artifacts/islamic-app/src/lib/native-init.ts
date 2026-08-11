@@ -7,7 +7,6 @@
 
 import { setupStatusBar, hideSplash, createNotifChannel, isNative, getAppPlugin } from "./capacitor";
 import { getNotifSettings, getPermissionState } from "./notifications";
-import { saveReferralCode } from "./user";
 
 let initialized = false;
 
@@ -35,12 +34,7 @@ export async function initNative(): Promise<void> {
     //    Re-scheduling is idempotent (cancel-all then reschedule enabled only).
     await restoreNotifications();
 
-    // 5. Listen for deep-link URLs received while the app is already running.
-    //    Captures ?ref= so referral tracking works even when the user opens a
-    //    link after the app is in the background.
-    listenForDeepLinkRef();
-
-    // 6. WelcomeCampaignGate hides the splash after campaign loading completes.
+    // 5. WelcomeCampaignGate hides the splash after campaign loading completes.
     // Keep a bounded fallback so a network or plugin issue can never strand the
     // native splash screen indefinitely.
     setTimeout(() => hideSplash(), 5000);
@@ -69,27 +63,6 @@ export async function initNative(): Promise<void> {
 //     console.warn("[AdMob] initialize error:", err);
 //   }
 // }
-
-// ── Deep-link referral capture ────────────────────────────────────────────────
-
-/**
- * Attach a Capacitor App.appUrlOpen listener so that when the Android app is
- * already running and the user opens a referral link, the ?ref= code is
- * captured into localStorage before ensureRegistered() uses it.
- */
-function listenForDeepLinkRef(): void {
-  const app = getAppPlugin();
-  if (!app) return;
-  try {
-    app.addListener("appUrlOpen", (data: { url: string }) => {
-      if (!data?.url) return;
-      try {
-        const ref = new URL(data.url).searchParams.get("ref");
-        if (ref) saveReferralCode(ref);
-      } catch { /* malformed URL — ignore */ }
-    });
-  } catch { /* plugin unavailable — ignore */ }
-}
 
 // ── Notification restore ──────────────────────────────────────────────────────
 

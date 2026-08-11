@@ -2,6 +2,8 @@ import { useSyncExternalStore } from "react";
 
 // ── Storage keys ──────────────────────────────────────────────────────────────
 const EXPLANATORY_KEY = "noor-show-explanatory";
+const TRANSLITERATION_KEY = "noor-show-transliteration";
+const TRANSLATION_KEY = "noor-show-translation";
 
 // ── Tiny pub/sub so both readers + the menu re-render instantly on change ─────
 type Listener = () => void;
@@ -28,6 +30,29 @@ export function setShowExplanatory(show: boolean): void {
   emit();
 }
 
+function getBooleanSetting(key: string, fallback = true): boolean {
+  const raw = localStorage.getItem(key);
+  return raw === null ? fallback : raw === "1";
+}
+
+export function getShowTransliteration(): boolean {
+  return getBooleanSetting(TRANSLITERATION_KEY);
+}
+
+export function setShowTransliteration(show: boolean): void {
+  localStorage.setItem(TRANSLITERATION_KEY, show ? "1" : "0");
+  emit();
+}
+
+export function getShowTranslation(): boolean {
+  return getBooleanSetting(TRANSLATION_KEY);
+}
+
+export function setShowTranslation(show: boolean): void {
+  localStorage.setItem(TRANSLATION_KEY, show ? "1" : "0");
+  emit();
+}
+
 /**
  * Strip parenthetical explanatory insertions (e.g. Urdu jalandhry-style
  * "(اپنے مقدمات)" asides) from translation text. Display-layer only —
@@ -50,7 +75,21 @@ export function applyExplanatorySetting(text: string): string {
 // see `useAyahPinchZoom` (src/hooks/use-pinch-zoom.ts), which is local,
 // in-memory-only state per reader page so it never persists and always
 // resets to default when the reader/app is reopened.
-export function useAyahDisplaySettings(): { showExplanatory: boolean } {
+export function useAyahDisplaySettings(): {
+  showExplanatory: boolean;
+  showTransliteration: boolean;
+  showTranslation: boolean;
+} {
   const showExplanatory = useSyncExternalStore(subscribeAyahDisplay, getShowExplanatory, getShowExplanatory);
-  return { showExplanatory };
+  const showTransliteration = useSyncExternalStore(
+    subscribeAyahDisplay,
+    getShowTransliteration,
+    getShowTransliteration,
+  );
+  const showTranslation = useSyncExternalStore(
+    subscribeAyahDisplay,
+    getShowTranslation,
+    getShowTranslation,
+  );
+  return { showExplanatory, showTransliteration, showTranslation };
 }

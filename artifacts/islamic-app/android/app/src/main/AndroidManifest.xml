@@ -48,7 +48,7 @@
                   <category android:name="android.intent.category.LAUNCHER" />
               </intent-filter>
 
-              <!-- App Links for noor-quran.replit.app (referral + deep links) -->
+              <!-- App Links for noor-quran.replit.app -->
               <!-- autoVerify=true: Android fetches /.well-known/assetlinks.json at install -->
               <!-- time to verify ownership. Verified = tapping the link opens app directly. -->
               <!-- Un-verified = Android shows the disambiguation dialog instead. -->

@@ -14,7 +14,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { getBookmarks, saveBookmark, removeBookmark } from "@/lib/bookmarks";
 import { getFavAyahs, toggleAyahFav } from "@/lib/favorites";
-import { getLang } from "@/lib/settings";
+import { getLang, setLang } from "@/lib/settings";
 import { useToast } from "@/hooks/use-toast";
 import { NativeTTS } from "@/lib/native-tts";
 import { AyahActionsMenu } from "@/components/ayah-actions-menu";
@@ -154,7 +154,11 @@ export function SurahReader() {
   useEffect(() => { toastRef.current = toast; }, [toast]);
 
   // Ayah display settings — show/hide explanatory words (persisted)
-  const { showExplanatory } = useAyahDisplaySettings();
+  const {
+    showExplanatory,
+    showTransliteration,
+    showTranslation,
+  } = useAyahDisplaySettings();
 
   // Pinch-to-zoom is local, in-memory-only per reader visit — never persisted,
   // always resets to default when this page is reopened or the app restarts.
@@ -558,6 +562,7 @@ export function SurahReader() {
   const handleLanguageChange = useCallback((lang: TranslationLanguage) => {
     const mode = audioModeRef.current;
     if (mode === "translation" || mode === "both") stopAll();
+    setLang(lang);
     setLanguage(lang);
   }, [stopAll]);
 
@@ -815,7 +820,10 @@ export function SurahReader() {
                         surahName={surah?.name ?? ""}
                         ayahNumber={ayah.numberInSurah}
                         textAr={ayah.textAr}
+                        textTranslit={ayah.textTranslit}
                         displayedTranslation={applyExplanatorySetting(ayah.textTranslation)}
+                        translationLanguage={language}
+                        onTranslationLanguageChange={handleLanguageChange}
                         pinchZoomEnabled={pinchZoomEnabled}
                         onTogglePinchZoom={() => setPinchZoomEnabled((v) => !v)}
                         triggerClassName="w-8 h-8 rounded-full flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors"
@@ -830,14 +838,14 @@ export function SurahReader() {
                   </p>
 
                   {/* Transliteration (Roman script) — shown when available */}
-                  {ayah.textTranslit && (
+                  {showTransliteration && ayah.textTranslit && (
                     <p className="text-[calc(0.875rem*var(--ayah-scale))] text-muted-foreground italic leading-relaxed tracking-wide">
                       {ayah.textTranslit}
                     </p>
                   )}
 
                   {/* Translation text */}
-                  {ayah.textTranslation ? (
+                  {showTranslation && ayah.textTranslation ? (
                     <p
                       dir={isRtl ? "rtl" : "ltr"}
                       className={`text-[calc(1.125rem*var(--ayah-scale))] md:text-[calc(1.25rem*var(--ayah-scale))] leading-relaxed font-serif transition-colors duration-300 ${
@@ -846,11 +854,11 @@ export function SurahReader() {
                     >
                       {applyExplanatorySetting(ayah.textTranslation)}
                     </p>
-                  ) : (
+                  ) : showTranslation ? (
                     <p className="text-sm text-muted-foreground italic">
                       Translation unavailable for this language
                     </p>
-                  )}
+                  ) : null}
                 </div>
               );
             })}

@@ -13,8 +13,6 @@ export interface User {
   deviceId: string;
   coinsBalance: number;
   totalCoinsEarned: number;
-  totalReferrals: number;
-  referredById: string | null;
   createdAt: string;
 }
 
@@ -33,13 +31,6 @@ export interface AyahReward {
   surahNumber: number;
   ayahNumber: number;
   date: string;
-  createdAt: string;
-}
-
-export interface Referral {
-  id: string;
-  referrerId: string;
-  refereeId: string;
   createdAt: string;
 }
 
@@ -102,12 +93,14 @@ function isValidWelcomeCampaignUrl(value: string): boolean {
 // ─── Sheet column definitions ─────────────────────────────────────────────────
 
 const SHEETS = {
+  // Keep the established Users header and column positions so active coin
+  // updates remain compatible with existing rows. The two historical columns
+  // are preserved as opaque values and are not part of the runtime user model.
   Users:            ["id","deviceId","coinsBalance","totalCoinsEarned","totalReferrals","referredById","createdAt"],
   TeacherAccounts:  ["id","userId","recoveryKeyHash","recoveryKeyCiphertext","deviceIds","accountJson","createdAt","updatedAt"],
   CoinTransactions: ["id","userId","amount","reason","eventKey","createdAt"],
   DailyCheckins:    ["id","userId","date","createdAt"],
   AyahRewards:      ["id","userId","surahNumber","ayahNumber","date","createdAt"],
-  Referrals:        ["id","referrerId","refereeId","createdAt"],
   Products:         ["id","userId","title","description","imageUrl","contactInfo","productLink","category","status","promotionType","coinsSpent","submittedBy","approvedAt","rejectedAt","rejectionReason","promotionExpiry","createdAt"],
   WelcomeCampaigns: ["id","imageUrl","gifUrl","videoUrl","title","description","buttonText","url","durationSeconds","enabled"],
 } as const;
@@ -251,14 +244,23 @@ function rowToUser(r: Record<string, string>): User {
     deviceId:         r.deviceId,
     coinsBalance:     Number(r.coinsBalance) || 0,
     totalCoinsEarned: Number(r.totalCoinsEarned) || 0,
-    totalReferrals:   Number(r.totalReferrals) || 0,
-    referredById:     r.referredById || null,
     createdAt:        r.createdAt,
   };
 }
 
-function userToRow(u: User): string[] {
-  return [u.id, u.deviceId, String(u.coinsBalance), String(u.totalCoinsEarned), String(u.totalReferrals), u.referredById ?? "", u.createdAt];
+function userToRow(
+  u: User,
+  historicalFields: { totalReferrals?: string; referredById?: string } = {},
+): string[] {
+  return [
+    u.id,
+    u.deviceId,
+    String(u.coinsBalance),
+    String(u.totalCoinsEarned),
+    historicalFields.totalReferrals ?? "",
+    historicalFields.referredById ?? "",
+    u.createdAt,
+  ];
 }
 
 export async function findUserByDeviceId(deviceId: string): Promise<User | null> {
@@ -279,7 +281,10 @@ export async function rebindUserDeviceId(id: string, deviceId: string): Promise<
   if (idx === -1) throw new Error(`User ${id} not found`);
   const current = rowToUser(rows[idx]);
   const updated = { ...current, deviceId };
-  await updateRowByDataIndex("Users", idx, userToRow(updated));
+  await updateRowByDataIndex("Users", idx, userToRow(updated, {
+    totalReferrals: rows[idx].totalReferrals,
+    referredById: rows[idx].referredById,
+  }));
   return updated;
 }
 
@@ -294,7 +299,10 @@ export async function updateUser(id: string, updates: Partial<Omit<User, "id" | 
   const idx = rows.findIndex((x) => x.id === id);
   if (idx === -1) throw new Error(`User ${id} not found`);
   const updated: User = { ...rowToUser(rows[idx]), ...updates };
-  await updateRowByDataIndex("Users", idx, userToRow(updated));
+  await updateRowByDataIndex("Users", idx, userToRow(updated, {
+    totalReferrals: rows[idx].totalReferrals,
+    referredById: rows[idx].referredById,
+  }));
   return updated;
 }
 
@@ -612,17 +620,6 @@ export async function countTodayAyahRewards(userId: string, date: string): Promi
 
 export async function addAyahReward(userId: string, surah: number, ayah: number, date: string): Promise<void> {
   await appendRow("AyahRewards", [crypto.randomUUID(), userId, String(surah), String(ayah), date, new Date().toISOString()]);
-}
-
-// ─── Referrals ────────────────────────────────────────────────────────────────
-
-export async function hasReferral(refereeId: string): Promise<boolean> {
-  const rows = await readAllRows("Referrals");
-  return rows.some((r) => r.refereeId === refereeId);
-}
-
-export async function addReferral(referrerId: string, refereeId: string): Promise<void> {
-  await appendRow("Referrals", [crypto.randomUUID(), referrerId, refereeId, new Date().toISOString()]);
 }
 
 // ─── Products ─────────────────────────────────────────────────────────────────
