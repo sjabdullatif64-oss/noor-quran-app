@@ -7,9 +7,11 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import { useI18n } from "@/lib/i18n-context";
 import { RewardedAdButton } from "@/components/rewarded-ad-button";
-import { nativeShare, openUrl, getLastShareError } from "@/lib/capacitor";
+import { nativeShare, openUrl, isNative, getLastShareError } from "@/lib/capacitor";
 
 const APP_SHARE_URL = "https://play.google.com/store/apps/details?id=com.sj64noorquran";
+const APP_RATE_URL = "https://play.google.com/store/apps/details?id=com.sj64noorquran&reviewId=0";
+const APP_RATE_MARKET_URL = "market://details?id=com.sj64noorquran&reviewId=0";
 const APP_SHARE_MSG =
   "Download Noor Quran - Quran, Prayer Times, Islamic Features & More.\nA beautiful Islamic app for daily Muslim life.";
 
@@ -32,6 +34,10 @@ export function More() {
         variant: "destructive",
       });
     }
+  }
+
+  function handleRateApp() {
+    void openUrl(isNative() ? APP_RATE_MARKET_URL : APP_RATE_URL);
   }
 
   const ITEMS = [
@@ -177,7 +183,7 @@ export function More() {
         </button>
 
         <button
-          onClick={() => openUrl("https://play.google.com/store/apps/details?id=com.sj64noorquran&reviewId=0")}
+          onClick={handleRateApp}
           className="w-full flex items-center gap-4 p-5 rounded-2xl border border-border bg-card text-left transition-all active:scale-[0.98] hover:border-border"
           data-testid="more-rate-app"
         >
