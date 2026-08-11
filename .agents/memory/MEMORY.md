@@ -5,6 +5,7 @@
 - [Google Sheets coin audit](coins-sheets-audit.md) — active coin ledger uses append-only transactions; preserve historical Users columns and join transactions to current users when auditing
 - [AdMob safe init pattern](admob-safe-init.md) — selective MobileAdsInitProvider removal via tools:node="merge" preserves WorkManager; full InitializationProvider removal breaks it
 - [Git push and GitHub Actions in Replit](git-push-actions.md) — git push is blocked in bash; use GitHub REST API (blob→tree→commit→ref PATCH) in code_execution to push; workflow auto-triggers on push to main
+- [GitHub connector ref permissions](github-connector-ref-permissions.md) — connector may create Git blobs/commits but lack permission to create or update branch refs, so Actions cannot run until source-control access is granted
 - [Rebase conflict strategy](rebase-conflict-strategy.md) — when rebasing local fixes onto origin diagnostic commits, always keep HEAD (ours) for Android config files; diagnostic commits are older interim states
 - [Android feature bug root causes](android-feature-bugs.md) — root causes for 7 Android issues: back button duplicate hook, notification prompt vs denied, share plugin fallthrough, qibla double-firing, admin safe-area, azan offline cache
 - [Daily ayah reward cap](ayah-reward-cap.md) — 20 ayahs/day cap counts rows in ayah_rewards WHERE createdAt >= today_start; skip insert on cap so ayah stays rewardable tomorrow
