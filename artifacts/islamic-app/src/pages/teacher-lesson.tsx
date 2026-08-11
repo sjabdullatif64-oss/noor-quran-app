@@ -7,7 +7,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Link, useLocation, useParams } from "wouter";
 import {
-  ChevronLeft, Volume2, Mic, RotateCcw, ArrowRight, ShieldCheck,
+  ChevronLeft, Volume2, Mic, RotateCcw, ArrowRight, ShieldCheck, Languages, Check,
   CheckCircle2, Ear, MicOff, WifiOff, Sparkles, Loader2,
 } from "lucide-react";
 import {
@@ -31,7 +31,15 @@ import {
   type ListenResult,
 } from "@/lib/teacher-speech";
 import { isConnected } from "@/lib/capacitor";
-import { getLang, TRANSLATION_LANGUAGE_CHANGED_EVENT } from "@/lib/settings";
+import {
+  getLang,
+  getTeacherLanguageMode,
+  setTeacherLanguageMode,
+  TEACHER_LANGUAGE_MODE_CHANGED_EVENT,
+  TRANSLATION_LANGUAGE_CHANGED_EVENT,
+  type TeacherLanguageMode,
+} from "@/lib/settings";
+import { TRANSLATION_ENGLISH_NAMES } from "@/lib/api";
 import { getTeacherSpeechCopy } from "@/lib/teacher-speech-copy";
 import { TeacherSpeechDiagnostics } from "@/components/teacher-speech-diagnostics";
 import { TeacherSpeechListenButton, TeacherSpeechMessage } from "@/components/teacher-speech-message";
@@ -80,8 +88,12 @@ export function TeacherLesson() {
   const [diagnosticsOpen, setDiagnosticsOpen] = useState(false);
   const practiceSessionStarted = useRef(false);
   const [translationLanguage, setTranslationLanguage] = useState(() => getLang());
-  const copy = getTeacherSpeechCopy(translationLanguage);
-  const lessonGuidance = translationLanguage === "english" ? lesson?.tip ?? copy.lessonHint : copy.lessonHint;
+  const [teacherLanguageMode, setTeacherLanguageModeState] = useState<TeacherLanguageMode>(
+    () => getTeacherLanguageMode(),
+  );
+  const teacherLanguage = teacherLanguageMode === "english" ? "english" : translationLanguage;
+  const copy = getTeacherSpeechCopy(teacherLanguage);
+  const lessonGuidance = teacherLanguage === "english" ? lesson?.tip ?? copy.lessonHint : copy.lessonHint;
 
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const audioQueueRef = useRef<string[]>([]);
@@ -98,7 +110,12 @@ export function TeacherLesson() {
   useEffect(() => {
     const syncTranslationLanguage = () => setTranslationLanguage(getLang());
     window.addEventListener(TRANSLATION_LANGUAGE_CHANGED_EVENT, syncTranslationLanguage);
-    return () => window.removeEventListener(TRANSLATION_LANGUAGE_CHANGED_EVENT, syncTranslationLanguage);
+    const syncTeacherLanguageMode = () => setTeacherLanguageModeState(getTeacherLanguageMode());
+    window.addEventListener(TEACHER_LANGUAGE_MODE_CHANGED_EVENT, syncTeacherLanguageMode);
+    return () => {
+      window.removeEventListener(TRANSLATION_LANGUAGE_CHANGED_EVENT, syncTranslationLanguage);
+      window.removeEventListener(TEACHER_LANGUAGE_MODE_CHANGED_EVENT, syncTeacherLanguageMode);
+    };
   }, []);
 
   // Reset state when navigating between lessons
@@ -374,10 +391,59 @@ export function TeacherLesson() {
   const listenButton = (text: string, testId?: string) => (
     <TeacherSpeechListenButton
       text={text}
-      language={translationLanguage}
+      language={teacherLanguage}
       label={copy.listen}
       testId={testId}
     />
+  );
+
+  const teacherLanguageButton = (
+    <div
+      className="rounded-2xl border border-border bg-card/90 p-2 shadow-sm"
+      data-testid="teacher-language-switcher"
+    >
+      <div className="flex items-center gap-2 px-2 pb-2">
+        <div className="flex h-7 w-7 items-center justify-center rounded-xl bg-primary/10">
+          <Languages className="h-4 w-4 text-primary" />
+        </div>
+        <div className="min-w-0 flex-1">
+          <p className="text-foreground text-[11px] font-semibold">Teacher language</p>
+          <p className="text-muted-foreground truncate text-[10px]">
+            {teacherLanguageMode === "english"
+              ? "English only"
+              : `Use ${TRANSLATION_ENGLISH_NAMES[translationLanguage]}`}
+          </p>
+        </div>
+      </div>
+      <div className="grid grid-cols-2 gap-1 rounded-xl bg-muted/70 p-1">
+        {([
+          ["selected", `My ${TRANSLATION_ENGLISH_NAMES[translationLanguage]}`],
+          ["english", "English only"],
+        ] as const).map(([mode, label]) => {
+          const active = teacherLanguageMode === mode;
+          return (
+            <button
+              key={mode}
+              type="button"
+              onClick={() => {
+                setTeacherLanguageMode(mode);
+                setTeacherLanguageModeState(mode);
+              }}
+              className={`flex min-h-9 items-center justify-center gap-1 rounded-lg px-2 text-[10px] font-semibold transition-all ${
+                active
+                  ? "bg-primary text-primary-foreground shadow-sm"
+                  : "text-muted-foreground hover:text-foreground"
+              }`}
+              aria-pressed={active}
+              data-testid={`button-teacher-language-${mode}`}
+            >
+              {active && <Check className="h-3 w-3" />}
+              <span className="truncate">{label}</span>
+            </button>
+          );
+        })}
+      </div>
+    </div>
   );
 
   // ── Guards ──────────────────────────────────────────────────────────────────
@@ -387,7 +453,7 @@ export function TeacherLesson() {
       <div className="min-h-screen flex flex-col items-center justify-center gap-4 px-6 bg-background">
         <TeacherSpeechMessage
           spokenText={copy.lessonNotFound}
-          language={translationLanguage}
+          language={teacherLanguage}
           listenLabel={copy.listen}
           testId="button-listen-lesson-not-found"
           contentClassName="text-muted-foreground text-sm"
@@ -422,7 +488,7 @@ export function TeacherLesson() {
         data-testid="panel-locked">
         <TeacherSpeechMessage
           spokenText={copy.lockedTitle}
-          language={translationLanguage}
+          language={teacherLanguage}
           listenLabel={copy.listen}
           testId="button-listen-locked-title"
           contentClassName="text-foreground font-semibold text-sm"
@@ -431,7 +497,7 @@ export function TeacherLesson() {
         </TeacherSpeechMessage>
         <TeacherSpeechMessage
           spokenText={copy.lockedBody}
-          language={translationLanguage}
+          language={teacherLanguage}
           listenLabel={copy.listen}
           testId="button-listen-locked-body"
           contentClassName="text-muted-foreground text-xs max-w-xs leading-relaxed"
@@ -513,6 +579,9 @@ export function TeacherLesson() {
             style={{ width: `${(lesson.order / levelLessons.length) * 100}%` }}
           />
         </div>
+        <div className="max-w-2xl mx-auto mt-3">
+          {teacherLanguageButton}
+        </div>
       </div>
 
       <div className="px-4 space-y-4 max-w-2xl mx-auto pt-2">
@@ -544,7 +613,7 @@ export function TeacherLesson() {
           </button>
             <TeacherSpeechMessage
               spokenText={copy.verifiedRecitation}
-              language={translationLanguage}
+          language={teacherLanguage}
               listenLabel={copy.listen}
               testId="button-listen-verified-recitation"
               contentClassName="text-muted-foreground text-[10px] mt-2"
@@ -558,7 +627,7 @@ export function TeacherLesson() {
           <Sparkles className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
           <TeacherSpeechMessage
             spokenText={lessonGuidance}
-            language={translationLanguage}
+          language={teacherLanguage}
             listenLabel={copy.listen}
             testId="button-listen-lesson-hint"
             contentClassName="text-muted-foreground text-xs leading-relaxed"
@@ -575,7 +644,7 @@ export function TeacherLesson() {
               <ShieldCheck className="w-5 h-5 text-primary" />
               <TeacherSpeechMessage
                 spokenText={copy.consentTitle}
-                language={translationLanguage}
+          language={teacherLanguage}
                 listenLabel={copy.listen}
                 testId="button-listen-consent-title"
                 contentClassName="text-foreground font-semibold text-sm"
@@ -635,7 +704,7 @@ export function TeacherLesson() {
             <CheckCircle2 className="w-10 h-10 text-primary mx-auto mb-2" />
             <TeacherSpeechMessage
               spokenText={result.matchScore >= 90 ? copy.passedExcellent : copy.passedCorrect}
-              language={translationLanguage}
+          language={teacherLanguage}
               listenLabel={copy.listen}
               testId="button-listen-passed-message"
               contentClassName="text-foreground font-bold text-base"
@@ -644,7 +713,7 @@ export function TeacherLesson() {
             </TeacherSpeechMessage>
             <TeacherSpeechMessage
               spokenText={`${copy.wordMatch}: ${result.matchScore}%`}
-              language={translationLanguage}
+          language={teacherLanguage}
               listenLabel={copy.listen}
               testId="button-listen-passed-score"
               contentClassName="text-muted-foreground text-xs mt-1"
@@ -659,7 +728,7 @@ export function TeacherLesson() {
           <div className="rounded-2xl border border-border p-3 text-center bg-card">
             <TeacherSpeechMessage
               spokenText={copy.completedPractice}
-              language={translationLanguage}
+          language={teacherLanguage}
               listenLabel={copy.listen}
               testId="button-listen-completed-practice"
               contentClassName="text-muted-foreground text-xs"
@@ -675,7 +744,7 @@ export function TeacherLesson() {
           <div className="rounded-2xl border border-border p-5 animate-in fade-in slide-in-from-bottom-2 duration-300 bg-card" data-testid="panel-feedback">
             <TeacherSpeechMessage
               spokenText={copy.retryTitle}
-              language={translationLanguage}
+          language={teacherLanguage}
               listenLabel={copy.listen}
               testId="button-listen-retry-title"
               contentClassName="text-foreground font-semibold text-sm mb-2"
@@ -706,7 +775,7 @@ export function TeacherLesson() {
                 </p>
                 <TeacherSpeechMessage
                   spokenText={copy.focusSounds}
-                  language={translationLanguage}
+          language={teacherLanguage}
                   listenLabel={copy.listen}
                   testId="button-listen-focus-sounds"
                   contentClassName="text-muted-foreground text-[11px] mt-2"
@@ -718,7 +787,7 @@ export function TeacherLesson() {
             {result.heard && (
               <TeacherSpeechMessage
                 spokenText={`${copy.heard}: ${result.heard}`}
-                language={translationLanguage}
+          language={teacherLanguage}
                 listenLabel={copy.listen}
                 testId="button-listen-heard"
                 contentClassName="text-muted-foreground text-xs mb-1"
@@ -729,7 +798,7 @@ export function TeacherLesson() {
             {result.missing.length > 0 && (
               <TeacherSpeechMessage
                 spokenText={`${copy.focusSounds}: ${result.missing.join("، ")}`}
-                language={translationLanguage}
+          language={teacherLanguage}
                 listenLabel={copy.listen}
                 testId="button-listen-missing-sounds"
                 contentClassName="text-muted-foreground text-xs mb-1"
@@ -744,7 +813,7 @@ export function TeacherLesson() {
             {result.extra.length > 0 && (
               <TeacherSpeechMessage
                 spokenText={`${copy.extraSounds}: ${result.extra.join("، ")}`}
-                language={translationLanguage}
+          language={teacherLanguage}
                 listenLabel={copy.listen}
                 testId="button-listen-extra-sounds"
                 contentClassName="text-muted-foreground text-xs mb-1"
@@ -758,7 +827,7 @@ export function TeacherLesson() {
             )}
             <TeacherSpeechMessage
               spokenText={lessonGuidance}
-              language={translationLanguage}
+          language={teacherLanguage}
               listenLabel={copy.listen}
               testId="button-listen-feedback-hint"
               contentClassName="text-muted-foreground text-xs mt-2 leading-relaxed"
@@ -768,7 +837,7 @@ export function TeacherLesson() {
             {attempts >= MAX_RETRIES && (
               <TeacherSpeechMessage
                 spokenText={copy.retryGuidance}
-                language={translationLanguage}
+          language={teacherLanguage}
                 listenLabel={copy.listen}
                 testId="button-listen-retry-guidance"
                 contentClassName="text-muted-foreground text-xs mt-3 leading-relaxed border-t border-border pt-3"
@@ -791,7 +860,7 @@ export function TeacherLesson() {
             <Ear className="w-6 h-6 text-sky-400 mx-auto mb-2" />
             <TeacherSpeechMessage
               spokenText={copy.unclearTitle}
-              language={translationLanguage}
+          language={teacherLanguage}
               listenLabel={copy.listen}
               testId="button-listen-unclear-title"
               contentClassName="text-sky-300 text-sm font-medium"
@@ -800,7 +869,7 @@ export function TeacherLesson() {
             </TeacherSpeechMessage>
             <TeacherSpeechMessage
               spokenText={copy.unclearBody}
-              language={translationLanguage}
+          language={teacherLanguage}
               listenLabel={copy.listen}
               testId="button-listen-unclear-body"
               contentClassName="text-sky-600 text-xs mt-1"
@@ -817,7 +886,7 @@ export function TeacherLesson() {
               <MicOff className="w-4 h-4 text-rose-400" />
               <TeacherSpeechMessage
                 spokenText={copy.microphoneTitle}
-                language={translationLanguage}
+          language={teacherLanguage}
                 listenLabel={copy.listen}
                 testId="button-listen-mic-title"
                 contentClassName="text-foreground text-sm font-medium"
@@ -827,7 +896,7 @@ export function TeacherLesson() {
             </div>
             <TeacherSpeechMessage
               spokenText={copy.microphoneBody}
-              language={translationLanguage}
+          language={teacherLanguage}
               listenLabel={copy.listen}
               testId="button-listen-mic-body"
               contentClassName="text-rose-500/80 text-xs leading-relaxed"
@@ -856,7 +925,7 @@ export function TeacherLesson() {
             {settingsFailed && (
               <TeacherSpeechMessage
                 spokenText={copy.settingsFailed}
-                language={translationLanguage}
+          language={teacherLanguage}
                 listenLabel={copy.listen}
                 testId="button-listen-settings-failed"
                 contentClassName="text-rose-400/80 text-[11px] mt-2 leading-relaxed"
@@ -874,7 +943,7 @@ export function TeacherLesson() {
               <Ear className="w-4 h-4 text-primary" />
               <TeacherSpeechMessage
                 spokenText={copy.listenOnlyTitle}
-                language={translationLanguage}
+          language={teacherLanguage}
                 listenLabel={copy.listen}
                 testId="button-listen-listen-only-title"
                 contentClassName="text-foreground text-sm font-medium"
@@ -884,7 +953,7 @@ export function TeacherLesson() {
             </div>
             <TeacherSpeechMessage
               spokenText={support === "none" ? copy.listenOnlyUnavailable : copy.listenOnlyAvailable}
-              language={translationLanguage}
+          language={teacherLanguage}
               listenLabel={copy.listen}
               testId="button-listen-listen-only-body"
               contentClassName="text-muted-foreground text-xs leading-relaxed"
@@ -894,7 +963,7 @@ export function TeacherLesson() {
             {noMicReason && (
               <TeacherSpeechMessage
                 spokenText={`${copy.reason}: ${noMicReason}`}
-                language={translationLanguage}
+          language={teacherLanguage}
                 listenLabel={copy.listen}
                 testId="button-listen-nomic-reason"
                 contentClassName="text-muted-foreground text-[10px] mt-2 leading-relaxed"
@@ -920,7 +989,7 @@ export function TeacherLesson() {
             <WifiOff className="w-6 h-6 text-muted-foreground mx-auto mb-2" />
             <TeacherSpeechMessage
               spokenText={copy.offlineTitle}
-              language={translationLanguage}
+          language={teacherLanguage}
               listenLabel={copy.listen}
               testId="button-listen-offline-title"
               contentClassName="text-foreground text-sm font-medium"
@@ -929,7 +998,7 @@ export function TeacherLesson() {
             </TeacherSpeechMessage>
             <TeacherSpeechMessage
               spokenText={copy.offlineBody}
-              language={translationLanguage}
+          language={teacherLanguage}
               listenLabel={copy.listen}
               testId="button-listen-offline-body"
               contentClassName="text-muted-foreground text-xs mt-1"
@@ -945,7 +1014,7 @@ export function TeacherLesson() {
             <CheckCircle2 className="w-8 h-8 text-primary mx-auto mb-2" />
             <TeacherSpeechMessage
               spokenText={`${copy.limitTitle} ${getDailyStatus().limit}`}
-              language={translationLanguage}
+          language={teacherLanguage}
               listenLabel={copy.listen}
               testId="button-listen-limit-title"
               contentClassName="text-foreground font-semibold text-sm"
@@ -954,7 +1023,7 @@ export function TeacherLesson() {
             </TeacherSpeechMessage>
             <TeacherSpeechMessage
               spokenText={copy.limitBody}
-              language={translationLanguage}
+              language={teacherLanguage}
               listenLabel={copy.listen}
               testId="button-listen-limit-body"
               contentClassName="text-muted-foreground text-xs mt-1 leading-relaxed"
@@ -983,7 +1052,7 @@ export function TeacherLesson() {
                     </div>
                      <TeacherSpeechMessage
                        spokenText={copy.listening}
-                       language={translationLanguage}
+                       language={teacherLanguage}
                        listenLabel={copy.listen}
                        testId="button-listen-listening"
                        contentClassName="text-rose-300 text-sm font-medium mt-3"
@@ -992,7 +1061,7 @@ export function TeacherLesson() {
                      </TeacherSpeechMessage>
                      <TeacherSpeechMessage
                        spokenText={`${(recordMs / 1000).toFixed(1)} seconds. ${copy.recordingAutoStop}`}
-                       language={translationLanguage}
+                       language={teacherLanguage}
                        listenLabel={copy.listen}
                        testId="button-listen-recording-auto-stop"
                        contentClassName="text-muted-foreground text-[11px] mt-1"
@@ -1014,7 +1083,7 @@ export function TeacherLesson() {
                     </div>
                       <TeacherSpeechMessage
                         spokenText={copy.checking}
-                        language={translationLanguage}
+                        language={teacherLanguage}
                         listenLabel={copy.listen}
                         testId="button-listen-checking"
                         contentClassName="text-muted-foreground text-xs mt-3"
@@ -1033,7 +1102,7 @@ export function TeacherLesson() {
                     </button>
                      <TeacherSpeechMessage
                        spokenText={copy.tapToRead}
-                       language={translationLanguage}
+                       language={teacherLanguage}
                        listenLabel={copy.listen}
                        testId="button-listen-tap-to-read"
                        contentClassName="text-muted-foreground text-xs mt-3"

@@ -1,6 +1,7 @@
 import { Router } from "express";
 import { z } from "zod";
 import { createAdminSession, isValidAdminToken, requireAdminSession } from "../middlewares/adminSessionGuard";
+import { storeCampaignMedia } from "../lib/campaign-media";
 import {
   createProduct,
   createWelcomeCampaign,
@@ -57,6 +58,18 @@ function campaignUpdates(input: Partial<z.infer<typeof campaignFields>>): Partia
   if (input.url !== undefined) updates.url = cleanNullable(input.url);
   if (input.durationSeconds !== undefined) updates.durationSeconds = input.durationSeconds;
   if (input.enabled !== undefined) updates.enabled = input.enabled;
+  return updates;
+}
+
+async function campaignMediaUpdates(
+  input: Partial<z.infer<typeof campaignFields>>,
+): Promise<Partial<Omit<WelcomeCampaign, "id">>> {
+  const updates = campaignUpdates(input);
+  for (const key of ["imageUrl", "gifUrl", "videoUrl"] as const) {
+    if (updates[key] !== undefined) {
+      updates[key] = await storeCampaignMedia(updates[key]);
+    }
+  }
   return updates;
 }
 
@@ -203,7 +216,7 @@ router.post("/campaigns", admin, async (req, res) => {
     return;
   }
   const { id, ...fields } = parsed.data;
-  const normalized = campaignUpdates(fields);
+  const normalized = await campaignMediaUpdates(fields);
   const campaign = await createWelcomeCampaign({
     ...(id ? { id } : {}),
     imageUrl: normalized.imageUrl ?? null,
@@ -226,7 +239,7 @@ router.patch("/campaigns/:id", admin, async (req, res) => {
     return;
   }
   const campaignId = String(req.params.id);
-  const campaign = await updateWelcomeCampaign(campaignId, campaignUpdates(parsed.data));
+  const campaign = await updateWelcomeCampaign(campaignId, await campaignMediaUpdates(parsed.data));
   res.json({ campaign });
 });
 

@@ -4,10 +4,14 @@ import type { TranslationLanguage } from "@/lib/api";
 const CITY_KEY    = "noor-city";
 const COUNTRY_KEY = "noor-country";
 const LANG_KEY    = "noor-lang";
+const TEACHER_LANGUAGE_MODE_KEY = "noor-teacher-language-mode";
 const GPS_LAT_KEY = "noor-gps-lat";
 const GPS_LNG_KEY = "noor-gps-lng";
 const LOC_SRC_KEY = "noor-loc-src"; // "gps" | "manual"
 export const TRANSLATION_LANGUAGE_CHANGED_EVENT = "noor-translation-language-changed";
+export const TEACHER_LANGUAGE_MODE_CHANGED_EVENT = "noor-teacher-language-mode-changed";
+
+export type TeacherLanguageMode = "selected" | "english";
 
 // ── City / country (manual search) ───────────────────────────────────────────
 
@@ -348,6 +352,17 @@ export function getLang(): TranslationLanguage {
 export function setLang(lang: TranslationLanguage): void {
   localStorage.setItem(LANG_KEY, lang);
   window.dispatchEvent(new Event(TRANSLATION_LANGUAGE_CHANGED_EVENT));
+}
+
+export function getTeacherLanguageMode(): TeacherLanguageMode {
+  return localStorage.getItem(TEACHER_LANGUAGE_MODE_KEY) === "english"
+    ? "english"
+    : "selected";
+}
+
+export function setTeacherLanguageMode(mode: TeacherLanguageMode): void {
+  localStorage.setItem(TEACHER_LANGUAGE_MODE_KEY, mode);
+  window.dispatchEvent(new Event(TEACHER_LANGUAGE_MODE_CHANGED_EVENT));
 }
 
 // ── UI Language (app interface language) ──────────────────────────────────────
