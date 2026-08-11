@@ -51,6 +51,7 @@ export interface Product {
   rejectedAt: string | null;
   rejectionReason: string | null;
   promotionExpiry: string | null;
+  displayOrder?: number;
   createdAt: string;
 }
 
@@ -101,7 +102,7 @@ const SHEETS = {
   CoinTransactions: ["id","userId","amount","reason","eventKey","createdAt"],
   DailyCheckins:    ["id","userId","date","createdAt"],
   AyahRewards:      ["id","userId","surahNumber","ayahNumber","date","createdAt"],
-  Products:         ["id","userId","title","description","imageUrl","contactInfo","productLink","category","status","promotionType","coinsSpent","submittedBy","approvedAt","rejectedAt","rejectionReason","promotionExpiry","createdAt"],
+  Products:         ["id","userId","title","description","imageUrl","contactInfo","productLink","category","status","promotionType","coinsSpent","submittedBy","approvedAt","rejectedAt","rejectionReason","promotionExpiry","createdAt","displayOrder"],
   WelcomeCampaigns: ["id","imageUrl","gifUrl","videoUrl","title","description","buttonText","url","durationSeconds","enabled"],
 } as const;
 
@@ -179,6 +180,19 @@ export async function initSheets(): Promise<void> {
         `/v4/spreadsheets/${SPREADSHEET_ID}/values/${sheetName}!A1?valueInputOption=RAW`,
         { range: `${sheetName}!A1`, majorDimension: "ROWS", values: [cols] },
       );
+    }
+    if (sheetName === "Products") {
+      const orderHeader = (await sheetsReq(
+        "GET",
+        `/v4/spreadsheets/${SPREADSHEET_ID}/values/Products!R1:R1`,
+      ))?.values?.[0]?.[0];
+      if (orderHeader !== "displayOrder") {
+        await sheetsReq(
+          "PUT",
+          `/v4/spreadsheets/${SPREADSHEET_ID}/values/Products!R1?valueInputOption=RAW`,
+          { range: "Products!R1", majorDimension: "ROWS", values: [["displayOrder"]] },
+        );
+      }
     }
   }
 }
@@ -460,6 +474,27 @@ export async function findTeacherAccountByUserId(userId: string): Promise<Teache
   return row ? rowToTeacherAccount(row) : null;
 }
 
+export interface TeacherAccountSnapshot {
+  id: string;
+  userId: string;
+  updatedAt: string;
+  snapshot: Record<string, unknown>;
+}
+
+/**
+ * Internal admin analytics projection. This intentionally omits recovery
+ * material, device identifiers, and the encrypted row fields.
+ */
+export async function getTeacherAccountSnapshots(): Promise<TeacherAccountSnapshot[]> {
+  const rows = await readAllRows("TeacherAccounts");
+  return rows.map((row) => ({
+    id: row.id,
+    userId: row.userId,
+    updatedAt: row.updatedAt,
+    snapshot: decryptTeacherSnapshot(row.accountJson),
+  }));
+}
+
 export async function findTeacherAccountByRecoveryKey(value: string): Promise<TeacherAccount | null> {
   const hash = hashRecoveryKey(value);
   const rows = await readAllRows("TeacherAccounts");
@@ -625,6 +660,7 @@ export async function addAyahReward(userId: string, surah: number, ayah: number,
 // ─── Products ─────────────────────────────────────────────────────────────────
 
 function rowToProduct(r: Record<string, string>): Product {
+  const displayOrder = Number(r.displayOrder);
   return {
     id:               r.id,
     userId:           r.userId,
@@ -642,12 +678,19 @@ function rowToProduct(r: Record<string, string>): Product {
     rejectedAt:       r.rejectedAt || null,
     rejectionReason:  r.rejectionReason || null,
     promotionExpiry:  r.promotionExpiry || null,
+    ...(Number.isFinite(displayOrder) ? { displayOrder } : {}),
     createdAt:        r.createdAt,
   };
 }
 
 function productToRow(p: Product): string[] {
-  return [p.id, p.userId, p.title, p.description, p.imageUrl ?? "", p.contactInfo, p.productLink ?? "", p.category, p.status, p.promotionType, String(p.coinsSpent), p.submittedBy ?? "", p.approvedAt ?? "", p.rejectedAt ?? "", p.rejectionReason ?? "", p.promotionExpiry ?? "", p.createdAt];
+  return [p.id, p.userId, p.title, p.description, p.imageUrl ?? "", p.contactInfo, p.productLink ?? "", p.category, p.status, p.promotionType, String(p.coinsSpent), p.submittedBy ?? "", p.approvedAt ?? "", p.rejectedAt ?? "", p.rejectionReason ?? "", p.promotionExpiry ?? "", p.createdAt, String(p.displayOrder ?? 0)];
+}
+
+export async function getAllProducts(): Promise<Product[]> {
+  return (await readAllRows("Products"))
+    .map(rowToProduct)
+    .sort((a, b) => (a.displayOrder ?? 0) - (b.displayOrder ?? 0) || b.createdAt.localeCompare(a.createdAt));
 }
 
 export async function getApprovedProducts(): Promise<Product[]> {
@@ -662,7 +705,10 @@ export async function getApprovedProducts(): Promise<Product[]> {
       // Exclude expired listings; legacy null-expiry products (promotionType "none") remain visible
       (!p.promotionExpiry || p.promotionExpiry > now),
     )
-    .sort((a, b) => (b.approvedAt ?? b.createdAt).localeCompare(a.approvedAt ?? a.createdAt));
+    .sort((a, b) =>
+      (a.displayOrder ?? 0) - (b.displayOrder ?? 0)
+      || (b.approvedAt ?? b.createdAt).localeCompare(a.approvedAt ?? a.createdAt),
+    );
 }
 
 export async function getFeaturedProducts(): Promise<Product[]> {
@@ -676,7 +722,10 @@ export async function getFeaturedProducts(): Promise<Product[]> {
       !!p.promotionExpiry &&
       p.promotionExpiry > now,
     )
-    .sort((a, b) => (b.promotionExpiry ?? "").localeCompare(a.promotionExpiry ?? ""));
+    .sort((a, b) =>
+      (a.displayOrder ?? 0) - (b.displayOrder ?? 0)
+      || (b.promotionExpiry ?? "").localeCompare(a.promotionExpiry ?? ""),
+    );
 }
 
 export async function getUserProducts(userId: string): Promise<Product[]> {
@@ -735,11 +784,67 @@ function rowToWelcomeCampaign(r: Record<string, string>): WelcomeCampaign {
 }
 
 export async function getActiveWelcomeCampaigns(): Promise<WelcomeCampaign[]> {
-  const rows = await readAllRows("WelcomeCampaigns");
-  return rows
+  return (await getAllWelcomeCampaigns()).filter((campaign) => campaign.enabled && campaign.id && campaign.title);
+}
+
+function welcomeCampaignToRow(campaign: WelcomeCampaign): string[] {
+  return [
+    campaign.id,
+    campaign.imageUrl ?? "",
+    campaign.gifUrl ?? "",
+    campaign.videoUrl ?? "",
+    campaign.title,
+    campaign.description,
+    campaign.buttonText ?? "",
+    campaign.url ?? "",
+    String(campaign.durationSeconds),
+    String(campaign.enabled),
+  ];
+}
+
+export async function getAllWelcomeCampaigns(): Promise<WelcomeCampaign[]> {
+  return (await readAllRows("WelcomeCampaigns"))
     .map(rowToWelcomeCampaign)
-    .filter((campaign) => campaign.enabled && campaign.id && campaign.title)
+    .filter((campaign) => campaign.id)
     .sort((a, b) => a.id.localeCompare(b.id));
+}
+
+export async function createWelcomeCampaign(
+  data: Omit<WelcomeCampaign, "id"> & { id?: string },
+): Promise<WelcomeCampaign> {
+  const campaign: WelcomeCampaign = {
+    id: data.id?.trim() || crypto.randomUUID(),
+    imageUrl: data.imageUrl ?? null,
+    gifUrl: data.gifUrl ?? null,
+    videoUrl: data.videoUrl ?? null,
+    title: data.title.trim(),
+    description: data.description.trim(),
+    buttonText: data.buttonText ?? null,
+    url: data.url ?? null,
+    durationSeconds: data.durationSeconds,
+    enabled: data.enabled,
+  };
+  await appendRow("WelcomeCampaigns", welcomeCampaignToRow(campaign));
+  return campaign;
+}
+
+export async function updateWelcomeCampaign(
+  id: string,
+  updates: Partial<Omit<WelcomeCampaign, "id">>,
+): Promise<WelcomeCampaign> {
+  const rows = await readAllRows("WelcomeCampaigns");
+  const idx = rows.findIndex((row) => row.id === id);
+  if (idx === -1) throw new Error(`Campaign ${id} not found`);
+  const updated = { ...rowToWelcomeCampaign(rows[idx]), ...updates, id };
+  await updateRowByDataIndex("WelcomeCampaigns", idx, welcomeCampaignToRow(updated));
+  return updated;
+}
+
+export async function deleteWelcomeCampaign(id: string): Promise<void> {
+  const rows = await readAllRows("WelcomeCampaigns");
+  const idx = rows.findIndex((row) => row.id === id);
+  if (idx === -1) throw new Error(`Campaign ${id} not found`);
+  await deleteRowByDataIndex("WelcomeCampaigns", idx);
 }
 
 // ─── Helper: add coins + record transaction ───────────────────────────────────

@@ -38,6 +38,7 @@ import { ConsentGate } from "@/components/consent-gate";
 import { useEffect } from "react";
 import { AI_TEACHER_ENABLED } from "@/lib/teacher-config";
 import { ensureRegistered, reportAyahComplete } from "@/lib/user";
+import { Admin } from "@/pages/admin";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -125,6 +126,23 @@ function Router() {
   );
 }
 
+function AppSurface() {
+  const [location] = useLocation();
+  if (location === "/admin") return <Admin />;
+  return (
+    <ConsentGate>
+      <AndroidBackHandler />
+      <NoorInitializer />
+      <WelcomeCampaignGate>
+        <Layout>
+          <Router />
+        </Layout>
+      </WelcomeCampaignGate>
+      <NotificationPrompt />
+    </ConsentGate>
+  );
+}
+
 function App() {
   return (
     <I18nProvider>
@@ -132,18 +150,7 @@ function App() {
         <QueryClientProvider client={queryClient}>
           <TooltipProvider>
             <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, "")}>
-              <ConsentGate>
-                <AndroidBackHandler />
-                <NoorInitializer />
-
-                <WelcomeCampaignGate>
-                  <Layout>
-                    <Router />
-                  </Layout>
-                </WelcomeCampaignGate>
-
-                <NotificationPrompt />
-              </ConsentGate>
+                <AppSurface />
             </WouterRouter>
             <Toaster />
           </TooltipProvider>

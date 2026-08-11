@@ -23,3 +23,4 @@
 - [AI Teacher microphone lifecycle](teacher-microphone-lifecycle.md) — recognition attempts need one cancellable session, abortable retry, and stale-callback guards
 - [Noor Quran legacy cleanup boundary](noor-quran-legacy-cleanup.md) — Google Sheets and routed Vite pages are active; the old admin, Drizzle DB, Expo scaffold, and unrouted pages are not
 - [Quran reader display controls](quran-reader-display-controls.md) — shared persisted visibility settings and the existing translation registry drive Surah/Juz ayah menus
+- [Admin panel data boundary](admin-panel-data-boundary.md) — keep Teacher analytics minimized/read-only and append Google Sheets schema fields without shifting established columns

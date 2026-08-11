@@ -1,0 +1,125 @@
+Build the new Admin Panel as a fully functional system, not just a UI/mockup.
+
+Follow this implementation order strictly:
+
+Step 1 — Audit current architecture
+
+Before coding, identify:
+
+- Current API routes.
+- Google Sheets data structure.
+- Existing Teacher Account/progress data.
+- Existing Campaign data.
+- Existing Islamic Product data.
+- Current authentication/user identity system.
+
+Do not invent a new database or duplicate existing data.
+
+Step 2 — Create secure Admin authentication
+
+Build a proper admin-only authentication/authorization layer using the current architecture.
+
+Requirements:
+
+- Normal users must not access Admin Panel APIs or pages.
+- Never restore the old hardcoded 20-tap admin unlock.
+- Never expose admin secrets in frontend code.
+- Protect every admin API endpoint server-side.
+
+Step 3 — Build Admin Panel foundation
+
+Create the new Admin Panel with a clean dashboard/navigation containing:
+
+- AI Teacher Analytics
+- Welcome Campaigns
+- Islamic Products
+
+Keep the design professional and consistent with Noor Quran.
+
+Step 4 — AI Teacher Analytics
+
+Connect it to the existing Teacher Account/progress data.
+
+Show:
+
+- Total AI Teacher users.
+- Active/recent Teacher users.
+- Each user's current level.
+- Lessons completed.
+- Current lesson/progress.
+- Users grouped by level.
+- Lesson completion statistics.
+- Overall progress statistics.
+
+Add search/filtering so the admin can find a specific user.
+
+Step 5 — Welcome Campaign Management
+
+Connect this to the existing Campaign system.
+
+Admin must be able to:
+
+- View campaigns.
+- Create campaign.
+- Edit campaign.
+- Activate/deactivate campaign.
+- Set title, description, image and dates.
+- Clearly see which campaign is currently active.
+
+The public Welcome screen must automatically use the active campaign.
+
+Step 6 — Islamic Products Management
+
+Use the existing Products architecture.
+
+Admin must be able to:
+
+- View products.
+- Create/upload product.
+- Edit product.
+- Upload/replace image.
+- Enable/disable product.
+- Delete obsolete product.
+- Manage display order/details.
+
+The public product screen must automatically reflect these changes.
+
+Step 7 — End-to-end verification
+
+Do not consider the work complete after the Admin UI renders.
+
+Verify every operation against the real backend/data source:
+
+Admin → API → Google Sheets/current data → public app.
+
+Test:
+
+- Admin authentication.
+- Teacher analytics.
+- Create/edit/activate campaign.
+- Create/edit/delete product.
+- Image upload.
+- Public campaign update.
+- Public product update.
+- Unauthorized user access rejection.
+
+Step 8 — Final checks
+
+Run:
+
+- Typecheck.
+- Existing tests.
+- Production build.
+- API build.
+- git diff --check.
+- Runtime/API logs.
+- Live preview verification.
+
+Important:
+Do not restore deleted legacy Admin Panel code.
+Do not create mock/fake analytics data.
+Do not create a second database.
+Do not add coins, purchases, referrals, or unrelated features.
+Reuse the current active architecture wherever possible.
+
+If any required existing data/API is missing, stop and report exactly what is missing instead of silently creating a duplicate system.

@@ -4,6 +4,7 @@ import usersRouter from "./users";
 import coinsRouter from "./coins";
 import productsRouter from "./products";
 import campaignsRouter from "./campaigns";
+import adminRouter from "./admin";
 
 const router: IRouter = Router();
 
@@ -12,5 +13,6 @@ router.use("/users", usersRouter);
 router.use("/coins", coinsRouter);
 router.use("/products", productsRouter);
 router.use("/campaigns", campaignsRouter);
+router.use("/admin", adminRouter);
 
 export default router;
