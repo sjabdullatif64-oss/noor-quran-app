@@ -1,4 +1,5 @@
 import { useLocation } from "wouter";
+import { useRef, useState } from "react";
 import {
   Navigation, Heart, Hash, Gift, Settings, Download, Bookmark,
   ChevronRight, Bell, Info, Share2, Sparkles, PenLine, Star,
@@ -8,6 +9,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useI18n } from "@/lib/i18n-context";
 import { RewardedAdButton } from "@/components/rewarded-ad-button";
 import { nativeShare, openUrl, isNative, getLastShareError } from "@/lib/capacitor";
+import { API_BASE } from "@/lib/noor-api";
 
 const APP_SHARE_URL = "https://play.google.com/store/apps/details?id=com.sj64noorquran";
 const APP_RATE_URL = "https://play.google.com/store/apps/details?id=com.sj64noorquran&reviewId=0";
@@ -19,6 +21,12 @@ export function More() {
   const [, navigate] = useLocation();
   const { toast } = useToast();
   const { t }        = useI18n();
+  const footerTaps = useRef(0);
+  const footerResetTimer = useRef<number | null>(null);
+  const [adminDialogOpen, setAdminDialogOpen] = useState(false);
+  const [adminToken, setAdminToken] = useState("");
+  const [adminError, setAdminError] = useState("");
+  const [adminBusy, setAdminBusy] = useState(false);
 
   async function handleShare() {
     const result = await nativeShare({
@@ -38,6 +46,49 @@ export function More() {
 
   function handleRateApp() {
     void openUrl(isNative() ? APP_RATE_MARKET_URL : APP_RATE_URL);
+  }
+
+  function handleFooterTap() {
+    footerTaps.current += 1;
+    if (footerResetTimer.current !== null) window.clearTimeout(footerResetTimer.current);
+    footerResetTimer.current = window.setTimeout(() => {
+      footerTaps.current = 0;
+      footerResetTimer.current = null;
+    }, 2000);
+
+    if (footerTaps.current >= 20) {
+      footerTaps.current = 0;
+      if (footerResetTimer.current !== null) window.clearTimeout(footerResetTimer.current);
+      footerResetTimer.current = null;
+      setAdminToken("");
+      setAdminError("");
+      setAdminDialogOpen(true);
+    }
+  }
+
+  async function handleAdminLogin(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setAdminBusy(true);
+    setAdminError("");
+    try {
+      const response = await fetch(`${API_BASE}/admin/session`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ token: adminToken }),
+      });
+      const data = await response.json().catch(() => ({})) as { session?: string };
+      if (!response.ok || !data.session) {
+        throw new Error("Incorrect admin password");
+      }
+      sessionStorage.setItem("noor-admin-session", data.session);
+      setAdminDialogOpen(false);
+      setAdminToken("");
+      navigate("/admin");
+    } catch (error) {
+      setAdminError(error instanceof Error ? error.message : "Incorrect admin password");
+    } finally {
+      setAdminBusy(false);
+    }
   }
 
   const ITEMS = [
@@ -230,6 +281,65 @@ export function More() {
           </button>
         ))}
       </div>
+
+       <button
+         type="button"
+         onClick={handleFooterTap}
+         className="mt-10 mb-4 w-full bg-transparent px-4 text-center text-xs text-muted-foreground"
+         aria-label={t("more_footer")}
+       >
+         {t("more_footer")}
+       </button>
+
+       {adminDialogOpen && (
+         <div
+           className="fixed inset-0 z-[100] flex items-center justify-center bg-black/70 px-5 py-8"
+           role="dialog"
+           aria-modal="true"
+           aria-labelledby="admin-password-title"
+         >
+           <div className="w-full max-w-sm rounded-2xl border border-border bg-card p-6 shadow-2xl">
+             <div className="mb-5">
+               <h2 id="admin-password-title" className="text-xl font-semibold text-foreground">Admin access</h2>
+               <p className="mt-2 text-sm text-muted-foreground">Enter the administrator password to continue.</p>
+             </div>
+             <form onSubmit={handleAdminLogin} className="space-y-4">
+               <input
+                 className="w-full rounded-xl border border-border bg-background px-4 py-3 text-foreground outline-none focus:border-primary focus:ring-2 focus:ring-primary/20"
+                 type="password"
+                 value={adminToken}
+                 onChange={(event) => setAdminToken(event.target.value)}
+                 autoComplete="current-password"
+                 autoFocus
+                 required
+                 placeholder="Admin password"
+                 aria-label="Admin password"
+               />
+               {adminError && <p className="text-sm text-destructive" role="alert">{adminError}</p>}
+               <div className="flex justify-end gap-2">
+                 <button
+                   type="button"
+                   className="rounded-xl px-4 py-2.5 text-sm font-semibold text-muted-foreground hover:bg-muted"
+                   onClick={() => {
+                     setAdminDialogOpen(false);
+                     setAdminToken("");
+                     setAdminError("");
+                   }}
+                 >
+                   Cancel
+                 </button>
+                 <button
+                   type="submit"
+                   className="rounded-xl bg-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground disabled:opacity-60"
+                   disabled={adminBusy}
+                 >
+                   {adminBusy ? "Checking…" : "Continue"}
+                 </button>
+               </div>
+             </form>
+           </div>
+         </div>
+       )}
 
     </div>
   );

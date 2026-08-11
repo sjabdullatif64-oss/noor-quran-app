@@ -44,6 +44,8 @@ const blankProduct = (): Omit<Product, "id" | "createdAt"> => ({
   category: "other", status: "approved", displayOrder: 0,
 });
 
+const MAX_MEDIA_DATA_URL_LENGTH = 1_900_000;
+
 function fileToDataUrl(file: File): Promise<string> {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
@@ -51,6 +53,14 @@ function fileToDataUrl(file: File): Promise<string> {
     reader.onerror = reject;
     reader.readAsDataURL(file);
   });
+}
+
+async function readMediaFile(file: File): Promise<string> {
+  const dataUrl = await fileToDataUrl(file);
+  if (dataUrl.length > MAX_MEDIA_DATA_URL_LENGTH) {
+    throw new Error("This file is too large. Choose media under 1.9 MB.");
+  }
+  return dataUrl;
 }
 
 function AdminLogin({ onSession }: { onSession: (session: string) => void }) {
@@ -137,10 +147,82 @@ function EmptyState({ icon, title, text, action }: { icon: ReactNode; title: str
 
 function ImageInput({ value, onChange, label = "Image" }: { value: string | null; onChange: (value: string | null) => void; label?: string }) {
   const [busy, setBusy] = useState(false);
-  async function onFile(e: React.ChangeEvent<HTMLInputElement>) { const file = e.target.files?.[0]; if (!file) return; setBusy(true); try { onChange(await fileToDataUrl(file)); } finally { setBusy(false); } }
+  const [error, setError] = useState("");
+  async function onFile(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file) return;
+    setBusy(true);
+    setError("");
+    try { onChange(await readMediaFile(file)); }
+    catch (err) { setError(err instanceof Error ? err.message : "Unable to read this file."); }
+    finally { setBusy(false); }
+  }
   return <div><div className="mb-2 flex items-center justify-between"><span className="admin-kicker">{label}</span>{value && <button type="button" className="text-xs text-[hsl(1_55%_39%)]" onClick={() => onChange(null)}>Remove</button>}</div>
-    <div className="flex gap-2">{value ? <div className="relative h-20 w-28 overflow-hidden rounded-lg border bg-[hsl(38_38%_97%)]"><img src={value} alt="" className="h-full w-full object-cover" /><button type="button" className="absolute right-1 top-1 rounded-full bg-[hsl(26_32%_16%/.78)] p-1 text-white" onClick={() => onChange(null)}><X className="h-3 w-3" /></button></div> : <div className="flex h-20 w-28 items-center justify-center rounded-lg border border-dashed text-[hsl(var(--admin-muted))]"><FileImage className="h-5 w-5" /></div>}<div className="flex flex-1 flex-col gap-2"><input className="admin-field text-xs" value={value || ""} onChange={(e) => onChange(e.target.value || null)} placeholder="Paste image URL or upload a file" /><label className="admin-button admin-button-quiet w-fit cursor-pointer text-xs"><Upload className="h-3.5 w-3.5" /> {busy ? "Reading file…" : "Choose file"}<input type="file" accept="image/*" onChange={onFile} className="hidden" /></label></div></div>
+    <div className="flex gap-2">{value ? <div className="relative h-20 w-28 overflow-hidden rounded-lg border bg-[hsl(38_38%_97%)]"><img src={value} alt="" className="h-full w-full object-cover" /><button type="button" className="absolute right-1 top-1 rounded-full bg-[hsl(26_32%_16%/.78)] p-1 text-white" onClick={() => onChange(null)}><X className="h-3 w-3" /></button></div> : <div className="flex h-20 w-28 items-center justify-center rounded-lg border border-dashed text-[hsl(var(--admin-muted))]"><FileImage className="h-5 w-5" /></div>}<div className="flex flex-1 flex-col gap-2"><input className="admin-field text-xs" value={value || ""} onChange={(e) => onChange(e.target.value || null)} placeholder="Paste image URL or upload a file" /><label className="admin-button admin-button-quiet w-fit cursor-pointer text-xs"><Upload className="h-3.5 w-3.5" /> {busy ? "Reading file…" : "Choose from Gallery"}<input type="file" accept="image/*" onChange={onFile} className="hidden" /></label>{error && <p className="text-xs text-[hsl(1_55%_39%)]">{error}</p>}</div></div>
   </div>;
+}
+
+function MediaInput({
+  value,
+  onChange,
+  label,
+  accept,
+  kind,
+}: {
+  value: string | null;
+  onChange: (value: string | null) => void;
+  label: string;
+  accept: string;
+  kind: "video" | "gif";
+}) {
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState("");
+  async function onFile(event: React.ChangeEvent<HTMLInputElement>) {
+    const file = event.target.files?.[0];
+    event.target.value = "";
+    if (!file) return;
+    setBusy(true);
+    setError("");
+    try {
+      if (kind === "gif" && file.type !== "image/gif") {
+        throw new Error("Choose a GIF file.");
+      }
+      onChange(await readMediaFile(file));
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Unable to read this file.");
+    } finally {
+      setBusy(false);
+    }
+  }
+  return (
+    <div>
+      <div className="mb-2 flex items-center justify-between">
+        <span className="admin-kicker">{label}</span>
+        {value && <button type="button" className="text-xs text-[hsl(1_55%_39%)]" onClick={() => onChange(null)}>Remove</button>}
+      </div>
+      <div className="flex gap-2">
+        {value ? (
+          <div className="relative h-20 w-28 overflow-hidden rounded-lg border bg-[hsl(38_38%_97%)]">
+            {kind === "video" ? <video src={value} muted playsInline className="h-full w-full object-cover" /> : <img src={value} alt="" className="h-full w-full object-cover" />}
+            <button type="button" className="absolute right-1 top-1 rounded-full bg-[hsl(26_32%_16%/.78)] p-1 text-white" onClick={() => onChange(null)}><X className="h-3 w-3" /></button>
+          </div>
+        ) : (
+          <div className="flex h-20 w-28 items-center justify-center rounded-lg border border-dashed text-[hsl(var(--admin-muted))]">
+            {kind === "video" ? <span className="text-xs">Video</span> : <span className="text-xs">GIF</span>}
+          </div>
+        )}
+        <div className="flex flex-1 flex-col gap-2">
+          <input className="admin-field text-xs" value={value || ""} onChange={(event) => onChange(event.target.value || null)} placeholder={`Paste ${kind} URL or choose from Gallery`} />
+          <label className="admin-button admin-button-quiet w-fit cursor-pointer text-xs">
+            <Upload className="h-3.5 w-3.5" /> {busy ? "Reading file…" : "Choose from Gallery"}
+            <input type="file" accept={accept} onChange={onFile} className="hidden" />
+          </label>
+          {error && <p className="text-xs text-[hsl(1_55%_39%)]">{error}</p>}
+        </div>
+      </div>
+    </div>
+  );
 }
 
 function FormField({ label, children }: { label: string; children: ReactNode }) { return <label className="block"><span className="admin-kicker mb-2 block">{label}</span>{children}</label>; }
@@ -149,7 +231,7 @@ function CampaignForm({ initial, onSave, onCancel, saving }: { initial: Campaign
   const [form, setForm] = useState<Omit<Campaign, "id">>(initial ? { ...initial } : blankCampaign());
   const set = (key: keyof typeof form, value: unknown) => setForm((old) => ({ ...old, [key]: value }));
   return <div className="admin-panel rounded-2xl p-5 sm:p-6"><div className="mb-6 flex items-start justify-between"><div><div className="admin-kicker mb-1">{initial ? "Edit campaign" : "New campaign"}</div><h3 className="text-xl font-semibold tracking-[-.03em]">{initial ? "Tune the live message" : "Create a welcome message"}</h3></div><button className="rounded-lg p-2 hover:bg-[hsl(var(--admin-teal-soft))]" onClick={onCancel}><X className="h-4 w-4" /></button></div>
-    <div className="grid gap-4 sm:grid-cols-2"><FormField label="Title"><input className="admin-field" value={form.title} onChange={(e) => set("title", e.target.value)} required /></FormField><FormField label="Button label"><input className="admin-field" value={form.buttonText || ""} onChange={(e) => set("buttonText", e.target.value || null)} /></FormField><FormField label="Description"><textarea className="admin-field min-h-24 resize-y sm:col-span-2" value={form.description} onChange={(e) => set("description", e.target.value)} /></FormField><FormField label="Destination URL"><input className="admin-field" value={form.url || ""} onChange={(e) => set("url", e.target.value || null)} placeholder="https://" /></FormField><FormField label="Display duration (seconds)"><input className="admin-field" type="number" min="1" max="120" value={form.durationSeconds} onChange={(e) => set("durationSeconds", Number(e.target.value))} /></FormField><div className="sm:col-span-2"><ImageInput label="Still image" value={form.imageUrl} onChange={(value) => set("imageUrl", value)} /></div><FormField label="GIF URL"><input className="admin-field" value={form.gifUrl || ""} onChange={(e) => set("gifUrl", e.target.value || null)} /></FormField><FormField label="Video URL"><input className="admin-field" value={form.videoUrl || ""} onChange={(e) => set("videoUrl", e.target.value || null)} /></FormField></div>
+     <div className="grid gap-4 sm:grid-cols-2"><FormField label="Title"><input className="admin-field" value={form.title} onChange={(e) => set("title", e.target.value)} required /></FormField><FormField label="Button label"><input className="admin-field" value={form.buttonText || ""} onChange={(e) => set("buttonText", e.target.value || null)} /></FormField><FormField label="Description"><textarea className="admin-field min-h-24 resize-y sm:col-span-2" value={form.description} onChange={(e) => set("description", e.target.value)} /></FormField><FormField label="Destination URL"><input className="admin-field" value={form.url || ""} onChange={(e) => set("url", e.target.value || null)} placeholder="https://" /></FormField><FormField label="Display duration (seconds)"><input className="admin-field" type="number" min="1" max="120" value={form.durationSeconds} onChange={(e) => set("durationSeconds", Number(e.target.value))} /></FormField><div className="sm:col-span-2"><ImageInput label="Still image" value={form.imageUrl} onChange={(value) => set("imageUrl", value)} /></div><MediaInput label="GIF media" value={form.gifUrl} onChange={(value) => set("gifUrl", value)} accept="image/gif,.gif" kind="gif" /><MediaInput label="Video media" value={form.videoUrl} onChange={(value) => set("videoUrl", value)} accept="video/*" kind="video" /></div>
     <label className="mt-5 flex items-center gap-3 text-sm font-medium"><input type="checkbox" checked={form.enabled} onChange={(e) => set("enabled", e.target.checked)} className="h-4 w-4 accent-[hsl(var(--admin-teal))]" /> Make this campaign eligible for the welcome screen</label>
     <div className="mt-7 flex justify-end gap-2 border-t pt-5"><button className="admin-button admin-button-quiet" onClick={onCancel}>Cancel</button><button className="admin-button admin-button-primary" onClick={() => onSave(form)} disabled={saving || !form.title.trim()}><Save className="h-4 w-4" /> {saving ? "Saving…" : "Save campaign"}</button></div>
   </div>;
