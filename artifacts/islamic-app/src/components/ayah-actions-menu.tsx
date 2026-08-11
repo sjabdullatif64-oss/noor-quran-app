@@ -22,7 +22,6 @@ import {
   type TranslationLanguage,
 } from "@/lib/api";
 import { MoreLanguagesDialog } from "@/components/translation-language-picker";
-import { setLang } from "@/lib/settings";
 
 interface AyahActionsMenuProps {
   surahEnglishName: string;
@@ -33,7 +32,7 @@ interface AyahActionsMenuProps {
   /** The translation text exactly as currently displayed (post explanatory-word setting) — used for Share/Copy so output matches what the user sees. */
   displayedTranslation: string;
   translationLanguage: TranslationLanguage;
-  onTranslationLanguageChange?: (language: TranslationLanguage) => void;
+  onTranslationLanguageChange: (language: TranslationLanguage) => void;
   /** Whether two-finger pinch-to-zoom is currently enabled for the reading content. */
   pinchZoomEnabled: boolean;
   /** Toggles pinch-to-zoom on/off. Lifted up to the reader page since zoom applies to the whole ayah list, not a single card. */
@@ -64,12 +63,8 @@ export function AyahActionsMenu(props: AyahActionsMenuProps) {
     showTranslation,
   } = useAyahDisplaySettings();
 
-  const handleLanguageChange = (language: TranslationLanguage) => {
-    if (props.onTranslationLanguageChange) {
-      props.onTranslationLanguageChange(language);
-    } else {
-      setLang(language);
-    }
+  const handleTranslationLanguageChange = (language: TranslationLanguage) => {
+    props.onTranslationLanguageChange(language);
   };
 
   const handleShare = async () => {
@@ -198,7 +193,7 @@ export function AyahActionsMenu(props: AyahActionsMenuProps) {
         open={languageDialogOpen}
         onOpenChange={setLanguageDialogOpen}
         selectedLanguage={props.translationLanguage}
-        onSelect={handleLanguageChange}
+        onSelect={handleTranslationLanguageChange}
         languages={ALL_LANGUAGES}
         title="Translation Language"
         description="Choose the language shown beneath each Quran ayah."

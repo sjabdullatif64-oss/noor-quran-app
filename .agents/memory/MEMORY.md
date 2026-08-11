@@ -1,5 +1,6 @@
 - [Screenshot caching for theme verification](screenshot-theme-cache.md) — Screenshot tool can return cached images; always use a cache-busting query parameter when verifying visual changes like light/dark mode
 - [Capacitor external URL opening](capacitor-external-links.md) — window.open(_blank) is broken in Capacitor WebView; use openUrl() helper from @/lib/capacitor (wraps @capacitor/browser)
+- [Native API base compatibility](native-api-base-compatibility.md) — normalize configured API domains before appending `/api`, and keep a temporary backend alias for older `/api/api/...` builds
 - [Google Sheets coin audit](coins-sheets-audit.md) — active coin ledger uses append-only transactions; preserve historical Users columns and join transactions to current users when auditing
 - [AdMob safe init pattern](admob-safe-init.md) — selective MobileAdsInitProvider removal via tools:node="merge" preserves WorkManager; full InitializationProvider removal breaks it
 - [Git push and GitHub Actions in Replit](git-push-actions.md) — git push is blocked in bash; use GitHub REST API (blob→tree→commit→ref PATCH) in code_execution to push; workflow auto-triggers on push to main
@@ -24,4 +25,5 @@
 - [Noor Quran legacy cleanup boundary](noor-quran-legacy-cleanup.md) — Google Sheets and routed Vite pages are active; the old admin, Drizzle DB, Expo scaffold, and unrouted pages are not
 - [Quran reader display controls](quran-reader-display-controls.md) — shared persisted visibility settings and the existing translation registry drive Surah/Juz ayah menus
 - [Admin panel data boundary](admin-panel-data-boundary.md) — keep Teacher analytics minimized/read-only and append Google Sheets schema fields without shifting established columns
+- [Admin theme scope](admin-theme-scope.md) — keep Admin’s dark-green visual palette scoped to `.admin-shell`; never alter global/public app theme tokens
 - [Bookmark record compatibility](bookmark-record-compatibility.md) — keep Ayah and Surah bookmarks in one storage key with a typed Surah discriminator

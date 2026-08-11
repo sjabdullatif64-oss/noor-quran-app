@@ -1,11 +1,16 @@
 import { Capacitor } from "@capacitor/core";
 
-const REPLIT_DOMAIN =
+const configuredApiDomain = (
   import.meta.env.VITE_API_DOMAIN ||
-  "noor-quran.replit.app";
+  "noor-quran.replit.app"
+).replace(/\/+$/, "").replace(/\/api$/, "");
+
+const REPLIT_DOMAIN = configuredApiDomain.startsWith("http")
+  ? configuredApiDomain
+  : `https://${configuredApiDomain}`;
 
 export const API_BASE = Capacitor.isNativePlatform()
-  ? `https://${REPLIT_DOMAIN}/api`
+  ? `${REPLIT_DOMAIN}/api`
   : "/api";
 
 async function noorFetch<T>(path: string, opts: RequestInit = {}): Promise<T> {
