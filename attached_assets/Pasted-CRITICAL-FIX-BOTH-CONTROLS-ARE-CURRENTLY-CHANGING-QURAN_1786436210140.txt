@@ -1,0 +1,102 @@
+CRITICAL FIX — BOTH CONTROLS ARE CURRENTLY CHANGING QURAN TRANSLATION
+
+The latest build is still wrong.
+
+I checked the actual Quran screen:
+
+- The top language buttons change the Quran Translation Language.
+- The ⋮ Ayah menu → Translation Language ALSO changes the Quran Translation Language.
+
+This means both controls are controlling the SAME thing. That is NOT what I want.
+
+Correct architecture
+
+1. Top language buttons
+
+Keep these exactly as they are.
+
+They control ONLY:
+
+Quran Translation Language
+
+Example:
+English → Quran translation in English
+Urdu → Quran translation in Urdu
+
+2. ⋮ Ayah menu
+
+The language control inside this menu must NOT control Quran Translation.
+
+It must control:
+
+Transliteration Language
+
+This is a completely separate preference.
+
+For example:
+
+Translation: Urdu
+Transliteration: English
+
+The user should be able to read:
+
+- Arabic Quran text
+- Urdu translation
+- English transliteration
+
+Or:
+
+Translation: English
+Transliteration: Urdu
+
+VERY IMPORTANT
+
+Do NOT simply create two controls that both call the same "language" state.
+
+There must be two completely independent states/preferences:
+
+"translationLanguage"
+
+and
+
+"transliterationLanguage"
+
+Changing "translationLanguage" must NOT change "transliterationLanguage".
+
+Changing "transliterationLanguage" must NOT change "translationLanguage".
+
+The visible label in the ⋮ menu should therefore be:
+
+Transliteration Language
+
+NOT:
+
+Translation Language
+
+Remove the duplicate Translation Language control from the ⋮ menu if the top buttons already provide translation selection.
+
+Do NOT modify AI Teacher.
+
+Do NOT modify unrelated Quran functionality.
+
+Do NOT add a new screen or future feature.
+
+Use the existing Quran ⋮ menu and existing language UI architecture.
+
+Final verification is mandatory
+
+After the fix, test the actual rendered UI:
+
+1. Select Urdu from the TOP language buttons → only Quran translation changes to Urdu.
+2. Open ⋮ → select English under Transliteration Language → only transliteration changes to English.
+3. Change the top translation to English → transliteration must remain English.
+4. Change transliteration to Urdu → Quran translation must remain English.
+5. Close/reopen the Quran → both preferences must remain independently selected.
+
+The final screenshot/runtime verification must visibly show:
+
+Top = Translation control
+
+⋮ menu = Transliteration Language control
+
+There must NOT be two controls both changing Quran Translation.
