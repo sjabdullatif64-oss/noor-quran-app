@@ -682,16 +682,6 @@ export async function getFeaturedProducts(): Promise<Product[]> {
     .sort((a, b) => (b.promotionExpiry ?? "").localeCompare(a.promotionExpiry ?? ""));
 }
 
-export async function getPendingProducts(): Promise<Product[]> {
-  const rows = await readAllRows("Products");
-  return rows.map(rowToProduct).filter((p) => p.status === "pending").sort((a, b) => b.createdAt.localeCompare(a.createdAt));
-}
-
-export async function getAllProductsAdmin(): Promise<Product[]> {
-  const rows = await readAllRows("Products");
-  return rows.map(rowToProduct).sort((a, b) => b.createdAt.localeCompare(a.createdAt));
-}
-
 export async function getUserProducts(userId: string): Promise<Product[]> {
   const rows = await readAllRows("Products");
   return rows.map(rowToProduct).filter((p) => p.userId === userId).sort((a, b) => b.createdAt.localeCompare(a.createdAt));

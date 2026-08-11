@@ -29,7 +29,6 @@ import { Writing } from "@/pages/writing";
 import { IslamicCalendar } from "@/pages/islamic-calendar";
 import { AzanSettings } from "@/pages/azan-settings";
 import { Marketplace } from "@/pages/marketplace";
-import { AdminProducts } from "@/pages/admin-products";
 import { JuzReader } from "@/pages/juz-reader";
 import { Teacher } from "@/pages/teacher";
 import { TeacherLesson } from "@/pages/teacher-lesson";
@@ -104,7 +103,6 @@ function Router() {
       <Route path="/islamic-calendar" component={IslamicCalendar} />
       <Route path="/azan-settings" component={AzanSettings} />
       <Route path="/marketplace" component={Marketplace} />
-      <Route path="/admin-products" component={AdminProducts} />
       <Route path="/juz/:number" component={JuzReader} />
       {AI_TEACHER_ENABLED ? (
         <>

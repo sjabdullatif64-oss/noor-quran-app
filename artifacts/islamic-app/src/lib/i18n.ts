@@ -263,7 +263,6 @@ export interface Translations {
   home_product_visit: string;
   home_products_title: string;
   home_products_view_all: string;
-  more_admin_title: string;
   notif_check_again: string;
   notif_daily_ayah_label: string;
   notif_evening_azkar_label: string;
@@ -398,7 +397,6 @@ const en: Translations = {
   home_verse:                        "Verse",
   more_about:                        "About Noor Quran",
   more_about_sub:                    "App info, version & privacy",
-  more_admin_title:                  'Admin Access',
   more_bookmarks:                    "Bookmarks",
   more_bookmarks_sub:                "Reading bookmarks",
   more_downloads:                    "Downloads",
@@ -612,7 +610,6 @@ const ar: Translations = {
   home_verse:                        "آية",
   more_about:                        "حول نور القرآن",
   more_about_sub:                    "معلومات التطبيق والإصدار والخصوصية",
-  more_admin_title:                  'Admin Access',
   more_bookmarks:                    "الإشارات المرجعية",
   more_bookmarks_sub:                "علامات تبويب القراءة",
   more_downloads:                    "التنزيلات",
@@ -826,7 +823,6 @@ const ur: Translations = {
   home_verse:                        "آیت",
   more_about:                        "نور قرآن کے بارے میں",
   more_about_sub:                    "ایپ کی معلومات، ورژن اور پرائیویسی",
-  more_admin_title:                  'Admin Access',
   more_bookmarks:                    "بک مارکس",
   more_bookmarks_sub:                "پڑھنے کے بک مارکس",
   more_downloads:                    "ڈاؤن لوڈز",
@@ -1040,7 +1036,6 @@ const hi: Translations = {
   home_verse:                        "आयत",
   more_about:                        "नूर क़ुरआन के बारे में",
   more_about_sub:                    "ऐप जानकारी, संस्करण और गोपनीयता",
-  more_admin_title:                  'Admin Access',
   more_bookmarks:                    "बुकमार्क",
   more_bookmarks_sub:                "पढ़ने के बुकमार्क",
   more_downloads:                    "डाउनलोड",
@@ -1254,7 +1249,6 @@ const bn: Translations = {
   home_verse:                        "আয়াত",
   more_about:                        "নূর কুরআন সম্পর্কে",
   more_about_sub:                    "অ্যাপ তথ্য, সংস্করণ ও গোপনীয়তা",
-  more_admin_title:                  'Admin Access',
   more_bookmarks:                    "বুকমার্ক",
   more_bookmarks_sub:                "পড়ার বুকমার্ক",
   more_downloads:                    "ডাউনলোড",
@@ -1468,7 +1462,6 @@ const tr: Translations = {
   home_verse:                        "Ayet",
   more_about:                        "Noor Kuran Hakkında",
   more_about_sub:                    "Uygulama bilgisi, sürüm ve gizlilik",
-  more_admin_title:                  'Admin Access',
   more_bookmarks:                    "Yer İmleri",
   more_bookmarks_sub:                "Okuma yer imleri",
   more_downloads:                    "İndirmeler",
@@ -1682,7 +1675,6 @@ const id: Translations = {
   home_verse:                        "Ayat",
   more_about:                        "Tentang Noor Quran",
   more_about_sub:                    "Info aplikasi, versi & privasi",
-  more_admin_title:                  'Admin Access',
   more_bookmarks:                    "Penanda",
   more_bookmarks_sub:                "Penanda bacaan",
   more_downloads:                    "Unduhan",
@@ -1896,7 +1888,6 @@ const fr: Translations = {
   home_verse:                        "Verset",
   more_about:                        "À propos de Noor Quran",
   more_about_sub:                    "Infos, version et confidentialité",
-  more_admin_title:                  'Admin Access',
   more_bookmarks:                    "Signets",
   more_bookmarks_sub:                "Signets de lecture",
   more_downloads:                    "Téléchargements",
@@ -2110,7 +2101,6 @@ const es: Translations = {
   home_verse:                        "Versículo",
   more_about:                        "Acerca de Noor Quran",
   more_about_sub:                    "Info de la app, versión y privacidad",
-  more_admin_title:                  'Admin Access',
   more_bookmarks:                    "Marcadores",
   more_bookmarks_sub:                "Marcadores de lectura",
   more_downloads:                    "Descargas",
@@ -2324,7 +2314,6 @@ const ms: Translations = {
   home_verse:                        "Ayat",
   more_about:                        "Tentang Noor Quran",
   more_about_sub:                    "Maklumat aplikasi, versi & privasi",
-  more_admin_title:                  'Admin Access',
   more_bookmarks:                    "Penanda Halaman",
   more_bookmarks_sub:                "Penanda pembacaan",
   more_downloads:                    "Muat Turun",

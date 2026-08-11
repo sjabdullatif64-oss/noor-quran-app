@@ -22,3 +22,4 @@
 - [Divine Name translation display](translation-language-registry.md) — normalize only explicit Allah-name spellings; preserve semantic words like God, Lord, and خدا
 - [AI Teacher full-Quran curriculum](teacher-full-quran-curriculum.md) — preserve legacy lesson IDs; append deterministic bundled-Quran passages with capped word progression
 - [AI Teacher microphone lifecycle](teacher-microphone-lifecycle.md) — recognition attempts need one cancellable session, abortable retry, and stale-callback guards
+- [Noor Quran legacy cleanup boundary](noor-quran-legacy-cleanup.md) — Google Sheets and routed Vite pages are active; the old admin, Drizzle DB, Expo scaffold, and unrouted pages are not

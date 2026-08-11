@@ -4,10 +4,4 @@ export const PROMOTION_COINS = {
   "7day": 200,
 } as const;
 
-export const PROMOTION_HOURS = {
-  none:  0,
-  "1day": 24,
-  "7day": 24,
-} as const;
-
 export type PromotionType = keyof typeof PROMOTION_COINS;

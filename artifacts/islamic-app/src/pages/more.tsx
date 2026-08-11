@@ -1,9 +1,8 @@
-import { useState, useRef, useCallback } from "react";
 import { useLocation } from "wouter";
 import {
   Navigation, Heart, Hash, Gift, Settings, Download, Bookmark,
   ChevronRight, Bell, Info, Share2, Sparkles, PenLine, Star,
-  CalendarDays, ShoppingBag, X, Eye, EyeOff,
+  CalendarDays, ShoppingBag,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useI18n } from "@/lib/i18n-context";
@@ -14,53 +13,10 @@ const APP_SHARE_URL = "https://play.google.com/store/apps/details?id=com.sj64noo
 const APP_SHARE_MSG =
   "Download Noor Quran - Quran, Prayer Times, Islamic Features & More.\nA beautiful Islamic app for daily Muslim life.";
 
-const ADMIN_TAPS_REQUIRED = 20;
-
 export function More() {
   const [, navigate] = useLocation();
-  const { toast }    = useToast();
+  const { toast } = useToast();
   const { t }        = useI18n();
-
-  const [tapCount,         setTapCount]         = useState(0);
-  const [showAdminDialog,  setShowAdminDialog]  = useState(false);
-  const [adminTokenInput,  setAdminTokenInput]  = useState("");
-  const [showAdminPw,      setShowAdminPw]      = useState(false);
-  const tapResetTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-  const handleFooterTap = useCallback(() => {
-    if (tapResetTimer.current) clearTimeout(tapResetTimer.current);
-    tapResetTimer.current = null;
-
-    setTapCount((prev) => {
-      const next = prev + 1;
-      if (next >= ADMIN_TAPS_REQUIRED) {
-        setShowAdminDialog(true);
-        return 0;
-      }
-      return next;
-    });
-
-    tapResetTimer.current = setTimeout(() => setTapCount(0), 3000);
-  }, []);
-
-  function handleAdminLogin() {
-    const tok = adminTokenInput.trim();
-    if (!tok) {
-      toast({ title: "Enter admin token", variant: "destructive" });
-      return;
-    }
-    localStorage.setItem("noor-admin-token", tok);
-    setShowAdminDialog(false);
-    setAdminTokenInput("");
-    setTapCount(0);
-    navigate("/admin-products");
-  }
-
-  function closeAdminDialog() {
-    setShowAdminDialog(false);
-    setAdminTokenInput("");
-    setTapCount(0);
-  }
 
   async function handleShare() {
     const result = await nativeShare({
@@ -269,60 +225,6 @@ export function More() {
         ))}
       </div>
 
-      {/* Footer — 20-tap admin access */}
-      <button
-        onClick={handleFooterTap}
-        className="w-full text-center text-muted-foreground text-xs mt-6 pb-4 active:text-primary transition-colors select-none"
-      >
-        {t("more_footer")}
-      </button>
-
-      {/* Admin Token Dialog */}
-      {showAdminDialog && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center px-6"
-          style={{ background: "rgba(0,0,0,0.75)", backdropFilter: "blur(4px)" }}
-        >
-          <div
-            className="w-full max-w-sm rounded-2xl border border-border p-6 space-y-4 bg-background"
-          >
-            <div className="flex items-center justify-between">
-              <p className="text-primary font-bold text-base">{t("more_admin_title")}</p>
-              <button
-                onClick={closeAdminDialog}
-                className="w-8 h-8 flex items-center justify-center rounded-full border border-border text-muted-foreground active:scale-90 transition-transform"
-              >
-                <X className="w-4 h-4" />
-              </button>
-            </div>
-            <p className="text-muted-foreground text-xs">Enter the admin token to continue.</p>
-            <div className="relative">
-              <input
-                type={showAdminPw ? "text" : "password"}
-                value={adminTokenInput}
-                onChange={(e) => setAdminTokenInput(e.target.value)}
-                onKeyDown={(e) => { if (e.key === "Enter") handleAdminLogin(); }}
-                placeholder="Admin token…"
-                autoFocus
-                className="w-full px-3 py-2.5 pr-10 rounded-xl bg-background border border-border text-foreground placeholder:text-muted-foreground text-sm focus:outline-none focus:ring-1 focus:ring-primary"
-              />
-              <button
-                type="button"
-                onClick={() => setShowAdminPw((v) => !v)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground"
-              >
-                {showAdminPw ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-              </button>
-            </div>
-            <button
-              onClick={handleAdminLogin}
-              className="w-full py-2.5 rounded-xl bg-primary hover:bg-primary/90 text-primary-foreground font-bold text-sm transition-colors active:scale-[0.98]"
-            >
-              Enter Admin Panel
-            </button>
-          </div>
-        </div>
-      )}
     </div>
   );
 }
