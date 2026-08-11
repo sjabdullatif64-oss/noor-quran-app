@@ -35,11 +35,12 @@ for (const [language, localizedName] of Object.entries(LOCALIZED_DIVINE_NAMES)) 
   );
 }
 
-// Semantic words must remain untouched. Only explicit written forms of
-// Allah's proper name are normalized.
-assert.equal(localizeDivineName("urdu", "خدا کا شکر ہے"), "خدا کا شکر ہے");
-assert.equal(localizeDivineName("english", "God is merciful; Allah is One"), "God is merciful; Allah is One");
-assert.equal(localizeDivineName("english", "The Lord is One"), "The Lord is One");
+// Providers sometimes translate Allah's name as a generic divine word.
+// Those aliases must be restored to the proper name at the display boundary.
+assert.equal(localizeDivineName("urdu", "خدا کا شکر ہے"), "اللہ کا شکر ہے");
+assert.equal(localizeDivineName("english", "God is merciful; Allah is One"), "Allah is merciful; Allah is One");
+assert.equal(localizeDivineName("english", "The Lord is One"), "The Allah is One");
+assert.equal(localizeDivineName("urdu", "خداوند اور خدائے واحد"), "اللہ اور اللہ واحد");
 assert.equal(
   localizeDivineName("english", "Allahabad is not Allah; ALLAH is One."),
   "Allahabad is not Allah; Allah is One.",
@@ -50,11 +51,11 @@ assert.equal(
 );
 assert.equal(
   localizeDivineName("urdu", "سب طرح کی تعریف خدا ہی کو ہے"),
-  "سب طرح کی تعریف خدا ہی کو ہے",
+  "سب طرح کی تعریف اللہ ہی کو ہے",
 );
 assert.equal(
   localizeDivineName("urdu", "خداوند کا ذکر اور خدا کا نام"),
-  "خداوند کا ذکر اور خدا کا نام",
+  "اللہ کا ذکر اور اللہ کا نام",
 );
 assert.equal(
   localizeDivineName("arabic", "النص العربي الله"),
@@ -69,7 +70,7 @@ assert.equal(
 );
 assert.equal(
   applyTranslationDisplay("urdu", "سب طرح کی تعریف خدا ہی کو ہے"),
-  "سب طرح کی تعریف خدا ہی کو ہے",
+  "سب طرح کی تعریف اللہ ہی کو ہے",
 );
 assert.equal(
   applyTranslationDisplay("arabic", "Allah واحد"),
@@ -97,7 +98,7 @@ const rawTranslationFromCache = "Allah is One";
 assert.equal(applyTranslationDisplay("urdu", rawTranslationFromCache), "اللہ is One");
 assert.equal(
   applyTranslationDisplay("urdu", "سب طرح کی تعریف خدا ہی کو ہے"),
-  "سب طرح کی تعریف خدا ہی کو ہے",
+  "سب طرح کی تعریف اللہ ہی کو ہے",
 );
 assert.equal(originalArabicQuranText, "اللَّهُ أَحَدٌ");
 assert.equal(rawTranslationFromCache, "Allah is One");
