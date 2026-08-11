@@ -7,7 +7,14 @@ import {
   ChevronLeft, ChevronRight, WifiOff, RotateCcw,
 } from "lucide-react";
 import { JUZ_DATA } from "@/lib/juz-data";
-import { getLang, setLang, TRANSLATION_LANGUAGE_CHANGED_EVENT } from "@/lib/settings";
+import {
+  getLang,
+  setLang,
+  TRANSLATION_LANGUAGE_CHANGED_EVENT,
+  getTransliterationLanguage,
+  setTransliterationLanguage,
+  TRANSLITERATION_LANGUAGE_CHANGED_EVENT,
+} from "@/lib/settings";
 import {
   fetchTranslationTexts,
   RTL_LANGUAGES,
@@ -23,7 +30,11 @@ import { NativeTTS } from "@/lib/native-tts";
 import { useToast } from "@/hooks/use-toast";
 import { useWakeLock } from "@/hooks/useWakeLock";
 import { AyahActionsMenu } from "@/components/ayah-actions-menu";
-import { useAyahDisplaySettings, applyTranslationDisplay } from "@/lib/ayah-display";
+import {
+  useAyahDisplaySettings,
+  applyTranslationDisplay,
+  applyTransliterationDisplay,
+} from "@/lib/ayah-display";
 import { usePinchZoom } from "@/hooks/use-pinch-zoom";
 import {
   getOfflineArabic,
@@ -249,6 +260,9 @@ export function JuzReader() {
   const juzInfo                 = JUZ_DATA[juzNumber - 1];
 
   const [language, setLanguage] = useState<TranslationLanguage>(() => getLang());
+  const [transliterationLanguage, setTransliterationLanguageState] = useState<TranslationLanguage>(
+    () => getTransliterationLanguage(),
+  );
   const languageRef = useRef(language);
   useEffect(() => { languageRef.current = language; }, [language]);
   const { showTransliteration, showTranslation } = useAyahDisplaySettings();
@@ -390,6 +404,17 @@ export function JuzReader() {
     const syncLanguage = () => setLanguage(getLang());
     window.addEventListener(TRANSLATION_LANGUAGE_CHANGED_EVENT, syncLanguage);
     return () => window.removeEventListener(TRANSLATION_LANGUAGE_CHANGED_EVENT, syncLanguage);
+  }, []);
+
+  useEffect(() => {
+    const syncTransliterationLanguage = () => {
+      setTransliterationLanguageState(getTransliterationLanguage());
+    };
+    window.addEventListener(TRANSLITERATION_LANGUAGE_CHANGED_EVENT, syncTransliterationLanguage);
+    return () => window.removeEventListener(
+      TRANSLITERATION_LANGUAGE_CHANGED_EVENT,
+      syncTransliterationLanguage,
+    );
   }, []);
 
   // ── Load bookmarks + favorites once flat ayahs are ready ──────────────────
@@ -958,10 +983,10 @@ export function JuzReader() {
                             textAr={ayah.textAr}
                             textTranslit={ayah.textTranslit}
                             displayedTranslation={applyTranslationDisplay(language, ayah.textTranslation ?? "")}
-                            translationLanguage={language}
-                            onTranslationLanguageChange={(nextLanguage) => {
-                              setLang(nextLanguage);
-                              setLanguage(nextLanguage);
+                            transliterationLanguage={transliterationLanguage}
+                            onTransliterationLanguageChange={(nextLanguage) => {
+                              setTransliterationLanguage(nextLanguage);
+                              setTransliterationLanguageState(nextLanguage);
                             }}
                             pinchZoomEnabled={pinchZoomEnabled}
                             onTogglePinchZoom={() => setPinchZoomEnabled((v) => !v)}
@@ -981,7 +1006,7 @@ export function JuzReader() {
                       {/* Transliteration */}
                       {showTransliteration && ayah.textTranslit && (
                         <p className="text-sm text-muted-foreground italic leading-relaxed mb-3">
-                          {ayah.textTranslit}
+                           {applyTransliterationDisplay(transliterationLanguage, ayah.textTranslit)}
                         </p>
                       )}
 

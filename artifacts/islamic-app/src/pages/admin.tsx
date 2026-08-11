@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import type { FormEvent, ReactNode } from "react";
 import {
-  BarChart3, BookOpen, ChevronDown, CircleHelp, FileImage, ImagePlus,
+  Activity, BarChart3, BookOpen, ChevronDown, CircleHelp, FileImage, Globe2, ImagePlus,
   LayoutDashboard, LogOut, Menu, Package, Pencil, Plus, RefreshCw, Save, ShieldCheck,
   Sparkles, Trash2, Upload, Users, X,
 } from "lucide-react";
@@ -24,6 +24,22 @@ type Analytics = {
   levels: { level: number; title: string; totalLessons: number; completedLessons: number; users: number }[];
   lessons: { id: string; level: number; order: number; completedBy: number }[];
   users: { learner: string; currentLevel: number; completedLessons: number; progressPercent: number; avgAccuracy: number; totalRetries: number; timeSpentMs: number; lastSyncedAt: string }[];
+};
+type AudienceCountry = {
+  countryCode: string;
+  totalUsers: number;
+  active5m: number;
+  active24h: number;
+  active30d: number;
+};
+type Audience = {
+  generatedAt: string;
+  totalUsers: number;
+  trackedUsers: number;
+  active5m: number;
+  active24h: number;
+  active30d: number;
+  countries: AudienceCountry[];
 };
 
 const json = (token: string | null, path: string, init: RequestInit = {}) =>
@@ -141,6 +157,138 @@ function AnalyticsView({ data, loading, onRefresh }: { data: Analytics | null; l
   </div>;
 }
 
+function countryName(code: string): string {
+  if (code === "ZZ") return "Unknown";
+  try {
+    return new Intl.DisplayNames(["en"], { type: "region" }).of(code) ?? code;
+  } catch {
+    return code;
+  }
+}
+
+function AudienceMetric({
+  label,
+  value,
+  note,
+  accent = false,
+  icon,
+}: {
+  label: string;
+  value: number;
+  note: string;
+  accent?: boolean;
+  icon: ReactNode;
+}) {
+  return (
+    <div className={`admin-panel rounded-2xl p-5 ${accent ? "bg-[hsl(var(--admin-teal))] text-[hsl(var(--admin-cream))]" : ""}`}>
+      <div className="flex items-start justify-between gap-3">
+        <div className={`admin-kicker ${accent ? "text-[hsl(var(--admin-cream)/.64)]" : ""}`}>{label}</div>
+        <span className={`rounded-xl p-2 ${accent ? "bg-[hsl(var(--admin-cream)/.12)]" : "bg-[hsl(var(--admin-teal-soft))] text-[hsl(var(--admin-teal))]"}`}>
+          {icon}
+        </span>
+      </div>
+      <div className="mt-5 text-3xl font-semibold tracking-[-.05em]">{value.toLocaleString()}</div>
+      <div className={`mt-2 text-xs ${accent ? "text-[hsl(var(--admin-cream)/.72)]" : "text-[hsl(var(--admin-muted))]"}`}>{note}</div>
+    </div>
+  );
+}
+
+function AudienceView({ token }: { token: string }) {
+  const [data, setData] = useState<Audience | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+  const load = useCallback(async () => {
+    setLoading(true);
+    setError("");
+    try {
+      setData(await json(token, "/admin/audience") as Audience);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Unable to load audience analytics");
+    } finally {
+      setLoading(false);
+    }
+  }, [token]);
+
+  useEffect(() => {
+    void load();
+    const refresh = window.setInterval(() => void load(), 60_000);
+    return () => window.clearInterval(refresh);
+  }, [load]);
+
+  if (loading && !data) {
+    return <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">{[1, 2, 3, 4].map((item) => <div key={item} className="h-32 animate-pulse rounded-2xl bg-[hsl(var(--admin-line))]" />)}</div>;
+  }
+  if (!data) {
+    return <EmptyState icon={<Globe2 />} title="Audience analytics unavailable" text={error || "The audience snapshot could not be loaded."} action={() => void load()} />;
+  }
+
+  return (
+    <div className="space-y-7">
+      <div className="flex flex-wrap items-end justify-between gap-4">
+        <div>
+          <div className="admin-kicker mb-2">Audience / live activity</div>
+          <h2 className="text-2xl font-semibold tracking-[-.04em]">Where Noor Quran is being used</h2>
+          <p className="mt-1 max-w-2xl text-sm text-[hsl(var(--admin-muted))]">
+            An anonymized view of active readers by country. Online means a reader checked in within the selected time window.
+          </p>
+        </div>
+        <button className="admin-button admin-button-quiet" onClick={() => void load()} disabled={loading}>
+          <RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} /> Refresh audience
+        </button>
+      </div>
+
+      {error && <div className="flex items-center justify-between rounded-lg border border-[hsl(1_52%_42%)] bg-[hsl(1_45%_20%)] px-3 py-2.5 text-sm text-[hsl(1_80%_76%)]">{error}<button onClick={() => setError("")}><X className="h-4 w-4" /></button></div>}
+
+      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        <AudienceMetric label="Online now" value={data.active5m} note="Active in the last 5 minutes" accent icon={<Activity className="h-4 w-4" />} />
+        <AudienceMetric label="Active today" value={data.active24h} note="Seen in the last 24 hours" icon={<ClockIcon />} />
+        <AudienceMetric label="Active this month" value={data.active30d} note="Seen in the last 30 days" icon={<Activity className="h-4 w-4" />} />
+        <AudienceMetric label="Countries reached" value={data.countries.filter((country) => country.countryCode !== "ZZ" && country.totalUsers > 0).length} note={`${data.trackedUsers.toLocaleString()} users with activity data`} icon={<Globe2 className="h-4 w-4" />} />
+      </div>
+
+      <section className="admin-panel overflow-hidden rounded-2xl">
+        <div className="flex flex-wrap items-center justify-between gap-3 border-b p-5 sm:p-6">
+          <div>
+            <div className="admin-kicker mb-1">Geographic reach</div>
+            <h3 className="font-semibold">Users by country</h3>
+          </div>
+          <span className="admin-mono text-xs text-[hsl(var(--admin-muted))]">Updated {new Date(data.generatedAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}</span>
+        </div>
+        <div className="admin-scrollbar overflow-x-auto">
+          <table className="w-full min-w-[720px] text-left text-sm">
+            <thead className="bg-[hsl(var(--admin-input))] text-xs text-[hsl(var(--admin-muted))]">
+              <tr>{["Country", "All users", "Online · 5m", "Active · 24h", "Active · 30d"].map((heading) => <th key={heading} className="px-5 py-3 font-medium">{heading}</th>)}</tr>
+            </thead>
+            <tbody>
+              {data.countries.map((country) => (
+                <tr key={country.countryCode} className="border-t">
+                  <td className="px-5 py-4">
+                    <div className="flex items-center gap-3">
+                      <span className={`flex h-8 w-8 items-center justify-center rounded-lg text-xs font-bold ${country.active5m ? "bg-[hsl(151_47%_31%)] text-[hsl(151_70%_84%)]" : "bg-[hsl(var(--admin-teal-soft))] text-[hsl(var(--admin-teal))]"}`}>{country.countryCode}</span>
+                      <span className="font-medium">{countryName(country.countryCode)}</span>
+                    </div>
+                  </td>
+                  <td className="admin-mono px-5 py-4">{country.totalUsers.toLocaleString()}</td>
+                  <td className="admin-mono px-5 py-4">{country.active5m.toLocaleString()}</td>
+                  <td className="admin-mono px-5 py-4">{country.active24h.toLocaleString()}</td>
+                  <td className="admin-mono px-5 py-4">{country.active30d.toLocaleString()}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+        <div className="border-t px-5 py-4 text-xs leading-5 text-[hsl(var(--admin-muted))]">
+          Country data is aggregated for the dashboard. Raw IP addresses and individual reader identities are not stored or shown.
+        </div>
+      </section>
+    </div>
+  );
+}
+
+function ClockIcon() {
+  return <span className="text-sm">24h</span>;
+}
+
 function EmptyState({ icon, title, text, action }: { icon: ReactNode; title: string; text: string; action: () => void }) {
   return <div className="admin-panel flex min-h-64 flex-col items-center justify-center rounded-2xl p-8 text-center"><div className="mb-4 flex h-12 w-12 items-center justify-center rounded-2xl bg-[hsl(var(--admin-teal-soft))] text-[hsl(var(--admin-teal))]">{icon}</div><h3 className="font-semibold">{title}</h3><p className="mt-2 max-w-sm text-sm text-[hsl(var(--admin-muted))]">{text}</p><button className="admin-button admin-button-quiet mt-5" onClick={action}><RefreshCw className="h-4 w-4" /> Try again</button></div>;
 }
@@ -240,8 +388,9 @@ function CampaignForm({ initial, onSave, onCancel, saving }: { initial: Campaign
 function ProductForm({ initial, onSave, onCancel, saving }: { initial: Product | null; onSave: (data: Omit<Product, "id" | "createdAt">) => void; onCancel: () => void; saving: boolean }) {
   const [form, setForm] = useState<Omit<Product, "id" | "createdAt">>(initial ? { ...initial } : blankProduct());
   const set = (key: keyof typeof form, value: unknown) => setForm((old) => ({ ...old, [key]: value }));
+  const legacyCategory = !["tasbeeh", "prayer_mat", "books", "attar", "courses", "other"].includes(form.category);
   return <div className="admin-panel rounded-2xl p-5 sm:p-6"><div className="mb-6 flex items-start justify-between"><div><div className="admin-kicker mb-1">{initial ? "Edit product" : "New product"}</div><h3 className="text-xl font-semibold tracking-[-.03em]">{initial ? "Maintain catalog detail" : "Add a catalog product"}</h3></div><button className="rounded-lg p-2 hover:bg-[hsl(var(--admin-teal-soft))]" onClick={onCancel}><X className="h-4 w-4" /></button></div>
-    <div className="grid gap-4 sm:grid-cols-2"><FormField label="Product title"><input className="admin-field" value={form.title} onChange={(e) => set("title", e.target.value)} required /></FormField><FormField label="Category"><select className="admin-field" value={form.category} onChange={(e) => set("category", e.target.value)}>{["tasbeeh", "prayer_mat", "books", "attar", "courses", "other"].map((x) => <option key={x} value={x}>{x.replace("_", " ")}</option>)}</select></FormField><FormField label="Description"><textarea className="admin-field min-h-24 resize-y sm:col-span-2" value={form.description} onChange={(e) => set("description", e.target.value)} /></FormField><FormField label="Contact information"><input className="admin-field" value={form.contactInfo} onChange={(e) => set("contactInfo", e.target.value)} placeholder="Email, phone, or social handle" /></FormField><FormField label="Product link"><input className="admin-field" value={form.productLink || ""} onChange={(e) => set("productLink", e.target.value || null)} placeholder="https://" /></FormField><FormField label="Status"><select className="admin-field" value={form.status} onChange={(e) => set("status", e.target.value)}><option value="approved">Approved</option><option value="pending">Pending</option><option value="rejected">Rejected</option></select></FormField><FormField label="Display order"><input className="admin-field" type="number" min="0" value={form.displayOrder} onChange={(e) => set("displayOrder", Number(e.target.value))} /></FormField><div className="sm:col-span-2"><ImageInput label="Product image" value={form.imageUrl} onChange={(value) => set("imageUrl", value)} /></div></div>
+     <div className="grid gap-4 sm:grid-cols-2"><FormField label="Product title"><input className="admin-field" value={form.title} onChange={(e) => set("title", e.target.value)} required /></FormField><FormField label="Category"><select className="admin-field" value={form.category} onChange={(e) => set("category", e.target.value)}>{legacyCategory && <option value={form.category}>{form.category.replace("_", " ")} (legacy)</option>}{["tasbeeh", "prayer_mat", "books", "attar", "courses", "other"].map((x) => <option key={x} value={x}>{x.replace("_", " ")}</option>)}</select></FormField><FormField label="Description"><textarea className="admin-field min-h-24 resize-y sm:col-span-2" value={form.description} onChange={(e) => set("description", e.target.value)} /></FormField><FormField label="Contact information"><input className="admin-field" value={form.contactInfo} onChange={(e) => set("contactInfo", e.target.value)} placeholder="Email, phone, or social handle" /></FormField><FormField label="Product link"><input className="admin-field" value={form.productLink || ""} onChange={(e) => set("productLink", e.target.value || null)} placeholder="https://" /></FormField><FormField label="Status"><select className="admin-field" value={form.status} onChange={(e) => set("status", e.target.value)}><option value="approved">Approved</option><option value="pending">Pending</option><option value="rejected">Rejected</option></select></FormField><FormField label="Display order"><input className="admin-field" type="number" min="0" value={form.displayOrder} onChange={(e) => set("displayOrder", Number(e.target.value))} /></FormField><div className="sm:col-span-2"><ImageInput label="Product image" value={form.imageUrl} onChange={(value) => set("imageUrl", value)} /></div></div>
     <div className="mt-7 flex justify-end gap-2 border-t pt-5"><button className="admin-button admin-button-quiet" onClick={onCancel}>Cancel</button><button className="admin-button admin-button-primary" onClick={() => onSave(form)} disabled={saving || !form.title.trim()}><Save className="h-4 w-4" /> {saving ? "Saving…" : "Save product"}</button></div>
   </div>;
 }
@@ -273,11 +422,11 @@ function ProductsView({ token }: { token: string }) {
 }
 
 function AdminWorkspace({ token, onLogout }: { token: string; onLogout: () => void }) {
-  const [active, setActive] = useState<"overview" | "campaigns" | "products">("overview"); const [mobileNav, setMobileNav] = useState(false); const [analytics, setAnalytics] = useState<Analytics | null>(null); const [loading, setLoading] = useState(true);
+  const [active, setActive] = useState<"overview" | "audience" | "campaigns" | "products">("overview"); const [mobileNav, setMobileNav] = useState(false); const [analytics, setAnalytics] = useState<Analytics | null>(null); const [loading, setLoading] = useState(true);
   const loadAnalytics = useCallback(async () => { setLoading(true); try { setAnalytics(await json(token, "/admin/teacher-analytics") as Analytics); } catch { setAnalytics(null); } finally { setLoading(false); } }, [token]);
   useEffect(() => { if (active === "overview") void loadAnalytics(); }, [active, loadAnalytics]);
-  const nav = [{ key: "overview" as const, label: "Overview", sub: "Teacher pulse", icon: LayoutDashboard }, { key: "campaigns" as const, label: "Welcome Campaign", sub: "Live messages", icon: Sparkles }, { key: "products" as const, label: "Products", sub: "Public catalog", icon: Package }];
-  return <main className="admin-shell"><div className="mx-auto flex min-h-[100dvh] max-w-[1560px]"><aside className={`fixed inset-y-0 left-0 z-30 w-[278px] border-r bg-[hsl(var(--admin-sidebar)/.96)] p-6 backdrop-blur-xl transition-transform md:static md:translate-x-0 ${mobileNav ? "translate-x-0" : "-translate-x-full"}`}><div className="flex items-start justify-between"><div><div className="flex items-center gap-2.5"><div className="flex h-9 w-9 items-center justify-center rounded-xl bg-[hsl(var(--admin-teal))] text-[hsl(var(--admin-cream))]"><ShieldCheck className="h-5 w-5" /></div><span className="text-lg font-semibold tracking-[-.04em]">Noor / Ops</span></div><div className="admin-kicker mt-3 pl-11">trusted workspace</div></div><button className="rounded-lg p-2 md:hidden" onClick={() => setMobileNav(false)}><X className="h-4 w-4" /></button></div><nav className="mt-12 space-y-2">{nav.map(({ key, label, sub, icon: Icon }) => <button key={key} onClick={() => { setActive(key); setMobileNav(false); }} className={`flex w-full items-center gap-3 rounded-xl px-3 py-3 text-left transition-colors ${active === key ? "bg-[hsl(var(--admin-teal))] text-[hsl(var(--admin-cream))]" : "text-[hsl(var(--admin-ink))] hover:bg-[hsl(var(--admin-teal-soft))]"}`}><Icon className="h-[18px] w-[18px]" /><span className="flex-1"><span className="block text-sm font-semibold">{label}</span><span className={`mt-0.5 block text-xs ${active === key ? "text-[hsl(var(--admin-cream)/.65)]" : "text-[hsl(var(--admin-muted))]"}`}>{sub}</span></span>{active === key && <ChevronDown className="h-4 w-4 -rotate-90" />}</button>)}</nav><div className="absolute bottom-6 left-6 right-6 border-t pt-5"><div className="mb-4 flex items-center gap-2 text-xs text-[hsl(var(--admin-muted))]"><span className="h-2 w-2 rounded-full bg-[hsl(151_58%_48%)]" /> API connected</div><button onClick={onLogout} className="flex items-center gap-2 text-sm font-semibold text-[hsl(var(--admin-muted))] hover:text-[hsl(var(--admin-ink))]"><LogOut className="h-4 w-4" /> Sign out</button></div></aside><div className="min-w-0 flex-1"><header className="flex h-[78px] items-center justify-between border-b px-5 sm:px-8 lg:px-10"><button className="rounded-lg p-2 md:hidden" onClick={() => setMobileNav(true)}><Menu className="h-5 w-5" /></button><div className="hidden md:block"><span className="admin-kicker">Operations console</span><span className="ml-3 text-xs text-[hsl(var(--admin-muted))]">Private · changes publish to the live app</span></div><div className="flex items-center gap-3"><span className="hidden text-right sm:block"><span className="block text-xs font-semibold">Administrator</span><span className="admin-mono block text-[10px] text-[hsl(var(--admin-muted))]">SESSION ACTIVE</span></span><div className="flex h-9 w-9 items-center justify-center rounded-full border bg-[hsl(var(--admin-teal-soft))] text-xs font-bold text-[hsl(var(--admin-teal))]">NQ</div></div></header><div className="mx-auto max-w-[1240px] p-5 sm:p-8 lg:p-10">{active === "overview" && <AnalyticsView data={analytics} loading={loading} onRefresh={() => void loadAnalytics()} />}{active === "campaigns" && <CampaignsView token={token} />}{active === "products" && <ProductsView token={token} />}</div></div></div>{mobileNav && <button aria-label="Close navigation" className="fixed inset-0 z-20 bg-[hsl(165_50%_5%/.5)] md:hidden" onClick={() => setMobileNav(false)} />}</main>;
+  const nav = [{ key: "overview" as const, label: "Overview", sub: "Teacher pulse", icon: LayoutDashboard }, { key: "audience" as const, label: "Audience", sub: "Countries & live users", icon: Globe2 }, { key: "campaigns" as const, label: "Welcome Campaign", sub: "Live messages", icon: Sparkles }, { key: "products" as const, label: "Products", sub: "Public catalog", icon: Package }];
+  return <main className="admin-shell"><div className="mx-auto flex min-h-[100dvh] max-w-[1560px]"><aside className={`fixed inset-y-0 left-0 z-30 w-[278px] border-r bg-[hsl(var(--admin-sidebar)/.96)] p-6 backdrop-blur-xl transition-transform md:static md:translate-x-0 ${mobileNav ? "translate-x-0" : "-translate-x-full"}`}><div className="flex items-start justify-between"><div><div className="flex items-center gap-2.5"><div className="flex h-9 w-9 items-center justify-center rounded-xl bg-[hsl(var(--admin-teal))] text-[hsl(var(--admin-cream))]"><ShieldCheck className="h-5 w-5" /></div><span className="text-lg font-semibold tracking-[-.04em]">Noor / Ops</span></div><div className="admin-kicker mt-3 pl-11">trusted workspace</div></div><button className="rounded-lg p-2 md:hidden" onClick={() => setMobileNav(false)}><X className="h-4 w-4" /></button></div><nav className="mt-12 space-y-2">{nav.map(({ key, label, sub, icon: Icon }) => <button key={key} onClick={() => { setActive(key); setMobileNav(false); }} className={`flex w-full items-center gap-3 rounded-xl px-3 py-3 text-left transition-colors ${active === key ? "bg-[hsl(var(--admin-teal))] text-[hsl(var(--admin-cream))]" : "text-[hsl(var(--admin-ink))] hover:bg-[hsl(var(--admin-teal-soft))]"}`}><Icon className="h-[18px] w-[18px]" /><span className="flex-1"><span className="block text-sm font-semibold">{label}</span><span className={`mt-0.5 block text-xs ${active === key ? "text-[hsl(var(--admin-cream)/.65)]" : "text-[hsl(var(--admin-muted))]"}`}>{sub}</span></span>{active === key && <ChevronDown className="h-4 w-4 -rotate-90" />}</button>)}</nav><div className="absolute bottom-6 left-6 right-6 border-t pt-5"><div className="mb-4 flex items-center gap-2 text-xs text-[hsl(var(--admin-muted))]"><span className="h-2 w-2 rounded-full bg-[hsl(151_58%_48%)]" /> API connected</div><button onClick={onLogout} className="flex items-center gap-2 text-sm font-semibold text-[hsl(var(--admin-muted))] hover:text-[hsl(var(--admin-ink))]"><LogOut className="h-4 w-4" /> Sign out</button></div></aside><div className="min-w-0 flex-1"><header className="flex h-[78px] items-center justify-between border-b px-5 sm:px-8 lg:px-10"><button className="rounded-lg p-2 md:hidden" onClick={() => setMobileNav(true)}><Menu className="h-5 w-5" /></button><div className="hidden md:block"><span className="admin-kicker">Operations console</span><span className="ml-3 text-xs text-[hsl(var(--admin-muted))]">Private · changes publish to the live app</span></div><div className="flex items-center gap-3"><span className="hidden text-right sm:block"><span className="block text-xs font-semibold">Administrator</span><span className="admin-mono block text-[10px] text-[hsl(var(--admin-muted))]">SESSION ACTIVE</span></span><div className="flex h-9 w-9 items-center justify-center rounded-full border bg-[hsl(var(--admin-teal-soft))] text-xs font-bold text-[hsl(var(--admin-teal))]">NQ</div></div></header><div className="mx-auto max-w-[1240px] p-5 sm:p-8 lg:p-10">{active === "overview" && <AnalyticsView data={analytics} loading={loading} onRefresh={() => void loadAnalytics()} />}{active === "audience" && <AudienceView token={token} />}{active === "campaigns" && <CampaignsView token={token} />}{active === "products" && <ProductsView token={token} />}</div></div></div>{mobileNav && <button aria-label="Close navigation" className="fixed inset-0 z-20 bg-[hsl(165_50%_5%/.5)] md:hidden" onClick={() => setMobileNav(false)} />}</main>;
 }
 
 export function Admin() {

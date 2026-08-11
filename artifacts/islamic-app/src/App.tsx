@@ -37,7 +37,7 @@ import { WelcomeCampaignGate } from "@/components/welcome-campaign-gate";
 import { ConsentGate } from "@/components/consent-gate";
 import { useEffect } from "react";
 import { AI_TEACHER_ENABLED } from "@/lib/teacher-config";
-import { ensureRegistered, reportAyahComplete } from "@/lib/user";
+import { ensureRegistered, reportAyahComplete, reportPresence } from "@/lib/user";
 import { Admin } from "@/pages/admin";
 
 const queryClient = new QueryClient({
@@ -59,6 +59,9 @@ function NoorInitializer() {
   useEffect(() => {
     // Register device silently on first open — idempotent
     ensureRegistered().catch(() => {});
+    const presenceTimer = window.setInterval(() => {
+      reportPresence().catch(() => {});
+    }, 2 * 60 * 1000);
 
     // Listen for ayah-both-done events dispatched by surah reader
     // Awards 1 coin per unique ayah when BOTH arabic + translation audio complete
@@ -69,7 +72,10 @@ function NoorInitializer() {
       }
     }
     window.addEventListener("noor:ayah-both-done", onAyahDone);
-    return () => window.removeEventListener("noor:ayah-both-done", onAyahDone);
+    return () => {
+      window.clearInterval(presenceTimer);
+      window.removeEventListener("noor:ayah-both-done", onAyahDone);
+    };
   }, []);
   return null;
 }

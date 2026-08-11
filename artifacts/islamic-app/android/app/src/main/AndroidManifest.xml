@@ -4,6 +4,8 @@
 
       <uses-permission android:name="android.permission.INTERNET" />
       <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+      <!-- Required because the Android app uses Google Mobile Ads / AdMob. -->
+      <uses-permission android:name="com.google.android.gms.permission.AD_ID" />
       <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
       <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
       <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" />

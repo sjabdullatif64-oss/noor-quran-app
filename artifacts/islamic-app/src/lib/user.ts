@@ -36,6 +36,12 @@ export async function ensureRegistered(): Promise<NoorUser | null> {
   return _registrationPromise;
 }
 
+export async function reportPresence(): Promise<void> {
+  const registered = await ensureRegistered();
+  if (!registered) return;
+  await noorApi.presence(getDeviceId());
+}
+
 export async function reportAyahComplete(
   surahNumber: number,
   ayahNumber: number,

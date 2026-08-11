@@ -13,6 +13,8 @@ export interface User {
   deviceId: string;
   coinsBalance: number;
   totalCoinsEarned: number;
+  countryCode?: string;
+  lastSeenAt?: string;
   createdAt: string;
 }
 
@@ -97,7 +99,7 @@ const SHEETS = {
   // Keep the established Users header and column positions so active coin
   // updates remain compatible with existing rows. The two historical columns
   // are preserved as opaque values and are not part of the runtime user model.
-  Users:            ["id","deviceId","coinsBalance","totalCoinsEarned","totalReferrals","referredById","createdAt"],
+  Users:            ["id","deviceId","coinsBalance","totalCoinsEarned","totalReferrals","referredById","createdAt","countryCode","lastSeenAt"],
   TeacherAccounts:  ["id","userId","recoveryKeyHash","recoveryKeyCiphertext","deviceIds","accountJson","createdAt","updatedAt"],
   CoinTransactions: ["id","userId","amount","reason","eventKey","createdAt"],
   DailyCheckins:    ["id","userId","date","createdAt"],
@@ -194,6 +196,23 @@ export async function initSheets(): Promise<void> {
         );
       }
     }
+    if (sheetName === "Users") {
+      const activityHeaders = ["countryCode", "lastSeenAt"];
+      const existingActivityHeaders = (await sheetsReq(
+        "GET",
+        `/v4/spreadsheets/${SPREADSHEET_ID}/values/Users!H1:I1`,
+      ))?.values?.[0] as string[] | undefined;
+      if (
+        existingActivityHeaders?.[0] !== activityHeaders[0]
+        || existingActivityHeaders?.[1] !== activityHeaders[1]
+      ) {
+        await sheetsReq(
+          "PUT",
+          `/v4/spreadsheets/${SPREADSHEET_ID}/values/Users!H1:I1?valueInputOption=RAW`,
+          { range: "Users!H1:I1", majorDimension: "ROWS", values: [activityHeaders] },
+        );
+      }
+    }
   }
 }
 
@@ -258,6 +277,8 @@ function rowToUser(r: Record<string, string>): User {
     deviceId:         r.deviceId,
     coinsBalance:     Number(r.coinsBalance) || 0,
     totalCoinsEarned: Number(r.totalCoinsEarned) || 0,
+    countryCode:      r.countryCode || undefined,
+    lastSeenAt:       r.lastSeenAt || undefined,
     createdAt:        r.createdAt,
   };
 }
@@ -274,6 +295,8 @@ function userToRow(
     historicalFields.totalReferrals ?? "",
     historicalFields.referredById ?? "",
     u.createdAt,
+    u.countryCode ?? "",
+    u.lastSeenAt ?? "",
   ];
 }
 
@@ -318,6 +341,106 @@ export async function updateUser(id: string, updates: Partial<Omit<User, "id" | 
     referredById: rows[idx].referredById,
   }));
   return updated;
+}
+
+export async function touchUserActivity(
+  deviceId: string,
+  countryCode: string,
+  seenAt = new Date().toISOString(),
+): Promise<User | null> {
+  const rows = await readAllRows("Users");
+  const idx = rows.findIndex((row) => row.deviceId === deviceId);
+  if (idx === -1) return null;
+  const current = rowToUser(rows[idx]);
+  const updated: User = {
+    ...current,
+    countryCode: countryCode === "ZZ" ? (current.countryCode ?? "ZZ") : countryCode,
+    lastSeenAt: seenAt,
+  };
+  await updateRowByDataIndex("Users", idx, userToRow(updated, {
+    totalReferrals: rows[idx].totalReferrals,
+    referredById: rows[idx].referredById,
+  }));
+  return updated;
+}
+
+export interface AudienceCountry {
+  countryCode: string;
+  totalUsers: number;
+  active5m: number;
+  active24h: number;
+  active30d: number;
+}
+
+export interface AudienceAnalytics {
+  generatedAt: string;
+  totalUsers: number;
+  trackedUsers: number;
+  active5m: number;
+  active24h: number;
+  active30d: number;
+  countries: AudienceCountry[];
+}
+
+export async function getAudienceAnalytics(now = new Date()): Promise<AudienceAnalytics> {
+  const rows = await readAllRows("Users");
+  const generatedAt = now.toISOString();
+  const nowMs = now.getTime();
+  const windows = {
+    active5m: nowMs - 5 * 60 * 1000,
+    active24h: nowMs - 24 * 60 * 60 * 1000,
+    active30d: nowMs - 30 * 24 * 60 * 60 * 1000,
+  };
+  const byCountry = new Map<string, AudienceCountry>();
+  let trackedUsers = 0;
+  let active5m = 0;
+  let active24h = 0;
+  let active30d = 0;
+
+  for (const row of rows) {
+    const countryCode = (row.countryCode || "ZZ").trim().toUpperCase() || "ZZ";
+    const bucket = byCountry.get(countryCode) ?? {
+      countryCode,
+      totalUsers: 0,
+      active5m: 0,
+      active24h: 0,
+      active30d: 0,
+    };
+    bucket.totalUsers += 1;
+
+    const lastSeenMs = Date.parse(row.lastSeenAt || "");
+    if (Number.isFinite(lastSeenMs)) {
+      trackedUsers += 1;
+      if (lastSeenMs >= windows.active5m) {
+        active5m += 1;
+        bucket.active5m += 1;
+      }
+      if (lastSeenMs >= windows.active24h) {
+        active24h += 1;
+        bucket.active24h += 1;
+      }
+      if (lastSeenMs >= windows.active30d) {
+        active30d += 1;
+        bucket.active30d += 1;
+      }
+    }
+    byCountry.set(countryCode, bucket);
+  }
+
+  return {
+    generatedAt,
+    totalUsers: rows.length,
+    trackedUsers,
+    active5m,
+    active24h,
+    active30d,
+    countries: [...byCountry.values()].sort(
+      (a, b) =>
+        b.active30d - a.active30d
+        || b.totalUsers - a.totalUsers
+        || a.countryCode.localeCompare(b.countryCode),
+    ),
+  };
 }
 
 // ─── AI Teacher accounts ─────────────────────────────────────────────────────
@@ -659,10 +782,43 @@ export async function addAyahReward(userId: string, surah: number, ayah: number,
 
 // ─── Products ─────────────────────────────────────────────────────────────────
 
+/**
+ * Some Products rows predate the admin catalog and have an empty id cell.
+ * Keep those rows editable without changing their identity on every request.
+ * The generated ID is based on the row's existing product data and is written
+ * back when that legacy row is updated.
+ */
+function legacyProductId(r: Record<string, string>): string {
+  const identity = [
+    r.userId,
+    r.title,
+    r.description,
+    r.imageUrl,
+    r.contactInfo,
+    r.productLink,
+    r.category,
+    r.status,
+    r.promotionType,
+    r.coinsSpent,
+    r.submittedBy,
+    r.approvedAt,
+    r.rejectedAt,
+    r.rejectionReason,
+    r.promotionExpiry,
+    r.createdAt,
+    r.displayOrder,
+  ].join("\u001f");
+  return `legacy-product-${crypto.createHash("sha256").update(identity).digest("hex").slice(0, 24)}`;
+}
+
+function productRowId(r: Record<string, string>): string {
+  return r.id.trim() || legacyProductId(r);
+}
+
 function rowToProduct(r: Record<string, string>): Product {
   const displayOrder = Number(r.displayOrder);
   return {
-    id:               r.id,
+    id:               productRowId(r),
     userId:           r.userId,
     title:            r.title,
     description:      r.description,
@@ -735,7 +891,7 @@ export async function getUserProducts(userId: string): Promise<Product[]> {
 
 export async function getProductById(id: string): Promise<Product | null> {
   const rows = await readAllRows("Products");
-  const r = rows.find((x) => x.id === id);
+  const r = rows.find((x) => productRowId(x) === id);
   return r ? rowToProduct(r) : null;
 }
 
@@ -747,7 +903,7 @@ export async function createProduct(data: Omit<Product, "id" | "createdAt">): Pr
 
 export async function updateProduct(id: string, updates: Partial<Omit<Product, "id" | "createdAt">>): Promise<Product> {
   const rows = await readAllRows("Products");
-  const idx = rows.findIndex((x) => x.id === id);
+  const idx = rows.findIndex((x) => productRowId(x) === id);
   if (idx === -1) throw new Error(`Product ${id} not found`);
   const updated: Product = { ...rowToProduct(rows[idx]), ...updates };
   await updateRowByDataIndex("Products", idx, productToRow(updated));
@@ -756,7 +912,7 @@ export async function updateProduct(id: string, updates: Partial<Omit<Product, "
 
 export async function deleteProduct(id: string): Promise<void> {
   const rows = await readAllRows("Products");
-  const idx = rows.findIndex((x) => x.id === id);
+  const idx = rows.findIndex((x) => productRowId(x) === id);
   if (idx === -1) throw new Error(`Product ${id} not found`);
   await deleteRowByDataIndex("Products", idx);
 }

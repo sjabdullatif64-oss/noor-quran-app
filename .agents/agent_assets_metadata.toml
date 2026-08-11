@@ -334,3 +334,10 @@ uri = "file://artifacts/islamic-app/android/final-builds/noor-quran-v1.0.20-rele
 type = "unspecified"
 title = "Noor Quran v1.0.20 Release AAB"
 description = "Signed release Android App Bundle for Google Play. Version code 79845456."
+
+[[outputs]]
+id = "NqfrDi_wqNeOeLBr7R4dI"
+uri = "file://artifacts/islamic-app/android/app/build/outputs/bundle/release/app-release.aab"
+type = "unspecified"
+title = "Noor Quran Advertising ID Fix — Release AAB"
+description = "Signed release AAB built from the current code. Final base manifest contains com.google.android.gms.permission.AD_ID and the AdMob application ID metadata. SHA-256: dc1bb387fdbc638e060f8fb875c02079034336c0c0f51a9b1ef8340a9482febf"

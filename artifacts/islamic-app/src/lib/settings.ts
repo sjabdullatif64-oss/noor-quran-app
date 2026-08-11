@@ -9,7 +9,9 @@ const GPS_LAT_KEY = "noor-gps-lat";
 const GPS_LNG_KEY = "noor-gps-lng";
 const LOC_SRC_KEY = "noor-loc-src"; // "gps" | "manual"
 export const TRANSLATION_LANGUAGE_CHANGED_EVENT = "noor-translation-language-changed";
+export const TRANSLITERATION_LANGUAGE_CHANGED_EVENT = "noor-transliteration-language-changed";
 export const TEACHER_LANGUAGE_MODE_CHANGED_EVENT = "noor-teacher-language-mode-changed";
+export const TEACHER_TRANSLATION_LANGUAGE_CHANGED_EVENT = "noor-teacher-translation-language-changed";
 
 export type TeacherLanguageMode = "selected" | "english";
 
@@ -354,6 +356,18 @@ export function setLang(lang: TranslationLanguage): void {
   window.dispatchEvent(new Event(TRANSLATION_LANGUAGE_CHANGED_EVENT));
 }
 
+const TRANSLITERATION_LANG_KEY = "noor-transliteration-language";
+
+export function getTransliterationLanguage(): TranslationLanguage {
+  const value = localStorage.getItem(TRANSLITERATION_LANG_KEY) as TranslationLanguage | null;
+  return value && VALID_LANGS.includes(value) ? value : "english";
+}
+
+export function setTransliterationLanguage(language: TranslationLanguage): void {
+  localStorage.setItem(TRANSLITERATION_LANG_KEY, language);
+  window.dispatchEvent(new Event(TRANSLITERATION_LANGUAGE_CHANGED_EVENT));
+}
+
 export function getTeacherLanguageMode(): TeacherLanguageMode {
   return localStorage.getItem(TEACHER_LANGUAGE_MODE_KEY) === "english"
     ? "english"
@@ -363,6 +377,20 @@ export function getTeacherLanguageMode(): TeacherLanguageMode {
 export function setTeacherLanguageMode(mode: TeacherLanguageMode): void {
   localStorage.setItem(TEACHER_LANGUAGE_MODE_KEY, mode);
   window.dispatchEvent(new Event(TEACHER_LANGUAGE_MODE_CHANGED_EVENT));
+}
+
+/**
+ * AI Teacher's translation language is intentionally independent from the
+ * Quran reader/settings language. New Teacher sessions default to English.
+ */
+export function getTeacherTranslationLanguage(): TranslationLanguage {
+  const value = localStorage.getItem("noor-teacher-translation-language") as TranslationLanguage | null;
+  return value && VALID_LANGS.includes(value) ? value : "english";
+}
+
+export function setTeacherTranslationLanguage(language: TranslationLanguage): void {
+  localStorage.setItem("noor-teacher-translation-language", language);
+  window.dispatchEvent(new Event(TEACHER_TRANSLATION_LANGUAGE_CHANGED_EVENT));
 }
 
 // ── UI Language (app interface language) ──────────────────────────────────────

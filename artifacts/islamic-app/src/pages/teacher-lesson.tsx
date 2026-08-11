@@ -32,17 +32,20 @@ import {
 } from "@/lib/teacher-speech";
 import { isConnected } from "@/lib/capacitor";
 import {
-  getLang,
-  getTeacherLanguageMode,
-  setTeacherLanguageMode,
-  TEACHER_LANGUAGE_MODE_CHANGED_EVENT,
-  TRANSLATION_LANGUAGE_CHANGED_EVENT,
-  type TeacherLanguageMode,
+  getTeacherTranslationLanguage,
+  setTeacherTranslationLanguage,
+  TEACHER_TRANSLATION_LANGUAGE_CHANGED_EVENT,
 } from "@/lib/settings";
-import { TRANSLATION_ENGLISH_NAMES } from "@/lib/api";
+import {
+  ALL_LANGUAGES,
+  getCurrentTranslationText,
+  TRANSLATION_ENGLISH_NAMES,
+  type TranslationLanguage,
+} from "@/lib/api";
 import { getTeacherSpeechCopy } from "@/lib/teacher-speech-copy";
 import { TeacherSpeechDiagnostics } from "@/components/teacher-speech-diagnostics";
 import { TeacherSpeechListenButton, TeacherSpeechMessage } from "@/components/teacher-speech-message";
+import { MoreLanguagesDialog } from "@/components/translation-language-picker";
 
 // ── Consent helpers ───────────────────────────────────────────────────────────
 
@@ -87,11 +90,12 @@ export function TeacherLesson() {
   const [speechResult, setSpeechResult] = useState<ListenResult | null>(null);
   const [diagnosticsOpen, setDiagnosticsOpen] = useState(false);
   const practiceSessionStarted = useRef(false);
-  const [translationLanguage, setTranslationLanguage] = useState(() => getLang());
-  const [teacherLanguageMode, setTeacherLanguageModeState] = useState<TeacherLanguageMode>(
-    () => getTeacherLanguageMode(),
+  const [teacherLanguage, setTeacherLanguage] = useState<TranslationLanguage>(
+    () => getTeacherTranslationLanguage(),
   );
-  const teacherLanguage = teacherLanguageMode === "english" ? "english" : translationLanguage;
+  const [teacherLanguageDialogOpen, setTeacherLanguageDialogOpen] = useState(false);
+  const [lessonTranslation, setLessonTranslation] = useState("");
+  const [lessonTranslationLoading, setLessonTranslationLoading] = useState(false);
   const copy = getTeacherSpeechCopy(teacherLanguage);
   const lessonGuidance = teacherLanguage === "english" ? lesson?.tip ?? copy.lessonHint : copy.lessonHint;
 
@@ -108,15 +112,40 @@ export function TeacherLesson() {
   }, []);
 
   useEffect(() => {
-    const syncTranslationLanguage = () => setTranslationLanguage(getLang());
-    window.addEventListener(TRANSLATION_LANGUAGE_CHANGED_EVENT, syncTranslationLanguage);
-    const syncTeacherLanguageMode = () => setTeacherLanguageModeState(getTeacherLanguageMode());
-    window.addEventListener(TEACHER_LANGUAGE_MODE_CHANGED_EVENT, syncTeacherLanguageMode);
+    const syncTeacherLanguage = () => setTeacherLanguage(getTeacherTranslationLanguage());
+    window.addEventListener(TEACHER_TRANSLATION_LANGUAGE_CHANGED_EVENT, syncTeacherLanguage);
     return () => {
-      window.removeEventListener(TRANSLATION_LANGUAGE_CHANGED_EVENT, syncTranslationLanguage);
-      window.removeEventListener(TEACHER_LANGUAGE_MODE_CHANGED_EVENT, syncTeacherLanguageMode);
+      window.removeEventListener(TEACHER_TRANSLATION_LANGUAGE_CHANGED_EVENT, syncTeacherLanguage);
     };
   }, []);
+
+  useEffect(() => {
+    if (!lesson) {
+      setLessonTranslation("");
+      setLessonTranslationLoading(false);
+      return;
+    }
+    let cancelled = false;
+    setLessonTranslation("");
+    setLessonTranslationLoading(true);
+    getCurrentTranslationText(
+      teacherLanguage,
+      lesson.audio.surah,
+      lesson.audio.ayah,
+    )
+      .then((text) => {
+        if (!cancelled) setLessonTranslation(text.trim());
+      })
+      .catch(() => {
+        if (!cancelled) setLessonTranslation("");
+      })
+      .finally(() => {
+        if (!cancelled) setLessonTranslationLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [lesson?.id, lesson?.audio.surah, lesson?.audio.ayah, teacherLanguage]);
 
   // Reset state when navigating between lessons
   useEffect(() => {
@@ -398,52 +427,38 @@ export function TeacherLesson() {
   );
 
   const teacherLanguageButton = (
-    <div
-      className="rounded-2xl border border-border bg-card/90 p-2 shadow-sm"
-      data-testid="teacher-language-switcher"
-    >
-      <div className="flex items-center gap-2 px-2 pb-2">
+    <>
+      <button
+        type="button"
+        onClick={() => setTeacherLanguageDialogOpen(true)}
+        className="flex w-full items-center gap-2 rounded-2xl border border-border bg-card/90 p-3 text-left shadow-sm transition-colors hover:border-primary/50"
+        data-testid="teacher-language-switcher"
+        aria-label="Choose Teacher translation language"
+      >
         <div className="flex h-7 w-7 items-center justify-center rounded-xl bg-primary/10">
           <Languages className="h-4 w-4 text-primary" />
         </div>
         <div className="min-w-0 flex-1">
-          <p className="text-foreground text-[11px] font-semibold">Teacher language</p>
+          <p className="text-foreground text-[11px] font-semibold">Teacher translation</p>
           <p className="text-muted-foreground truncate text-[10px]">
-            {teacherLanguageMode === "english"
-              ? "English only"
-              : `Use ${TRANSLATION_ENGLISH_NAMES[translationLanguage]}`}
+            {TRANSLATION_ENGLISH_NAMES[teacherLanguage]}
           </p>
         </div>
-      </div>
-      <div className="grid grid-cols-2 gap-1 rounded-xl bg-muted/70 p-1">
-        {([
-          ["selected", `My ${TRANSLATION_ENGLISH_NAMES[translationLanguage]}`],
-          ["english", "English only"],
-        ] as const).map(([mode, label]) => {
-          const active = teacherLanguageMode === mode;
-          return (
-            <button
-              key={mode}
-              type="button"
-              onClick={() => {
-                setTeacherLanguageMode(mode);
-                setTeacherLanguageModeState(mode);
-              }}
-              className={`flex min-h-9 items-center justify-center gap-1 rounded-lg px-2 text-[10px] font-semibold transition-all ${
-                active
-                  ? "bg-primary text-primary-foreground shadow-sm"
-                  : "text-muted-foreground hover:text-foreground"
-              }`}
-              aria-pressed={active}
-              data-testid={`button-teacher-language-${mode}`}
-            >
-              {active && <Check className="h-3 w-3" />}
-              <span className="truncate">{label}</span>
-            </button>
-          );
-        })}
-      </div>
-    </div>
+        <span className="text-primary text-[10px] font-semibold">Change</span>
+      </button>
+      <MoreLanguagesDialog
+        open={teacherLanguageDialogOpen}
+        onOpenChange={setTeacherLanguageDialogOpen}
+        selectedLanguage={teacherLanguage}
+        onSelect={(language) => {
+          setTeacherTranslationLanguage(language);
+          setTeacherLanguage(language);
+        }}
+        languages={ALL_LANGUAGES}
+        title="Teacher Translation Language"
+        description="Choose the translation shown on Teacher lessons. This is separate from Quran settings."
+      />
+    </>
   );
 
   // ── Guards ──────────────────────────────────────────────────────────────────
@@ -600,7 +615,18 @@ export function TeacherLesson() {
           >
             {wordDisplay}
           </p>
-          <p className="text-muted-foreground text-base mt-4 font-medium">{lesson.transliteration}</p>
+          <p
+            className={`text-muted-foreground text-base mt-4 font-medium ${
+              lessonTranslation ? "leading-relaxed" : ""
+            }`}
+            dir={teacherLanguage === "arabic" || teacherLanguage === "urdu" ||
+              teacherLanguage === "sindhi" || teacherLanguage === "persian" ? "rtl" : "ltr"}
+            data-testid="text-lesson-translation"
+          >
+            {lessonTranslationLoading
+              ? "Loading translation…"
+              : lessonTranslation || "Translation unavailable"}
+          </p>
           <p className="text-muted-foreground text-sm mt-1">&ldquo;{lesson.meaning}&rdquo;</p>
 
           <button

@@ -10,6 +10,7 @@ import {
   getAllProducts,
   getAllWelcomeCampaigns,
   getTeacherAccountSnapshots,
+  getAudienceAnalytics,
   updateProduct,
   updateWelcomeCampaign,
   type Product,
@@ -43,6 +44,12 @@ const productFields = z.object({
   displayOrder: z.coerce.number().int().min(0).max(1_000_000).default(0),
 });
 
+// Existing Products rows may use the historical "Image" category. Keep new
+// product creation strict, but allow that stored legacy value during edits so
+// opening and saving an existing catalog row does not fail validation.
+const productPatchFields = productFields.partial().extend({
+  category: z.union([productFields.shape.category, z.literal("Image")]).optional(),
+});
 function cleanNullable(value: string | null | undefined): string | null {
   return value?.trim() ? value.trim() : null;
 }
@@ -73,7 +80,9 @@ async function campaignMediaUpdates(
   return updates;
 }
 
-function productUpdates(input: Partial<z.infer<typeof productFields>>): Partial<Omit<Product, "id" | "createdAt">> {
+function productUpdates(
+  input: Omit<Partial<z.infer<typeof productFields>>, "category"> & { category?: string },
+): Partial<Omit<Product, "id" | "createdAt">> {
   const updates: Partial<Omit<Product, "id" | "createdAt">> = {};
   if (input.title !== undefined) updates.title = input.title;
   if (input.description !== undefined) updates.description = input.description;
@@ -205,6 +214,10 @@ router.get("/teacher-analytics", admin, async (_req, res) => {
   });
 });
 
+router.get("/audience", admin, async (_req, res) => {
+  res.json(await getAudienceAnalytics());
+});
+
 router.get("/campaigns", admin, async (_req, res) => {
   res.json({ campaigns: await getAllWelcomeCampaigns() });
 });
@@ -276,7 +289,7 @@ router.post("/products", admin, async (req, res) => {
 });
 
 router.patch("/products/:id", admin, async (req, res) => {
-  const parsed = productFields.partial().safeParse(req.body);
+  const parsed = productPatchFields.safeParse(req.body);
   if (!parsed.success) {
     res.status(400).json({ error: "Invalid product", details: parsed.error.issues });
     return;

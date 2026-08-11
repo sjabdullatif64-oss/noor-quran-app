@@ -25,6 +25,12 @@ import { useI18n } from "@/lib/i18n-context";
 import { useToast } from "@/hooks/use-toast";
 import { MoreLanguagesDialog } from "@/components/translation-language-picker";
 import {
+  getLocationPermissionState,
+  LocationPermissionDialog,
+  type LocationPermissionState,
+} from "@/components/location-permission-dialog";
+import { openLocationSettings } from "@/lib/capacitor";
+import {
   getStoredTeacherRecoveryKey,
   restoreTeacherAccount,
 } from "@/lib/teacher-account";
@@ -328,6 +334,8 @@ export function Settings() {
     getLocationSource() === "manual" ? getCity() : ""
   );
   const [savedCity,   setSavedCity]   = useState(false);
+  const [locationPermissionDialog, setLocationPermissionDialog] =
+    useState<"request" | "blocked" | null>(null);
 
   // ── Prayer calculation method ───────────────────────────────────────────────
   const [calcMethod, setCalcMethodState] = useState<CalcMethodSetting>(() => getCalcMethod());
@@ -348,7 +356,7 @@ export function Settings() {
     toast({ title: "Calculation method saved", description: label });
   };
 
-  const detectGPS = useCallback(() => {
+  const requestGPS = useCallback(() => {
     if (!navigator.geolocation) {
       setGpsStatus("error");
       return;
@@ -377,6 +385,7 @@ export function Settings() {
       (err) => {
         if (err.code === err.PERMISSION_DENIED) {
           setGpsStatus("denied");
+          setLocationPermissionDialog("blocked");
         } else {
           setGpsStatus("error");
         }
@@ -384,6 +393,25 @@ export function Settings() {
       { timeout: 12000, maximumAge: 5 * 60 * 1000, enableHighAccuracy: false }
     );
   }, [toast]);
+
+  const detectGPS = useCallback(async () => {
+    const permission: LocationPermissionState = await getLocationPermissionState();
+    if (permission === "granted") {
+      requestGPS();
+      return;
+    }
+    setLocationPermissionDialog(permission === "denied" ? "blocked" : "request");
+  }, [requestGPS]);
+
+  const continueLocationRequest = useCallback(() => {
+    setLocationPermissionDialog(null);
+    requestGPS();
+  }, [requestGPS]);
+
+  const handleOpenLocationSettings = useCallback(() => {
+    setLocationPermissionDialog(null);
+    void openLocationSettings();
+  }, []);
 
   const handlePresetCity = (city: string) => {
     const country = CITY_COUNTRY_MAP[city] ?? "";
@@ -810,6 +838,16 @@ export function Settings() {
         onOpenChange={setMoreLanguagesOpen}
         selectedLanguage={defaultLang}
         onSelect={handleLang}
+      />
+      <LocationPermissionDialog
+        open={locationPermissionDialog !== null}
+        mode={locationPermissionDialog ?? "request"}
+        feature="prayer"
+        onOpenChange={(open) => {
+          if (!open) setLocationPermissionDialog(null);
+        }}
+        onContinue={continueLocationRequest}
+        onOpenSettings={handleOpenLocationSettings}
       />
     </div>
   );

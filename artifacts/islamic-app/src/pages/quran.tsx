@@ -150,7 +150,7 @@ export function Quran() {
                     </button>
                     <button
                       onClick={(e) => handleBookmark(e, surah)}
-                      className={`absolute top-3 right-11 w-8 h-8 flex items-center justify-center rounded-full transition-all ${
+                      className={`absolute top-11 right-3 w-8 h-8 flex items-center justify-center rounded-full transition-all ${
                         isBookmarked
                           ? "text-primary opacity-100"
                           : "text-muted-foreground opacity-70 hover:opacity-100 hover:text-primary"

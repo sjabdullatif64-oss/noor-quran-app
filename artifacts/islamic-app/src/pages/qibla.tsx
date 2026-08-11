@@ -1,6 +1,11 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { MapPin, Navigation, RefreshCw, AlertCircle, RotateCcw } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import {
+  getLocationPermissionState,
+  LocationPermissionDialog,
+} from "@/components/location-permission-dialog";
+import { openLocationSettings } from "@/lib/capacitor";
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 const MAKKAH = { lat: 21.4225, lng: 39.8262 };
@@ -47,6 +52,8 @@ export function Qibla() {
   const [qiblaAngle, setQiblaAngle] = useState<number | null>(null);
   const [distance, setDistance] = useState<number | null>(null);
   const [cityName, setCityName] = useState<string | null>(null);
+  const [locationPermissionDialog, setLocationPermissionDialog] =
+    useState<"request" | "blocked" | null>(null);
 
   // Compass display state — controlled rotation that never wraps
   const [needleRotation, setNeedleRotation] = useState(0);
@@ -190,7 +197,7 @@ export function Qibla() {
   }, []);
 
   // ── Get GPS location ────────────────────────────────────────────────────────
-  const getLocation = () => {
+  const requestLocation = () => {
     setStatus("loading");
     setErrorMsg("");
     smoothedHeadingRef.current = null;
@@ -232,9 +239,31 @@ export function Qibla() {
             ? "Location access was denied. Please enable location permissions and try again."
             : "Could not detect your location. Please check your connection and try again."
         );
+        if (err.code === err.PERMISSION_DENIED) {
+          setLocationPermissionDialog("blocked");
+        }
       },
       { timeout: 12000, enableHighAccuracy: true, maximumAge: 0 }
     );
+  };
+
+  const getLocation = async () => {
+    const permission = await getLocationPermissionState();
+    if (permission === "granted") {
+      requestLocation();
+      return;
+    }
+    setLocationPermissionDialog(permission === "denied" ? "blocked" : "request");
+  };
+
+  const continueLocationRequest = () => {
+    setLocationPermissionDialog(null);
+    requestLocation();
+  };
+
+  const handleOpenLocationSettings = () => {
+    setLocationPermissionDialog(null);
+    void openLocationSettings();
   };
 
   // ─── Render ──────────────────────────────────────────────────────────────────
@@ -493,6 +522,17 @@ export function Qibla() {
           </p>
         )}
       </div>
+      <LocationPermissionDialog
+        open={locationPermissionDialog !== null}
+        mode={locationPermissionDialog ?? "request"}
+        feature="qibla"
+        accent="amber"
+        onOpenChange={(open) => {
+          if (!open) setLocationPermissionDialog(null);
+        }}
+        onContinue={continueLocationRequest}
+        onOpenSettings={handleOpenLocationSettings}
+      />
     </div>
   );
 }

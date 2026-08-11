@@ -3,7 +3,10 @@ import {
   LOCALIZED_DIVINE_NAMES,
   localizeDivineName,
 } from "./divine-name-localization";
-import { applyTranslationDisplay } from "./ayah-display";
+import {
+  applyTranslationDisplay,
+  applyTransliterationDisplay,
+} from "./ayah-display";
 
 Object.defineProperty(globalThis, "localStorage", {
   configurable: true,
@@ -32,9 +35,9 @@ for (const [language, localizedName] of Object.entries(LOCALIZED_DIVINE_NAMES)) 
   );
 }
 
-// Semantic translations are intentionally preserved; only the written name
-// is normalized.
-assert.equal(localizeDivineName("urdu", "خدا کا شکر ہے"), "خدا کا شکر ہے");
+// Urdu translation editions also use standalone "خدا" for the Divine Name;
+// the display layer normalizes that established alias to "اللہ".
+assert.equal(localizeDivineName("urdu", "خدا کا شکر ہے"), "اللہ کا شکر ہے");
 assert.equal(localizeDivineName("english", "God is merciful; Allah is One"), "God is merciful; Allah is One");
 assert.equal(localizeDivineName("english", "The Lord is One"), "The Lord is One");
 assert.equal(
@@ -46,6 +49,14 @@ assert.equal(
   "اللہ، اللہ، اللہ اور اللہ",
 );
 assert.equal(
+  localizeDivineName("urdu", "سب طرح کی تعریف خدا ہی کو ہے"),
+  "سب طرح کی تعریف اللہ ہی کو ہے",
+);
+assert.equal(
+  localizeDivineName("urdu", "خداوند کا ذکر اور خدا کا نام"),
+  "خداوند کا ذکر اور اللہ کا نام",
+);
+assert.equal(
   localizeDivineName("arabic", "النص العربي الله"),
   "النص العربي الله",
 );
@@ -55,6 +66,10 @@ assert.equal(
 assert.equal(
   applyTranslationDisplay("urdu", "Allah کا ذکر"),
   "اللہ کا ذکر",
+);
+assert.equal(
+  applyTranslationDisplay("urdu", "سب طرح کی تعریف خدا ہی کو ہے"),
+  "سب طرح کی تعریف اللہ ہی کو ہے",
 );
 assert.equal(
   applyTranslationDisplay("arabic", "Allah واحد"),
@@ -80,7 +95,55 @@ assert.equal(applyTranslationDisplay("english", "Allah is One"), "Allah is One")
 const originalArabicQuranText = "اللَّهُ أَحَدٌ";
 const rawTranslationFromCache = "Allah is One";
 assert.equal(applyTranslationDisplay("urdu", rawTranslationFromCache), "اللہ is One");
+assert.equal(
+  applyTranslationDisplay("urdu", "سب طرح کی تعریف خدا ہی کو ہے"),
+  "سب طرح کی تعریف اللہ ہی کو ہے",
+);
 assert.equal(originalArabicQuranText, "اللَّهُ أَحَدٌ");
 assert.equal(rawTranslationFromCache, "Allah is One");
+
+// The English transliteration line is display-localized when the selected
+// language uses a non-Latin script. Latin-script languages keep it unchanged.
+assert.equal(
+  applyTransliterationDisplay("urdu", "Bismillaahir Rahmaanir Raheem"),
+  "بسم اللہ الرحمن الرحیم",
+);
+assert.equal(
+  applyTransliterationDisplay("arabic", "Bismillaahir Rahmaanir Raheem"),
+  "بسم الله الرحمن الرحيم",
+);
+assert.equal(
+  applyTransliterationDisplay("persian", "Bismillaahir Rahmaanir Raheem"),
+  "بسم الله الرحمن الرحیم",
+);
+assert.equal(
+  applyTransliterationDisplay("hindi", "Bismillaahir Rahmaanir Raheem"),
+  "बिस्मिल्लाह रहमानिर रहीम",
+);
+assert.equal(
+  applyTransliterationDisplay("bengali", "Bismillaahir Rahmaanir Raheem"),
+  "বিসমিল্লাহ রহমানির রহিম",
+);
+assert.equal(
+  applyTransliterationDisplay("english", "Bismillaahir Rahmaanir Raheem"),
+  "Bismillaahir Rahmaanir Raheem",
+);
+assert.equal(
+  applyTransliterationDisplay("urdu", "Qul huwa Allahu ahad"),
+  "قل ہو اللہ احد",
+);
+assert.equal(
+  applyTransliterationDisplay("hindi", "Qul huwa Allahu ahad"),
+  "कुल हुवा अल्लाहु अहद",
+);
+assert.equal(
+  applyTransliterationDisplay("arabic", "Alhamdu lillaahi Rabbil 'aalameen"),
+  "الحمد لله رب العالمين",
+);
+assert.equal(
+  applyTransliterationDisplay("urdu", "Alhamdu lillaahi Rabbil 'aalameen"),
+  "الحمد للہ رب العالمین",
+);
+assert.equal(originalArabicQuranText, "اللَّهُ أَحَدٌ");
 
 console.log("divine name localization tests passed");

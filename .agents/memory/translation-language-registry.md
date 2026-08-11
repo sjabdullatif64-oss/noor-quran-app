@@ -9,8 +9,14 @@ Adding a Quran translation language is not just a selector change. The language 
 
 **How to apply:** Preserve the original language order, keep provider-specific parsing behind one shared fetch adapter, validate new language IDs in settings storage, and emit/subscribe to a language-change event for live Home and saved-ayah refreshes.
 
-For Divine Name display normalization, localize only explicit written forms of Allah's name according to the selected translation language. Do not replace semantic equivalents such as "God", "Lord", or "خدا".
+For Divine Name display normalization, localize explicit written forms of Allah's name according to the selected translation language. Urdu's standalone "خدا" is an established Divine Name alias in the displayed Urdu translation and may become "اللہ"; keep other semantic equivalents such as English "God" and "Lord" unchanged.
 
-**Why:** Translation providers mix localized Divine Name spellings with ordinary theological words; replacing both changes the translation's meaning and can damage unrelated text.
+**Why:** Translation providers mix localized Divine Name spellings and aliases with ordinary theological words; broad replacement changes the translation's meaning and can damage unrelated text.
 
-**How to apply:** Keep this normalization in the shared translation display boundary so online, offline, readers, saved ayahs, and share/copy output render consistently while raw translations, caches, TTS input, saved records, and the original Arabic Quran field remain untouched.
+**How to apply:** Keep this normalization in the shared translation display boundary; scope aliases by language and word boundaries so online, offline, readers, saved ayahs, and share/copy output render consistently while raw translations, caches, TTS input, saved records, and the original Arabic Quran field remain untouched.
+
+AI Teacher translation language is a separate preference from the Quran reader/settings language; Teacher defaults to English and changes only from its own lesson control.
+
+**Why:** Users may choose a different translation from an ayah's three-dot menu without wanting Teacher guidance or lesson translations to change.
+
+**How to apply:** Store and broadcast Teacher language under its own setting/event, fetch lesson translation text with that value, and never subscribe Teacher to the reader's global translation-language event.

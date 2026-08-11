@@ -25,6 +25,7 @@ async function noorFetch<T>(path: string, opts: RequestInit = {}): Promise<T> {
     const err = await res.json().catch(() => ({ error: "Network error" }));
     throw new Error((err as { error?: string }).error ?? `HTTP ${res.status}`);
   }
+  if (res.status === 204) return undefined as T;
   return res.json() as Promise<T>;
 }
 
@@ -89,6 +90,13 @@ export const noorApi = {
     return noorFetch("/users/register", {
       method: "POST",
       body: JSON.stringify({ deviceId, persistentDeviceId }),
+    });
+  },
+
+  async presence(deviceId: string): Promise<void> {
+    await noorFetch("/users/presence", {
+      method: "POST",
+      body: JSON.stringify({ deviceId }),
     });
   },
 

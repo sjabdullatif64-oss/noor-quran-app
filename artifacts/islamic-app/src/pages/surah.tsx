@@ -14,11 +14,21 @@ import {
 import { Button } from "@/components/ui/button";
 import { getBookmarks, saveBookmark, removeBookmark } from "@/lib/bookmarks";
 import { getFavAyahs, toggleAyahFav } from "@/lib/favorites";
-import { getLang, setLang } from "@/lib/settings";
+import {
+  getLang,
+  setLang,
+  getTransliterationLanguage,
+  setTransliterationLanguage,
+  TRANSLITERATION_LANGUAGE_CHANGED_EVENT,
+} from "@/lib/settings";
 import { useToast } from "@/hooks/use-toast";
 import { NativeTTS } from "@/lib/native-tts";
 import { AyahActionsMenu } from "@/components/ayah-actions-menu";
-import { useAyahDisplaySettings, applyTranslationDisplay } from "@/lib/ayah-display";
+import {
+  useAyahDisplaySettings,
+  applyTranslationDisplay,
+  applyTransliterationDisplay,
+} from "@/lib/ayah-display";
 import { usePinchZoom } from "@/hooks/use-pinch-zoom";
 import { useNetworkStatus } from "@/hooks/use-network";
 import { MoreLanguagesDialog } from "@/components/translation-language-picker";
@@ -98,6 +108,9 @@ export function SurahReader() {
   })();
 
   const [language, setLanguage]     = useState<TranslationLanguage>(() => getLang());
+  const [transliterationLanguage, setTransliterationLanguageState] = useState<TranslationLanguage>(
+    () => getTransliterationLanguage(),
+  );
   const [moreLanguagesOpen, setMoreLanguagesOpen] = useState(false);
   const { data: surah, isLoading }  = useSurah(number, language);
 
@@ -172,6 +185,17 @@ export function SurahReader() {
   useEffect(() => { surahRef.current        = surah;        }, [surah]);
   useEffect(() => { languageRef.current     = language;     }, [language]);
   useEffect(() => { audioModeRef.current    = audioMode;    }, [audioMode]);
+
+  useEffect(() => {
+    const syncTransliterationLanguage = () => {
+      setTransliterationLanguageState(getTransliterationLanguage());
+    };
+    window.addEventListener(TRANSLITERATION_LANGUAGE_CHANGED_EVENT, syncTransliterationLanguage);
+    return () => window.removeEventListener(
+      TRANSLITERATION_LANGUAGE_CHANGED_EVENT,
+      syncTransliterationLanguage,
+    );
+  }, []);
 
   // Persist audio mode
   useEffect(() => { localStorage.setItem(AUDIO_MODE_KEY, audioMode); }, [audioMode]);
@@ -826,8 +850,11 @@ export function SurahReader() {
                         textAr={ayah.textAr}
                         textTranslit={ayah.textTranslit}
                         displayedTranslation={applyTranslationDisplay(language, ayah.textTranslation)}
-                        translationLanguage={language}
-                        onTranslationLanguageChange={handleLanguageChange}
+                        transliterationLanguage={transliterationLanguage}
+                        onTransliterationLanguageChange={(nextLanguage) => {
+                          setTransliterationLanguage(nextLanguage);
+                          setTransliterationLanguageState(nextLanguage);
+                        }}
                         pinchZoomEnabled={pinchZoomEnabled}
                         onTogglePinchZoom={() => setPinchZoomEnabled((v) => !v)}
                         triggerClassName="w-8 h-8 rounded-full flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors"
@@ -844,7 +871,7 @@ export function SurahReader() {
                   {/* Transliteration (Roman script) — shown when available */}
                   {showTransliteration && ayah.textTranslit && (
                     <p className="text-[calc(0.875rem*var(--ayah-scale))] text-muted-foreground italic leading-relaxed tracking-wide">
-                      {ayah.textTranslit}
+                       {applyTransliterationDisplay(transliterationLanguage, ayah.textTranslit)}
                     </p>
                   )}
 

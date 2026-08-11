@@ -11,6 +11,21 @@ import { Browser } from "@capacitor/browser";
 
 export { isCapacitorApp as isNative };
 
+/** Open the app's location permission screen on native platforms. */
+export async function openLocationSettings(): Promise<boolean> {
+  if (!isCapacitorApp()) return false;
+  try {
+    const { NativeSettings, AndroidSettings, IOSSettings } = await import("capacitor-native-settings");
+    await NativeSettings.open({
+      optionAndroid: AndroidSettings.ApplicationDetails,
+      optionIOS: IOSSettings.App,
+    });
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 // ── Type-safe Capacitor plugin access ────────────────────────────────────────
 
 type CapWindow = Window & {

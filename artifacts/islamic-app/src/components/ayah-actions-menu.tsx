@@ -31,8 +31,8 @@ interface AyahActionsMenuProps {
   textTranslit?: string;
   /** The translation text exactly as currently displayed (post explanatory-word setting) — used for Share/Copy so output matches what the user sees. */
   displayedTranslation: string;
-  translationLanguage: TranslationLanguage;
-  onTranslationLanguageChange: (language: TranslationLanguage) => void;
+  transliterationLanguage: TranslationLanguage;
+  onTransliterationLanguageChange: (language: TranslationLanguage) => void;
   /** Whether two-finger pinch-to-zoom is currently enabled for the reading content. */
   pinchZoomEnabled: boolean;
   /** Toggles pinch-to-zoom on/off. Lifted up to the reader page since zoom applies to the whole ayah list, not a single card. */
@@ -63,8 +63,8 @@ export function AyahActionsMenu(props: AyahActionsMenuProps) {
     showTranslation,
   } = useAyahDisplaySettings();
 
-  const handleTranslationLanguageChange = (language: TranslationLanguage) => {
-    props.onTranslationLanguageChange(language);
+  const handleTransliterationLanguageChange = (language: TranslationLanguage) => {
+    props.onTransliterationLanguageChange(language);
   };
 
   const handleShare = async () => {
@@ -161,13 +161,13 @@ export function AyahActionsMenu(props: AyahActionsMenuProps) {
 
         <DropdownMenuItem
           onSelect={() => setLanguageDialogOpen(true)}
-          data-testid="menu-translation-language"
+          data-testid="menu-transliteration-language"
         >
           <Languages className="w-4 h-4 mr-2" />
-          <span className="flex-1">Translation Language</span>
+          <span className="flex-1">Transliteration Language</span>
           <span className="ml-2 text-xs text-muted-foreground">
-            {TRANSLATION_ENGLISH_NAMES[props.translationLanguage] ??
-              TRANSLATION_LABELS[props.translationLanguage]}
+            {TRANSLATION_ENGLISH_NAMES[props.transliterationLanguage] ??
+              TRANSLATION_LABELS[props.transliterationLanguage]}
           </span>
         </DropdownMenuItem>
 
@@ -192,11 +192,11 @@ export function AyahActionsMenu(props: AyahActionsMenuProps) {
       <MoreLanguagesDialog
         open={languageDialogOpen}
         onOpenChange={setLanguageDialogOpen}
-        selectedLanguage={props.translationLanguage}
-        onSelect={handleTranslationLanguageChange}
+        selectedLanguage={props.transliterationLanguage}
+        onSelect={handleTransliterationLanguageChange}
         languages={ALL_LANGUAGES}
-        title="Translation Language"
-        description="Choose the language shown beneath each Quran ayah."
+        title="Transliteration Language"
+        description="Choose the language used for transliteration text."
       />
     </>
   );
