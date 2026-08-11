@@ -71,7 +71,7 @@ jobs:
             echo "❌ Checkout SHA mismatch: $SOURCE_SHA != ${{ github.sha }}"
             exit 1
           }
-          rm -rf dist/public android/app/src/main/assets/public
+          rm -rf dist/public android/app/src/main/assets
           mkdir -p dist/public
           echo "✅ Building exact checkout $SOURCE_SHA"
 
@@ -169,6 +169,7 @@ jobs:
         run: |
           test -f android/app/src/main/assets/public/build-manifest.json
           diff -u dist/public/build-manifest.json android/app/src/main/assets/public/build-manifest.json
+          test ! -e android/app/src/main/assets/public/assets/index-CioVTHgR.js
           rg -a -l "1\\.0\\.22" android/app/src/main/assets/public/assets android/app/src/main/assets/public/index.html
           rg -a -l "noor-transliteration-language-changed" android/app/src/main/assets/public/assets
           rg -a -l "اللہ" android/app/src/main/assets/public/assets
