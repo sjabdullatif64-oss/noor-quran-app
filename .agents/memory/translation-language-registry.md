@@ -9,9 +9,9 @@ Adding a Quran translation language is not just a selector change. The language 
 
 **How to apply:** Preserve the original language order, keep provider-specific parsing behind one shared fetch adapter, validate new language IDs in settings storage, and emit/subscribe to a language-change event for live Home and saved-ayah refreshes.
 
-For Divine Name display normalization, localize explicit written forms of Allah's name according to the selected translation language. Urdu's standalone "خدا" is an established Divine Name alias in the displayed Urdu translation and may become "اللہ"; keep other semantic equivalents such as English "God" and "Lord" unchanged.
+For Divine Name display normalization, localize only explicit written forms of Allah's proper name according to the selected translation language. Keep semantic words such as English "God", "Lord", and Urdu "خدا" unchanged.
 
-**Why:** Translation providers mix localized Divine Name spellings and aliases with ordinary theological words; broad replacement changes the translation's meaning and can damage unrelated text.
+**Why:** Translation providers mix localized Divine Name spellings with ordinary theological words; broad replacement changes the translation's meaning and can damage unrelated text.
 
 **How to apply:** Keep this normalization in the shared translation display boundary; scope aliases by language and word boundaries so online, offline, readers, saved ayahs, and share/copy output render consistently while raw translations, caches, TTS input, saved records, and the original Arabic Quran field remain untouched.
 

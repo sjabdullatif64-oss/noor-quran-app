@@ -2,23 +2,12 @@ import type { TranslationLanguage } from "./api";
 
 /**
  * The Quran translation providers do not consistently render the divine name.
- * Keep this as a display-only normalization: replace explicit written forms of
- * Allah's name, plus only language-specific established aliases. Semantic
- * translations such as English "God" and "Lord" remain unchanged.
+ * Keep this as a display-only normalization of explicit written forms of
+ * Allah's proper name. Semantic translations such as English "God", "Lord",
+ * or Urdu "خدا" remain unchanged.
  */
 const DIVINE_NAME_PATTERN =
   /(?<![\p{L}\p{M}])(?:allah|allaah|allāh|الله|اللّٰه|اللَّه|اللَّه|اللہ|अल्लाह|अल्ला|আল্লাহ|আল্লা|Аллах|аллах|Аллоҳ|аллоҳ|Аллаһ|аллаһ|Алла|алла|安拉|阿拉|アッラー|알라|อัลลอฮ์|அல்லாஹ்|అల్లాహ్|അല്ലാഹു|ਅੱਲਾਹ)(?![\p{L}\p{M}])/giu;
-
-/**
- * Urdu editions also commonly render the Divine Name as the standalone word
- * "خدا". This alias is intentionally scoped to Urdu and uses letter
- * boundaries so words such as "خداوند" are not changed.
- */
-const LANGUAGE_SPECIFIC_DIVINE_NAME_PATTERNS: Partial<
-  Record<TranslationLanguage, RegExp>
-> = {
-  urdu: /(?<![\p{L}\p{M}])خدا(?![\p{L}\p{M}])/gu,
-};
 
 export const LOCALIZED_DIVINE_NAMES: Record<TranslationLanguage, string> = {
   arabic: "الله",
@@ -61,9 +50,5 @@ export function localizeDivineName(
   text: string,
 ): string {
   if (!text) return text;
-  const localized = text.replace(DIVINE_NAME_PATTERN, LOCALIZED_DIVINE_NAMES[language]);
-  const languageSpecificPattern = LANGUAGE_SPECIFIC_DIVINE_NAME_PATTERNS[language];
-  return languageSpecificPattern
-    ? localized.replace(languageSpecificPattern, LOCALIZED_DIVINE_NAMES[language])
-    : localized;
+  return text.replace(DIVINE_NAME_PATTERN, LOCALIZED_DIVINE_NAMES[language]);
 }
