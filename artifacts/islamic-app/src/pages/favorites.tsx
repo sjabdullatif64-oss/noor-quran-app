@@ -13,6 +13,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { getCurrentTranslationText } from "@/lib/api";
 import { getLang, TRANSLATION_LANGUAGE_CHANGED_EVENT } from "@/lib/settings";
+import { applyTranslationDisplay } from "@/lib/ayah-display";
 
 type Tab = "surahs" | "ayahs";
 
@@ -183,7 +184,7 @@ export function Favorites() {
                 </p>
                 {ayah.textTranslation && (
                   <p dir="rtl" className="text-sm text-muted-foreground leading-relaxed text-right font-serif line-clamp-2">
-                    {ayah.textTranslation}
+                    {applyTranslationDisplay(getLang(), ayah.textTranslation)}
                   </p>
                 )}
               </Link>

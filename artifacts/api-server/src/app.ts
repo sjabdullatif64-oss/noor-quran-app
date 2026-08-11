@@ -29,6 +29,12 @@ app.use(cors());
 app.use(express.json({ limit: "5mb" }));
 app.use(express.urlencoded({ extended: true, limit: "5mb" }));
 
+// Keep older native builds working if they were built with an API base that
+// already included `/api` and consequently requested `/api/api/...`.
+// The normal client path remains `/api/...`; this compatibility mount is
+// protected by the same route middleware and can be removed after old builds
+// have aged out.
+app.use("/api/api", router);
 app.use("/api", router);
 
 export default app;

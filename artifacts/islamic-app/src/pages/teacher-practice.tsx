@@ -5,8 +5,8 @@
  * never changes the user's course position or completion records.
  */
 
-import { useEffect, useState } from "react";
-import { ChevronLeft, CheckCircle2, Clock3, RotateCcw } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import { ChevronLeft, CheckCircle2, Clock3, RotateCcw, Search, X } from "lucide-react";
 import { Link } from "wouter";
 import { CURRICULUM } from "@/lib/teacher-curriculum";
 import {
@@ -27,6 +27,15 @@ function formatLastPracticed(value: string | null): string {
   })}`;
 }
 
+function normalizeSearchText(value: string): string {
+  return value
+    .normalize("NFD")
+    .replace(/\p{M}/gu, "")
+    .toLocaleLowerCase()
+    .replace(/[^\p{L}\p{N}]+/gu, " ")
+    .trim();
+}
+
 export function TeacherPractice() {
   const [, setTick] = useState(0);
   const [practiceStats, setPracticeStats] = useState<PracticeStats>(() => loadPracticeStats());
@@ -45,6 +54,23 @@ export function TeacherPractice() {
 
   const progress = loadProgress();
   const completedLessons = CURRICULUM.filter((lesson) => Boolean(progress.completed[lesson.id]));
+  const [searchQuery, setSearchQuery] = useState("");
+  const normalizedQuery = normalizeSearchText(searchQuery);
+  const filteredLessons = useMemo(() => {
+    if (!normalizedQuery) return completedLessons;
+    return completedLessons.filter((lesson) => {
+      const searchableText = [
+        lesson.id,
+        `level ${lesson.level}`,
+        `lesson ${lesson.order}`,
+        lesson.arabic,
+        lesson.word,
+        lesson.transliteration,
+        lesson.meaning,
+      ].join(" ");
+      return normalizeSearchText(searchableText).includes(normalizedQuery);
+    });
+  }, [completedLessons, normalizedQuery]);
 
   return (
     <div className="min-h-screen pb-32 md:pb-12 animate-in fade-in duration-500 bg-background">
@@ -99,7 +125,52 @@ export function TeacherPractice() {
               </p>
             </div>
 
-            {completedLessons.map((lesson) => {
+            <div
+              className="rounded-2xl p-3 border border-border bg-card"
+              data-testid="panel-search-completed-lessons"
+            >
+              <div className="relative flex items-center">
+                <Search className="absolute left-3 w-4 h-4 text-primary pointer-events-none" />
+                <input
+                  type="search"
+                  value={searchQuery}
+                  onChange={(event) => setSearchQuery(event.target.value)}
+                  placeholder="Search completed lessons..."
+                  aria-label="Search completed lessons"
+                  className="w-full h-11 rounded-xl border border-border bg-background pl-10 pr-10 text-sm text-foreground placeholder:text-muted-foreground outline-none transition-colors focus:border-primary"
+                  data-testid="input-search-completed-lessons"
+                />
+                {searchQuery && (
+                  <button
+                    type="button"
+                    onClick={() => setSearchQuery("")}
+                    className="absolute right-2.5 flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-primary/10 hover:text-primary"
+                    aria-label="Clear lesson search"
+                    data-testid="button-clear-completed-lesson-search"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                )}
+              </div>
+              {normalizedQuery && (
+                <p className="px-1 pt-2 text-[11px] text-muted-foreground">
+                  {filteredLessons.length} of {completedLessons.length} completed lessons
+                </p>
+              )}
+            </div>
+
+            {filteredLessons.length === 0 ? (
+              <div
+                className="rounded-2xl p-6 border border-border text-center bg-card"
+                data-testid="panel-completed-lessons-no-results"
+              >
+                <Search className="w-8 h-8 text-primary mx-auto mb-3" />
+                <p className="text-foreground font-semibold text-sm">No matching lessons found</p>
+                <p className="text-muted-foreground text-xs mt-1 leading-relaxed">
+                  Try searching by Arabic, transliteration, meaning, or lesson number.
+                </p>
+              </div>
+            ) : filteredLessons.map((lesson) => {
               const completion = progress.completed[lesson.id];
               const stats = practiceStats[lesson.id] ?? getPracticeStats(lesson.id);
               return (

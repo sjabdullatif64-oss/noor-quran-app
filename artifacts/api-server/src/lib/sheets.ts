@@ -13,8 +13,8 @@ export interface User {
   deviceId: string;
   coinsBalance: number;
   totalCoinsEarned: number;
-  totalReferrals: number;
-  referredById: string | null;
+  countryCode?: string;
+  lastSeenAt?: string;
   createdAt: string;
 }
 
@@ -36,13 +36,6 @@ export interface AyahReward {
   createdAt: string;
 }
 
-export interface Referral {
-  id: string;
-  referrerId: string;
-  refereeId: string;
-  createdAt: string;
-}
-
 export interface Product {
   id: string;
   userId: string;
@@ -60,6 +53,7 @@ export interface Product {
   rejectedAt: string | null;
   rejectionReason: string | null;
   promotionExpiry: string | null;
+  displayOrder?: number;
   createdAt: string;
 }
 
@@ -102,13 +96,15 @@ function isValidWelcomeCampaignUrl(value: string): boolean {
 // ─── Sheet column definitions ─────────────────────────────────────────────────
 
 const SHEETS = {
-  Users:            ["id","deviceId","coinsBalance","totalCoinsEarned","totalReferrals","referredById","createdAt"],
+  // Keep the established Users header and column positions so active coin
+  // updates remain compatible with existing rows. The two historical columns
+  // are preserved as opaque values and are not part of the runtime user model.
+  Users:            ["id","deviceId","coinsBalance","totalCoinsEarned","totalReferrals","referredById","createdAt","countryCode","lastSeenAt"],
   TeacherAccounts:  ["id","userId","recoveryKeyHash","recoveryKeyCiphertext","deviceIds","accountJson","createdAt","updatedAt"],
   CoinTransactions: ["id","userId","amount","reason","eventKey","createdAt"],
   DailyCheckins:    ["id","userId","date","createdAt"],
   AyahRewards:      ["id","userId","surahNumber","ayahNumber","date","createdAt"],
-  Referrals:        ["id","referrerId","refereeId","createdAt"],
-  Products:         ["id","userId","title","description","imageUrl","contactInfo","productLink","category","status","promotionType","coinsSpent","submittedBy","approvedAt","rejectedAt","rejectionReason","promotionExpiry","createdAt"],
+  Products:         ["id","userId","title","description","imageUrl","contactInfo","productLink","category","status","promotionType","coinsSpent","submittedBy","approvedAt","rejectedAt","rejectionReason","promotionExpiry","createdAt","displayOrder"],
   WelcomeCampaigns: ["id","imageUrl","gifUrl","videoUrl","title","description","buttonText","url","durationSeconds","enabled"],
 } as const;
 
@@ -187,6 +183,36 @@ export async function initSheets(): Promise<void> {
         { range: `${sheetName}!A1`, majorDimension: "ROWS", values: [cols] },
       );
     }
+    if (sheetName === "Products") {
+      const orderHeader = (await sheetsReq(
+        "GET",
+        `/v4/spreadsheets/${SPREADSHEET_ID}/values/Products!R1:R1`,
+      ))?.values?.[0]?.[0];
+      if (orderHeader !== "displayOrder") {
+        await sheetsReq(
+          "PUT",
+          `/v4/spreadsheets/${SPREADSHEET_ID}/values/Products!R1?valueInputOption=RAW`,
+          { range: "Products!R1", majorDimension: "ROWS", values: [["displayOrder"]] },
+        );
+      }
+    }
+    if (sheetName === "Users") {
+      const activityHeaders = ["countryCode", "lastSeenAt"];
+      const existingActivityHeaders = (await sheetsReq(
+        "GET",
+        `/v4/spreadsheets/${SPREADSHEET_ID}/values/Users!H1:I1`,
+      ))?.values?.[0] as string[] | undefined;
+      if (
+        existingActivityHeaders?.[0] !== activityHeaders[0]
+        || existingActivityHeaders?.[1] !== activityHeaders[1]
+      ) {
+        await sheetsReq(
+          "PUT",
+          `/v4/spreadsheets/${SPREADSHEET_ID}/values/Users!H1:I1?valueInputOption=RAW`,
+          { range: "Users!H1:I1", majorDimension: "ROWS", values: [activityHeaders] },
+        );
+      }
+    }
   }
 }
 
@@ -251,14 +277,27 @@ function rowToUser(r: Record<string, string>): User {
     deviceId:         r.deviceId,
     coinsBalance:     Number(r.coinsBalance) || 0,
     totalCoinsEarned: Number(r.totalCoinsEarned) || 0,
-    totalReferrals:   Number(r.totalReferrals) || 0,
-    referredById:     r.referredById || null,
+    countryCode:      r.countryCode || undefined,
+    lastSeenAt:       r.lastSeenAt || undefined,
     createdAt:        r.createdAt,
   };
 }
 
-function userToRow(u: User): string[] {
-  return [u.id, u.deviceId, String(u.coinsBalance), String(u.totalCoinsEarned), String(u.totalReferrals), u.referredById ?? "", u.createdAt];
+function userToRow(
+  u: User,
+  historicalFields: { totalReferrals?: string; referredById?: string } = {},
+): string[] {
+  return [
+    u.id,
+    u.deviceId,
+    String(u.coinsBalance),
+    String(u.totalCoinsEarned),
+    historicalFields.totalReferrals ?? "",
+    historicalFields.referredById ?? "",
+    u.createdAt,
+    u.countryCode ?? "",
+    u.lastSeenAt ?? "",
+  ];
 }
 
 export async function findUserByDeviceId(deviceId: string): Promise<User | null> {
@@ -279,7 +318,10 @@ export async function rebindUserDeviceId(id: string, deviceId: string): Promise<
   if (idx === -1) throw new Error(`User ${id} not found`);
   const current = rowToUser(rows[idx]);
   const updated = { ...current, deviceId };
-  await updateRowByDataIndex("Users", idx, userToRow(updated));
+  await updateRowByDataIndex("Users", idx, userToRow(updated, {
+    totalReferrals: rows[idx].totalReferrals,
+    referredById: rows[idx].referredById,
+  }));
   return updated;
 }
 
@@ -294,8 +336,111 @@ export async function updateUser(id: string, updates: Partial<Omit<User, "id" | 
   const idx = rows.findIndex((x) => x.id === id);
   if (idx === -1) throw new Error(`User ${id} not found`);
   const updated: User = { ...rowToUser(rows[idx]), ...updates };
-  await updateRowByDataIndex("Users", idx, userToRow(updated));
+  await updateRowByDataIndex("Users", idx, userToRow(updated, {
+    totalReferrals: rows[idx].totalReferrals,
+    referredById: rows[idx].referredById,
+  }));
   return updated;
+}
+
+export async function touchUserActivity(
+  deviceId: string,
+  countryCode: string,
+  seenAt = new Date().toISOString(),
+): Promise<User | null> {
+  const rows = await readAllRows("Users");
+  const idx = rows.findIndex((row) => row.deviceId === deviceId);
+  if (idx === -1) return null;
+  const current = rowToUser(rows[idx]);
+  const updated: User = {
+    ...current,
+    countryCode: countryCode === "ZZ" ? (current.countryCode ?? "ZZ") : countryCode,
+    lastSeenAt: seenAt,
+  };
+  await updateRowByDataIndex("Users", idx, userToRow(updated, {
+    totalReferrals: rows[idx].totalReferrals,
+    referredById: rows[idx].referredById,
+  }));
+  return updated;
+}
+
+export interface AudienceCountry {
+  countryCode: string;
+  totalUsers: number;
+  active5m: number;
+  active24h: number;
+  active30d: number;
+}
+
+export interface AudienceAnalytics {
+  generatedAt: string;
+  totalUsers: number;
+  trackedUsers: number;
+  active5m: number;
+  active24h: number;
+  active30d: number;
+  countries: AudienceCountry[];
+}
+
+export async function getAudienceAnalytics(now = new Date()): Promise<AudienceAnalytics> {
+  const rows = await readAllRows("Users");
+  const generatedAt = now.toISOString();
+  const nowMs = now.getTime();
+  const windows = {
+    active5m: nowMs - 5 * 60 * 1000,
+    active24h: nowMs - 24 * 60 * 60 * 1000,
+    active30d: nowMs - 30 * 24 * 60 * 60 * 1000,
+  };
+  const byCountry = new Map<string, AudienceCountry>();
+  let trackedUsers = 0;
+  let active5m = 0;
+  let active24h = 0;
+  let active30d = 0;
+
+  for (const row of rows) {
+    const countryCode = (row.countryCode || "ZZ").trim().toUpperCase() || "ZZ";
+    const bucket = byCountry.get(countryCode) ?? {
+      countryCode,
+      totalUsers: 0,
+      active5m: 0,
+      active24h: 0,
+      active30d: 0,
+    };
+    bucket.totalUsers += 1;
+
+    const lastSeenMs = Date.parse(row.lastSeenAt || "");
+    if (Number.isFinite(lastSeenMs)) {
+      trackedUsers += 1;
+      if (lastSeenMs >= windows.active5m) {
+        active5m += 1;
+        bucket.active5m += 1;
+      }
+      if (lastSeenMs >= windows.active24h) {
+        active24h += 1;
+        bucket.active24h += 1;
+      }
+      if (lastSeenMs >= windows.active30d) {
+        active30d += 1;
+        bucket.active30d += 1;
+      }
+    }
+    byCountry.set(countryCode, bucket);
+  }
+
+  return {
+    generatedAt,
+    totalUsers: rows.length,
+    trackedUsers,
+    active5m,
+    active24h,
+    active30d,
+    countries: [...byCountry.values()].sort(
+      (a, b) =>
+        b.active30d - a.active30d
+        || b.totalUsers - a.totalUsers
+        || a.countryCode.localeCompare(b.countryCode),
+    ),
+  };
 }
 
 // ─── AI Teacher accounts ─────────────────────────────────────────────────────
@@ -450,6 +595,27 @@ export async function findTeacherAccountByUserId(userId: string): Promise<Teache
   const rows = await readAllRows("TeacherAccounts");
   const row = rows.find((item) => item.userId === userId);
   return row ? rowToTeacherAccount(row) : null;
+}
+
+export interface TeacherAccountSnapshot {
+  id: string;
+  userId: string;
+  updatedAt: string;
+  snapshot: Record<string, unknown>;
+}
+
+/**
+ * Internal admin analytics projection. This intentionally omits recovery
+ * material, device identifiers, and the encrypted row fields.
+ */
+export async function getTeacherAccountSnapshots(): Promise<TeacherAccountSnapshot[]> {
+  const rows = await readAllRows("TeacherAccounts");
+  return rows.map((row) => ({
+    id: row.id,
+    userId: row.userId,
+    updatedAt: row.updatedAt,
+    snapshot: decryptTeacherSnapshot(row.accountJson),
+  }));
 }
 
 export async function findTeacherAccountByRecoveryKey(value: string): Promise<TeacherAccount | null> {
@@ -614,22 +780,45 @@ export async function addAyahReward(userId: string, surah: number, ayah: number,
   await appendRow("AyahRewards", [crypto.randomUUID(), userId, String(surah), String(ayah), date, new Date().toISOString()]);
 }
 
-// ─── Referrals ────────────────────────────────────────────────────────────────
-
-export async function hasReferral(refereeId: string): Promise<boolean> {
-  const rows = await readAllRows("Referrals");
-  return rows.some((r) => r.refereeId === refereeId);
-}
-
-export async function addReferral(referrerId: string, refereeId: string): Promise<void> {
-  await appendRow("Referrals", [crypto.randomUUID(), referrerId, refereeId, new Date().toISOString()]);
-}
-
 // ─── Products ─────────────────────────────────────────────────────────────────
 
+/**
+ * Some Products rows predate the admin catalog and have an empty id cell.
+ * Keep those rows editable without changing their identity on every request.
+ * The generated ID is based on the row's existing product data and is written
+ * back when that legacy row is updated.
+ */
+function legacyProductId(r: Record<string, string>): string {
+  const identity = [
+    r.userId,
+    r.title,
+    r.description,
+    r.imageUrl,
+    r.contactInfo,
+    r.productLink,
+    r.category,
+    r.status,
+    r.promotionType,
+    r.coinsSpent,
+    r.submittedBy,
+    r.approvedAt,
+    r.rejectedAt,
+    r.rejectionReason,
+    r.promotionExpiry,
+    r.createdAt,
+    r.displayOrder,
+  ].join("\u001f");
+  return `legacy-product-${crypto.createHash("sha256").update(identity).digest("hex").slice(0, 24)}`;
+}
+
+function productRowId(r: Record<string, string>): string {
+  return r.id.trim() || legacyProductId(r);
+}
+
 function rowToProduct(r: Record<string, string>): Product {
+  const displayOrder = Number(r.displayOrder);
   return {
-    id:               r.id,
+    id:               productRowId(r),
     userId:           r.userId,
     title:            r.title,
     description:      r.description,
@@ -645,12 +834,19 @@ function rowToProduct(r: Record<string, string>): Product {
     rejectedAt:       r.rejectedAt || null,
     rejectionReason:  r.rejectionReason || null,
     promotionExpiry:  r.promotionExpiry || null,
+    ...(Number.isFinite(displayOrder) ? { displayOrder } : {}),
     createdAt:        r.createdAt,
   };
 }
 
 function productToRow(p: Product): string[] {
-  return [p.id, p.userId, p.title, p.description, p.imageUrl ?? "", p.contactInfo, p.productLink ?? "", p.category, p.status, p.promotionType, String(p.coinsSpent), p.submittedBy ?? "", p.approvedAt ?? "", p.rejectedAt ?? "", p.rejectionReason ?? "", p.promotionExpiry ?? "", p.createdAt];
+  return [p.id, p.userId, p.title, p.description, p.imageUrl ?? "", p.contactInfo, p.productLink ?? "", p.category, p.status, p.promotionType, String(p.coinsSpent), p.submittedBy ?? "", p.approvedAt ?? "", p.rejectedAt ?? "", p.rejectionReason ?? "", p.promotionExpiry ?? "", p.createdAt, String(p.displayOrder ?? 0)];
+}
+
+export async function getAllProducts(): Promise<Product[]> {
+  return (await readAllRows("Products"))
+    .map(rowToProduct)
+    .sort((a, b) => (a.displayOrder ?? 0) - (b.displayOrder ?? 0) || b.createdAt.localeCompare(a.createdAt));
 }
 
 export async function getApprovedProducts(): Promise<Product[]> {
@@ -665,7 +861,10 @@ export async function getApprovedProducts(): Promise<Product[]> {
       // Exclude expired listings; legacy null-expiry products (promotionType "none") remain visible
       (!p.promotionExpiry || p.promotionExpiry > now),
     )
-    .sort((a, b) => (b.approvedAt ?? b.createdAt).localeCompare(a.approvedAt ?? a.createdAt));
+    .sort((a, b) =>
+      (a.displayOrder ?? 0) - (b.displayOrder ?? 0)
+      || (b.approvedAt ?? b.createdAt).localeCompare(a.approvedAt ?? a.createdAt),
+    );
 }
 
 export async function getFeaturedProducts(): Promise<Product[]> {
@@ -679,17 +878,10 @@ export async function getFeaturedProducts(): Promise<Product[]> {
       !!p.promotionExpiry &&
       p.promotionExpiry > now,
     )
-    .sort((a, b) => (b.promotionExpiry ?? "").localeCompare(a.promotionExpiry ?? ""));
-}
-
-export async function getPendingProducts(): Promise<Product[]> {
-  const rows = await readAllRows("Products");
-  return rows.map(rowToProduct).filter((p) => p.status === "pending").sort((a, b) => b.createdAt.localeCompare(a.createdAt));
-}
-
-export async function getAllProductsAdmin(): Promise<Product[]> {
-  const rows = await readAllRows("Products");
-  return rows.map(rowToProduct).sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+    .sort((a, b) =>
+      (a.displayOrder ?? 0) - (b.displayOrder ?? 0)
+      || (b.promotionExpiry ?? "").localeCompare(a.promotionExpiry ?? ""),
+    );
 }
 
 export async function getUserProducts(userId: string): Promise<Product[]> {
@@ -699,7 +891,7 @@ export async function getUserProducts(userId: string): Promise<Product[]> {
 
 export async function getProductById(id: string): Promise<Product | null> {
   const rows = await readAllRows("Products");
-  const r = rows.find((x) => x.id === id);
+  const r = rows.find((x) => productRowId(x) === id);
   return r ? rowToProduct(r) : null;
 }
 
@@ -711,7 +903,7 @@ export async function createProduct(data: Omit<Product, "id" | "createdAt">): Pr
 
 export async function updateProduct(id: string, updates: Partial<Omit<Product, "id" | "createdAt">>): Promise<Product> {
   const rows = await readAllRows("Products");
-  const idx = rows.findIndex((x) => x.id === id);
+  const idx = rows.findIndex((x) => productRowId(x) === id);
   if (idx === -1) throw new Error(`Product ${id} not found`);
   const updated: Product = { ...rowToProduct(rows[idx]), ...updates };
   await updateRowByDataIndex("Products", idx, productToRow(updated));
@@ -720,7 +912,7 @@ export async function updateProduct(id: string, updates: Partial<Omit<Product, "
 
 export async function deleteProduct(id: string): Promise<void> {
   const rows = await readAllRows("Products");
-  const idx = rows.findIndex((x) => x.id === id);
+  const idx = rows.findIndex((x) => productRowId(x) === id);
   if (idx === -1) throw new Error(`Product ${id} not found`);
   await deleteRowByDataIndex("Products", idx);
 }
@@ -748,11 +940,67 @@ function rowToWelcomeCampaign(r: Record<string, string>): WelcomeCampaign {
 }
 
 export async function getActiveWelcomeCampaigns(): Promise<WelcomeCampaign[]> {
-  const rows = await readAllRows("WelcomeCampaigns");
-  return rows
+  return (await getAllWelcomeCampaigns()).filter((campaign) => campaign.enabled && campaign.id && campaign.title);
+}
+
+function welcomeCampaignToRow(campaign: WelcomeCampaign): string[] {
+  return [
+    campaign.id,
+    campaign.imageUrl ?? "",
+    campaign.gifUrl ?? "",
+    campaign.videoUrl ?? "",
+    campaign.title,
+    campaign.description,
+    campaign.buttonText ?? "",
+    campaign.url ?? "",
+    String(campaign.durationSeconds),
+    String(campaign.enabled),
+  ];
+}
+
+export async function getAllWelcomeCampaigns(): Promise<WelcomeCampaign[]> {
+  return (await readAllRows("WelcomeCampaigns"))
     .map(rowToWelcomeCampaign)
-    .filter((campaign) => campaign.enabled && campaign.id && campaign.title)
+    .filter((campaign) => campaign.id)
     .sort((a, b) => a.id.localeCompare(b.id));
+}
+
+export async function createWelcomeCampaign(
+  data: Omit<WelcomeCampaign, "id"> & { id?: string },
+): Promise<WelcomeCampaign> {
+  const campaign: WelcomeCampaign = {
+    id: data.id?.trim() || crypto.randomUUID(),
+    imageUrl: data.imageUrl ?? null,
+    gifUrl: data.gifUrl ?? null,
+    videoUrl: data.videoUrl ?? null,
+    title: data.title.trim(),
+    description: data.description.trim(),
+    buttonText: data.buttonText ?? null,
+    url: data.url ?? null,
+    durationSeconds: data.durationSeconds,
+    enabled: data.enabled,
+  };
+  await appendRow("WelcomeCampaigns", welcomeCampaignToRow(campaign));
+  return campaign;
+}
+
+export async function updateWelcomeCampaign(
+  id: string,
+  updates: Partial<Omit<WelcomeCampaign, "id">>,
+): Promise<WelcomeCampaign> {
+  const rows = await readAllRows("WelcomeCampaigns");
+  const idx = rows.findIndex((row) => row.id === id);
+  if (idx === -1) throw new Error(`Campaign ${id} not found`);
+  const updated = { ...rowToWelcomeCampaign(rows[idx]), ...updates, id };
+  await updateRowByDataIndex("WelcomeCampaigns", idx, welcomeCampaignToRow(updated));
+  return updated;
+}
+
+export async function deleteWelcomeCampaign(id: string): Promise<void> {
+  const rows = await readAllRows("WelcomeCampaigns");
+  const idx = rows.findIndex((row) => row.id === id);
+  if (idx === -1) throw new Error(`Campaign ${id} not found`);
+  await deleteRowByDataIndex("WelcomeCampaigns", idx);
 }
 
 // ─── Helper: add coins + record transaction ───────────────────────────────────

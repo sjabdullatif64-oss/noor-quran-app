@@ -6,11 +6,13 @@ import {
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useI18n } from "@/lib/i18n-context";
-import { nativeShare, openUrl, getLastShareError } from "@/lib/capacitor";
+import { nativeShare, openUrl, isNative, getLastShareError } from "@/lib/capacitor";
 import { BUILD_INFO } from "@/lib/buildInfo";
 import { ALL_LANGUAGES } from "@/lib/api";
 
 const APP_SHARE_URL = "https://play.google.com/store/apps/details?id=com.sj64noorquran";
+const APP_RATE_URL = "https://play.google.com/store/apps/details?id=com.sj64noorquran&reviewId=0";
+const APP_RATE_MARKET_URL = "market://details?id=com.sj64noorquran&reviewId=0";
 const APP_SHARE_MSG =
   "Download Noor Quran - Quran, Prayer Times, Islamic Features & More.\nA beautiful Islamic app for daily Muslim life.";
 
@@ -366,9 +368,7 @@ export function About() {
             accent="text-amber-600"
             bg="rgba(251,191,36,0.08)"
             border="border-border"
-            onClick={() =>
-              openUrl("https://play.google.com/store/apps/details?id=com.sj64noorquran&reviewId=0")
-            }
+            onClick={() => void openUrl(isNative() ? APP_RATE_MARKET_URL : APP_RATE_URL)}
             testId="button-about-rate"
           />
           <ActionButton

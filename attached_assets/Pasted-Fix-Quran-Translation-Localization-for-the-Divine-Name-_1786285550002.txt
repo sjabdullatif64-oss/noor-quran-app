@@ -1,0 +1,62 @@
+Fix Quran Translation Localization for the Divine Name “Allah”
+
+The screenshot shows a localization issue in the Quran translation text. For example, the Urdu translation currently displays:
+
+“شروع Allah کا نام لے کر…”
+
+This is incorrect because the selected translation language is Urdu. It should display:
+
+“شروع اللہ کا نام لے کر…”
+
+Required behavior
+
+Fix this consistently across ALL supported Quran translation languages, not Urdu only.
+
+When a translation contains the divine name “Allah”, it must be rendered using the correct, natural and established form/script of “Allah” for the selected translation language.
+
+Examples:
+
+- Urdu → اللہ
+- Arabic → الله
+- Hindi → अल्लाह
+- Bengali → আল্লাহ
+- Persian → الله
+- English → Allah
+- Other languages → use the standard/natural rendering of the divine name in that language/script.
+
+Important rule
+
+Do NOT translate the divine name semantically into words such as:
+
+- God
+- Lord
+- Creator
+- Deity
+
+The meaning/name must remain Allah; only its written representation should be localized according to the selected translation language.
+
+Implementation requirements
+
+- Use the user's currently selected Quran translation language.
+- Apply the fix everywhere Quran translation text is displayed, not only Surah Al-Faatiha.
+- Do not modify the original Arabic Quran text.
+- Do not modify the actual translation meaning/content unnecessarily.
+- Do not create a separate language-selection system.
+- Reuse the existing translation-language/localization system.
+- Make sure the fix works consistently for all supported translation languages.
+- Avoid hardcoding only the Urdu replacement.
+- Handle the divine name consistently even if it appears multiple times in the same translation.
+
+Please first inspect how the existing Quran translation data is stored and rendered, then implement the smallest safe localization fix.
+
+After implementation, verify:
+
+1. Urdu shows اللہ, not “Allah”.
+2. Arabic shows الله.
+3. Hindi and other non-Latin scripts use their appropriate established rendering.
+4. English continues to show Allah.
+5. No Arabic Quran text is changed.
+6. No unrelated translation words are modified.
+7. Existing translation selection and Quran rendering continue working normally.
+
+Run the relevant tests/typecheck/build after the fix.

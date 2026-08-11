@@ -1,66 +1,32 @@
-import { useState, useRef, useCallback } from "react";
 import { useLocation } from "wouter";
+import { useRef, useState } from "react";
 import {
   Navigation, Heart, Hash, Gift, Settings, Download, Bookmark,
   ChevronRight, Bell, Info, Share2, Sparkles, PenLine, Star,
-  CalendarDays, ShoppingBag, X, Eye, EyeOff,
+  CalendarDays, ShoppingBag,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useI18n } from "@/lib/i18n-context";
 import { RewardedAdButton } from "@/components/rewarded-ad-button";
-import { nativeShare, openUrl, getLastShareError } from "@/lib/capacitor";
+import { nativeShare, openUrl, isNative, getLastShareError } from "@/lib/capacitor";
+import { API_BASE } from "@/lib/noor-api";
 
 const APP_SHARE_URL = "https://play.google.com/store/apps/details?id=com.sj64noorquran";
+const APP_RATE_URL = "https://play.google.com/store/apps/details?id=com.sj64noorquran&reviewId=0";
+const APP_RATE_MARKET_URL = "market://details?id=com.sj64noorquran&reviewId=0";
 const APP_SHARE_MSG =
   "Download Noor Quran - Quran, Prayer Times, Islamic Features & More.\nA beautiful Islamic app for daily Muslim life.";
 
-const ADMIN_TAPS_REQUIRED = 20;
-
 export function More() {
   const [, navigate] = useLocation();
-  const { toast }    = useToast();
+  const { toast } = useToast();
   const { t }        = useI18n();
-
-  const [tapCount,         setTapCount]         = useState(0);
-  const [showAdminDialog,  setShowAdminDialog]  = useState(false);
-  const [adminTokenInput,  setAdminTokenInput]  = useState("");
-  const [showAdminPw,      setShowAdminPw]      = useState(false);
-  const tapResetTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-  const handleFooterTap = useCallback(() => {
-    if (tapResetTimer.current) clearTimeout(tapResetTimer.current);
-    tapResetTimer.current = null;
-
-    setTapCount((prev) => {
-      const next = prev + 1;
-      if (next >= ADMIN_TAPS_REQUIRED) {
-        setShowAdminDialog(true);
-        return 0;
-      }
-      return next;
-    });
-
-    tapResetTimer.current = setTimeout(() => setTapCount(0), 3000);
-  }, []);
-
-  function handleAdminLogin() {
-    const tok = adminTokenInput.trim();
-    if (!tok) {
-      toast({ title: "Enter admin token", variant: "destructive" });
-      return;
-    }
-    localStorage.setItem("noor-admin-token", tok);
-    setShowAdminDialog(false);
-    setAdminTokenInput("");
-    setTapCount(0);
-    navigate("/admin-products");
-  }
-
-  function closeAdminDialog() {
-    setShowAdminDialog(false);
-    setAdminTokenInput("");
-    setTapCount(0);
-  }
+  const footerTaps = useRef(0);
+  const footerResetTimer = useRef<number | null>(null);
+  const [adminDialogOpen, setAdminDialogOpen] = useState(false);
+  const [adminToken, setAdminToken] = useState("");
+  const [adminError, setAdminError] = useState("");
+  const [adminBusy, setAdminBusy] = useState(false);
 
   async function handleShare() {
     const result = await nativeShare({
@@ -75,6 +41,53 @@ export function More() {
         description: getLastShareError() ?? "Please try again.",
         variant: "destructive",
       });
+    }
+  }
+
+  function handleRateApp() {
+    void openUrl(isNative() ? APP_RATE_MARKET_URL : APP_RATE_URL);
+  }
+
+  function handleFooterTap() {
+    footerTaps.current += 1;
+    if (footerResetTimer.current !== null) window.clearTimeout(footerResetTimer.current);
+    footerResetTimer.current = window.setTimeout(() => {
+      footerTaps.current = 0;
+      footerResetTimer.current = null;
+    }, 2000);
+
+    if (footerTaps.current >= 20) {
+      footerTaps.current = 0;
+      if (footerResetTimer.current !== null) window.clearTimeout(footerResetTimer.current);
+      footerResetTimer.current = null;
+      setAdminToken("");
+      setAdminError("");
+      setAdminDialogOpen(true);
+    }
+  }
+
+  async function handleAdminLogin(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setAdminBusy(true);
+    setAdminError("");
+    try {
+      const response = await fetch(`${API_BASE}/admin/session`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ token: adminToken }),
+      });
+      const data = await response.json().catch(() => ({})) as { session?: string };
+      if (!response.ok || !data.session) {
+        throw new Error("Incorrect admin password");
+      }
+      sessionStorage.setItem("noor-admin-session", data.session);
+      setAdminDialogOpen(false);
+      setAdminToken("");
+      navigate("/admin");
+    } catch (error) {
+      setAdminError(error instanceof Error ? error.message : "Incorrect admin password");
+    } finally {
+      setAdminBusy(false);
     }
   }
 
@@ -221,7 +234,7 @@ export function More() {
         </button>
 
         <button
-          onClick={() => openUrl("https://play.google.com/store/apps/details?id=com.sj64noorquran&reviewId=0")}
+          onClick={handleRateApp}
           className="w-full flex items-center gap-4 p-5 rounded-2xl border border-border bg-card text-left transition-all active:scale-[0.98] hover:border-border"
           data-testid="more-rate-app"
         >
@@ -269,60 +282,65 @@ export function More() {
         ))}
       </div>
 
-      {/* Footer — 20-tap admin access */}
-      <button
-        onClick={handleFooterTap}
-        className="w-full text-center text-muted-foreground text-xs mt-6 pb-4 active:text-primary transition-colors select-none"
-      >
-        {t("more_footer")}
-      </button>
+       <button
+         type="button"
+         onClick={handleFooterTap}
+         className="mt-10 mb-4 w-full bg-transparent px-4 text-center text-xs text-muted-foreground"
+         aria-label={t("more_footer")}
+       >
+         {t("more_footer")}
+       </button>
 
-      {/* Admin Token Dialog */}
-      {showAdminDialog && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center px-6"
-          style={{ background: "rgba(0,0,0,0.75)", backdropFilter: "blur(4px)" }}
-        >
-          <div
-            className="w-full max-w-sm rounded-2xl border border-border p-6 space-y-4 bg-background"
-          >
-            <div className="flex items-center justify-between">
-              <p className="text-primary font-bold text-base">{t("more_admin_title")}</p>
-              <button
-                onClick={closeAdminDialog}
-                className="w-8 h-8 flex items-center justify-center rounded-full border border-border text-muted-foreground active:scale-90 transition-transform"
-              >
-                <X className="w-4 h-4" />
-              </button>
-            </div>
-            <p className="text-muted-foreground text-xs">Enter the admin token to continue.</p>
-            <div className="relative">
-              <input
-                type={showAdminPw ? "text" : "password"}
-                value={adminTokenInput}
-                onChange={(e) => setAdminTokenInput(e.target.value)}
-                onKeyDown={(e) => { if (e.key === "Enter") handleAdminLogin(); }}
-                placeholder="Admin token…"
-                autoFocus
-                className="w-full px-3 py-2.5 pr-10 rounded-xl bg-background border border-border text-foreground placeholder:text-muted-foreground text-sm focus:outline-none focus:ring-1 focus:ring-primary"
-              />
-              <button
-                type="button"
-                onClick={() => setShowAdminPw((v) => !v)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground"
-              >
-                {showAdminPw ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-              </button>
-            </div>
-            <button
-              onClick={handleAdminLogin}
-              className="w-full py-2.5 rounded-xl bg-primary hover:bg-primary/90 text-primary-foreground font-bold text-sm transition-colors active:scale-[0.98]"
-            >
-              Enter Admin Panel
-            </button>
-          </div>
-        </div>
-      )}
+       {adminDialogOpen && (
+         <div
+           className="fixed inset-0 z-[100] flex items-center justify-center bg-black/70 px-5 py-8"
+           role="dialog"
+           aria-modal="true"
+           aria-labelledby="admin-password-title"
+         >
+           <div className="w-full max-w-sm rounded-2xl border border-border bg-card p-6 shadow-2xl">
+             <div className="mb-5">
+               <h2 id="admin-password-title" className="text-xl font-semibold text-foreground">Admin access</h2>
+               <p className="mt-2 text-sm text-muted-foreground">Enter the administrator password to continue.</p>
+             </div>
+             <form onSubmit={handleAdminLogin} className="space-y-4">
+               <input
+                 className="w-full rounded-xl border border-border bg-background px-4 py-3 text-foreground outline-none focus:border-primary focus:ring-2 focus:ring-primary/20"
+                 type="password"
+                 value={adminToken}
+                 onChange={(event) => setAdminToken(event.target.value)}
+                 autoComplete="current-password"
+                 autoFocus
+                 required
+                 placeholder="Admin password"
+                 aria-label="Admin password"
+               />
+               {adminError && <p className="text-sm text-destructive" role="alert">{adminError}</p>}
+               <div className="flex justify-end gap-2">
+                 <button
+                   type="button"
+                   className="rounded-xl px-4 py-2.5 text-sm font-semibold text-muted-foreground hover:bg-muted"
+                   onClick={() => {
+                     setAdminDialogOpen(false);
+                     setAdminToken("");
+                     setAdminError("");
+                   }}
+                 >
+                   Cancel
+                 </button>
+                 <button
+                   type="submit"
+                   className="rounded-xl bg-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground disabled:opacity-60"
+                   disabled={adminBusy}
+                 >
+                   {adminBusy ? "Checking…" : "Continue"}
+                 </button>
+               </div>
+             </form>
+           </div>
+         </div>
+       )}
+
     </div>
   );
 }

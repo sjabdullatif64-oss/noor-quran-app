@@ -29,15 +29,16 @@ import { Writing } from "@/pages/writing";
 import { IslamicCalendar } from "@/pages/islamic-calendar";
 import { AzanSettings } from "@/pages/azan-settings";
 import { Marketplace } from "@/pages/marketplace";
-import { AdminProducts } from "@/pages/admin-products";
 import { JuzReader } from "@/pages/juz-reader";
 import { Teacher } from "@/pages/teacher";
 import { TeacherLesson } from "@/pages/teacher-lesson";
 import { TeacherPractice } from "@/pages/teacher-practice";
 import { WelcomeCampaignGate } from "@/components/welcome-campaign-gate";
+import { ConsentGate } from "@/components/consent-gate";
 import { useEffect } from "react";
 import { AI_TEACHER_ENABLED } from "@/lib/teacher-config";
-import { ensureRegistered, reportAyahComplete } from "@/lib/user";
+import { ensureRegistered, reportAyahComplete, reportPresence } from "@/lib/user";
+import { Admin } from "@/pages/admin";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -58,6 +59,9 @@ function NoorInitializer() {
   useEffect(() => {
     // Register device silently on first open — idempotent
     ensureRegistered().catch(() => {});
+    const presenceTimer = window.setInterval(() => {
+      reportPresence().catch(() => {});
+    }, 2 * 60 * 1000);
 
     // Listen for ayah-both-done events dispatched by surah reader
     // Awards 1 coin per unique ayah when BOTH arabic + translation audio complete
@@ -68,7 +72,10 @@ function NoorInitializer() {
       }
     }
     window.addEventListener("noor:ayah-both-done", onAyahDone);
-    return () => window.removeEventListener("noor:ayah-both-done", onAyahDone);
+    return () => {
+      window.clearInterval(presenceTimer);
+      window.removeEventListener("noor:ayah-both-done", onAyahDone);
+    };
   }, []);
   return null;
 }
@@ -103,7 +110,6 @@ function Router() {
       <Route path="/islamic-calendar" component={IslamicCalendar} />
       <Route path="/azan-settings" component={AzanSettings} />
       <Route path="/marketplace" component={Marketplace} />
-      <Route path="/admin-products" component={AdminProducts} />
       <Route path="/juz/:number" component={JuzReader} />
       {AI_TEACHER_ENABLED ? (
         <>
@@ -126,6 +132,23 @@ function Router() {
   );
 }
 
+function AppSurface() {
+  const [location] = useLocation();
+  if (location === "/admin") return <Admin />;
+  return (
+    <ConsentGate>
+      <AndroidBackHandler />
+      <NoorInitializer />
+      <WelcomeCampaignGate>
+        <Layout>
+          <Router />
+        </Layout>
+      </WelcomeCampaignGate>
+      <NotificationPrompt />
+    </ConsentGate>
+  );
+}
+
 function App() {
   return (
     <I18nProvider>
@@ -133,16 +156,7 @@ function App() {
         <QueryClientProvider client={queryClient}>
           <TooltipProvider>
             <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, "")}>
-              <AndroidBackHandler />
-              <NoorInitializer />
-
-              <WelcomeCampaignGate>
-                <Layout>
-                  <Router />
-                </Layout>
-              </WelcomeCampaignGate>
-
-              <NotificationPrompt />
+                <AppSurface />
             </WouterRouter>
             <Toaster />
           </TooltipProvider>

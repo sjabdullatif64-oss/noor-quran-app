@@ -7,14 +7,20 @@ import {
   ChevronLeft, ChevronRight, WifiOff, RotateCcw,
 } from "lucide-react";
 import { JUZ_DATA } from "@/lib/juz-data";
-import { getLang } from "@/lib/settings";
+import {
+  getLang,
+  setLang,
+  TRANSLATION_LANGUAGE_CHANGED_EVENT,
+  getTransliterationLanguage,
+  setTransliterationLanguage,
+  TRANSLITERATION_LANGUAGE_CHANGED_EVENT,
+} from "@/lib/settings";
 import {
   fetchTranslationTexts,
   RTL_LANGUAGES,
   TTS_LANG_CODES,
   TRANSLATION_ENGLISH_NAMES,
   TRANSLATION_LABELS,
-  sanitizeTranslation,
   getAudioUrl,
   type TranslationLanguage,
 } from "@/lib/api";
@@ -24,9 +30,17 @@ import { NativeTTS } from "@/lib/native-tts";
 import { useToast } from "@/hooks/use-toast";
 import { useWakeLock } from "@/hooks/useWakeLock";
 import { AyahActionsMenu } from "@/components/ayah-actions-menu";
-import { useAyahDisplaySettings, applyExplanatorySetting } from "@/lib/ayah-display";
+import {
+  useAyahDisplaySettings,
+  applyTranslationDisplay,
+  applyTransliterationDisplay,
+} from "@/lib/ayah-display";
 import { usePinchZoom } from "@/hooks/use-pinch-zoom";
-import { getOfflineArabic, getOfflineTranslationTexts } from "@/lib/offline-quran";
+import {
+  getOfflineArabic,
+  getOfflineTranslit,
+  getOfflineTranslationTexts,
+} from "@/lib/offline-quran";
 import { useNetworkStatus } from "@/hooks/use-network";
 
 // ── Types ──────────────────────────────────────────────────────────────────────
@@ -98,6 +112,7 @@ interface JuzAyah {
   numberInSurah: number;
   globalNumber: number;
   textAr: string;
+  textTranslit: string;
   textTranslation: string;
 }
 
@@ -116,6 +131,7 @@ interface FlatAyah {
   numberInSurah: number;
   globalNumber: number;
   textAr: string;
+  textTranslit: string;
   textTranslation: string;
   audioUrl: string;
 }
@@ -146,6 +162,7 @@ async function fetchSurahRange(
 
   if (offlineSurah) {
     const offlineTexts = await getOfflineTranslationTexts(lang, surahNumber);
+    const offlineTranslit = await getOfflineTranslit();
     let translationAyahs: string[];
 
     if (offlineTexts) {
@@ -160,7 +177,8 @@ async function fetchSurahRange(
         numberInSurah:   a.n,
         globalNumber:    a.g,
         textAr:          a.t,
-        textTranslation: sanitizeTranslation(lang, translationAyahs[a.n - 1] ?? ""),
+        textTranslit:    offlineTranslit?.[String(surahNumber)]?.[a.n - 1] ?? "",
+        textTranslation: translationAyahs[a.n - 1] ?? "",
       }));
 
     if (ayahs.length === 0) return null;
@@ -175,9 +193,10 @@ async function fetchSurahRange(
   }
 
   // ── API fallback (bundle unavailable) ────────────────────────────────────
-  const [arData, translationAyahs] = await Promise.all([
+  const [arData, translationAyahs, translitData] = await Promise.all([
     safeFetch(`https://api.alquran.cloud/v1/surah/${surahNumber}`),
     fetchTranslationTexts(lang, surahNumber),
+    safeFetch(`https://api.alquran.cloud/v1/surah/${surahNumber}/en.transliteration`),
   ]);
 
   type RawAyah = { number: number; numberInSurah: number; text: string };
@@ -189,6 +208,8 @@ async function fetchSurahRange(
       ayahs: RawAyah[];
     };
   } | null;
+  const translitAyahs =
+    (translitData as { data?: { ayahs?: { text: string }[] } } | null)?.data?.ayahs ?? [];
   if (!ar?.data?.ayahs) return null;
 
   const ayahs: JuzAyah[] = ar.data.ayahs
@@ -197,7 +218,8 @@ async function fetchSurahRange(
       numberInSurah:   a.numberInSurah,
       globalNumber:    a.number,
       textAr:          a.text,
-      textTranslation: sanitizeTranslation(lang, translationAyahs[a.numberInSurah - 1] ?? ""),
+      textTranslit:    translitAyahs[a.numberInSurah - 1]?.text ?? "",
+      textTranslation: translationAyahs[a.numberInSurah - 1] ?? "",
     }));
 
   if (ayahs.length === 0) return null;
@@ -237,10 +259,13 @@ export function JuzReader() {
   const cancelLoadRef           = useRef<() => void>(() => {});
   const juzInfo                 = JUZ_DATA[juzNumber - 1];
 
-  // Language is fixed at page-load time (no switcher in Juz view)
-  const [language] = useState<TranslationLanguage>(() => getLang());
+  const [language, setLanguage] = useState<TranslationLanguage>(() => getLang());
+  const [transliterationLanguage, setTransliterationLanguageState] = useState<TranslationLanguage>(
+    () => getTransliterationLanguage(),
+  );
   const languageRef = useRef(language);
   useEffect(() => { languageRef.current = language; }, [language]);
+  const { showTransliteration, showTranslation } = useAyahDisplaySettings();
 
   // ── Flat ayah list (sequential index for audio) ────────────────────────────
   const flatAyahs = useMemo<FlatAyah[]>(() =>
@@ -252,6 +277,7 @@ export function JuzReader() {
         numberInSurah:   ayah.numberInSurah,
         globalNumber:    ayah.globalNumber,
         textAr:          ayah.textAr,
+        textTranslit:    ayah.textTranslit,
         textTranslation: ayah.textTranslation,
         audioUrl:        getAudioUrl(ayah.globalNumber),
       }))
@@ -343,7 +369,7 @@ export function JuzReader() {
     setError(false);
     setSections([]);
 
-    const lang        = getLang();
+    const lang        = language;
     const startSurah  = juzInfo.surahNumber;
     const startAyah   = juzInfo.startAyah;
     const nextJuz     = JUZ_DATA[juzNumber];
@@ -372,7 +398,24 @@ export function JuzReader() {
     load();
     return () => cancelLoadRef.current();
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [juzNumber]);
+  }, [juzNumber, language]);
+
+  useEffect(() => {
+    const syncLanguage = () => setLanguage(getLang());
+    window.addEventListener(TRANSLATION_LANGUAGE_CHANGED_EVENT, syncLanguage);
+    return () => window.removeEventListener(TRANSLATION_LANGUAGE_CHANGED_EVENT, syncLanguage);
+  }, []);
+
+  useEffect(() => {
+    const syncTransliterationLanguage = () => {
+      setTransliterationLanguageState(getTransliterationLanguage());
+    };
+    window.addEventListener(TRANSLITERATION_LANGUAGE_CHANGED_EVENT, syncTransliterationLanguage);
+    return () => window.removeEventListener(
+      TRANSLITERATION_LANGUAGE_CHANGED_EVENT,
+      syncTransliterationLanguage,
+    );
+  }, []);
 
   // ── Load bookmarks + favorites once flat ayahs are ready ──────────────────
   useEffect(() => {
@@ -382,7 +425,11 @@ export function JuzReader() {
     const bms = getBookmarks();
     setBookmarkedSet(new Set(
       bms
-        .filter((b) => juzKeys.has(`${b.surahNumber}-${b.ayahNumber}`))
+        .filter(
+          (b): b is typeof b & { ayahNumber: number } =>
+            b.type !== "surah" &&
+            juzKeys.has(`${b.surahNumber}-${b.ayahNumber}`),
+        )
         .map((b) => `${b.surahNumber}-${b.ayahNumber}`)
     ));
 
@@ -934,7 +981,13 @@ export function JuzReader() {
                             surahName={section.surahName}
                             ayahNumber={ayah.numberInSurah}
                             textAr={ayah.textAr}
-                            displayedTranslation={applyExplanatorySetting(ayah.textTranslation ?? "")}
+                            textTranslit={ayah.textTranslit}
+                            displayedTranslation={applyTranslationDisplay(language, ayah.textTranslation ?? "")}
+                            transliterationLanguage={transliterationLanguage}
+                            onTransliterationLanguageChange={(nextLanguage) => {
+                              setTransliterationLanguage(nextLanguage);
+                              setTransliterationLanguageState(nextLanguage);
+                            }}
                             pinchZoomEnabled={pinchZoomEnabled}
                             onTogglePinchZoom={() => setPinchZoomEnabled((v) => !v)}
                             triggerClassName="w-8 h-8 rounded-full flex items-center justify-center text-muted-foreground hover:text-primary transition-colors active:scale-95"
@@ -950,14 +1003,21 @@ export function JuzReader() {
                         <span className="text-primary mr-2"> ﴿{ayah.numberInSurah}﴾</span>
                       </p>
 
+                      {/* Transliteration */}
+                      {showTransliteration && ayah.textTranslit && (
+                        <p className="text-sm text-muted-foreground italic leading-relaxed mb-3">
+                           {applyTransliterationDisplay(transliterationLanguage, ayah.textTranslit)}
+                        </p>
+                      )}
+
                       {/* Translation */}
-                      {ayah.textTranslation && (
+                      {showTranslation && ayah.textTranslation && (
                         <p
                           className={`text-muted-foreground text-[calc(0.875rem*var(--ayah-scale))] leading-relaxed pt-2 border-t border-border ${
                             isRTL ? "text-right" : "text-left"
                           }`}
                           dir={isRTL ? "rtl" : "ltr"}>
-                          {applyExplanatorySetting(ayah.textTranslation)}
+                          {applyTranslationDisplay(language, ayah.textTranslation)}
                         </p>
                       )}
 

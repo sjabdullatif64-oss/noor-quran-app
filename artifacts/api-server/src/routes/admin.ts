@@ -1,222 +1,315 @@
 import { Router } from "express";
 import { z } from "zod";
-import { requireAdmin } from "../middlewares/adminAuth";
+import { createAdminSession, isValidAdminToken, requireAdminSession } from "../middlewares/adminSessionGuard";
+import { storeCampaignMedia } from "../lib/campaign-media";
 import {
-  findUserById,
-  updateUser,
-  addCoinTransaction,
-  getPendingProducts,
-  getAllProductsAdmin,
-  getProductById,
-  updateProduct,
-  deleteProduct,
   createProduct,
+  createWelcomeCampaign,
+  deleteProduct,
+  deleteWelcomeCampaign,
+  getAllProducts,
+  getAllWelcomeCampaigns,
+  getTeacherAccountSnapshots,
+  getAudienceAnalytics,
+  updateProduct,
+  updateWelcomeCampaign,
+  type Product,
+  type WelcomeCampaign,
 } from "../lib/sheets";
-import { PROMOTION_HOURS } from "../lib/constants";
 
 const router = Router();
-router.use(requireAdmin);
+const admin = requireAdminSession();
 
-router.get("/products/pending", async (_req, res) => {
-  const products = await getPendingProducts();
-  const withUsers = await Promise.all(
-    products.map(async (product) => {
-      const user = await findUserById(product.userId);
-      return {
-        product,
-        user: user
-          ? { id: user.id, deviceId: user.deviceId, coinsBalance: user.coinsBalance }
-          : null,
-      };
-    }),
-  );
-  res.json({ products: withUsers });
+const campaignFields = z.object({
+  id: z.string().trim().min(1).max(120).optional(),
+  imageUrl: z.string().max(2_000_000).nullable().optional(),
+  gifUrl: z.string().max(2_000_000).nullable().optional(),
+  videoUrl: z.string().max(2_000_000).nullable().optional(),
+  title: z.string().trim().min(1).max(200),
+  description: z.string().trim().max(2_000).default(""),
+  buttonText: z.string().trim().max(120).nullable().optional(),
+  url: z.string().trim().max(2_000).nullable().optional(),
+  durationSeconds: z.coerce.number().int().min(1).max(120).default(6),
+  enabled: z.boolean().default(false),
 });
 
-router.get("/products/all", async (_req, res) => {
-  const products = await getAllProductsAdmin();
-  const withUsers = await Promise.all(
-    products.map(async (product) => {
-      const user = await findUserById(product.userId);
-      return {
-        product,
-        user: user ? { id: user.id, deviceId: user.deviceId } : null,
-      };
-    }),
-  );
-  res.json({ products: withUsers });
+const productFields = z.object({
+  title: z.string().trim().min(2).max(200),
+  description: z.string().trim().max(2_000).default(""),
+  imageUrl: z.string().max(2_000_000).nullable().optional(),
+  contactInfo: z.string().trim().max(500).default(""),
+  productLink: z.string().trim().max(2_000).nullable().optional(),
+  category: z.enum(["tasbeeh", "prayer_mat", "books", "attar", "courses", "other"]).default("other"),
+  status: z.enum(["pending", "approved", "rejected"]).default("approved"),
+  displayOrder: z.coerce.number().int().min(0).max(1_000_000).default(0),
 });
 
-const adminCreateSchema = z.object({
-  title:       z.string().min(2).max(200),
-  description: z.string().min(5).max(2000),
-  imageUrl:    z.string().max(2_000_000).optional().or(z.literal("")),
-  contactInfo: z.string().min(2).max(500),
-  productLink: z.string().url().optional().or(z.literal("")),
-  category:    z.enum(["tasbeeh", "prayer_mat", "books", "attar", "courses", "other"]),
-  submittedBy: z.string().max(100).optional(),
-  featured:    z.boolean().default(false),
+// Existing Products rows may use the historical "Image" category. Keep new
+// product creation strict, but allow that stored legacy value during edits so
+// opening and saving an existing catalog row does not fail validation.
+const productPatchFields = productFields.partial().extend({
+  category: z.union([productFields.shape.category, z.literal("Image")]).optional(),
 });
+function cleanNullable(value: string | null | undefined): string | null {
+  return value?.trim() ? value.trim() : null;
+}
 
-router.post("/products", async (req, res) => {
-  const parsed = adminCreateSchema.safeParse(req.body);
-  if (!parsed.success) {
-    res.status(400).json({ error: "Invalid request", details: parsed.error.issues });
+function campaignUpdates(input: Partial<z.infer<typeof campaignFields>>): Partial<Omit<WelcomeCampaign, "id">> {
+  const updates: Partial<Omit<WelcomeCampaign, "id">> = {};
+  if (input.imageUrl !== undefined) updates.imageUrl = cleanNullable(input.imageUrl);
+  if (input.gifUrl !== undefined) updates.gifUrl = cleanNullable(input.gifUrl);
+  if (input.videoUrl !== undefined) updates.videoUrl = cleanNullable(input.videoUrl);
+  if (input.title !== undefined) updates.title = input.title;
+  if (input.description !== undefined) updates.description = input.description;
+  if (input.buttonText !== undefined) updates.buttonText = cleanNullable(input.buttonText);
+  if (input.url !== undefined) updates.url = cleanNullable(input.url);
+  if (input.durationSeconds !== undefined) updates.durationSeconds = input.durationSeconds;
+  if (input.enabled !== undefined) updates.enabled = input.enabled;
+  return updates;
+}
+
+async function campaignMediaUpdates(
+  input: Partial<z.infer<typeof campaignFields>>,
+): Promise<Partial<Omit<WelcomeCampaign, "id">>> {
+  const updates = campaignUpdates(input);
+  for (const key of ["imageUrl", "gifUrl", "videoUrl"] as const) {
+    if (updates[key] !== undefined) {
+      updates[key] = await storeCampaignMedia(updates[key]);
+    }
+  }
+  return updates;
+}
+
+function productUpdates(
+  input: Omit<Partial<z.infer<typeof productFields>>, "category"> & { category?: string },
+): Partial<Omit<Product, "id" | "createdAt">> {
+  const updates: Partial<Omit<Product, "id" | "createdAt">> = {};
+  if (input.title !== undefined) updates.title = input.title;
+  if (input.description !== undefined) updates.description = input.description;
+  if (input.imageUrl !== undefined) updates.imageUrl = cleanNullable(input.imageUrl);
+  if (input.contactInfo !== undefined) updates.contactInfo = input.contactInfo;
+  if (input.productLink !== undefined) updates.productLink = cleanNullable(input.productLink);
+  if (input.category !== undefined) updates.category = input.category;
+  if (input.status !== undefined) updates.status = input.status;
+  if (input.displayOrder !== undefined) updates.displayOrder = input.displayOrder;
+  return updates;
+}
+
+router.post("/session", (req, res) => {
+  if (!isValidAdminToken(req.body?.token)) {
+    res.status(401).json({ error: "Invalid admin credentials" });
     return;
   }
-  const { imageUrl, productLink, featured, submittedBy, ...fields } = parsed.data;
-  const now = new Date();
-  const promotionType = featured ? "7day" : "none";
-  const promotionExpiry = featured
-    ? new Date(now.getTime() + 365 * 24 * 3600 * 1000).toISOString()
-    : null;
+  res.json({ session: createAdminSession() });
+});
+
+router.get("/teacher-analytics", admin, async (_req, res) => {
+  const accounts = (await getTeacherAccountSnapshots()).filter((account) => {
+    const progress = account.snapshot.progress;
+    return Boolean(progress && typeof progress === "object" && !Array.isArray(progress));
+  });
+  const levelTotals = [28, 5, 8, 29, 8026];
+  const levelNames = [
+    "Arabic Letters",
+    "Harakat (Vowel Marks)",
+    "Small Words",
+    "Surah Al-Fatihah",
+    "Full Quran Reading",
+  ];
+  const levels = levelTotals.map((total, index) => ({
+    level: index + 1,
+    title: levelNames[index],
+    totalLessons: total,
+    completedLessons: 0,
+    users: 0,
+  }));
+  const lessonInventory = new Map<string, { level: number; order: number; completedBy: number }>();
+  for (let level = 1; level <= 5; level++) {
+    for (let order = 1; order <= levelTotals[level - 1]; order++) {
+      const id = level === 5
+        ? `quran-${String(order).padStart(4, "0")}`
+        : `l${level}-${String(order).padStart(2, "0")}`;
+      lessonInventory.set(id, { level, order, completedBy: 0 });
+    }
+  }
+  const users = accounts.map((account, index) => {
+    const progress = account.snapshot.progress;
+    const completed =
+      progress && typeof progress === "object" && !Array.isArray(progress)
+        && (progress as Record<string, unknown>).completed
+        && typeof (progress as Record<string, unknown>).completed === "object"
+        ? (progress as Record<string, unknown>).completed as Record<string, unknown>
+        : {};
+    const completedIds = Object.keys(completed);
+    const completedByLevel = levels.map((level, levelIndex) => {
+      const prefix = `l${level.level}-`;
+      const count = level.level === 5
+        ? completedIds.filter((id) => id.startsWith("quran-")).length
+        : completedIds.filter((id) => id.startsWith(prefix)).length;
+      level.completedLessons += Math.min(count, levelTotals[levelIndex]);
+      return count;
+    });
+    completedIds.forEach((id) => {
+      const match = id.match(/^l([1-4])-(\d+)$/) ?? id.match(/^quran-(\d+)$/);
+      if (!match) return;
+      const level = id.startsWith("quran-") ? 5 : Number(match[1]);
+      const order = id.startsWith("quran-") ? Number(match[1]) : Number(match[2]);
+      const current = lessonInventory.get(id);
+      if (current) current.completedBy += 1;
+    });
+    let currentLevel = 5;
+    for (let level = 0; level < levelTotals.length; level++) {
+      if (completedByLevel[level] < levelTotals[level]) {
+        currentLevel = level + 1;
+        break;
+      }
+    }
+    const completedLessons = Math.min(completedIds.length, levelTotals.reduce((a, b) => a + b, 0));
+    const checked = completedIds
+      .map((id) => completed[id])
+      .filter((record): record is Record<string, unknown> =>
+        Boolean(record && typeof record === "object" && !Array.isArray(record)
+          && !(record as Record<string, unknown>).selfAssessed),
+      );
+    const avgAccuracy = checked.length
+      ? Math.round(checked.reduce((sum, record) => sum + Math.max(0, Math.min(100, Number(record.accuracy) || 0)), 0) / checked.length)
+      : 0;
+    const retries = progress && typeof progress === "object"
+      ? Number((progress as Record<string, unknown>).totalRetries) || 0
+      : 0;
+    const timeSpentMs = progress && typeof progress === "object"
+      ? Number((progress as Record<string, unknown>).timeSpentMs) || 0
+      : 0;
+    return {
+      learner: `Learner ${String(index + 1).padStart(3, "0")}`,
+      currentLevel,
+      completedLessons,
+      progressPercent: Math.round((completedLessons / levelTotals.reduce((a, b) => a + b, 0)) * 100),
+      avgAccuracy,
+      totalRetries: retries,
+      timeSpentMs,
+      lastSyncedAt: account.updatedAt,
+    };
+  });
+  levels.forEach((level) => {
+    level.users = users.filter((user) => user.currentLevel === level.level).length;
+  });
+  res.json({
+    totalUsers: accounts.length,
+    totalLessons: levelTotals.reduce((a, b) => a + b, 0),
+    overallCompletedLessons: users.reduce((sum, user) => sum + user.completedLessons, 0),
+    overallProgressPercent: users.length
+      ? Math.round(users.reduce((sum, user) => sum + user.progressPercent, 0) / users.length)
+      : 0,
+    averageAccuracy: users.length
+      ? Math.round(users.reduce((sum, user) => sum + user.avgAccuracy, 0) / users.length)
+      : 0,
+    totalRetries: users.reduce((sum, user) => sum + user.totalRetries, 0),
+    totalTimeSpentMs: users.reduce((sum, user) => sum + user.timeSpentMs, 0),
+    levels,
+    lessons: [...lessonInventory.entries()]
+      .map(([id, lesson]) => ({ ...lesson, id }))
+      .sort((a, b) => a.level - b.level || a.order - b.order),
+    users,
+  });
+});
+
+router.get("/audience", admin, async (_req, res) => {
+  res.json(await getAudienceAnalytics());
+});
+
+router.get("/campaigns", admin, async (_req, res) => {
+  res.json({ campaigns: await getAllWelcomeCampaigns() });
+});
+
+router.post("/campaigns", admin, async (req, res) => {
+  const parsed = campaignFields.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ error: "Invalid campaign", details: parsed.error.issues });
+    return;
+  }
+  const { id, ...fields } = parsed.data;
+  const normalized = await campaignMediaUpdates(fields);
+  const campaign = await createWelcomeCampaign({
+    ...(id ? { id } : {}),
+    imageUrl: normalized.imageUrl ?? null,
+    gifUrl: normalized.gifUrl ?? null,
+    videoUrl: normalized.videoUrl ?? null,
+    title: normalized.title ?? "",
+    description: normalized.description ?? "",
+    buttonText: normalized.buttonText ?? null,
+    url: normalized.url ?? null,
+    durationSeconds: normalized.durationSeconds ?? 6,
+    enabled: normalized.enabled ?? false,
+  });
+  res.status(201).json({ campaign });
+});
+
+router.patch("/campaigns/:id", admin, async (req, res) => {
+  const parsed = campaignFields.partial().safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ error: "Invalid campaign", details: parsed.error.issues });
+    return;
+  }
+  const campaignId = String(req.params.id);
+  const campaign = await updateWelcomeCampaign(campaignId, await campaignMediaUpdates(parsed.data));
+  res.json({ campaign });
+});
+
+router.delete("/campaigns/:id", admin, async (req, res) => {
+  await deleteWelcomeCampaign(String(req.params.id));
+  res.status(204).end();
+});
+
+router.get("/products", admin, async (_req, res) => {
+  res.json({ products: await getAllProducts() });
+});
+
+router.post("/products", admin, async (req, res) => {
+  const parsed = productFields.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ error: "Invalid product", details: parsed.error.issues });
+    return;
+  }
+  const fields = productUpdates(parsed.data) as Required<Pick<Product, "title" | "description" | "imageUrl" | "contactInfo" | "productLink" | "category" | "status" | "displayOrder">>;
   const product = await createProduct({
-    userId:          "admin",
-    title:           fields.title,
-    description:     fields.description,
-    imageUrl:        imageUrl || null,
-    contactInfo:     fields.contactInfo,
-    productLink:     productLink || null,
-    category:        fields.category,
-    status:          "approved",
-    promotionType,
-    coinsSpent:      0,
-    submittedBy:     submittedBy ?? null,
-    approvedAt:      now.toISOString(),
-    rejectedAt:      null,
+    userId: "admin",
+    ...fields,
+    contactInfo: fields.contactInfo ?? "",
+    status: fields.status ?? "approved",
+    promotionType: "none",
+    coinsSpent: 0,
+    submittedBy: "admin",
+    approvedAt: fields.status === "approved" ? new Date().toISOString() : null,
+    rejectedAt: fields.status === "rejected" ? new Date().toISOString() : null,
     rejectionReason: null,
-    promotionExpiry,
+    promotionExpiry: null,
   });
   res.status(201).json({ product });
 });
 
-const featureSchema = z.object({ featured: z.boolean() });
-
-router.post("/products/:id/feature", async (req, res) => {
-  const product = await getProductById(req.params.id);
-  if (!product) {
-    res.status(404).json({ error: "Product not found" });
-    return;
-  }
-  const parsed = featureSchema.safeParse(req.body);
+router.patch("/products/:id", admin, async (req, res) => {
+  const parsed = productPatchFields.safeParse(req.body);
   if (!parsed.success) {
-    res.status(400).json({ error: "Invalid request" });
+    res.status(400).json({ error: "Invalid product", details: parsed.error.issues });
     return;
   }
-  const { featured } = parsed.data;
-  const now = new Date();
-  const promotionType = featured ? "7day" : "none";
-  const promotionExpiry = featured
-    ? new Date(now.getTime() + 30 * 24 * 3600 * 1000).toISOString()
-    : null;
-  const updated = await updateProduct(product.id, {
-    promotionType,
-    promotionExpiry,
-    ...(product.status !== "approved"
-      ? { status: "approved", approvedAt: now.toISOString() }
-      : {}),
-  });
-  res.json({ product: updated });
+  const updates = productUpdates(parsed.data);
+  if (updates.status === "approved") {
+    updates.approvedAt = new Date().toISOString();
+    updates.rejectedAt = null;
+  }
+  if (updates.status === "rejected") {
+    updates.rejectedAt = new Date().toISOString();
+    updates.approvedAt = null;
+  }
+  const product = await updateProduct(String(req.params.id), updates);
+  res.json({ product });
 });
 
-const rejectSchema = z.object({ rejectionReason: z.string().optional() });
-
-router.post("/products/:id/approve", async (req, res) => {
-  const product = await getProductById(req.params.id);
-  if (!product) {
-    res.status(404).json({ error: "Product not found" });
-    return;
-  }
-  if (product.status !== "pending") {
-    res.status(400).json({ error: `Product is already ${product.status}` });
-    return;
-  }
-
-  const now = new Date();
-  const hours = PROMOTION_HOURS[product.promotionType] ?? 0;
-  const promotionExpiry = hours > 0
-    ? new Date(now.getTime() + hours * 3600 * 1000).toISOString()
-    : null;
-
-  const updated = await updateProduct(product.id, {
-    status:         "approved",
-    approvedAt:     now.toISOString(),
-    promotionExpiry,
-  });
-  res.json({ product: updated });
-});
-
-router.post("/products/:id/reject", async (req, res) => {
-  const product = await getProductById(req.params.id);
-  if (!product) {
-    res.status(404).json({ error: "Product not found" });
-    return;
-  }
-  if (product.status !== "pending") {
-    res.status(400).json({ error: `Product is already ${product.status}` });
-    return;
-  }
-
-  const parsed = rejectSchema.safeParse(req.body);
-  const updated = await updateProduct(product.id, {
-    status:          "rejected",
-    rejectedAt:      new Date().toISOString(),
-    rejectionReason: parsed.success ? (parsed.data.rejectionReason ?? null) : null,
-  });
-
-  if (product.coinsSpent > 0) {
-    const user = await findUserById(product.userId);
-    if (user) {
-      await updateUser(user.id, { coinsBalance: user.coinsBalance + product.coinsSpent });
-      await addCoinTransaction({
-        userId:   user.id,
-        amount:   product.coinsSpent,
-        reason:   `Refund — product rejected: "${product.title}"`,
-        eventKey: `refund_rejected_${product.id}`,
-      });
-    }
-  }
-
-  res.json({ product: updated, coinsRefunded: product.coinsSpent });
-});
-
-router.delete("/products/:id", async (req, res) => {
-  const product = await getProductById(req.params.id);
-  if (!product) {
-    res.status(404).json({ error: "Product not found" });
-    return;
-  }
-  await deleteProduct(product.id);
-  res.json({ deleted: true });
-});
-
-const adminEditSchema = z.object({
-  title:       z.string().min(2).max(200).optional(),
-  description: z.string().min(5).max(2000).optional(),
-  imageUrl:    z.string().max(2_000_000).optional().or(z.literal("")),
-  contactInfo: z.string().min(2).max(500).optional(),
-  productLink: z.string().url().optional().or(z.literal("")),
-  category:    z.enum(["tasbeeh", "prayer_mat", "books", "attar", "courses", "other"]).optional(),
-  submittedBy: z.string().max(100).optional(),
-});
-
-router.patch("/products/:id", async (req, res) => {
-  const product = await getProductById(req.params.id);
-  if (!product) {
-    res.status(404).json({ error: "Product not found" });
-    return;
-  }
-  const parsed = adminEditSchema.safeParse(req.body);
-  if (!parsed.success) {
-    res.status(400).json({ error: "Invalid request", details: parsed.error.issues });
-    return;
-  }
-  const { imageUrl, productLink, ...fields } = parsed.data;
-  const updates: Parameters<typeof updateProduct>[1] = { ...fields };
-  if (imageUrl !== undefined) updates.imageUrl = imageUrl || null;
-  if (productLink !== undefined) updates.productLink = productLink || null;
-  const updated = await updateProduct(product.id, updates);
-  res.json({ product: updated });
+router.delete("/products/:id", admin, async (req, res) => {
+  await deleteProduct(String(req.params.id));
+  res.status(204).end();
 });
 
 export default router;

@@ -18,6 +18,12 @@ import {
   CITY_COUNTRY_MAP,
 } from "@/lib/settings";
 import { useI18n } from "@/lib/i18n-context";
+import {
+  getLocationPermissionState,
+  LocationPermissionDialog,
+  type LocationPermissionState,
+} from "@/components/location-permission-dialog";
+import { openLocationSettings } from "@/lib/capacitor";
 
 type PrayerDef = {
   id: "Fajr" | "Sunrise" | "Dhuhr" | "Asr" | "Maghrib" | "Isha";
@@ -180,9 +186,11 @@ export function PrayerTimes() {
   const [searchError, setSearchError] = useState("");
   const [gpsLoading,  setGpsLoading]  = useState(false);
   const geoWatchRef = useRef<number | null>(null);
+  const [locationPermissionDialog, setLocationPermissionDialog] =
+    useState<"request" | "blocked" | null>(null);
 
   // ── GPS detection ───────────────────────────────────────────────────────────
-  const detectGPS = useCallback(() => {
+  const requestGPS = useCallback(() => {
     if (!navigator.geolocation) {
       setLocState("gps-error");
       return;
@@ -211,6 +219,7 @@ export function PrayerTimes() {
         setGpsLoading(false);
         if (err.code === err.PERMISSION_DENIED) {
           setLocState("gps-denied");
+          setLocationPermissionDialog("blocked");
         } else {
           setLocState("gps-error");
         }
@@ -223,6 +232,25 @@ export function PrayerTimes() {
       },
       { timeout: 12000, maximumAge: 5 * 60 * 1000, enableHighAccuracy: false }
     );
+  }, []);
+
+  const detectGPS = useCallback(async () => {
+    const permission: LocationPermissionState = await getLocationPermissionState();
+    if (permission === "granted") {
+      requestGPS();
+      return;
+    }
+    setLocationPermissionDialog(permission === "denied" ? "blocked" : "request");
+  }, [requestGPS]);
+
+  const continueLocationRequest = useCallback(() => {
+    setLocationPermissionDialog(null);
+    requestGPS();
+  }, [requestGPS]);
+
+  const handleOpenLocationSettings = useCallback(() => {
+    setLocationPermissionDialog(null);
+    void openLocationSettings();
   }, []);
 
   // ── Auto-detect GPS on every mount ──────────────────────────────────────────
@@ -469,6 +497,16 @@ export function PrayerTimes() {
           </div>
         )}
       </div>
+      <LocationPermissionDialog
+        open={locationPermissionDialog !== null}
+        mode={locationPermissionDialog ?? "request"}
+        feature="prayer"
+        onOpenChange={(open) => {
+          if (!open) setLocationPermissionDialog(null);
+        }}
+        onContinue={continueLocationRequest}
+        onOpenSettings={handleOpenLocationSettings}
+      />
     </div>
   );
 }

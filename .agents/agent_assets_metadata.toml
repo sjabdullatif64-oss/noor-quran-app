@@ -320,3 +320,38 @@ uri = "file://.agents/outputs/noor-quran-1.0.19-ai-teacher-legal-debug/noor-qura
 type = "unspecified"
 title = "Noor Quran 1.0.19 — AI Teacher Legal Update Debug APK"
 description = "Testing APK built after updating the existing Terms of Service and Privacy Policy with AI Teacher speech recognition, microphone permission, pronunciation assessment, automated feedback, progress handling, and rewarded-ad disclosures. Package: com.sj64noorquran; versionCode: 79845455; target SDK: 36; SHA-256: 972c351448922561f72c4125909dd11f76d1fbf9c1079519cb60ebe8fa6450c8."
+
+[[outputs]]
+id = "nUGG3qe_gbLa80llI3Z0r"
+uri = "file://artifacts/islamic-app/android/final-builds/noor-quran-v1.0.20-debug.apk"
+type = "unspecified"
+title = "Noor Quran v1.0.20 Debug APK"
+description = "Debug APK for testing. Version code 79845456."
+
+[[outputs]]
+id = "jJowgXoTFLMJLwJxiiwl6"
+uri = "file://artifacts/islamic-app/android/final-builds/noor-quran-v1.0.20-release.aab"
+type = "unspecified"
+title = "Noor Quran v1.0.20 Release AAB"
+description = "Signed release Android App Bundle for Google Play. Version code 79845456."
+
+[[outputs]]
+id = "NqfrDi_wqNeOeLBr7R4dI"
+uri = "file://artifacts/islamic-app/android/app/build/outputs/bundle/release/app-release.aab"
+type = "unspecified"
+title = "Noor Quran Advertising ID Fix — Release AAB"
+description = "Signed release AAB built from the current code. Final base manifest contains com.google.android.gms.permission.AD_ID and the AdMob application ID metadata. SHA-256: dc1bb387fdbc638e060f8fb875c02079034336c0c0f51a9b1ef8340a9482febf"
+
+[[outputs]]
+id = "xbgTJFGs4yROCy56WSa3K"
+uri = "file://.agents/outputs/noor-quran-1.0.22.apk"
+type = "unspecified"
+title = "Noor Quran 1.0.22 APK"
+description = "Signed release APK; versionCode 79845458. SHA-256: d7510a109dc7138e0220bc80796dca5f26071cbc16472e3b3d7adcb260b71dfe"
+
+[[outputs]]
+id = "uDxArTXWYRNKecoDsYdrP"
+uri = "file://.agents/outputs/noor-quran-1.0.22.aab"
+type = "unspecified"
+title = "Noor Quran 1.0.22 AAB"
+description = "Signed Play Store bundle; versionCode 79845458. SHA-256: dc1bb387fdbc638e060f8fb875c02079034336c0c0f51a9b1ef8340a9482febf"

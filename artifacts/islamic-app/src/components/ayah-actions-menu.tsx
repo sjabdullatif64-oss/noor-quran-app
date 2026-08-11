@@ -1,4 +1,7 @@
-import { MoreVertical, Share2, Copy, ZoomIn, Eye, EyeOff } from "lucide-react";
+import { useState } from "react";
+import {
+  MoreVertical, Share2, Copy, ZoomIn, Eye, EyeOff, Languages,
+} from "lucide-react";
 import {
   DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem,
   DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuRadioGroup, DropdownMenuRadioItem,
@@ -6,15 +9,30 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { nativeShare, copyToClipboard, getLastShareError } from "@/lib/capacitor";
 import { useToast } from "@/hooks/use-toast";
-import { useAyahDisplaySettings, setShowExplanatory } from "@/lib/ayah-display";
+import {
+  useAyahDisplaySettings,
+  setShowExplanatory,
+  setShowTransliteration,
+  setShowTranslation,
+} from "@/lib/ayah-display";
+import {
+  ALL_LANGUAGES,
+  TRANSLATION_ENGLISH_NAMES,
+  TRANSLATION_LABELS,
+  type TranslationLanguage,
+} from "@/lib/api";
+import { MoreLanguagesDialog } from "@/components/translation-language-picker";
 
 interface AyahActionsMenuProps {
   surahEnglishName: string;
   surahName: string;
   ayahNumber: number;
   textAr: string;
+  textTranslit?: string;
   /** The translation text exactly as currently displayed (post explanatory-word setting) — used for Share/Copy so output matches what the user sees. */
   displayedTranslation: string;
+  transliterationLanguage: TranslationLanguage;
+  onTransliterationLanguageChange: (language: TranslationLanguage) => void;
   /** Whether two-finger pinch-to-zoom is currently enabled for the reading content. */
   pinchZoomEnabled: boolean;
   /** Toggles pinch-to-zoom on/off. Lifted up to the reader page since zoom applies to the whole ayah list, not a single card. */
@@ -24,24 +42,37 @@ interface AyahActionsMenuProps {
 }
 
 function buildAyahText(props: AyahActionsMenuProps): string {
-  const lines = [
-    props.textAr,
-    "",
-    props.displayedTranslation,
+  const lines = [props.textAr];
+  if (props.textTranslit) lines.push("", props.textTranslit);
+  if (props.displayedTranslation) lines.push("", props.displayedTranslation);
+  lines.push(
     "",
     `Surah ${props.surahEnglishName} (${props.surahName}) — Ayah ${props.ayahNumber}`,
     "",
     "Noor Quran",
-  ];
+  );
   return lines.join("\n");
 }
 
 export function AyahActionsMenu(props: AyahActionsMenuProps) {
+  const [languageDialogOpen, setLanguageDialogOpen] = useState(false);
   const { toast } = useToast();
-  const { showExplanatory } = useAyahDisplaySettings();
+  const {
+    showExplanatory,
+    showTransliteration,
+    showTranslation,
+  } = useAyahDisplaySettings();
+
+  const handleTransliterationLanguageChange = (language: TranslationLanguage) => {
+    props.onTransliterationLanguageChange(language);
+  };
 
   const handleShare = async () => {
-    const text = buildAyahText(props);
+    const text = buildAyahText({
+      ...props,
+      textTranslit: showTransliteration ? props.textTranslit : "",
+      displayedTranslation: showTranslation ? props.displayedTranslation : "",
+    });
     const result = await nativeShare({
       title: "Noor Quran",
       text,
@@ -53,7 +84,11 @@ export function AyahActionsMenu(props: AyahActionsMenuProps) {
   };
 
   const handleCopy = async () => {
-    const text = buildAyahText(props);
+    const text = buildAyahText({
+      ...props,
+      textTranslit: showTransliteration ? props.textTranslit : "",
+      displayedTranslation: showTranslation ? props.displayedTranslation : "",
+    });
     const ok = await copyToClipboard(text);
     toast(
       ok
@@ -63,7 +98,8 @@ export function AyahActionsMenu(props: AyahActionsMenuProps) {
   };
 
   return (
-    <DropdownMenu>
+    <>
+      <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <button
           className={
@@ -99,6 +135,44 @@ export function AyahActionsMenu(props: AyahActionsMenuProps) {
 
         <DropdownMenuSeparator />
 
+        <DropdownMenuLabel>Display</DropdownMenuLabel>
+
+        <DropdownMenuCheckboxItem
+          checked={showTransliteration}
+          onCheckedChange={setShowTransliteration}
+          data-testid="menu-show-transliteration"
+        >
+          {showTransliteration
+            ? <Eye className="w-4 h-4 mr-2" />
+            : <EyeOff className="w-4 h-4 mr-2" />}
+          Show Transliteration
+        </DropdownMenuCheckboxItem>
+
+        <DropdownMenuCheckboxItem
+          checked={showTranslation}
+          onCheckedChange={setShowTranslation}
+          data-testid="menu-show-translation"
+        >
+          {showTranslation
+            ? <Eye className="w-4 h-4 mr-2" />
+            : <EyeOff className="w-4 h-4 mr-2" />}
+          Show Translation
+        </DropdownMenuCheckboxItem>
+
+        <DropdownMenuItem
+          onSelect={() => setLanguageDialogOpen(true)}
+          data-testid="menu-transliteration-language"
+        >
+          <Languages className="w-4 h-4 mr-2" />
+          <span className="flex-1">Transliteration Language</span>
+          <span className="ml-2 text-xs text-muted-foreground">
+            {TRANSLATION_ENGLISH_NAMES[props.transliterationLanguage] ??
+              TRANSLATION_LABELS[props.transliterationLanguage]}
+          </span>
+        </DropdownMenuItem>
+
+        <DropdownMenuSeparator />
+
         <DropdownMenuRadioGroup
           value={showExplanatory ? "show" : "hide"}
           onValueChange={(v) => setShowExplanatory(v === "show")}
@@ -113,6 +187,17 @@ export function AyahActionsMenu(props: AyahActionsMenuProps) {
           </DropdownMenuRadioItem>
         </DropdownMenuRadioGroup>
       </DropdownMenuContent>
-    </DropdownMenu>
+      </DropdownMenu>
+
+      <MoreLanguagesDialog
+        open={languageDialogOpen}
+        onOpenChange={setLanguageDialogOpen}
+        selectedLanguage={props.transliterationLanguage}
+        onSelect={handleTransliterationLanguageChange}
+        languages={ALL_LANGUAGES}
+        title="Transliteration Language"
+        description="Choose the language used for transliteration text."
+      />
+    </>
   );
 }

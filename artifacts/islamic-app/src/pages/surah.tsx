@@ -14,11 +14,21 @@ import {
 import { Button } from "@/components/ui/button";
 import { getBookmarks, saveBookmark, removeBookmark } from "@/lib/bookmarks";
 import { getFavAyahs, toggleAyahFav } from "@/lib/favorites";
-import { getLang } from "@/lib/settings";
+import {
+  getLang,
+  setLang,
+  getTransliterationLanguage,
+  setTransliterationLanguage,
+  TRANSLITERATION_LANGUAGE_CHANGED_EVENT,
+} from "@/lib/settings";
 import { useToast } from "@/hooks/use-toast";
 import { NativeTTS } from "@/lib/native-tts";
 import { AyahActionsMenu } from "@/components/ayah-actions-menu";
-import { useAyahDisplaySettings, applyExplanatorySetting } from "@/lib/ayah-display";
+import {
+  useAyahDisplaySettings,
+  applyTranslationDisplay,
+  applyTransliterationDisplay,
+} from "@/lib/ayah-display";
 import { usePinchZoom } from "@/hooks/use-pinch-zoom";
 import { useNetworkStatus } from "@/hooks/use-network";
 import { MoreLanguagesDialog } from "@/components/translation-language-picker";
@@ -98,6 +108,9 @@ export function SurahReader() {
   })();
 
   const [language, setLanguage]     = useState<TranslationLanguage>(() => getLang());
+  const [transliterationLanguage, setTransliterationLanguageState] = useState<TranslationLanguage>(
+    () => getTransliterationLanguage(),
+  );
   const [moreLanguagesOpen, setMoreLanguagesOpen] = useState(false);
   const { data: surah, isLoading }  = useSurah(number, language);
 
@@ -154,7 +167,11 @@ export function SurahReader() {
   useEffect(() => { toastRef.current = toast; }, [toast]);
 
   // Ayah display settings — show/hide explanatory words (persisted)
-  const { showExplanatory } = useAyahDisplaySettings();
+  const {
+    showExplanatory,
+    showTransliteration,
+    showTranslation,
+  } = useAyahDisplaySettings();
 
   // Pinch-to-zoom is local, in-memory-only per reader visit — never persisted,
   // always resets to default when this page is reopened or the app restarts.
@@ -168,6 +185,17 @@ export function SurahReader() {
   useEffect(() => { surahRef.current        = surah;        }, [surah]);
   useEffect(() => { languageRef.current     = language;     }, [language]);
   useEffect(() => { audioModeRef.current    = audioMode;    }, [audioMode]);
+
+  useEffect(() => {
+    const syncTransliterationLanguage = () => {
+      setTransliterationLanguageState(getTransliterationLanguage());
+    };
+    window.addEventListener(TRANSLITERATION_LANGUAGE_CHANGED_EVENT, syncTransliterationLanguage);
+    return () => window.removeEventListener(
+      TRANSLITERATION_LANGUAGE_CHANGED_EVENT,
+      syncTransliterationLanguage,
+    );
+  }, []);
 
   // Persist audio mode
   useEffect(() => { localStorage.setItem(AUDIO_MODE_KEY, audioMode); }, [audioMode]);
@@ -558,6 +586,7 @@ export function SurahReader() {
   const handleLanguageChange = useCallback((lang: TranslationLanguage) => {
     const mode = audioModeRef.current;
     if (mode === "translation" || mode === "both") stopAll();
+    setLang(lang);
     setLanguage(lang);
   }, [stopAll]);
 
@@ -569,7 +598,11 @@ export function SurahReader() {
   // ── Bookmarks & Favorites ──────────────────────────────────────────────────
   useEffect(() => {
     const stored = getBookmarks();
-    setBookmarkedSet(new Set(stored.map((b) => `${b.surahNumber}-${b.ayahNumber}`)));
+    setBookmarkedSet(new Set(
+      stored
+        .filter((b) => b.type !== "surah")
+        .map((b) => `${b.surahNumber}-${b.ayahNumber}`),
+    ));
     const favs = getFavAyahs();
     setFavSet(new Set(
       favs.filter((a) => a.surahNumber === number).map((a) => `${a.surahNumber}-${a.ayahNumber}`)
@@ -815,7 +848,13 @@ export function SurahReader() {
                         surahName={surah?.name ?? ""}
                         ayahNumber={ayah.numberInSurah}
                         textAr={ayah.textAr}
-                        displayedTranslation={applyExplanatorySetting(ayah.textTranslation)}
+                        textTranslit={ayah.textTranslit}
+                        displayedTranslation={applyTranslationDisplay(language, ayah.textTranslation)}
+                        transliterationLanguage={transliterationLanguage}
+                        onTransliterationLanguageChange={(nextLanguage) => {
+                          setTransliterationLanguage(nextLanguage);
+                          setTransliterationLanguageState(nextLanguage);
+                        }}
                         pinchZoomEnabled={pinchZoomEnabled}
                         onTogglePinchZoom={() => setPinchZoomEnabled((v) => !v)}
                         triggerClassName="w-8 h-8 rounded-full flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors"
@@ -830,27 +869,27 @@ export function SurahReader() {
                   </p>
 
                   {/* Transliteration (Roman script) — shown when available */}
-                  {ayah.textTranslit && (
+                  {showTransliteration && ayah.textTranslit && (
                     <p className="text-[calc(0.875rem*var(--ayah-scale))] text-muted-foreground italic leading-relaxed tracking-wide">
-                      {ayah.textTranslit}
+                       {applyTransliterationDisplay(transliterationLanguage, ayah.textTranslit)}
                     </p>
                   )}
 
                   {/* Translation text */}
-                  {ayah.textTranslation ? (
+                  {showTranslation && ayah.textTranslation ? (
                     <p
                       dir={isRtl ? "rtl" : "ltr"}
                       className={`text-[calc(1.125rem*var(--ayah-scale))] md:text-[calc(1.25rem*var(--ayah-scale))] leading-relaxed font-serif transition-colors duration-300 ${
                         isRtl ? "text-right" : "text-left"
                       } ${isCurrent ? "text-foreground" : "text-muted-foreground"}`}
                     >
-                      {applyExplanatorySetting(ayah.textTranslation)}
+                      {applyTranslationDisplay(language, ayah.textTranslation)}
                     </p>
-                  ) : (
+                  ) : showTranslation ? (
                     <p className="text-sm text-muted-foreground italic">
                       Translation unavailable for this language
                     </p>
-                  )}
+                  ) : null}
                 </div>
               );
             })}

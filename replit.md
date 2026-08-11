@@ -54,6 +54,7 @@ A full-featured Islamic mobile web app for reading the Holy Quran with Urdu & En
 - Islamic green theme (`#1a5c38` primary) — keep throughout
 - 10 translation languages supported: Urdu, English, Sindhi, Hindi, Turkish, Bengali, Indonesian, French, Spanish, Malay
 - Remove buttons must always be visible on mobile (no hover-only opacity)
+- Android build delivery: whenever an APK or AAB is requested, build it on GitHub Actions rather than locally, and provide it through GitHub Actions artifacts or a GitHub Release.
 
 ## Gotchas
 

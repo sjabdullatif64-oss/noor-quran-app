@@ -1,11 +1,18 @@
 import { ImageOff, Play } from "lucide-react";
 import { useEffect, useState } from "react";
 
+import { API_BASE } from "@/lib/noor-api";
 import {
   getWelcomeCampaignMedia,
   type WelcomeCampaign,
   type WelcomeCampaignMediaKind,
 } from "@/lib/welcome-campaign";
+
+function resolveCampaignMediaUrl(value: string | null): string | null {
+  if (!value) return null;
+  if (/^https?:\/\//i.test(value) || value.startsWith("data:")) return value;
+  return `${API_BASE}${value.startsWith("/") ? value : `/${value}`}`;
+}
 
 interface WelcomeCampaignMediaProps {
   campaign: Pick<WelcomeCampaign, "videoUrl" | "gifUrl" | "imageUrl" | "title">;
@@ -34,6 +41,8 @@ export function WelcomeCampaignMedia({
   onError,
 }: WelcomeCampaignMediaProps) {
   const media = getWelcomeCampaignMedia(campaign);
+  const source = resolveCampaignMediaUrl(media.src);
+  const poster = resolveCampaignMediaUrl(media.poster);
   const [failed, setFailed] = useState(false);
   const [fallbackImage, setFallbackImage] = useState<string | null>(null);
 
@@ -42,7 +51,7 @@ export function WelcomeCampaignMedia({
     setFallbackImage(null);
   }, [campaign.videoUrl, campaign.gifUrl, campaign.imageUrl]);
 
-  if (media.kind === "none" || failed || !media.src) {
+  if (media.kind === "none" || failed || !source) {
     return <MediaFallback kind={media.kind} title={campaign.title} />;
   }
 
@@ -64,10 +73,10 @@ export function WelcomeCampaignMedia({
   if (media.kind === "video") {
     return (
       <video
-        key={media.src}
+        key={source}
         className="h-full min-h-56 w-full object-cover md:min-h-72"
-        src={media.src}
-        poster={media.poster ?? undefined}
+        src={source}
+        poster={poster ?? undefined}
         autoPlay
         muted
         loop
@@ -77,8 +86,8 @@ export function WelcomeCampaignMedia({
         onLoadedData={onReady}
         onCanPlay={onReady}
         onError={() => {
-          if (media.poster) {
-            setFallbackImage(media.poster);
+          if (poster) {
+            setFallbackImage(poster);
           } else {
             setFailed(true);
             onError();
@@ -90,14 +99,14 @@ export function WelcomeCampaignMedia({
 
   return (
     <img
-      key={media.src}
-      src={media.src}
+      key={source}
+      src={source}
       alt={campaign.title}
       className="h-full min-h-56 w-full object-cover md:min-h-72"
       onLoad={onReady}
       onError={() => {
-        if (media.kind === "gif" && media.poster) {
-          setFallbackImage(media.poster);
+        if (media.kind === "gif" && poster) {
+          setFallbackImage(poster);
         } else {
           setFailed(true);
           onError();

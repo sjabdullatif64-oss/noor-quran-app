@@ -1,11 +1,16 @@
 import { Capacitor } from "@capacitor/core";
 
-const REPLIT_DOMAIN =
+const configuredApiDomain = (
   import.meta.env.VITE_API_DOMAIN ||
-  "noor-quran.replit.app";
+  "noor-quran.replit.app"
+).replace(/\/+$/, "").replace(/\/api$/, "");
+
+const REPLIT_DOMAIN = configuredApiDomain.startsWith("http")
+  ? configuredApiDomain
+  : `https://${configuredApiDomain}`;
 
 export const API_BASE = Capacitor.isNativePlatform()
-  ? `https://${REPLIT_DOMAIN}/api`
+  ? `${REPLIT_DOMAIN}/api`
   : "/api";
 
 async function noorFetch<T>(path: string, opts: RequestInit = {}): Promise<T> {
@@ -20,15 +25,14 @@ async function noorFetch<T>(path: string, opts: RequestInit = {}): Promise<T> {
     const err = await res.json().catch(() => ({ error: "Network error" }));
     throw new Error((err as { error?: string }).error ?? `HTTP ${res.status}`);
   }
+  if (res.status === 204) return undefined as T;
   return res.json() as Promise<T>;
 }
 
 export interface NoorUser {
   id: string;
   deviceId: string;
-  referredById: string | null;
   coinsBalance: number;
-  totalReferrals: number;
   totalCoinsEarned: number;
   createdAt: string;
 }
@@ -81,12 +85,18 @@ export interface NoorWelcomeCampaign {
 export const noorApi = {
   async register(
     deviceId: string,
-    referredById?: string,
     persistentDeviceId?: string,
   ): Promise<{ user: NoorUser; isNew: boolean; teacherAccount: NoorTeacherAccount }> {
     return noorFetch("/users/register", {
       method: "POST",
-      body: JSON.stringify({ deviceId, referredById, persistentDeviceId }),
+      body: JSON.stringify({ deviceId, persistentDeviceId }),
+    });
+  },
+
+  async presence(deviceId: string): Promise<void> {
+    await noorFetch("/users/presence", {
+      method: "POST",
+      body: JSON.stringify({ deviceId }),
     });
   },
 
@@ -136,103 +146,4 @@ export const noorApi = {
     return noorFetch("/campaigns/welcome");
   },
 
-  async adminGetPending(
-    adminToken: string,
-  ): Promise<{ products: { product: NoorProduct; user: { id: string; deviceId: string; coinsBalance: number } | null }[] }> {
-    return noorFetch("/admin/products/pending", {
-      headers: { "x-admin-token": adminToken },
-    });
-  },
-
-  async adminGetAll(
-    adminToken: string,
-  ): Promise<{ products: { product: NoorProduct; user: { id: string; deviceId: string } | null }[] }> {
-    return noorFetch("/admin/products/all", {
-      headers: { "x-admin-token": adminToken },
-    });
-  },
-
-  async adminCreateProduct(
-    adminToken: string,
-    data: {
-      title: string;
-      description: string;
-      imageUrl?: string;
-      contactInfo: string;
-      productLink?: string;
-      category: string;
-      submittedBy?: string;
-      featured?: boolean;
-    },
-  ): Promise<{ product: NoorProduct }> {
-    return noorFetch("/admin/products", {
-      method: "POST",
-      headers: { "x-admin-token": adminToken },
-      body: JSON.stringify(data),
-    });
-  },
-
-  async adminApprove(
-    adminToken: string,
-    productId: string,
-  ): Promise<{ product: NoorProduct }> {
-    return noorFetch(`/admin/products/${productId}/approve`, {
-      method: "POST",
-      headers: { "x-admin-token": adminToken },
-    });
-  },
-
-  async adminReject(
-    adminToken: string,
-    productId: string,
-    rejectionReason?: string,
-  ): Promise<{ product: NoorProduct; coinsRefunded: number }> {
-    return noorFetch(`/admin/products/${productId}/reject`, {
-      method: "POST",
-      headers: { "x-admin-token": adminToken },
-      body: JSON.stringify({ rejectionReason }),
-    });
-  },
-
-  async adminSetFeatured(
-    adminToken: string,
-    productId: string,
-    featured: boolean,
-  ): Promise<{ product: NoorProduct }> {
-    return noorFetch(`/admin/products/${productId}/feature`, {
-      method: "POST",
-      headers: { "x-admin-token": adminToken },
-      body: JSON.stringify({ featured }),
-    });
-  },
-
-  async adminDelete(
-    adminToken: string,
-    productId: string,
-  ): Promise<{ deleted: boolean }> {
-    return noorFetch(`/admin/products/${productId}`, {
-      method: "DELETE",
-      headers: { "x-admin-token": adminToken },
-    });
-  },
-
-  async adminEditProduct(
-    adminToken: string,
-    productId: string,
-    data: {
-      title?: string;
-      description?: string;
-      imageUrl?: string;
-      contactInfo?: string;
-      productLink?: string;
-      category?: string;
-      submittedBy?: string;
-    },
-  ): Promise<{ product: NoorProduct }> {
-    return noorFetch(`/admin/products/${productId}`, {
-      method: "PATCH",
-      headers: { "x-admin-token": adminToken },
-      body: JSON.stringify(data),
-    });
-  },
 };
