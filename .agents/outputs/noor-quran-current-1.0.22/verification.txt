@@ -1,0 +1,10 @@
+Source manifest SHA: 55e512a8ef83fa71e911b8ae56a9641a3ffee2de
+Version name: 1.0.22
+Version code: 79845458
+Fresh main bundle: index-B5HGk3fh.js
+Old bundle absent: index-CioVTHgR.js
+Old embedded version absent: 1.0.19
+Quran display: shared-display-boundary
+Transliteration control: independent
+APK SHA-256: a318a8a0af79aeae3aefac3dca8f71bee3c579dae24c77ce8a16cc4628de90f3
+AAB SHA-256: 37449a85e581d9fad6e7fd42aaf9507d43e035f07aaae04cae3edca24e68a59f

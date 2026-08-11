@@ -355,3 +355,24 @@ uri = "file://.agents/outputs/noor-quran-1.0.22.aab"
 type = "unspecified"
 title = "Noor Quran 1.0.22 AAB"
 description = "Signed Play Store bundle; versionCode 79845458. SHA-256: dc1bb387fdbc638e060f8fb875c02079034336c0c0f51a9b1ef8340a9482febf"
+
+[[outputs]]
+id = "f-wvLNGaFUdkHCrudbOCo"
+uri = "file://.agents/outputs/noor-quran-current-1.0.22/noor-quran-current-1.0.22.apk"
+type = "unspecified"
+title = "Noor Quran 1.0.22 — Fresh Verified APK"
+description = "Fresh local release APK built from the current synchronized source. Version 1.0.22, versionCode 79845458, source manifest SHA 55e512a8ef83fa71e911b8ae56a9641a3ffee2de, fresh index-B5HGk3fh.js bundle, no index-CioVTHgR.js or embedded 1.0.19. SHA-256: a318a8a0af79aeae3aefac3dca8f71bee3c579dae24c77ce8a16cc4628de90f3"
+
+[[outputs]]
+id = "mvkfwcQ7CqZQoYyZxyP7t"
+uri = "file://.agents/outputs/noor-quran-current-1.0.22/noor-quran-current-1.0.22.aab"
+type = "unspecified"
+title = "Noor Quran 1.0.22 — Fresh Verified AAB"
+description = "Fresh local release AAB built from the current synchronized source. Version 1.0.22, versionCode 79845458, source manifest SHA 55e512a8ef83fa71e911b8ae56a9641a3ffee2de, fresh index-B5HGk3fh.js bundle, no index-CioVTHgR.js or embedded 1.0.19. SHA-256: 37449a85e581d9fad6e7fd42aaf9507d43e035f07aaae04cae3edca24e68a59f"
+
+[[outputs]]
+id = "F7HgCikuCGoQWIPzjWSdu"
+uri = "file://.agents/outputs/noor-quran-current-1.0.22/verification.txt"
+type = "text"
+title = "Noor Quran 1.0.22 — Build Verification Report"
+description = "Verification record for the fresh APK and AAB contents, source SHA, version metadata, bundle freshness, Quran display boundary, and independent transliteration control."
