@@ -61,6 +61,20 @@ jobs:
         with:
           fetch-depth: 0        # full history so git describe works for version
 
+      # Never let ignored/generated Capacitor assets or a previous workspace
+      # survive into this build. The web bundle must come from this checkout.
+      - name: Verify clean source checkout
+        working-directory: ${{ env.APP_DIR }}
+        run: |
+          SOURCE_SHA=$(git rev-parse HEAD)
+          test "$SOURCE_SHA" = "${{ github.sha }}" || {
+            echo "❌ Checkout SHA mismatch: $SOURCE_SHA != ${{ github.sha }}"
+            exit 1
+          }
+          rm -rf dist/public android/app/src/main/assets/public
+          mkdir -p dist/public
+          echo "✅ Building exact checkout $SOURCE_SHA"
+
       # ── 2. Java 17 (Gradle daemon + javac) ───────────────────────────────────
       #
       #    All Capacitor plugins that hardcode JavaVersion.VERSION_21 are
@@ -124,6 +138,24 @@ jobs:
           VITE_COMMIT_SHA: ${{ github.sha }}
           VITE_BUILD_VERSION: ${{ github.event.inputs.version_name || '1.0.22' }}
 
+      - name: Verify fresh web bundle
+        working-directory: ${{ env.APP_DIR }}
+        run: |
+          test -n "$(find dist/public/assets -type f -name '*.js' -print -quit)"
+          rg -a -l "1\\.0\\.22" dist/public/assets dist/public/index.html
+          rg -a -l "noor-transliteration-language-changed" dist/public/assets
+          rg -a -l "اللہ" dist/public/assets
+          cat > dist/public/build-manifest.json <<EOF
+          {
+            "sourceSha": "${{ github.sha }}",
+            "versionName": "${{ github.event.inputs.version_name || '1.0.22' }}",
+            "versionCode": "${{ github.event.inputs.version_code || '79845458' }}",
+            "quranDisplay": "shared-display-boundary",
+            "transliterationControl": "independent"
+          }
+          EOF
+          echo "✅ Fresh Vite bundle contains Version 22, Allah display, and independent transliteration control"
+
       # ── 7. Capacitor sync ────────────────────────────────────────────────────
       - name: Sync Capacitor Android
         working-directory: ${{ env.APP_DIR }}
@@ -131,6 +163,17 @@ jobs:
         env:
           ANDROID_SDK_ROOT: ${{ env.ANDROID_HOME }}
           ANDROID_HOME:     ${{ env.ANDROID_HOME }}
+
+      - name: Verify Capacitor received fresh web bundle
+        working-directory: ${{ env.APP_DIR }}
+        run: |
+          test -f android/app/src/main/assets/public/build-manifest.json
+          diff -u dist/public/build-manifest.json android/app/src/main/assets/public/build-manifest.json
+          rg -a -l "1\\.0\\.22" android/app/src/main/assets/public/assets android/app/src/main/assets/public/index.html
+          rg -a -l "noor-transliteration-language-changed" android/app/src/main/assets/public/assets
+          rg -a -l "اللہ" android/app/src/main/assets/public/assets
+          ! rg -a -l "1\\.0\\.19" android/app/src/main/assets/public/assets
+          echo "✅ Capacitor assets match checkout ${{ github.sha }}"
 
       # ── 8. Gradle wrapper ────────────────────────────────────────────────────
       - name: Generate Gradle wrapper
@@ -268,6 +311,30 @@ jobs:
                app/build/outputs/apk/debug/noor-quran-${V}-debug.apk
           fi
           echo "✅ Outputs renamed to noor-quran-${V}"
+
+      - name: Verify generated APK and AAB contents
+        working-directory: ${{ env.ANDROID_DIR }}
+        run: |
+          APK="app/build/outputs/apk/release/noor-quran-${{ steps.version.outputs.name }}.apk"
+          AAB="app/build/outputs/bundle/release/noor-quran-${{ steps.version.outputs.name }}.aab"
+          test -f "$APK"
+          test -f "$AAB"
+          for FILE in "$APK" "$AAB"; do
+            MANIFEST_ENTRY=$(unzip -Z1 "$FILE" | grep -E '(^|/)assets/public/build-manifest\.json$' | head -1)
+            test -n "$MANIFEST_ENTRY"
+            unzip -p "$FILE" "$MANIFEST_ENTRY" > /tmp/noor-build-manifest.json
+            rg -q '"sourceSha": "${{ github.sha }}"' /tmp/noor-build-manifest.json
+            rg -q '"versionName": "1.0.22"' /tmp/noor-build-manifest.json
+            rg -q '"versionCode": "79845458"' /tmp/noor-build-manifest.json
+            : > /tmp/noor-web-bundle.js
+            while IFS= read -r BUNDLE_ENTRY; do
+              unzip -p "$FILE" "$BUNDLE_ENTRY" >> /tmp/noor-web-bundle.js
+            done < <(unzip -Z1 "$FILE" | grep -E '(^|/)assets/public/assets/[^/]+\.js$')
+            rg -q 'اللہ' /tmp/noor-web-bundle.js
+            rg -q 'noor-transliteration-language-changed' /tmp/noor-web-bundle.js
+            ! rg -q '1\.0\.19' /tmp/noor-web-bundle.js
+          done
+          echo "✅ APK/AAB contain exact source SHA, Version 22, Allah display, and Quran controls"
 
       # ── 14. Upload artifacts ───────────────────────────────────────────────────
       - name: Upload Debug APK
