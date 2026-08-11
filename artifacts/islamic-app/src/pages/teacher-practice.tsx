@@ -27,6 +27,15 @@ function formatLastPracticed(value: string | null): string {
   })}`;
 }
 
+function normalizeSearchText(value: string): string {
+  return value
+    .normalize("NFD")
+    .replace(/\p{M}/gu, "")
+    .toLocaleLowerCase()
+    .replace(/[^\p{L}\p{N}]+/gu, " ")
+    .trim();
+}
+
 export function TeacherPractice() {
   const [, setTick] = useState(0);
   const [practiceStats, setPracticeStats] = useState<PracticeStats>(() => loadPracticeStats());
@@ -46,7 +55,7 @@ export function TeacherPractice() {
   const progress = loadProgress();
   const completedLessons = CURRICULUM.filter((lesson) => Boolean(progress.completed[lesson.id]));
   const [searchQuery, setSearchQuery] = useState("");
-  const normalizedQuery = searchQuery.trim().toLocaleLowerCase();
+  const normalizedQuery = normalizeSearchText(searchQuery);
   const filteredLessons = useMemo(() => {
     if (!normalizedQuery) return completedLessons;
     return completedLessons.filter((lesson) => {
@@ -58,8 +67,8 @@ export function TeacherPractice() {
         lesson.word,
         lesson.transliteration,
         lesson.meaning,
-      ].join(" ").toLocaleLowerCase();
-      return searchableText.includes(normalizedQuery);
+      ].join(" ");
+      return normalizeSearchText(searchableText).includes(normalizedQuery);
     });
   }, [completedLessons, normalizedQuery]);
 
@@ -156,7 +165,7 @@ export function TeacherPractice() {
                 data-testid="panel-completed-lessons-no-results"
               >
                 <Search className="w-8 h-8 text-primary mx-auto mb-3" />
-                <p className="text-foreground font-semibold text-sm">No completed lessons found</p>
+                <p className="text-foreground font-semibold text-sm">No matching lessons found</p>
                 <p className="text-muted-foreground text-xs mt-1 leading-relaxed">
                   Try searching by Arabic, transliteration, meaning, or lesson number.
                 </p>

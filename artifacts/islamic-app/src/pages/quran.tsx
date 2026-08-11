@@ -134,36 +134,38 @@ export function Quran() {
                       </div>
                     </Link>
 
-                    {/* Heart button — always visible on mobile */}
-                    <button
-                      onClick={(e) => handleFav(e, surah)}
-                      className={`absolute top-3 right-3 w-8 h-8 flex items-center justify-center rounded-full transition-all
-                        ${isFav
-                          ? "text-rose-500 opacity-100"
-                          : "text-muted-foreground opacity-70 hover:opacity-100 hover:text-rose-400"
+                    <div className="absolute top-3 right-3 flex flex-col items-center gap-1">
+                      {/* Heart button — always visible on mobile */}
+                      <button
+                        onClick={(e) => handleFav(e, surah)}
+                        className={`w-8 h-8 flex items-center justify-center rounded-full transition-all
+                          ${isFav
+                            ? "text-rose-500 opacity-100"
+                            : "text-muted-foreground opacity-70 hover:opacity-100 hover:text-rose-400"
+                          }`}
+                        data-testid={`button-fav-surah-${surah.number}`}
+                      >
+                        <Heart
+                          className={`w-4 h-4 transition-all ${popped ? "scale-150" : "scale-100"} ${isFav ? "fill-rose-500" : ""}`}
+                        />
+                      </button>
+                      <button
+                        onClick={(e) => handleBookmark(e, surah)}
+                        className={`w-8 h-8 flex items-center justify-center rounded-full transition-all ${
+                          isBookmarked
+                            ? "text-primary opacity-100"
+                            : "text-muted-foreground opacity-70 hover:opacity-100 hover:text-primary"
                         }`}
-                      data-testid={`button-fav-surah-${surah.number}`}
-                    >
-                      <Heart
-                        className={`w-4 h-4 transition-all ${popped ? "scale-150" : "scale-100"} ${isFav ? "fill-rose-500" : ""}`}
-                      />
-                    </button>
-                    <button
-                      onClick={(e) => handleBookmark(e, surah)}
-                      className={`absolute top-11 right-3 w-8 h-8 flex items-center justify-center rounded-full transition-all ${
-                        isBookmarked
-                          ? "text-primary opacity-100"
-                          : "text-muted-foreground opacity-70 hover:opacity-100 hover:text-primary"
-                      }`}
-                      aria-label={isBookmarked ? "Remove Surah bookmark" : "Bookmark Surah"}
-                      data-testid={`button-bookmark-surah-${surah.number}`}
-                    >
-                      {isBookmarked ? (
-                        <BookmarkCheck className="w-4 h-4 fill-current" />
-                      ) : (
-                        <Bookmark className="w-4 h-4" />
-                      )}
-                    </button>
+                        aria-label={isBookmarked ? "Remove Surah bookmark" : "Bookmark Surah"}
+                        data-testid={`button-bookmark-surah-${surah.number}`}
+                      >
+                        {isBookmarked ? (
+                          <BookmarkCheck className="w-4 h-4 fill-current" />
+                        ) : (
+                          <Bookmark className="w-4 h-4" />
+                        )}
+                      </button>
+                    </div>
                   </div>
                 );
               })}
