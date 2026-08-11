@@ -341,3 +341,17 @@ uri = "file://artifacts/islamic-app/android/app/build/outputs/bundle/release/app
 type = "unspecified"
 title = "Noor Quran Advertising ID Fix — Release AAB"
 description = "Signed release AAB built from the current code. Final base manifest contains com.google.android.gms.permission.AD_ID and the AdMob application ID metadata. SHA-256: dc1bb387fdbc638e060f8fb875c02079034336c0c0f51a9b1ef8340a9482febf"
+
+[[outputs]]
+id = "xbgTJFGs4yROCy56WSa3K"
+uri = "file://.agents/outputs/noor-quran-1.0.22.apk"
+type = "unspecified"
+title = "Noor Quran 1.0.22 APK"
+description = "Signed release APK; versionCode 79845458. SHA-256: d7510a109dc7138e0220bc80796dca5f26071cbc16472e3b3d7adcb260b71dfe"
+
+[[outputs]]
+id = "uDxArTXWYRNKecoDsYdrP"
+uri = "file://.agents/outputs/noor-quran-1.0.22.aab"
+type = "unspecified"
+title = "Noor Quran 1.0.22 AAB"
+description = "Signed Play Store bundle; versionCode 79845458. SHA-256: dc1bb387fdbc638e060f8fb875c02079034336c0c0f51a9b1ef8340a9482febf"
