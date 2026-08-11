@@ -8,3 +8,9 @@ The configured GitHub connector can read repositories and create blobs, trees, a
 **Why:** During the Version 22 release preparation, source commits were created successfully, while REST `PATCH /git/refs`, `POST /git/refs`, GraphQL `updateRef`, merge, Contents `PUT`, and the Git source-control helper were denied or blocked. Dispatching Actions by an unreferenced commit also fails because GitHub requires a branch, tag, or other reachable ref.
 
 **How to apply:** Verify the remote branch SHA after any connector publish. Do not claim an Actions build started until the target commit is reachable from a remote ref. If ref mutation is denied, ask the user to grant GitHub source-control permissions or perform the push, then resume from the already-created commit objects.
+
+Repeated verification on August 11, 2026 showed the local Android-fix commit can remain ahead of `origin/main`; both the Git helper and HTTPS push can fail before updating the ref when Replit's Git askpass/source-control credential is unavailable.
+
+**Why:** A local commit and a configured GitHub URL are not proof that GitHub received the commit; only `git ls-remote origin refs/heads/main` and the GitHub Actions `head_sha` establish reachability.
+
+**How to apply:** Stop before dispatching or reporting artifacts when the remote SHA is still older than the verified local commit.
