@@ -1,0 +1,91 @@
+The previous implementation did not actually complete this requirement. Please fix it now and verify it properly.
+
+Required change: Localized display of “Allah” in Quran translations
+
+In the displayed Quran translation text, the word “Allah” must be rendered according to the user's selected translation language/script.
+
+The meaning must remain exactly “Allah”. Only the display representation in the translation text should be localized.
+
+Required examples:
+
+- Urdu → "اللہ"
+- Arabic → "الله"
+- Persian → "الله"
+- Hindi → "अल्लाह"
+- Bengali → "আল্লাহ"
+- Turkish → "Allah"
+- English → "Allah"
+
+Important requirements
+
+1. This must work at runtime in the actual Quran translation display, not only in a translation source file or database.
+2. Audit the shared translation/display helper and the complete supported-language registry first.
+3. Apply the localization consistently to all supported Quran translation languages, not only the examples above.
+4. If a language has its own established script/form for Allah, use that language's appropriate script.
+5. Do NOT convert or modify the original Arabic Quran text.
+6. Do NOT modify the original Quran verses or their meaning.
+7. Do NOT alter the translation content unnecessarily; only the display representation of the word “Allah” should be affected.
+8. Do NOT perform a simple global replacement that could modify unrelated text or URLs/metadata.
+9. The transformation must be applied only to the translation display layer.
+10. Make sure the result also works for translations loaded from cache/local storage/API, not just one initial rendering path.
+
+Required audit
+
+Before changing code, find exactly where:
+
+- Quran translation language is selected.
+- Translation language codes are registered.
+- Translation text is loaded.
+- Translation text is normalized/sanitized.
+- Translation text is finally rendered on screen.
+
+Then implement the fix in the shared/common display path so all translation screens use the same behavior.
+
+Testing
+
+Add or update focused tests for the localized display transformation.
+
+At minimum verify:
+
+Urdu:
+"Allah" → "اللہ"
+
+Arabic:
+"Allah" → "الله"
+
+Persian:
+"Allah" → "الله"
+
+Hindi:
+"Allah" → "अल्लाह"
+
+Bengali:
+"Allah" → "আল্লাহ"
+
+Turkish:
+"Allah" → "Allah"
+
+English:
+"Allah" → "Allah"
+
+Also test that:
+
+- Original Arabic Quran text remains completely unchanged.
+- Other words containing similar letter sequences are not accidentally changed.
+- Translation language switching immediately uses the correct form.
+- Cached/localized translations use the same transformation.
+- No English "Allah" remains in the displayed translation where that language requires a localized form.
+
+Verification requirement
+
+Do not report this as complete based only on a code change.
+
+After implementation:
+
+1. Run the relevant typecheck/tests.
+2. Inspect the actual shared translation display path.
+3. Verify the transformation is reached by the real Quran translation UI.
+4. Verify at least the listed languages through the actual display path.
+5. Report exactly which files/functions were changed and where the localization is applied.
+
+Do not modify unrelated Quran features, original Arabic text, or unrelated localization behavior.

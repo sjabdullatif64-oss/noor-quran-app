@@ -18,7 +18,7 @@ import { getLang, setLang } from "@/lib/settings";
 import { useToast } from "@/hooks/use-toast";
 import { NativeTTS } from "@/lib/native-tts";
 import { AyahActionsMenu } from "@/components/ayah-actions-menu";
-import { useAyahDisplaySettings, applyExplanatorySetting } from "@/lib/ayah-display";
+import { useAyahDisplaySettings, applyTranslationDisplay } from "@/lib/ayah-display";
 import { usePinchZoom } from "@/hooks/use-pinch-zoom";
 import { useNetworkStatus } from "@/hooks/use-network";
 import { MoreLanguagesDialog } from "@/components/translation-language-picker";
@@ -574,7 +574,11 @@ export function SurahReader() {
   // ── Bookmarks & Favorites ──────────────────────────────────────────────────
   useEffect(() => {
     const stored = getBookmarks();
-    setBookmarkedSet(new Set(stored.map((b) => `${b.surahNumber}-${b.ayahNumber}`)));
+    setBookmarkedSet(new Set(
+      stored
+        .filter((b) => b.type !== "surah")
+        .map((b) => `${b.surahNumber}-${b.ayahNumber}`),
+    ));
     const favs = getFavAyahs();
     setFavSet(new Set(
       favs.filter((a) => a.surahNumber === number).map((a) => `${a.surahNumber}-${a.ayahNumber}`)
@@ -821,7 +825,7 @@ export function SurahReader() {
                         ayahNumber={ayah.numberInSurah}
                         textAr={ayah.textAr}
                         textTranslit={ayah.textTranslit}
-                        displayedTranslation={applyExplanatorySetting(ayah.textTranslation)}
+                        displayedTranslation={applyTranslationDisplay(language, ayah.textTranslation)}
                         translationLanguage={language}
                         onTranslationLanguageChange={handleLanguageChange}
                         pinchZoomEnabled={pinchZoomEnabled}
@@ -852,7 +856,7 @@ export function SurahReader() {
                         isRtl ? "text-right" : "text-left"
                       } ${isCurrent ? "text-foreground" : "text-muted-foreground"}`}
                     >
-                      {applyExplanatorySetting(ayah.textTranslation)}
+                      {applyTranslationDisplay(language, ayah.textTranslation)}
                     </p>
                   ) : showTranslation ? (
                     <p className="text-sm text-muted-foreground italic">

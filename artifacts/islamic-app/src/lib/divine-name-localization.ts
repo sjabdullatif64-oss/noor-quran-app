@@ -12,7 +12,7 @@ import type { TranslationLanguage } from "./api";
  * match semantic translations such as "God", "Lord", or "خدا".
  */
 const DIVINE_NAME_PATTERN =
-  /(?:allah|allaah|allāh|الله|اللّٰه|اللَّه|اللہ|अल्लाह|अल्ला|আল্লাহ|আল্লা|Аллах|аллах|Аллоҳ|аллоҳ|Аллаһ|аллаһ|Алла|алла|安拉|阿拉|アッラー|알라|อัลลอฮ์|அல்லாஹ்|అల్లాహ్|അല്ലാഹു|ਅੱਲਾਹ)/giu;
+  /(?<![\p{L}\p{M}])(?:allah|allaah|allāh|الله|اللّٰه|اللَّه|اللَّه|اللہ|अल्लाह|अल्ला|আল্লাহ|আল্লা|Аллах|аллах|Аллоҳ|аллоҳ|Аллаһ|аллаһ|Алла|алла|安拉|阿拉|アッラー|알라|อัลลอฮ์|அல்லாஹ்|అల్లాహ్|അല്ലാഹു|ਅੱਲਾਹ)(?![\p{L}\p{M}])/giu;
 
 export const LOCALIZED_DIVINE_NAMES: Record<TranslationLanguage, string> = {
   arabic: "الله",

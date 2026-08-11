@@ -2,12 +2,13 @@ import { useState, useEffect } from "react";
 import { useSurahList } from "@/lib/api";
 import { Input } from "@/components/ui/input";
 import { Link, useLocation } from "wouter";
-import { Search, Heart, BookOpen } from "lucide-react";
+import { Search, Heart, BookOpen, Bookmark, BookmarkCheck } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { toggleSurahFav, isSurahFav } from "@/lib/favorites";
 import { JUZ_DATA } from "@/lib/juz-data";
 import { useI18n } from "@/lib/i18n-context";
+import { isSurahBookmarked, toggleSurahBookmark } from "@/lib/bookmarks";
 
 export function Quran() {
   const { t } = useI18n();
@@ -15,12 +16,17 @@ export function Quran() {
   const [, navigate] = useLocation();
   const [search, setSearch] = useState("");
   const [favSet, setFavSet] = useState<Set<number>>(new Set());
+  const [bookmarkSet, setBookmarkSet] = useState<Set<number>>(new Set());
   const [popSurah, setPopSurah] = useState<number | null>(null);
 
   useEffect(() => {
     if (!surahs) return;
     const favs = new Set(surahs.map((s) => s.number).filter((n) => isSurahFav(n)));
     setFavSet(favs);
+    const bookmarks = new Set(
+      surahs.map((s) => s.number).filter((n) => isSurahBookmarked(n)),
+    );
+    setBookmarkSet(bookmarks);
   }, [surahs]);
 
   const filteredSurahs = surahs?.filter(
@@ -48,6 +54,27 @@ export function Quran() {
       setPopSurah(surah.number);
       setTimeout(() => setPopSurah(null), 900);
     }
+  };
+
+  const handleBookmark = (
+    e: React.MouseEvent,
+    surah: NonNullable<typeof surahs>[0],
+  ) => {
+    e.preventDefault();
+    e.stopPropagation();
+    const added = toggleSurahBookmark({
+      type: "surah",
+      surahNumber: surah.number,
+      surahName: surah.name,
+      surahEnglishName: surah.englishName,
+      surahEnglishNameTranslation: surah.englishNameTranslation,
+      numberOfAyahs: surah.numberOfAyahs,
+    });
+    setBookmarkSet((prev) => {
+      const next = new Set(prev);
+      added ? next.add(surah.number) : next.delete(surah.number);
+      return next;
+    });
   };
 
   return (
@@ -85,11 +112,12 @@ export function Quran() {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {filteredSurahs?.map((surah) => {
                 const isFav = favSet.has(surah.number);
+                const isBookmarked = bookmarkSet.has(surah.number);
                 const popped = popSurah === surah.number;
                 return (
                   <div key={surah.number} className="relative group" data-testid={`surah-card-${surah.number}`}>
                     <Link href={`/quran/${surah.number}`} data-testid={`link-surah-${surah.number}`}>
-                      <div className="flex items-center justify-between p-4 bg-card rounded-xl border border-border hover:border-primary/50 hover:shadow-md transition-all cursor-pointer pr-12">
+                      <div className="flex items-center justify-between p-4 bg-card rounded-xl border border-border hover:border-primary/50 hover:shadow-md transition-all cursor-pointer pr-24">
                         <div className="flex items-center gap-4">
                           <div className="w-10 h-10 rounded-full bg-muted flex items-center justify-center text-primary font-bold group-hover:bg-primary group-hover:text-primary-foreground transition-colors shrink-0">
                             {surah.number}
@@ -119,6 +147,22 @@ export function Quran() {
                       <Heart
                         className={`w-4 h-4 transition-all ${popped ? "scale-150" : "scale-100"} ${isFav ? "fill-rose-500" : ""}`}
                       />
+                    </button>
+                    <button
+                      onClick={(e) => handleBookmark(e, surah)}
+                      className={`absolute top-3 right-11 w-8 h-8 flex items-center justify-center rounded-full transition-all ${
+                        isBookmarked
+                          ? "text-primary opacity-100"
+                          : "text-muted-foreground opacity-70 hover:opacity-100 hover:text-primary"
+                      }`}
+                      aria-label={isBookmarked ? "Remove Surah bookmark" : "Bookmark Surah"}
+                      data-testid={`button-bookmark-surah-${surah.number}`}
+                    >
+                      {isBookmarked ? (
+                        <BookmarkCheck className="w-4 h-4 fill-current" />
+                      ) : (
+                        <Bookmark className="w-4 h-4" />
+                      )}
                     </button>
                   </div>
                 );

@@ -14,6 +14,7 @@ import { useI18n } from "@/lib/i18n-context";
 import { useQuery } from "@tanstack/react-query";
 import { noorApi, type NoorProduct } from "@/lib/noor-api";
 import { openUrl } from "@/lib/capacitor";
+import { applyTranslationDisplay } from "@/lib/ayah-display";
 
 // ── Islamic Products preview strip ────────────────────────────────────────────
 function useProductsPreview() {
@@ -317,7 +318,9 @@ export function Home() {
                   {ayahData?.textAr}
                 </p>
                 <p dir={isRtlTranslation ? "rtl" : "ltr"} className="text-xl leading-relaxed text-foreground opacity-90 font-serif">
-                  {ayahData?.textTranslation}
+                  {ayahData?.textTranslation
+                    ? applyTranslationDisplay(translationLang, ayahData.textTranslation)
+                    : null}
                 </p>
                 <div className="flex items-center justify-between border-t border-border pt-4">
                   <p className="text-sm text-muted-foreground">

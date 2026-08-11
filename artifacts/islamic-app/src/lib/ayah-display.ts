@@ -1,4 +1,6 @@
 import { useSyncExternalStore } from "react";
+import { localizeDivineName } from "./divine-name-localization";
+import type { TranslationLanguage } from "./api";
 
 // ── Storage keys ──────────────────────────────────────────────────────────────
 const EXPLANATORY_KEY = "noor-show-explanatory";
@@ -68,6 +70,20 @@ export function stripExplanatory(text: string): string {
  *  for display purposes (WYSIWYG — use this output for Share/Copy too). */
 export function applyExplanatorySetting(text: string): string {
   return getShowExplanatory() ? text : stripExplanatory(text);
+}
+
+/**
+ * The single display boundary for Quran translation text.
+ *
+ * Translation data remains untouched in API responses, offline packs, query
+ * caches, TTS input, and saved bookmarks/favorites. Only text that is about
+ * to be shown or shared is normalized for the selected translation language.
+ */
+export function applyTranslationDisplay(
+  language: TranslationLanguage,
+  text: string,
+): string {
+  return applyExplanatorySetting(localizeDivineName(language, text));
 }
 
 // ── React hook — live-updates both readers when the menu changes a setting ────

@@ -13,4 +13,4 @@ For Divine Name display normalization, localize only explicit written forms of A
 
 **Why:** Translation providers mix localized Divine Name spellings with ordinary theological words; replacing both changes the translation's meaning and can damage unrelated text.
 
-**How to apply:** Keep this normalization in the shared translation data boundary so online, offline, readers, saved ayahs, and share/copy output receive the same display text while the original Arabic Quran field remains untouched.
+**How to apply:** Keep this normalization in the shared translation display boundary so online, offline, readers, saved ayahs, and share/copy output render consistently while raw translations, caches, TTS input, saved records, and the original Arabic Quran field remain untouched.

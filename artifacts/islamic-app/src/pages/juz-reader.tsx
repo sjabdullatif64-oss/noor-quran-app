@@ -14,7 +14,6 @@ import {
   TTS_LANG_CODES,
   TRANSLATION_ENGLISH_NAMES,
   TRANSLATION_LABELS,
-  sanitizeTranslation,
   getAudioUrl,
   type TranslationLanguage,
 } from "@/lib/api";
@@ -24,7 +23,7 @@ import { NativeTTS } from "@/lib/native-tts";
 import { useToast } from "@/hooks/use-toast";
 import { useWakeLock } from "@/hooks/useWakeLock";
 import { AyahActionsMenu } from "@/components/ayah-actions-menu";
-import { useAyahDisplaySettings, applyExplanatorySetting } from "@/lib/ayah-display";
+import { useAyahDisplaySettings, applyTranslationDisplay } from "@/lib/ayah-display";
 import { usePinchZoom } from "@/hooks/use-pinch-zoom";
 import {
   getOfflineArabic,
@@ -168,7 +167,7 @@ async function fetchSurahRange(
         globalNumber:    a.g,
         textAr:          a.t,
         textTranslit:    offlineTranslit?.[String(surahNumber)]?.[a.n - 1] ?? "",
-        textTranslation: sanitizeTranslation(lang, translationAyahs[a.n - 1] ?? ""),
+        textTranslation: translationAyahs[a.n - 1] ?? "",
       }));
 
     if (ayahs.length === 0) return null;
@@ -209,7 +208,7 @@ async function fetchSurahRange(
       globalNumber:    a.number,
       textAr:          a.text,
       textTranslit:    translitAyahs[a.numberInSurah - 1]?.text ?? "",
-      textTranslation: sanitizeTranslation(lang, translationAyahs[a.numberInSurah - 1] ?? ""),
+      textTranslation: translationAyahs[a.numberInSurah - 1] ?? "",
     }));
 
   if (ayahs.length === 0) return null;
@@ -401,7 +400,11 @@ export function JuzReader() {
     const bms = getBookmarks();
     setBookmarkedSet(new Set(
       bms
-        .filter((b) => juzKeys.has(`${b.surahNumber}-${b.ayahNumber}`))
+        .filter(
+          (b): b is typeof b & { ayahNumber: number } =>
+            b.type !== "surah" &&
+            juzKeys.has(`${b.surahNumber}-${b.ayahNumber}`),
+        )
         .map((b) => `${b.surahNumber}-${b.ayahNumber}`)
     ));
 
@@ -954,7 +957,7 @@ export function JuzReader() {
                             ayahNumber={ayah.numberInSurah}
                             textAr={ayah.textAr}
                             textTranslit={ayah.textTranslit}
-                            displayedTranslation={applyExplanatorySetting(ayah.textTranslation ?? "")}
+                            displayedTranslation={applyTranslationDisplay(language, ayah.textTranslation ?? "")}
                             translationLanguage={language}
                             onTranslationLanguageChange={(nextLanguage) => {
                               setLang(nextLanguage);
@@ -989,7 +992,7 @@ export function JuzReader() {
                             isRTL ? "text-right" : "text-left"
                           }`}
                           dir={isRTL ? "rtl" : "ltr"}>
-                          {applyExplanatorySetting(ayah.textTranslation)}
+                          {applyTranslationDisplay(language, ayah.textTranslation)}
                         </p>
                       )}
 

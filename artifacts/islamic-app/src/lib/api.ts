@@ -7,23 +7,6 @@ import {
   getOfflineTranslationTexts,
 } from "./offline-quran";
 import { getCalcMethod, calcMethodParam } from "./settings";
-import { localizeDivineName } from "./divine-name-localization";
-
-/** Apply only written Divine Name localization; never translate semantic words. */
-export function sanitizeUrduText(text: string): string {
-  return localizeDivineName("urdu", text);
-}
-
-export function sanitizeHindiText(text: string): string {
-  return localizeDivineName("hindi", text);
-}
-
-export function sanitizeTranslation(
-  lang: TranslationLanguage,
-  text: string,
-): string {
-  return localizeDivineName(lang, text);
-}
 
 export interface Ayah {
   numberInSurah: number;
@@ -428,7 +411,7 @@ export async function getCurrentTranslationText(
 ): Promise<string> {
   const offlineTexts = await getOfflineTranslationTexts(translation, surahNumber);
   const texts = offlineTexts ?? await fetchTranslationTexts(translation, surahNumber);
-  return sanitizeTranslation(translation, texts[ayahNumber - 1] ?? "");
+  return texts[ayahNumber - 1] ?? "";
 }
 
 export const useSurah = (number: number, translation: TranslationLanguage) => {
@@ -459,7 +442,7 @@ export const useSurah = (number: number, translation: TranslationLanguage) => {
           numberInSurah:   ayah.n,
           globalNumber:    ayah.g,
           textAr:          ayah.t,
-          textTranslation: sanitizeTranslation(translation, translationTexts[index] ?? ""),
+          textTranslation: translationTexts[index] ?? "",
           textTranslit:    translitAyahs[index] ?? "",
           audioUrl:        getAudioUrl(ayah.g),
         }));
@@ -503,7 +486,7 @@ export const useSurah = (number: number, translation: TranslationLanguage) => {
         numberInSurah:   ayah.numberInSurah,
         globalNumber:    ayah.number,
         textAr:          ayah.text,
-        textTranslation: sanitizeTranslation(translation, translationTexts[index] ?? ""),
+        textTranslation: translationTexts[index] ?? "",
         textTranslit:    transitAyahs[index]?.text ?? "",
         audioUrl:        getAudioUrl(ayah.number),
       }));
@@ -666,7 +649,7 @@ export const useRandomAyah = (translation: TranslationLanguage) =>
           numberInSurah: ayah.n,
           globalNumber:  ayah.g,
           textAr:        ayah.t,
-          textTranslation: sanitizeTranslation(translation, textTranslation),
+          textTranslation,
           audioUrl:      getAudioUrl(ayah.g),
         };
       }
@@ -691,7 +674,7 @@ export const useRandomAyah = (translation: TranslationLanguage) =>
         numberInSurah: arData.data.numberInSurah as number,
         globalNumber:  randomAyah.number,
         textAr:        arData.data.text,
-        textTranslation: sanitizeTranslation(translation, translationTexts[randomAyahIdx] ?? ""),
+        textTranslation: translationTexts[randomAyahIdx] ?? "",
         audioUrl:      getAudioUrl(randomAyah.number),
       };
     },

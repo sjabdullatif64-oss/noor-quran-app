@@ -1,16 +1,23 @@
 import { useState, useEffect } from "react";
 import { Link } from "wouter";
-import { Bookmark as BookmarkType, getBookmarks, removeBookmark } from "@/lib/bookmarks";
-import { FavoriteSurah, getFavSurahs, removeFavSurah } from "@/lib/favorites";
+import {
+  AyahBookmark,
+  getBookmarks,
+  getSurahBookmarks,
+  removeBookmark,
+  removeSurahBookmark,
+  SurahBookmark,
+} from "@/lib/bookmarks";
 import { getCurrentTranslationText } from "@/lib/api";
 import { getLang, TRANSLATION_LANGUAGE_CHANGED_EVENT } from "@/lib/settings";
 import { useI18n } from "@/lib/i18n-context";
-import { Trash2, BookOpen, BookmarkX, Search, BookMarked } from "lucide-react";
+import { Trash2, BookOpen, BookmarkX, Search, BookMarked, BookmarkCheck } from "lucide-react";
 import { Input } from "@/components/ui/input";
+import { applyTranslationDisplay } from "@/lib/ayah-display";
 
 type Tab = "surahs" | "ayahs";
 
-function ayahHref(bm: BookmarkType): string {
+function ayahHref(bm: AyahBookmark): string {
   if (bm.juzNumber) {
     return `/juz/${bm.juzNumber}?surah=${bm.surahNumber}&ayah=${bm.ayahNumber}`;
   }
@@ -20,15 +27,17 @@ function ayahHref(bm: BookmarkType): string {
 export function Bookmarks() {
   const { t } = useI18n();
   const [tab, setTab] = useState<Tab>("surahs");
-  const [surahs, setSurahs] = useState<FavoriteSurah[]>([]);
-  const [ayahs, setAyahs] = useState<BookmarkType[]>([]);
+  const [surahs, setSurahs] = useState<SurahBookmark[]>([]);
+  const [ayahs, setAyahs] = useState<AyahBookmark[]>([]);
   const [query, setQuery] = useState("");
 
   useEffect(() => {
-    setSurahs(getFavSurahs().sort((a, b) => b.savedAt - a.savedAt));
+    setSurahs(getSurahBookmarks().sort((a, b) => b.savedAt - a.savedAt));
     let cancelled = false;
     const refreshTranslations = async () => {
-      const savedAyahs = getBookmarks().sort((a, b) => b.savedAt - a.savedAt);
+      const savedAyahs = getBookmarks()
+        .filter((bookmark): bookmark is AyahBookmark => bookmark.type !== "surah")
+        .sort((a, b) => b.savedAt - a.savedAt);
       const language = getLang();
       setAyahs(savedAyahs);
       const translated = await Promise.all(
@@ -52,8 +61,8 @@ export function Bookmarks() {
   }, []);
 
   const handleRemoveSurah = (num: number) => {
-    removeFavSurah(num);
-    setSurahs((p) => p.filter((s) => s.number !== num));
+    removeSurahBookmark(num);
+    setSurahs((p) => p.filter((s) => s.surahNumber !== num));
   };
 
   const handleRemoveAyah = (surahNum: number, ayahNum: number) => {
@@ -62,7 +71,9 @@ export function Bookmarks() {
   };
 
   const filteredSurahs = surahs.filter(
-    (s) => s.englishName.toLowerCase().includes(query.toLowerCase()) || s.number.toString().includes(query)
+    (s) =>
+      s.surahEnglishName.toLowerCase().includes(query.toLowerCase()) ||
+      s.surahNumber.toString().includes(query)
   );
   const filteredAyahs = ayahs.filter(
     (b) =>
@@ -125,26 +136,29 @@ export function Bookmarks() {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
           {filteredSurahs.map((surah) => (
             <div
-              key={surah.number}
+              key={surah.surahNumber}
               className="group flex items-center gap-4 p-4 bg-card rounded-xl border border-border hover:border-primary/40 transition-all shadow-sm"
-              data-testid={`bm-surah-${surah.number}`}
+              data-testid={`bm-surah-${surah.surahNumber}`}
             >
-              <Link href={`/quran/${surah.number}`} className="flex-1 flex items-center gap-4 min-w-0">
+              <Link href={`/quran/${surah.surahNumber}`} className="flex-1 flex items-center gap-4 min-w-0">
                 <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-sm shrink-0">
-                  {surah.number}
+                  {surah.surahNumber}
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="font-semibold text-foreground truncate">{surah.englishName}</p>
+                  <p className="font-semibold text-foreground truncate flex items-center gap-2">
+                    <BookmarkCheck className="w-4 h-4 text-primary shrink-0" />
+                    {surah.surahEnglishName}
+                  </p>
                   <p className="text-muted-foreground text-xs truncate">
-                    {surah.englishNameTranslation} · {surah.numberOfAyahs} {t("bookmarks_surah_verses")}
+                    {surah.surahEnglishNameTranslation} · {surah.numberOfAyahs} {t("bookmarks_surah_verses")}
                   </p>
                 </div>
-                <p dir="rtl" className="font-arabic text-xl text-primary shrink-0">{surah.name}</p>
+                <p dir="rtl" className="font-arabic text-xl text-primary shrink-0">{surah.surahName}</p>
               </Link>
               <button
-                onClick={() => handleRemoveSurah(surah.number)}
+                onClick={() => handleRemoveSurah(surah.surahNumber)}
                 className="w-8 h-8 rounded-full flex items-center justify-center text-destructive opacity-40 hover:opacity-100 active:opacity-100 transition-opacity hover:bg-destructive/10 shrink-0"
-                data-testid={`button-remove-bm-surah-${surah.number}`}
+                data-testid={`button-remove-bm-surah-${surah.surahNumber}`}
               >
                 <Trash2 className="w-4 h-4" />
               </button>
@@ -179,7 +193,7 @@ export function Bookmarks() {
                   </p>
                   {bm.textTranslation && (
                     <p dir="rtl" className="text-base text-muted-foreground leading-relaxed text-right font-serif line-clamp-3">
-                      {bm.textTranslation}
+                     {applyTranslationDisplay(getLang(), bm.textTranslation)}
                     </p>
                   )}
                 </Link>
