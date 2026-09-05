@@ -3,13 +3,14 @@ import { useRef, useState } from "react";
 import {
   Navigation, Heart, Hash, Gift, Settings, Download, Bookmark,
   ChevronRight, Bell, Info, Share2, Sparkles, PenLine, Star,
-  CalendarDays, ShoppingBag,
+  CalendarDays, ShoppingBag, GraduationCap,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useI18n } from "@/lib/i18n-context";
 import { RewardedAdButton } from "@/components/rewarded-ad-button";
 import { nativeShare, openUrl, isNative, getLastShareError } from "@/lib/capacitor";
 import { API_BASE } from "@/lib/noor-api";
+import { AI_TEACHER_ENABLED } from "@/lib/teacher-config";
 
 const APP_SHARE_URL = "https://play.google.com/store/apps/details?id=com.sj64noorquran";
 const APP_RATE_URL = "https://play.google.com/store/apps/details?id=com.sj64noorquran&reviewId=0";
@@ -92,6 +93,15 @@ export function More() {
   }
 
   const ITEMS = [
+    ...(AI_TEACHER_ENABLED ? [{
+      id: "teacher",
+      label: "Quran Teacher",
+      description: "Learn to read, step by step",
+      icon: <GraduationCap className="w-6 h-6" />,
+      href: "/teacher",
+      accent: "text-primary",
+      iconBg: "bg-primary/10",
+    }] : []),
     {
       id: "marketplace",
       label: t("more_marketplace"),
@@ -258,7 +268,7 @@ export function More() {
         <RewardedAdButton />
       </div>
 
-      {/* Feature grid */}
+       {/* Feature grid */}
       <div className="px-4 grid grid-cols-1 gap-3">
         {ITEMS.map((item, i) => (
           <button

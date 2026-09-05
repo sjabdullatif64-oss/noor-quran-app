@@ -158,6 +158,26 @@ export function Teacher() {
           </div>
         )}
 
+        {/* Separate absolute-beginner reading course */}
+        <Link
+          href="/beginner-reading"
+          className="block rounded-2xl p-5 border border-primary/30 bg-primary/5 active:scale-[0.99] transition-all"
+          data-testid="card-beginner-reading"
+        >
+          <div className="flex items-center gap-4">
+            <div className="w-12 h-12 rounded-2xl bg-primary/15 text-primary flex items-center justify-center shrink-0">
+              <BookOpen className="w-5 h-5" />
+            </div>
+            <div className="min-w-0 flex-1">
+              <p className="text-foreground font-semibold text-sm">Start from the Beginning</p>
+              <p className="text-muted-foreground text-xs mt-1 leading-relaxed">
+                Learn Arabic reading step by step, starting with Alif, Ba, Ta.
+              </p>
+            </div>
+            <ChevronRight className="w-4 h-4 text-primary shrink-0" />
+          </div>
+        </Link>
+
         {/* Your Progress */}
         <div
           className="rounded-2xl p-5 border border-border bg-card"

@@ -33,6 +33,8 @@ import { JuzReader } from "@/pages/juz-reader";
 import { Teacher } from "@/pages/teacher";
 import { TeacherLesson } from "@/pages/teacher-lesson";
 import { TeacherPractice } from "@/pages/teacher-practice";
+import { BeginnerCourse } from "@/pages/beginner-course";
+import { BeginnerLesson } from "@/pages/beginner-lesson";
 import { WelcomeCampaignGate } from "@/components/welcome-campaign-gate";
 import { ConsentGate } from "@/components/consent-gate";
 import { useEffect } from "react";
@@ -113,6 +115,8 @@ function Router() {
       <Route path="/juz/:number" component={JuzReader} />
       {AI_TEACHER_ENABLED ? (
         <>
+          <Route path="/beginner-reading/lesson/:id" component={BeginnerLesson} />
+          <Route path="/beginner-reading" component={BeginnerCourse} />
           <Route path="/teacher/practice/:id" component={TeacherLesson} />
           <Route path="/teacher/practice" component={TeacherPractice} />
           <Route path="/teacher/lesson/:id" component={TeacherLesson} />

@@ -31,7 +31,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
     "/updates", "/writing", "/islamic-calendar", "/prayer-times",
   ].includes(location) || location.startsWith("/teacher");
 
-  const isMoreActive = MORE_PATHS.some((p) => location.startsWith(p));
+  const isMoreActive = MORE_PATHS.some((p) => location.startsWith(p)) || location.startsWith("/teacher");
 
   // Hide banner on Quran reading screens; resume it everywhere else.
   // We never unmount <BannerAd> — the native overlay persists; we only
@@ -145,10 +145,6 @@ export function Layout({ children }: { children: React.ReactNode }) {
           active={location === "/quran" || location.startsWith("/quran/")} testId="quran" />
         <MobileNavItem href="/prayer-times" icon={<Compass className="w-5 h-5" />} label={t("nav_prayers")}
           active={location === "/prayer-times"} testId="prayers" />
-        {AI_TEACHER_ENABLED && (
-          <MobileNavItem href="/teacher" icon={<GraduationCap className="w-5 h-5" />} label={t("nav_teacher")}
-            active={location.startsWith("/teacher")} testId="teacher" />
-        )}
         <MobileNavItem href="/more" icon={<MoreHorizontal className="w-5 h-5" />} label={t("nav_more")}
           active={isMoreActive} testId="more" />
       </div>

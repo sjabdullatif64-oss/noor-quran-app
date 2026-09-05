@@ -66,7 +66,6 @@ const LETTERS: Array<[string, string, string]> = [
   ["ن", "Noon", "an n sound"],
   ["و", "Waw", "a w sound"],
   ["ه", "Ha", "a soft h sound"],
-  ["ء", "Hamzah", "a short stop in the voice"],
   ["ي", "Ya", "a y sound"],
 ];
 
