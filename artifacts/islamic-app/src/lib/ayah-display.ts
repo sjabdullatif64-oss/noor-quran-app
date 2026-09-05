@@ -76,14 +76,24 @@ export function applyExplanatorySetting(text: string): string {
  * The single display boundary for Quran translation text.
  *
  * Translation data remains untouched in API responses, offline packs, query
- * caches, TTS input, and saved bookmarks/favorites. Only text that is about
- * to be shown or shared is normalized for the selected translation language.
+ * caches, and saved bookmarks/favorites. Display and translation-audio text
+ * are normalized only at their respective output boundaries.
  */
 export function applyTranslationDisplay(
   language: TranslationLanguage,
   text: string,
+  sourceArabic = "",
 ): string {
-  return applyExplanatorySetting(localizeDivineName(language, text));
+  return applyExplanatorySetting(localizeDivineName(language, text, sourceArabic));
+}
+
+/** Use the same proper-name normalization for translation TTS input. */
+export function applyTranslationAudio(
+  language: TranslationLanguage,
+  text: string,
+  sourceArabic = "",
+): string {
+  return localizeDivineName(language, text, sourceArabic);
 }
 
 type TransliterationMap = Record<string, string>;

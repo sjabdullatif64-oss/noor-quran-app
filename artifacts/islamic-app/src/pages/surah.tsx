@@ -27,6 +27,7 @@ import { AyahActionsMenu } from "@/components/ayah-actions-menu";
 import {
   useAyahDisplaySettings,
   applyTranslationDisplay,
+  applyTranslationAudio,
   applyTransliterationDisplay,
 } from "@/lib/ayah-display";
 import { usePinchZoom } from "@/hooks/use-pinch-zoom";
@@ -412,10 +413,12 @@ export function SurahReader() {
     if (cancelledRef.current || playGenRef.current !== gen) { onDone(); return; }
 
     const ayah = surahRef.current?.ayahs[index];
-    const text = ayah?.textTranslation ?? "";
+     const lang = languageRef.current;
+     const text = ayah
+       ? applyTranslationAudio(lang, ayah.textTranslation ?? "", ayah.textAr)
+       : "";
     if (!text) { onDone(); return; }
 
-    const lang   = languageRef.current;
     const code   = TTS_LANG_CODES[lang] ?? "en-US";
     const chunks = chunkText(text);
     if (!chunks.length) { onDone(); return; }
@@ -849,7 +852,7 @@ export function SurahReader() {
                         ayahNumber={ayah.numberInSurah}
                         textAr={ayah.textAr}
                         textTranslit={ayah.textTranslit}
-                        displayedTranslation={applyTranslationDisplay(language, ayah.textTranslation)}
+                         displayedTranslation={applyTranslationDisplay(language, ayah.textTranslation, ayah.textAr)}
                         transliterationLanguage={transliterationLanguage}
                         onTransliterationLanguageChange={(nextLanguage) => {
                           setTransliterationLanguage(nextLanguage);
@@ -883,7 +886,7 @@ export function SurahReader() {
                         isRtl ? "text-right" : "text-left"
                       } ${isCurrent ? "text-foreground" : "text-muted-foreground"}`}
                     >
-                      {applyTranslationDisplay(language, ayah.textTranslation)}
+                      {applyTranslationDisplay(language, ayah.textTranslation, ayah.textAr)}
                     </p>
                   ) : showTranslation ? (
                     <p className="text-sm text-muted-foreground italic">

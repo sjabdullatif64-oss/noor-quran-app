@@ -319,7 +319,7 @@ export function Home() {
                 </p>
                 <p dir={isRtlTranslation ? "rtl" : "ltr"} className="text-xl leading-relaxed text-foreground opacity-90 font-serif">
                   {ayahData?.textTranslation
-                    ? applyTranslationDisplay(translationLang, ayahData.textTranslation)
+                     ? applyTranslationDisplay(translationLang, ayahData.textTranslation, ayahData.textAr)
                     : null}
                 </p>
                 <div className="flex items-center justify-between border-t border-border pt-4">

@@ -420,7 +420,7 @@ const en: Translations = {
   more_settings_sub:                 "App preferences",
   more_share:                        "Share Noor Quran",
   more_share_badge:                  "Share",
-  more_share_sub:                    "Invite friends via WhatsApp, Telegram & more",
+  more_share_sub:                    "Invite friends via WhatsApp, Telegram, Groupora & more",
   more_subtitle:                     "All features & tools",
   more_tasbeeh:                      "Tasbeeh Counter",
   more_tasbeeh_sub:                  "Dhikr & tasbih tracker",

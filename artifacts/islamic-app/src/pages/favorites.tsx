@@ -184,7 +184,7 @@ export function Favorites() {
                 </p>
                 {ayah.textTranslation && (
                   <p dir="rtl" className="text-sm text-muted-foreground leading-relaxed text-right font-serif line-clamp-2">
-                    {applyTranslationDisplay(getLang(), ayah.textTranslation)}
+                     {applyTranslationDisplay(getLang(), ayah.textTranslation, ayah.textAr)}
                   </p>
                 )}
               </Link>

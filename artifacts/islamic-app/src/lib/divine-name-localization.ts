@@ -2,12 +2,17 @@ import type { TranslationLanguage } from "./api";
 
 /**
  * The Quran translation providers do not consistently render the divine name.
- * Keep this as a display-only normalization of written forms and translated
- * aliases for Allah's proper name. Translation data remains untouched; only
- * text crossing the Quran display boundary is normalized.
+ * Explicit written forms of Allah are always normalized at the display/audio
+ * boundary. Generic words are only eligible when the original Arabic ayah
+ * contains Allah's proper name; semantic words such as Rabb/Lord remain
+ * untouched. Translation data itself is never changed.
  */
-const DIVINE_NAME_PATTERN =
-  /(?<![\p{L}\p{M}])(?:allah|allaah|allāh|الله|اللّٰه|اللَّه|اللَّه|اللہ|अल्लाह|अल्ला|भगवान|ईश्वर|আল্লাহ|আল্লা|ভগবান|ঈশ্বর|Аллах|аллах|Аллоҳ|аллоҳ|Аллаһ|аллаһ|Алла|алла|Бог|бог|Господь|господь|安拉|阿拉|上帝|アッラー|알라|하나님|อัลลอฮ์|พระเจ้า|அல்லாஹ்|கடவுள்|இறைவன்|అల్లాహ్|దేవుడు|ప్రభువు|അല്ലാഹു|ദൈവം|കർത്താവ്|ਅੱਲਾਹ|ਰੱਬ|ਪਰਮਾਤਮਾ|God|Lord|Tanrı|Rab|Tuhan|Dieu|Seigneur|Dios|Señor|Gott|Herr|Deus|Senhor|Dio|Signore|Heer|Mungu|Bwana|Ilaah|Eebbe|خداوند|خدائے|خدا|پروردگار|رب|Худо|Құдай|Bog|Gospod)(?![\p{L}\p{M}])/giu;
+const EXPLICIT_DIVINE_NAME_PATTERN =
+  /(?<![\p{L}\p{M}])(?:allah|allaah|allāh|الله|اللّٰه|اللَّه|اللَّه|اللہ|अल्लाह|अल्ला|আল্লাহ|আল্লা|Аллах|аллах|Аллоҳ|аллоҳ|Аллаһ|аллаһ|Алла|алла|安拉|阿拉|アッラー|알라|อัลลอฮ์|அல்லாஹ்|అల్లాహ్|അല്ലാഹു|ਅੱਲਾਹ)(?![\p{L}\p{M}])/giu;
+
+const ARABIC_ALLAH_PATTERN = /ل[\p{M}\u0670]*ل[\p{M}\u0670]*ه/u;
+const CONTEXTUAL_DIVINE_NAME_PATTERN =
+  /(?<![\p{L}\p{M}])(?:God|خدا)(?![\p{L}\p{M}])/giu;
 
 export const LOCALIZED_DIVINE_NAMES: Record<TranslationLanguage, string> = {
   arabic: "الله",
@@ -48,7 +53,26 @@ export const LOCALIZED_DIVINE_NAMES: Record<TranslationLanguage, string> = {
 export function localizeDivineName(
   language: TranslationLanguage,
   text: string,
+  sourceArabic = "",
 ): string {
   if (!text) return text;
-  return text.replace(DIVINE_NAME_PATTERN, LOCALIZED_DIVINE_NAMES[language]);
+
+  let localized = text.replace(
+    EXPLICIT_DIVINE_NAME_PATTERN,
+    LOCALIZED_DIVINE_NAMES[language],
+  );
+
+  // Only a clear Allah token in the original Arabic source authorizes a
+  // generic provider translation ("God"/"خدا") to become the proper name.
+  // Replace at most as many generic tokens as the source has Allah tokens so
+  // semantic repetitions are not silently rewritten.
+  let properNameSlots =
+    sourceArabic.match(new RegExp(ARABIC_ALLAH_PATTERN.source, "gu"))?.length ?? 0;
+  if (properNameSlots === 0) return localized;
+
+  return localized.replace(CONTEXTUAL_DIVINE_NAME_PATTERN, (match) => {
+    if (properNameSlots <= 0) return match;
+    properNameSlots -= 1;
+    return LOCALIZED_DIVINE_NAMES[language];
+  });
 }

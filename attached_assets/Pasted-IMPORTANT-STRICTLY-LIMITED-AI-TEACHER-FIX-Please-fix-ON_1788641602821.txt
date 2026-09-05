@@ -1,0 +1,141 @@
+IMPORTANT — STRICTLY LIMITED AI TEACHER FIX
+
+Please fix ONLY the following AI Teacher word-progression, recording, and UI text-overlap issues.
+
+DO NOT TOUCH ANY OTHER FEATURE OR EXISTING FUNCTIONALITY.
+
+1. WORD UNLOCK PROGRESSION — MAXIMUM 5 WORDS
+
+The current AI Teacher system was designed to gradually increase the number of words the user can read.
+
+The intended progression is:
+
+- Start: 1 word
+- After completing 30 words: unlock 2 words
+- After another 30 words: unlock 3 words
+- After another 30 words: unlock 4 words
+- After another 30 words: unlock 5 words
+- STOP at 5 words.
+
+IMPORTANT:
+The maximum must now be 5 words, NOT 10 words.
+
+Once the user reaches 5 unlocked words, do not increase it to 6, 7, 8, 9, or 10 under any circumstances.
+
+The progression should therefore be capped at:
+
+1 → 2 → 3 → 4 → 5 → STOP
+
+Do not change the existing 30-word progression logic except for applying this maximum cap of 5.
+
+2. RECORDING MUST MATCH THE CURRENT UNLOCKED WORD COUNT
+
+There is currently a bug where the user may have unlocked 3 words, but the recording/playback still behaves as if only 1 word is available and stops after the first word.
+
+Fix this.
+
+The recording/playback must always use the user's CURRENT unlocked word count.
+
+Examples:
+
+- If unlockedWords = 1 → recording should cover 1 word.
+- If unlockedWords = 2 → recording should cover 2 words.
+- If unlockedWords = 3 → recording should cover 3 words.
+- If unlockedWords = 4 → recording should cover 4 words.
+- If unlockedWords = 5 → recording should cover 5 words.
+
+When the user reaches a new unlocked-word level, the recording must automatically use that new number of words.
+
+Do NOT keep using a hardcoded 1-word recording limit.
+
+The recording completion/stop logic must also be based on the current allowed/unlocked word count.
+
+3. IMPORTANT DATA/STATE REQUIREMENT
+
+Make sure the recording system reads the SAME current unlocked-word value that the AI Teacher lesson/practice UI is using.
+
+There must not be two different states where:
+
+UI says 3 words unlocked
+
+but
+
+recording logic still thinks only 1 word is unlocked.
+
+Use the existing AI Teacher state/progress architecture where possible.
+
+Do not create a duplicate progress system.
+
+4. FIX THE UI TEXT OVERLAP SHOWN IN THE SCREENSHOT
+
+In the screenshot, the “Continue Learning” text is overlapping/colliding with the Arabic lesson text displayed beside/behind it.
+
+Fix ONLY this layout issue.
+
+The Continue Learning card must display its text cleanly, without overlapping the Arabic content.
+
+Make the text responsive to different screen sizes and content lengths.
+
+Do not redesign the card.
+
+Do not change the overall visual style.
+
+Do not change unrelated UI.
+
+Keep the existing colors, icons, navigation, and card design.
+
+Only fix the text layout/wrapping/positioning so that:
+
+- “Continue Learning” is readable.
+- Arabic lesson text is readable.
+- Neither text overlaps the other.
+- The layout remains correct on different Android screen sizes.
+
+5. STRICT SCOPE
+
+Do NOT modify:
+
+- Quran reader
+- Quran translations
+- Quran transliteration
+- Arabic Quran text
+- Prayer features
+- Favorites
+- Bookmarks
+- Firebase architecture
+- Authentication
+- Offline system
+- Caching
+- Notifications
+- Admin Panel
+- Any unrelated AI Teacher feature
+- Any unrelated UI
+
+Only fix:
+
+A) AI Teacher unlocked-word progression cap: maximum 5
+B) Recording/playback word count synchronization
+C) Continue Learning / Arabic text overlap shown in the screenshot
+
+6. VERIFICATION
+
+After implementing the fix, test the actual runtime behavior.
+
+Verify:
+
+- 1 word → recording plays/handles 1 word.
+- 2 words → recording plays/handles 2 words.
+- 3 words → recording plays/handles 3 words.
+- 4 words → recording plays/handles 4 words.
+- 5 words → recording plays/handles 5 words.
+- After reaching 5, the user NEVER progresses to 6+ words.
+- The recording does not stop early at 1 word when 3, 4, or 5 words are unlocked.
+- Continue Learning text and Arabic lesson text no longer overlap.
+- Existing AI Teacher progress remains intact.
+
+Run typecheck/build/tests after the fix.
+
+Report exactly which files/functions were changed.
+
+IMPORTANT:
+This is a targeted bug fix only. Do not refactor, redesign, clean up, or modify anything outside the three issues listed above.

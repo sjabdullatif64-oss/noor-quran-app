@@ -193,7 +193,7 @@ export function Bookmarks() {
                   </p>
                   {bm.textTranslation && (
                     <p dir="rtl" className="text-base text-muted-foreground leading-relaxed text-right font-serif line-clamp-3">
-                     {applyTranslationDisplay(getLang(), bm.textTranslation)}
+                     {applyTranslationDisplay(getLang(), bm.textTranslation, bm.textAr)}
                     </p>
                   )}
                 </Link>

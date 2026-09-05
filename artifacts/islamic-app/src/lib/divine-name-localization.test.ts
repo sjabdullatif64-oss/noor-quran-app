@@ -5,6 +5,7 @@ import {
 } from "./divine-name-localization";
 import {
   applyTranslationDisplay,
+  applyTranslationAudio,
   applyTransliterationDisplay,
 } from "./ayah-display";
 
@@ -35,12 +36,25 @@ for (const [language, localizedName] of Object.entries(LOCALIZED_DIVINE_NAMES)) 
   );
 }
 
-// Providers sometimes translate Allah's name as a generic divine word.
-// Those aliases must be restored to the proper name at the display boundary.
-assert.equal(localizeDivineName("urdu", "خدا کا شکر ہے"), "اللہ کا شکر ہے");
-assert.equal(localizeDivineName("english", "God is merciful; Allah is One"), "Allah is merciful; Allah is One");
-assert.equal(localizeDivineName("english", "The Lord is One"), "The Allah is One");
-assert.equal(localizeDivineName("urdu", "خداوند اور خدائے واحد"), "اللہ اور اللہ واحد");
+// A generic provider word is normalized only when the original Arabic ayah
+// explicitly contains Allah. Semantic Rabb/Lord words stay unchanged.
+const allahAyah = "الْحَمْدُ لِلَّهِ رَبِّ الْعَالَمِينَ";
+assert.equal(
+  localizeDivineName("urdu", "سب طرح کی تعریف خدا ہی کو ہے جو تمام مخلوقات کا پروردگار ہے", allahAyah),
+  "سب طرح کی تعریف اللہ ہی کو ہے جو تمام مخلوقات کا پروردگار ہے",
+);
+assert.equal(
+  localizeDivineName("english", "Praise is due to God, Lord of the worlds", allahAyah),
+  "Praise is due to Allah, Lord of the worlds",
+);
+assert.equal(
+  localizeDivineName("urdu", "خدا کا شکر ہے", "رَبِّ الْعَالَمِينَ"),
+  "خدا کا شکر ہے",
+);
+assert.equal(
+  localizeDivineName("english", "God is merciful; The Lord is One", "رَبِّ الْعَالَمِينَ"),
+  "God is merciful; The Lord is One",
+);
 assert.equal(
   localizeDivineName("english", "Allahabad is not Allah; ALLAH is One."),
   "Allahabad is not Allah; Allah is One.",
@@ -51,11 +65,11 @@ assert.equal(
 );
 assert.equal(
   localizeDivineName("urdu", "سب طرح کی تعریف خدا ہی کو ہے"),
-  "سب طرح کی تعریف اللہ ہی کو ہے",
+  "سب طرح کی تعریف خدا ہی کو ہے",
 );
 assert.equal(
   localizeDivineName("urdu", "خداوند کا ذکر اور خدا کا نام"),
-  "اللہ کا ذکر اور اللہ کا نام",
+  "خداوند کا ذکر اور خدا کا نام",
 );
 assert.equal(
   localizeDivineName("arabic", "النص العربي الله"),
@@ -69,8 +83,20 @@ assert.equal(
   "اللہ کا ذکر",
 );
 assert.equal(
-  applyTranslationDisplay("urdu", "سب طرح کی تعریف خدا ہی کو ہے"),
+  applyTranslationDisplay("urdu", "سب طرح کی تعریف خدا ہی کو ہے", allahAyah),
   "سب طرح کی تعریف اللہ ہی کو ہے",
+);
+assert.equal(
+  applyTranslationAudio("urdu", "سب طرح کی تعریف خدا ہی کو ہے", allahAyah),
+  "سب طرح کی تعریف اللہ ہی کو ہے",
+);
+assert.equal(
+  applyTranslationAudio("english", "Praise is due to God", allahAyah),
+  "Praise is due to Allah",
+);
+assert.equal(
+  applyTranslationAudio("urdu", "خدا کا ذکر", "رَبِّ الْعَالَمِينَ"),
+  "خدا کا ذکر",
 );
 assert.equal(
   applyTranslationDisplay("arabic", "Allah واحد"),
@@ -97,7 +123,7 @@ const originalArabicQuranText = "اللَّهُ أَحَدٌ";
 const rawTranslationFromCache = "Allah is One";
 assert.equal(applyTranslationDisplay("urdu", rawTranslationFromCache), "اللہ is One");
 assert.equal(
-  applyTranslationDisplay("urdu", "سب طرح کی تعریف خدا ہی کو ہے"),
+  applyTranslationDisplay("urdu", "سب طرح کی تعریف خدا ہی کو ہے", allahAyah),
   "سب طرح کی تعریف اللہ ہی کو ہے",
 );
 assert.equal(originalArabicQuranText, "اللَّهُ أَحَدٌ");
