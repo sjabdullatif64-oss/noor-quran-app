@@ -39,7 +39,7 @@ export const ENABLED_LEVELS = [1, 2, 3, 4, 5] as const;
 /** Progressive practice passage limits. */
 export const PRACTICE_WORD_STEP = 30;
 export const PRACTICE_MIN_WORDS = 1;
-export const PRACTICE_MAX_WORDS = 10;
+export const PRACTICE_MAX_WORDS = 5;
 
 /** Speech recognizer language (Arabic — Saudi Arabia). */
 export const SPEECH_LANG = "ar-SA";

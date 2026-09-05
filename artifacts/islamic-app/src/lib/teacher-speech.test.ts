@@ -50,15 +50,14 @@ function testProgressivePassagesRequireTheWholePhrase(): void {
   const singleWord = assess("بِسْمِ", ["بِسْمِ"], 0.9);
   assert.equal(singleWord.verdict, "pass");
 
-  const oneWordOfPassage = assess("بِسْمِ اللَّهِ الرَّحْمَٰنِ", ["بِسْمِ"], 0.9);
-  assert.notEqual(oneWordOfPassage.verdict, "pass");
+  for (const wordCount of [2, 3, 4, 5]) {
+    const passage = Array.from({ length: wordCount }, () => "بِسْمِ").join(" ");
+    const oneWordOfPassage = assess(passage, ["بِسْمِ"], 0.9);
+    assert.notEqual(oneWordOfPassage.verdict, "pass", `${wordCount}-word passage accepted one word`);
 
-  const completePassage = assess(
-    "بِسْمِ اللَّهِ الرَّحْمَٰنِ",
-    ["بِسْمِ اللَّهِ الرَّحْمَٰنِ"],
-    0.9,
-  );
-  assert.equal(completePassage.verdict, "pass");
+    const completePassage = assess(passage, [passage], 0.9);
+    assert.equal(completePassage.verdict, "pass", `${wordCount}-word passage rejected complete recitation`);
+  }
 }
 
 function testHardErrorsRemainMeaningful(): void {

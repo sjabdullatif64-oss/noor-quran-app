@@ -8,7 +8,7 @@
  *
  * Level 5 is generated from the bundled verified Quran text. Its passages are
  * stable and ordered, while their length follows the completed-lesson
- * progression defined below.
+ * progression defined below, capped at five words.
  */
 
 import {
@@ -227,7 +227,7 @@ export const CURRICULUM: TeacherLesson[] = buildLessons();
 /**
  * Number of words in a new practice passage after a given number of lessons
  * have already been completed. The first 30 lessons are single-word
- * exercises; the target increases every 30 completed lessons and stops at 10.
+ * exercises; the target increases every 30 completed lessons and stops at 5.
  */
 export function practiceWordCount(completedLessons: number): number {
   const completed = Number.isFinite(completedLessons)

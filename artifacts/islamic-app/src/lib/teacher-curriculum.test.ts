@@ -9,7 +9,7 @@ import {
 
 assert.deepEqual(
   [0, 29, 30, 59, 60, 89, 90, 269, 270, 999].map(practiceWordCount),
-  [1, 1, 2, 2, 3, 3, 4, 9, 10, 10],
+  [1, 1, 2, 2, 3, 3, 4, 5, 5, 5],
 );
 assert.equal(LEVELS.length, 5);
 
@@ -32,7 +32,7 @@ assert.equal(
   fullQuranLessons.every((lesson) => {
     const words = lesson.expected.trim().split(/\s+/).filter(Boolean);
     return words.length >= 1 &&
-      words.length <= 10 &&
+      words.length <= 5 &&
       lesson.audio.sequence?.length === words.length &&
       lessonAudioUrls(lesson).length === words.length;
   }),

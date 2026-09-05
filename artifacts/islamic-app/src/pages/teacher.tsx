@@ -139,7 +139,12 @@ export function Teacher() {
                   Level {nextLesson.level}: {LEVELS[nextLesson.level - 1].title} · Lesson {nextLesson.order}
                 </p>
               </div>
-              <p className="text-foreground font-arabic text-2xl shrink-0" dir="rtl">{nextLesson.arabic}</p>
+              <p
+                className="text-foreground font-arabic text-2xl min-w-0 max-w-[42%] shrink text-right break-words leading-tight"
+                dir="rtl"
+              >
+                {nextLesson.arabic}
+              </p>
               <ChevronRight className="w-4 h-4 text-muted-foreground shrink-0" />
             </div>
           </Link>
