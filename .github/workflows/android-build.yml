@@ -149,7 +149,7 @@ jobs:
           {
             "sourceSha": "${{ github.sha }}",
             "versionName": "${{ github.event.inputs.version_name || '1.0.22' }}",
-            "versionCode": "${{ github.event.inputs.version_code || '79845458' }}",
+            "versionCode": "${{ github.event.inputs.version_code || '79845459' }}",
             "quranDisplay": "shared-display-boundary",
             "transliterationControl": "independent"
           }
@@ -326,7 +326,7 @@ jobs:
             unzip -p "$FILE" "$MANIFEST_ENTRY" > /tmp/noor-build-manifest.json
             grep -a -q '"sourceSha": "${{ github.sha }}"' /tmp/noor-build-manifest.json
             grep -a -q '"versionName": "1.0.22"' /tmp/noor-build-manifest.json
-            grep -a -q '"versionCode": "79845458"' /tmp/noor-build-manifest.json
+            grep -a -q '"versionCode": "79845459"' /tmp/noor-build-manifest.json
             : > /tmp/noor-web-bundle.js
             while IFS= read -r BUNDLE_ENTRY; do
               unzip -p "$FILE" "$BUNDLE_ENTRY" >> /tmp/noor-web-bundle.js

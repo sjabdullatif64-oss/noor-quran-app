@@ -1,4 +1,5 @@
 import type { TranslationLanguage } from "@/lib/api";
+import { Device } from "@capacitor/device";
 
 // ── Storage keys ──────────────────────────────────────────────────────────────
 const CITY_KEY    = "noor-city";
@@ -295,6 +296,10 @@ function deviceLocales(): string[] {
   return [...new Set(locales)];
 }
 
+function isValidTranslationLanguage(value: string | null): value is TranslationLanguage {
+  return Boolean(value && (VALID_LANGS as string[]).includes(value));
+}
+
 function timezoneTranslation(): TranslationLanguage | null {
   if (typeof Intl === "undefined") return null;
   try {
@@ -324,10 +329,8 @@ function timezoneTranslation(): TranslationLanguage | null {
   return null;
 }
 
-/** Detect a supported translation without requesting location permission. */
-export function detectInitialTranslationLanguage(): TranslationLanguage {
-  const locales = deviceLocales();
-
+/** Resolve a supported translation from locale tags using the existing country mapping. */
+export function detectTranslationLanguageFromLocales(locales: readonly string[]): TranslationLanguage {
   for (const locale of locales) {
     const region = localeRegion(locale);
     if (region && COUNTRY_TO_TRANSLATION[region]) {
@@ -345,9 +348,38 @@ export function detectInitialTranslationLanguage(): TranslationLanguage {
   return timezoneTranslation() ?? "urdu";
 }
 
+/** Detect a supported translation without requesting location permission. */
+export function detectInitialTranslationLanguage(): TranslationLanguage {
+  return detectTranslationLanguageFromLocales(deviceLocales());
+}
+
+async function nativeDeviceLanguageTag(): Promise<string | null> {
+  try {
+    const result = await Promise.race([
+      Device.getLanguageTag().catch(() => null),
+      new Promise<null>((resolve) => setTimeout(() => resolve(null), 500)),
+    ]);
+    return result?.value ?? null;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Android's WebView locale can differ from the native device locale. Prefer the
+ * native BCP-47 tag, then retain the existing browser locale/timezone fallbacks.
+ */
+export async function detectInitialTranslationLanguageAsync(): Promise<TranslationLanguage> {
+  const nativeLocale = await nativeDeviceLanguageTag();
+  const locales = nativeLocale
+    ? [nativeLocale, ...deviceLocales()]
+    : deviceLocales();
+  return detectTranslationLanguageFromLocales(locales);
+}
+
 export function getLang(): TranslationLanguage {
   const v = localStorage.getItem(LANG_KEY) as TranslationLanguage | null;
-  if (v && (VALID_LANGS as string[]).includes(v)) return v;
+  if (isValidTranslationLanguage(v)) return v;
   return "urdu";
 }
 
@@ -403,11 +435,16 @@ export const UI_LANG_KEY = "noor-ui-lang";
 // Called once on app start to guarantee clean first-launch state.
 const INIT_KEY = "noor-defaults-v1";
 
-export function initDefaults(): void {
+export async function initDefaults(): Promise<void> {
   // A saved language is the user's choice. Never auto-detect over it.
   const savedLanguage = localStorage.getItem(LANG_KEY);
-  if (!savedLanguage || !(VALID_LANGS as string[]).includes(savedLanguage)) {
-    localStorage.setItem(LANG_KEY, detectInitialTranslationLanguage());
+  if (!isValidTranslationLanguage(savedLanguage)) {
+    const detectedLanguage = await detectInitialTranslationLanguageAsync();
+    // Re-check after the async native lookup so a manual selection always wins.
+    const currentLanguage = localStorage.getItem(LANG_KEY);
+    if (!isValidTranslationLanguage(currentLanguage)) {
+      setLang(detectedLanguage);
+    }
   }
 
   if (localStorage.getItem(INIT_KEY)) return; // other defaults already initialized
