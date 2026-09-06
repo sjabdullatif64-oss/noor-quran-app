@@ -142,9 +142,9 @@ jobs:
         working-directory: ${{ env.APP_DIR }}
         run: |
           test -n "$(find dist/public/assets -type f -name '*.js' -print -quit)"
-           grep -a -R -l "1\\.0\\.22" dist/public/assets dist/public/index.html
-           grep -a -R -l "noor-transliteration-language-changed" dist/public/assets
-           grep -a -R -l "اللہ" dist/public/assets
+          grep -a -R -l "1\\.0\\.22" dist/public/assets dist/public/index.html
+          grep -a -R -l "noor-transliteration-language-changed" dist/public/assets
+          grep -a -R -l "اللہ" dist/public/assets
           cat > dist/public/build-manifest.json <<EOF
           {
             "sourceSha": "${{ github.sha }}",
@@ -170,10 +170,10 @@ jobs:
           test -f android/app/src/main/assets/public/build-manifest.json
           diff -u dist/public/build-manifest.json android/app/src/main/assets/public/build-manifest.json
           test ! -e android/app/src/main/assets/public/assets/index-CioVTHgR.js
-           grep -a -R -l "1\\.0\\.22" android/app/src/main/assets/public/assets android/app/src/main/assets/public/index.html
-           grep -a -R -l "noor-transliteration-language-changed" android/app/src/main/assets/public/assets
-           grep -a -R -l "اللہ" android/app/src/main/assets/public/assets
-           ! grep -a -R -l "1\\.0\\.19" android/app/src/main/assets/public/assets
+          grep -a -R -l "1\\.0\\.22" android/app/src/main/assets/public/assets android/app/src/main/assets/public/index.html
+          grep -a -R -l "noor-transliteration-language-changed" android/app/src/main/assets/public/assets
+          grep -a -R -l "اللہ" android/app/src/main/assets/public/assets
+          ! grep -a -R -l "1\\.0\\.19" android/app/src/main/assets/public/assets
           echo "✅ Capacitor assets match checkout ${{ github.sha }}"
 
       # ── 8. Gradle wrapper ────────────────────────────────────────────────────
@@ -324,16 +324,16 @@ jobs:
             MANIFEST_ENTRY=$(unzip -Z1 "$FILE" | grep -E '(^|/)assets/public/build-manifest\.json$' | head -1)
             test -n "$MANIFEST_ENTRY"
             unzip -p "$FILE" "$MANIFEST_ENTRY" > /tmp/noor-build-manifest.json
-             grep -a -q '"sourceSha": "${{ github.sha }}"' /tmp/noor-build-manifest.json
-             grep -a -q '"versionName": "1.0.22"' /tmp/noor-build-manifest.json
-             grep -a -q '"versionCode": "79845458"' /tmp/noor-build-manifest.json
+            grep -a -q '"sourceSha": "${{ github.sha }}"' /tmp/noor-build-manifest.json
+            grep -a -q '"versionName": "1.0.22"' /tmp/noor-build-manifest.json
+            grep -a -q '"versionCode": "79845458"' /tmp/noor-build-manifest.json
             : > /tmp/noor-web-bundle.js
             while IFS= read -r BUNDLE_ENTRY; do
               unzip -p "$FILE" "$BUNDLE_ENTRY" >> /tmp/noor-web-bundle.js
             done < <(unzip -Z1 "$FILE" | grep -E '(^|/)assets/public/assets/[^/]+\.js$')
-             grep -a -q 'اللہ' /tmp/noor-web-bundle.js
-             grep -a -q 'noor-transliteration-language-changed' /tmp/noor-web-bundle.js
-             ! grep -a -q '1\.0\.19' /tmp/noor-web-bundle.js
+            grep -a -q 'اللہ' /tmp/noor-web-bundle.js
+            grep -a -q 'noor-transliteration-language-changed' /tmp/noor-web-bundle.js
+            ! grep -a -q '1\.0\.19' /tmp/noor-web-bundle.js
           done
           echo "✅ APK/AAB contain exact source SHA, Version 22, Allah display, and Quran controls"
 
