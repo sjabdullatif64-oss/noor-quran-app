@@ -14,3 +14,9 @@ Repeated verification on August 11, 2026 showed the local Android-fix commit can
 **Why:** A local commit and a configured GitHub URL are not proof that GitHub received the commit; only `git ls-remote origin refs/heads/main` and the GitHub Actions `head_sha` establish reachability.
 
 **How to apply:** Stop before dispatching or reporting artifacts when the remote SHA is still older than the verified local commit.
+
+The Active GitHub Connector is an authenticated API/proxy integration, not automatically a credential provider for the workspace's normal HTTPS Git transport. A plain `origin` URL with no Git credential helper still fails GitHub push authentication.
+
+**Why:** A September 2026 diagnostic showed the connector active while `git push --dry-run` returned GitHub's invalid username/token error; Replit's Git pane repository connection is the separate official Git authentication path.
+
+**How to apply:** Diagnose the Git pane's linked-account/repository connection and its internal Git credential binding before retrying normal Git. Never use the connector's REST API to reconstruct commits when exact SHA preservation matters.
