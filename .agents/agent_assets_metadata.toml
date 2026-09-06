@@ -6,264 +6,308 @@ id = "b-Wx88Et6pQ7deKjg8Dwp"
 uri = "file://keystore-base64-for-github.txt"
 type = "text"
 title = "KEYSTORE_BASE64 — paste this into GitHub Secrets"
+logical_id = "9237074c-3fe7-413e-8484-f0681d5eb387"
 
 [[outputs]]
 id = "aZa6zi3Bq3Zwmcira-bs-"
 uri = "file://artifacts/islamic-app/android/app/build/outputs/noor-quran-release.aab.zip"
 type = "unspecified"
 title = "Noor Quran — Release AAB (Play Store upload)"
+logical_id = "ec086b12-552b-4538-bac9-7e5ff86f8b22"
 
 [[outputs]]
 id = "8yB72PqaHaG5BPkE3N7kv"
 uri = "file://artifacts/islamic-app/android/app/build/outputs/noor-quran-release.apk.zip"
 type = "unspecified"
 title = "Noor Quran — Release APK (direct install)"
+logical_id = "4f1f5d01-eb32-4ea3-b206-ea347113a17b"
 
 [[outputs]]
 id = "pbY39OiMEgoAzJETa0Pxo"
 uri = "file://artifacts/islamic-app/android/app/build/outputs/apk/release/noor-quran-bugfix.tar.gz"
 type = "unspecified"
 title = "Noor Quran — Bug-Fix Release APK"
+logical_id = "9064ce82-ca42-4d3e-848e-ac29b1c082f4"
 
 [[outputs]]
 id = "YFt8TAdlqzbhsLsRupEGa"
 uri = "file://artifacts/islamic-app/android/app/build/outputs/apk/release/noor-quran-signed.zip"
 type = "unspecified"
 title = "Noor Quran APK (original upload key سے signed)"
+logical_id = "33b29f6b-cdcc-4e07-bcf8-5cb8565e87c1"
 
 [[outputs]]
 id = "2MWFK01VvII9VwF-WrSpi"
 uri = "file://artifacts/islamic-app/android/app/build/outputs/bundle/release/noor-quran-playstore.zip"
 type = "unspecified"
 title = "Noor Quran — Play Store AAB (original upload key سے signed)"
+logical_id = "9d968761-1c41-435b-8f95-d0b06f4d8599"
 
 [[outputs]]
 id = "Kb9ecrrH7YbFDH4fQyLU4"
 uri = "file://noor-quran-v1.0.1-apk.zip"
 type = "unspecified"
 title = "Noor Quran APK v1.0.1 — Android پر سیدھا انسٹال کریں"
+logical_id = "fc667d03-c3b6-43b5-860f-c8f35b9f7eff"
 
 [[outputs]]
 id = "ioZRb2IuDgk8mBldnb5Og"
 uri = "file://noor-quran-v1.0.1-aab.zip"
 type = "unspecified"
 title = "Noor Quran AAB v1.0.1 — Google Play Console کے لیے"
+logical_id = "aad34d18-3289-4c55-97ad-7dce9e65716a"
 
 [[outputs]]
 id = "LjR8Ogbr59EkURe7yKUtS"
 uri = "file://artifacts/islamic-app/android/app/build/outputs/apk/release/NoorQuran-v1.0.1-release.zip"
 type = "unspecified"
 title = "Noor Quran v1.0.1 — Fixed APK (ZIP)"
+logical_id = "1176d60b-2f60-441f-9f6c-9fd580cc0586"
 
 [[outputs]]
 id = "tTAanQr_ZcjxahzENdxXw"
 uri = "file://artifacts/islamic-app/android/app/build/outputs/downloads/NoorQuran-v1.0.1-APK.zip"
 type = "unspecified"
 title = "Noor Quran v1.0.1 — APK (Theme Fix)"
+logical_id = "65e63408-b6bc-402b-a9e7-05999b86d170"
 
 [[outputs]]
 id = "7GMvkO4dbUY-KZTtUXk1R"
 uri = "file://artifacts/islamic-app/android/app/build/outputs/downloads/NoorQuran-v1.0.1-AAB.zip"
 type = "unspecified"
 title = "Noor Quran v1.0.1 — AAB (Google Play کے لیے)"
+logical_id = "c0b53547-b900-432b-a81e-e86db1886304"
 
 [[outputs]]
 id = "4m3Cqk0qEC_MPYKxZPwCJ"
 uri = "file://artifacts/islamic-app/android/app/build/outputs/downloads/NoorQuran-v1.0.2-DIAGNOSTIC.zip"
 type = "unspecified"
 title = "Noor Quran v1.0.2 — Diagnostic APK (AdMob + Providers removed)"
+logical_id = "ec9e3cf7-2f36-48e8-9cfe-203aadbdb8d9"
 
 [[outputs]]
 id = "9shT1scPDTaDbPGqhxkmx"
 uri = "file://artifacts/islamic-app/android/app/build/outputs/downloads/NoorQuran-v1.0.3-fix-classnotfound.zip"
 type = "unspecified"
 title = "Noor Quran v1.0.3 — ClassNotFoundException Fix"
+logical_id = "cc0b5e24-5425-4237-8786-25de23497c73"
 
 [[outputs]]
 id = "qHpqO2ac-e0TmgRpro_qS"
 uri = "file://artifacts/islamic-app/android/app/build/outputs/downloads/NoorQuran-v1.0.4-crash-reporter.zip"
 type = "unspecified"
 title = "Noor Quran v1.0.4 — Crash Reporter"
+logical_id = "4ec2cdd5-52f7-44d8-b888-5ed8eb1647ea"
 
 [[outputs]]
 id = "LvEMZgHPREqjhOJXgtFrX"
 uri = "file://artifacts/islamic-app/android/app/build/outputs/downloads/NoorQuran-v1.0.5-splash-fix.zip"
 type = "unspecified"
 title = "Noor Quran v1.0.5 — Splash Fix (root cause resolved)"
+logical_id = "0b9f0a51-0f18-4168-8fca-05e2d5d619a6"
 
 [[outputs]]
 id = "ECgwZlFjFYIQ--Hv7IccR"
 uri = "file://artifacts/islamic-app/android/app/build/outputs/downloads/NoorQuran-v1.0.6-back-button-fix.zip"
 type = "unspecified"
 title = "Noor Quran v1.0.6 — Back Button Fix"
+logical_id = "fe8b8c67-5e2a-4620-b3c8-74589b114f66"
 
 [[outputs]]
 id = "0FLct6t9wqAC6bCcX034o"
 uri = "file://artifacts/islamic-app/android/app/build/outputs/downloads/NoorQuran-v1.0.6-PlayStore.zip"
 type = "unspecified"
 title = "Noor Quran v1.0.6 — Play Store AAB"
+logical_id = "1a242b24-6542-4d9c-9291-e2ad3b437ce0"
 
 [[outputs]]
 id = "abe6NNDbrQIb01jlQ0Itv"
 uri = "file://artifacts/islamic-app/android/app/build/outputs/downloads/NoorQuran-v1.0.7-PlayStore.zip"
 type = "unspecified"
 title = "Noor Quran v1.0.7 — Play Store AAB"
+logical_id = "fc34165e-99cb-4048-a334-be5db88412d6"
 
 [[outputs]]
 id = "2j_RFAaIDiCS4691WBJND"
 uri = "file://artifacts/islamic-app/android/app/build/outputs/downloads/NoorQuran-v1.0.8-PlayStore.zip"
 type = "unspecified"
 title = "Noor Quran v1.0.8 — Play Store AAB (upgrade-compatible, existing upload key)"
+logical_id = "c31cef10-fcdc-4a5e-bcfd-2b70a91abe6d"
 
 [[outputs]]
 id = "5fj5cakqE7DRbPnI7FSoQ"
 uri = "file://artifacts/islamic-app/android/app/build/outputs/downloads/NoorQuran-v74684540-PlayStore.zip"
 type = "unspecified"
 title = "Noor Quran — versionCode 74684540 — Play Store AAB"
+logical_id = "1f484eb1-d10f-43c3-90a6-b9029f539a44"
 
 [[outputs]]
 id = "CAtaW3eLjN2Aq2CObv7cm"
 uri = "file://noor-quran-azan-v1.0.9.zip"
 type = "unspecified"
 title = "Noor Quran — Azan Notifications AAB (v1.0.9)"
+logical_id = "87f3350e-13f3-4fd0-84ed-52bce38bddb4"
 
 [[outputs]]
 id = "K2eRVJT14OTwUSF2fU61d"
 uri = "file://noor-quran-v1.0.10.zip"
 type = "unspecified"
 title = "Noor Quran v1.0.10 — Signed AAB (versionCode 74684542)"
+logical_id = "804c9d82-4799-435c-bdbe-b30f50974cdc"
 
 [[outputs]]
 id = "ch5BUHMLXImNVdxThpXy5"
 uri = "file://noor-quran-v1.0.10-admob.zip"
 type = "unspecified"
 title = "Noor Quran v1.0.10 — AdMob AAB"
+logical_id = "2158a68d-b0dd-4401-821e-fb9c89fa7539"
 
 [[outputs]]
 id = "-sY75SKxqcSda9eevlryb"
 uri = "file://noor-quran-v1.0.10-admob-full.zip"
 type = "unspecified"
 title = "Noor Quran v1.0.10 — AAB + APK (AdMob)"
+logical_id = "39e9c034-2996-4f75-a750-a6c6a97a228e"
 
 [[outputs]]
 id = "j0m6wqYGSGcku29WfSyS5"
 uri = "file://noor-quran-v1.0.10-admob.apk.zip"
 type = "unspecified"
 title = "Noor Quran v1.0.10 — APK (AdMob)"
+logical_id = "f25456be-ee00-4ebf-8f8d-004eb6478c38"
 
 [[outputs]]
 id = "sZIvRy9NnsCzXx7PgDo2T"
 uri = "file://noor-quran-v1.0.10-fixed-apk.zip"
 type = "unspecified"
 title = "Noor Quran v1.0.10 — APK (اللہ fix)"
+logical_id = "d87f5472-5226-4a98-976b-331ec425e488"
 
 [[outputs]]
 id = "_L2T9W09IaAJGJaT18_8T"
 uri = "file://noor-quran-admin-imagefix.zip"
 type = "unspecified"
 title = "Noor Quran — Admin Panel + Image Fix APK"
+logical_id = "394cd939-3b8d-48da-8f82-cd2996630842"
 
 [[outputs]]
 id = "2Hb3qh01HeSuKTbqcDKN2"
 uri = "file://noor-quran-v1.0.10-vc74684543.zip"
 type = "unspecified"
 title = "Noor Quran v1.0.10 — Signed AAB (Play Store)"
+logical_id = "df1eb8dc-fcf5-4079-817f-5ff7cdd44204"
 
 [[outputs]]
 id = "fQxuF2qvz0CqERWzfCxwS"
 uri = "file://noor-quran-sheet-api.zip"
 type = "unspecified"
 title = "noor-quran-sheet-api.gs — Google Apps Script (updated)"
+logical_id = "6a0dc3bf-76ef-4c3d-94fa-a0c2219729dd"
 
 [[outputs]]
 id = "9juJHA8aSYgD6q-viUpzr"
 uri = "file://attached_assets/noor-quran-1.0.16-debug-apk.zip"
 type = "unspecified"
 title = "Noor Quran v1.0.16 (debug) — Share fix test build (.apk inside zip)"
+logical_id = "8028d64a-8b19-47dd-98c6-b3102c237bf3"
 
 [[outputs]]
 id = "-FXQRcLyF6PrawEI1LfDN"
 uri = "file://attached_assets/noor-quran-1.0.17-release-apk.zip"
 type = "unspecified"
 title = "Noor Quran v1.0.17 (release, signed) — Share fix"
+logical_id = "a5f41493-2da3-4bce-bc58-e93232f3bad9"
 
 [[outputs]]
 id = "AyUeWRlLnRZzvEn3L4ysX"
 uri = "file://attached_assets/noor-quran-1.0.18.apk.tar.gz"
 type = "unspecified"
 title = "Noor Quran v1.0.18 (release APK, signed)"
+logical_id = "22ae5e52-c3a8-42aa-810f-c9ee89257388"
 
 [[outputs]]
 id = "ydKQnfdy9pxdYPpdesdli"
 uri = "file://attached_assets/noor-quran-1.0.18.zip"
 type = "unspecified"
 title = "Noor Quran v1.0.18 (release APK, signed)"
+logical_id = "778103e0-0a99-41f5-82f0-512f8ffcaac7"
 
 [[outputs]]
 id = "OYxwlu-TtR9iPJ-4Uv4kL"
 uri = "file://attached_assets/release/noor-quran-1.0.19.zip"
 type = "unspecified"
 title = "Noor Quran v1.0.19 (Share fix)"
+logical_id = "e31aa42d-d092-4f2c-b920-0f75ff633e40"
 
 [[outputs]]
 id = "rU_W-TmGVUfLTqxgxrAMh"
 uri = "file://attached_assets/release/noor-quran-1.0.20.zip"
 type = "unspecified"
 title = "Noor Quran v1.0.20 (Three Dots menu fix)"
+logical_id = "183fc9f3-a2f3-44c3-8182-8a1befb912a5"
 
 [[outputs]]
 id = "oBggOfWp_QV9SNLjYQW8i"
 uri = "file://attached_assets/release/noor-quran-1.0.2-aab.zip"
 type = "unspecified"
 title = "Noor Quran v1.0.2 — Production AAB (Google Play upload)"
+logical_id = "22fa334b-ee7f-40f5-92e9-81df7689bdd9"
 
 [[outputs]]
 id = "MktE7qmUouCCTtvGj6YOh"
 uri = "file://attached_assets/release/noor-quran-1.0.3-azan-fix.zip"
 type = "unspecified"
 title = "Noor Quran v1.0.3 - Azan Fix (APK + AAB)"
+logical_id = "0fc2c961-2084-45f2-b71e-db137a35e34f"
 
 [[outputs]]
 id = "tFhabi3Q-kz2FH5i6dm2y"
 uri = "file://build_outputs/noor-quran-1.0.1-apk.tar.gz"
 type = "unspecified"
 title = "Noor Quran APK (v1.0.1, versionCode 79117719)"
+logical_id = "0288b482-f606-4b7d-b82a-b3e824366470"
 
 [[outputs]]
 id = "uRAaZefd3zuwEUptBEtsM"
 uri = "file://build_outputs/noor-quran-1.0.1-aab.tar.gz"
 type = "unspecified"
 title = "Noor Quran AAB (v1.0.1, versionCode 79117719)"
+logical_id = "ac12d54a-ed7c-4e8d-80f9-1d1346d8ba92"
 
 [[outputs]]
 id = "kFfmgE2uRGQFtk62-ZGDw"
 uri = "file://tmp_release/noor-quran-1.0.1-azan-fix.tar.gz"
 type = "unspecified"
 title = "Noor Quran v1.0.1 — Azan audio fix (APK)"
+logical_id = "a9ef176b-eeac-461b-bfc4-5987aceec5e1"
 
 [[outputs]]
 id = "1aIScXdvgJBGFavyktC-y"
 uri = "file://attached_assets/release/noor-quran-1.1.0-debug.zip"
 type = "unspecified"
 title = "Noor Quran 1.1.0 — Test APK (debug, zipped)"
+logical_id = "14768d07-4d09-4638-921d-a67b86cb863f"
 
 [[outputs]]
 id = "Qi7fDjmEl1gOXDuJAMCMC"
 uri = "file://artifacts/islamic-app/public/release/noor-quran-1.0.13.apk"
 type = "unspecified"
 title = "Noor Quran v1.0.13 — Teacher mic fix"
+logical_id = "0ed4c474-6eb3-46c5-a1e6-c9d7e3d56722"
 
 [[outputs]]
 id = "uWsliV0HPp7NEani-Qn3L"
 uri = "file://artifacts/islamic-app/public/release/noor-quran-1.0.14.apk"
 type = "unspecified"
 title = "Noor Quran v1.0.14 — on-screen mic debug"
+logical_id = "20b1d259-f1c2-4939-b143-defde7ec308c"
 
 [[outputs]]
 id = "jRfWS8Q_Kw-VfJBlgsK7P"
 uri = "file://artifacts/islamic-app/public/release/noor-quran-1.0.15.apk"
 type = "unspecified"
 title = "Noor Quran v1.0.15 — getSpeechSupport sub-step diagnostics"
+logical_id = "706f9614-9f1b-48f2-ad94-e19d422e65e4"
 
 [[outputs]]
 id = "VAyzENDgayO5Ltq7bV_OE"
@@ -271,6 +315,7 @@ uri = "file://artifacts/islamic-app/release/NoorQuran-v1.0.17-release.apk"
 type = "unspecified"
 title = "Noor Quran 1.0.17 Release APK"
 description = "Signed production release APK — versionCode 74684550."
+logical_id = "2025d179-2323-4a66-942d-cd369d351d4a"
 
 [[outputs]]
 id = "EIs_v0dFYmrgEuOgI4nYh"
@@ -278,6 +323,7 @@ uri = "file://artifacts/islamic-app/release/NoorQuran-v1.0.17-release.aab"
 type = "unspecified"
 title = "Noor Quran 1.0.17 Release AAB"
 description = "Signed production release Android App Bundle — versionCode 74684550."
+logical_id = "68c36a68-2611-4e39-9886-f367881d20ad"
 
 [[outputs]]
 id = "Byg0xMm4JalKEUYY158jc"
@@ -285,6 +331,7 @@ uri = "file://artifacts/islamic-app/NoorQuran-latest-signed-release.apk"
 type = "unspecified"
 title = "Noor Quran latest signed release APK"
 description = "Release-signed APK built from commit d9a64b1be5fddf10b13dfda61fe73d2653fdc4eb. SHA-256: d9c368c31d1083e189f6eb9c2fa2c5a20e35b5b3e83cfbee8d6b00d814871132. APK Signature Scheme v2 verified; not tested on a physical device."
+logical_id = "821b4a24-9e12-47a7-84f4-6dbc97115a7d"
 
 [[outputs]]
 id = "ci73hQKl5ovfQYp_AKfkl"
@@ -292,6 +339,7 @@ uri = "file://artifacts/islamic-app/android/app/build/outputs/apk/release/app-re
 type = "unspecified"
 title = "Noor Quran signed Android APK v1.0.17"
 description = "Signed release APK built from the current codebase. Package: com.sj64noorquran. Version code: 79845453. SHA-256: 86e8263cb7592c8f7b164914b4782f4dc540fbd5be173cb239e4e12d618bc94e. APK signature scheme v2 and zip alignment verified."
+logical_id = "4c04471a-79d7-4f01-b77d-1814c6d24827"
 
 [[outputs]]
 id = "0qOGpnrbkEKlPj6qf-RFy"
@@ -299,6 +347,7 @@ uri = "file://.agents/outputs/noor-quran-1.0.18/noor-quran-1.0.18.apk"
 type = "unspecified"
 title = "Noor Quran 1.0.18 — Signed APK"
 description = "Signed Android APK built by GitHub Actions. Version code: 79845454. Install directly on Android devices."
+logical_id = "b72afaa8-49ae-46ec-a86b-94b64a48e2a3"
 
 [[outputs]]
 id = "856i3dsx89WYmPBjPo1gF"
@@ -306,6 +355,7 @@ uri = "file://.agents/outputs/noor-quran-1.0.18/noor-quran-1.0.18.aab"
 type = "unspecified"
 title = "Noor Quran 1.0.18 — Play Store AAB"
 description = "Signed Android App Bundle built by GitHub Actions. Version code: 79845454. Upload this file to Google Play Console."
+logical_id = "fea85b59-709c-44a6-991c-6e57665ae67b"
 
 [[outputs]]
 id = "myrah7GHDT5jkzFMpSqKd"
@@ -313,6 +363,7 @@ uri = "file://.agents/outputs/noor-quran-1.0.19-debug/noor-quran-1.0.19-debug.ap
 type = "unspecified"
 title = "Noor Quran 1.0.19 Debug APK"
 description = "Locally built debug APK for testing. Package: com.sj64noorquran; versionCode: 79845455; versionName: 1.0.19; compile/target SDK: 36. SHA-256: 55cd13d283503a27142a2ffb820471d168d768e93b5ccafdeae3f105010f969c."
+logical_id = "93d46ce7-05a3-470d-af54-0b100b1ead51"
 
 [[outputs]]
 id = "l7HpSANSmRekO3Ck2Kmx4"
@@ -320,6 +371,7 @@ uri = "file://.agents/outputs/noor-quran-1.0.19-ai-teacher-legal-debug/noor-qura
 type = "unspecified"
 title = "Noor Quran 1.0.19 — AI Teacher Legal Update Debug APK"
 description = "Testing APK built after updating the existing Terms of Service and Privacy Policy with AI Teacher speech recognition, microphone permission, pronunciation assessment, automated feedback, progress handling, and rewarded-ad disclosures. Package: com.sj64noorquran; versionCode: 79845455; target SDK: 36; SHA-256: 972c351448922561f72c4125909dd11f76d1fbf9c1079519cb60ebe8fa6450c8."
+logical_id = "53dcf139-56fe-4d8d-bdac-40e7c4eef0e6"
 
 [[outputs]]
 id = "nUGG3qe_gbLa80llI3Z0r"
@@ -327,6 +379,7 @@ uri = "file://artifacts/islamic-app/android/final-builds/noor-quran-v1.0.20-debu
 type = "unspecified"
 title = "Noor Quran v1.0.20 Debug APK"
 description = "Debug APK for testing. Version code 79845456."
+logical_id = "fd4a42d2-6aca-4069-b2d8-e3c637139444"
 
 [[outputs]]
 id = "jJowgXoTFLMJLwJxiiwl6"
@@ -334,6 +387,7 @@ uri = "file://artifacts/islamic-app/android/final-builds/noor-quran-v1.0.20-rele
 type = "unspecified"
 title = "Noor Quran v1.0.20 Release AAB"
 description = "Signed release Android App Bundle for Google Play. Version code 79845456."
+logical_id = "9a00c60f-d56e-47cf-887d-f89756f4f9c9"
 
 [[outputs]]
 id = "NqfrDi_wqNeOeLBr7R4dI"
@@ -341,6 +395,7 @@ uri = "file://artifacts/islamic-app/android/app/build/outputs/bundle/release/app
 type = "unspecified"
 title = "Noor Quran Advertising ID Fix — Release AAB"
 description = "Signed release AAB built from the current code. Final base manifest contains com.google.android.gms.permission.AD_ID and the AdMob application ID metadata. SHA-256: dc1bb387fdbc638e060f8fb875c02079034336c0c0f51a9b1ef8340a9482febf"
+logical_id = "5e2298d0-cfa7-47c1-bd50-f7435b53d83e"
 
 [[outputs]]
 id = "xbgTJFGs4yROCy56WSa3K"
@@ -348,6 +403,7 @@ uri = "file://.agents/outputs/noor-quran-1.0.22.apk"
 type = "unspecified"
 title = "Noor Quran 1.0.22 APK"
 description = "Signed release APK; versionCode 79845458. SHA-256: d7510a109dc7138e0220bc80796dca5f26071cbc16472e3b3d7adcb260b71dfe"
+logical_id = "85e6e073-cf9c-4e1f-8dab-c752ba03fb05"
 
 [[outputs]]
 id = "uDxArTXWYRNKecoDsYdrP"
@@ -355,6 +411,7 @@ uri = "file://.agents/outputs/noor-quran-1.0.22.aab"
 type = "unspecified"
 title = "Noor Quran 1.0.22 AAB"
 description = "Signed Play Store bundle; versionCode 79845458. SHA-256: dc1bb387fdbc638e060f8fb875c02079034336c0c0f51a9b1ef8340a9482febf"
+logical_id = "009cd580-1da3-4f58-ae09-6f09e37124ea"
 
 [[outputs]]
 id = "f-wvLNGaFUdkHCrudbOCo"
@@ -362,6 +419,7 @@ uri = "file://.agents/outputs/noor-quran-current-1.0.22/noor-quran-current-1.0.2
 type = "unspecified"
 title = "Noor Quran 1.0.22 — Fresh Verified APK"
 description = "Fresh local release APK built from the current synchronized source. Version 1.0.22, versionCode 79845458, source manifest SHA 55e512a8ef83fa71e911b8ae56a9641a3ffee2de, fresh index-B5HGk3fh.js bundle, no index-CioVTHgR.js or embedded 1.0.19. SHA-256: a318a8a0af79aeae3aefac3dca8f71bee3c579dae24c77ce8a16cc4628de90f3"
+logical_id = "6234b455-226d-4677-8d09-e63de3dd73ac"
 
 [[outputs]]
 id = "mvkfwcQ7CqZQoYyZxyP7t"
@@ -369,6 +427,7 @@ uri = "file://.agents/outputs/noor-quran-current-1.0.22/noor-quran-current-1.0.2
 type = "unspecified"
 title = "Noor Quran 1.0.22 — Fresh Verified AAB"
 description = "Fresh local release AAB built from the current synchronized source. Version 1.0.22, versionCode 79845458, source manifest SHA 55e512a8ef83fa71e911b8ae56a9641a3ffee2de, fresh index-B5HGk3fh.js bundle, no index-CioVTHgR.js or embedded 1.0.19. SHA-256: 37449a85e581d9fad6e7fd42aaf9507d43e035f07aaae04cae3edca24e68a59f"
+logical_id = "27071e4c-0ba5-46ec-9072-df5afe5a8e4a"
 
 [[outputs]]
 id = "F7HgCikuCGoQWIPzjWSdu"
@@ -376,3 +435,32 @@ uri = "file://.agents/outputs/noor-quran-current-1.0.22/verification.txt"
 type = "text"
 title = "Noor Quran 1.0.22 — Build Verification Report"
 description = "Verification record for the fresh APK and AAB contents, source SHA, version metadata, bundle freshness, Quran display boundary, and independent transliteration control."
+logical_id = "c6e340d4-6751-4365-930a-87249e83fee7"
+
+[[outputs]]
+id = "9plHev37f1Z1IoRD8V-P4"
+uri = "file://artifacts/islamic-app/release-artifacts/noor-quran-1.0.22.apk"
+type = "unspecified"
+title = "Noor Quran 1.0.22 APK"
+description = "Fresh release APK from GitHub Actions run 352; package com.sj64noorquran, version 1.0.22 (79845458), verified against source head cf505b9."
+logical_id = "ea332eee-e521-48c3-9a4e-91bf4ae694bf"
+content_hash = "sha256:b9f21b099d47bff3b05b5e6e39acfacef530db179c72ada70b758b950db06bcd"
+size = 17310088
+mtime_ms = 1788722354858
+storage_uri = "gcs://replit-rams-assets-pike/rams/assets/repl:bd238ef0-1b86-4eea-96d7-950cea5f63f3/ea332eee-e521-48c3-9a4e-91bf4ae694bf/7c2a2e8a-6fa5-4ea2-abc4-51b667da4aeb"
+storage_version_token = "1788722365131200"
+content_type = "application/octet-stream"
+
+[[outputs]]
+id = "MsbNnh9j3Mz-FYFRXkCJx"
+uri = "file://artifacts/islamic-app/release-artifacts/noor-quran-1.0.22.aab"
+type = "unspecified"
+title = "Noor Quran 1.0.22 AAB"
+description = "Fresh release Android App Bundle from GitHub Actions run 352; package com.sj64noorquran, version 1.0.22 (79845458), verified against source head cf505b9."
+logical_id = "51473e87-35e5-4c1d-9a6f-b462e0f6eaca"
+content_hash = "sha256:0ee472307c2dbe7cad717b5ec0ba8af46f3d37b4b106264c55c4f2a175080821"
+size = 16566303
+mtime_ms = 1788722354949
+storage_uri = "gcs://replit-rams-assets-pike/rams/assets/repl:bd238ef0-1b86-4eea-96d7-950cea5f63f3/51473e87-35e5-4c1d-9a6f-b462e0f6eaca/c6d6409d-c861-4b4d-a1d1-f277faa057d3"
+storage_version_token = "1788722367368090"
+content_type = "application/octet-stream"
