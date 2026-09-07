@@ -13,6 +13,12 @@ export const API_BASE = Capacitor.isNativePlatform()
   ? `${REPLIT_DOMAIN}/api`
   : "/api";
 
+export function resolveNoorMediaUrl(value: string | null): string | null {
+  if (!value) return null;
+  if (value.startsWith("data:") || value.startsWith("blob:") || /^https?:\/\//i.test(value)) return value;
+  return `${API_BASE}${value.startsWith("/") ? value : `/${value}`}`;
+}
+
 async function noorFetch<T>(path: string, opts: RequestInit = {}): Promise<T> {
   const res = await fetch(`${API_BASE}${path}`, {
     headers: {

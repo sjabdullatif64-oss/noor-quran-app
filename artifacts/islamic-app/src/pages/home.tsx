@@ -12,7 +12,7 @@ import {
 } from "@/lib/settings";
 import { useI18n } from "@/lib/i18n-context";
 import { useQuery } from "@tanstack/react-query";
-import { noorApi, type NoorProduct } from "@/lib/noor-api";
+import { noorApi, resolveNoorMediaUrl, type NoorProduct } from "@/lib/noor-api";
 import { openUrl } from "@/lib/capacitor";
 import { applyTranslationDisplay } from "@/lib/ayah-display";
 
@@ -60,7 +60,7 @@ function ProductPreviewCard({ p, featured }: { p: NoorProduct; featured?: boolea
         {p.imageUrl ? (
           <div className="w-full overflow-hidden bg-muted" style={{ aspectRatio: "4/3" }}>
             <img
-              src={p.imageUrl}
+              src={resolveNoorMediaUrl(p.imageUrl) || undefined}
               alt={p.title}
               className="w-full h-full object-cover"
               onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}

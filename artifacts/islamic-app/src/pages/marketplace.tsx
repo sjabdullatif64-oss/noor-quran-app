@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { noorApi, type NoorProduct } from "@/lib/noor-api";
+import { noorApi, resolveNoorMediaUrl, type NoorProduct } from "@/lib/noor-api";
 import { openUrl, nativeShare, getLastShareError } from "@/lib/capacitor";
 import { Star, Tag, Phone, Calendar, Loader2, Sparkles, Package, ExternalLink, Share2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
@@ -63,7 +63,7 @@ function ProductCard({ p, featured }: { p: NoorProduct; featured?: boolean }) {
       {p.imageUrl && (
         <div className="w-full h-28 overflow-hidden bg-muted">
           <img
-            src={p.imageUrl}
+            src={resolveNoorMediaUrl(p.imageUrl) || undefined}
             alt={p.title}
             className="w-full h-full object-cover"
             onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}

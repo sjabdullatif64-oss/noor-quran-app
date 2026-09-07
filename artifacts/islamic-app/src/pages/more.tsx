@@ -7,7 +7,6 @@ import {
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useI18n } from "@/lib/i18n-context";
-import { RewardedAdButton } from "@/components/rewarded-ad-button";
 import { nativeShare, openUrl, isNative, getLastShareError } from "@/lib/capacitor";
 import { API_BASE } from "@/lib/noor-api";
 import { AI_TEACHER_ENABLED } from "@/lib/teacher-config";
@@ -263,12 +262,7 @@ export function More() {
         </button>
       </div>
 
-      {/* Support Noor Quran — Rewarded Ad */}
-      <div className="px-4 mb-4">
-        <RewardedAdButton />
-      </div>
-
-       {/* Feature grid */}
+      {/* Feature grid */}
       <div className="px-4 grid grid-cols-1 gap-3">
         {ITEMS.map((item, i) => (
           <button

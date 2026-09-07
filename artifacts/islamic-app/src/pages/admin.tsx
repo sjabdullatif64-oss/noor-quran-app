@@ -6,6 +6,11 @@ import {
   Sparkles, Trash2, Upload, Users, X,
 } from "lucide-react";
 import { API_BASE } from "@/lib/noor-api";
+import {
+  formatBytes,
+  prepareStillImage,
+  type ImagePreparation,
+} from "@/lib/welcome-campaign-image";
 
 type SessionResponse = { session: string };
 type Campaign = {
@@ -51,14 +56,29 @@ const json = (token: string | null, path: string, init: RequestInit = {}) =>
     return res.status === 204 ? null : res.json();
   });
 
+function campaignMediaUrl(value: string | null): string | null {
+  if (!value) return null;
+  if (value.startsWith("data:") || value.startsWith("blob:") || /^https?:\/\//i.test(value)) return value;
+  return `${API_BASE}${value.startsWith("/") ? value : `/${value}`}`;
+}
+
 const blankCampaign = (): Omit<Campaign, "id"> => ({
   imageUrl: null, gifUrl: null, videoUrl: null, title: "", description: "", buttonText: "Explore",
   url: "", durationSeconds: 6, enabled: false,
 });
+const campaignFormValues = (campaign: Campaign | null): Omit<Campaign, "id"> => {
+  if (!campaign) return blankCampaign();
+  const { id: _id, ...values } = campaign;
+  return values;
+};
 const blankProduct = (): Omit<Product, "id" | "createdAt"> => ({
   title: "", description: "", imageUrl: null, contactInfo: "", productLink: "",
   category: "other", status: "approved", displayOrder: 0,
 });
+const productFormValues = (product: Product | null): Omit<Product, "id" | "createdAt"> =>
+  product
+    ? (({ id: _id, createdAt: _createdAt, ...values }) => values)(product)
+    : blankProduct();
 
 const MAX_MEDIA_DATA_URL_LENGTH = 1_900_000;
 
@@ -293,22 +313,143 @@ function EmptyState({ icon, title, text, action }: { icon: ReactNode; title: str
   return <div className="admin-panel flex min-h-64 flex-col items-center justify-center rounded-2xl p-8 text-center"><div className="mb-4 flex h-12 w-12 items-center justify-center rounded-2xl bg-[hsl(var(--admin-teal-soft))] text-[hsl(var(--admin-teal))]">{icon}</div><h3 className="font-semibold">{title}</h3><p className="mt-2 max-w-sm text-sm text-[hsl(var(--admin-muted))]">{text}</p><button className="admin-button admin-button-quiet mt-5" onClick={action}><RefreshCw className="h-4 w-4" /> Try again</button></div>;
 }
 
+function ImagePreparationDialog({
+  preparation,
+  onConfirm,
+  onCancel,
+}: {
+  preparation: ImagePreparation;
+  onConfirm: () => void;
+  onCancel: () => void;
+}) {
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-[hsl(165_50%_5%/.72)] p-4 backdrop-blur-sm">
+      <section
+        className="admin-panel admin-rise max-h-[min(760px,calc(100dvh-2rem))] w-full max-w-2xl overflow-y-auto rounded-2xl p-5 shadow-2xl sm:p-6"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="image-preparation-title"
+        data-testid="image-preparation-dialog"
+      >
+        <div className="flex items-start justify-between gap-4">
+          <div>
+            <div className="admin-kicker mb-1">Welcome Campaign / media prep</div>
+            <h3 id="image-preparation-title" className="text-xl font-semibold tracking-[-.03em]">Review optimized image</h3>
+            <p className="mt-1 text-sm text-[hsl(var(--admin-muted))]">
+              The original stays local until you confirm this optimized version.
+            </p>
+          </div>
+          <button type="button" className="rounded-lg p-2 hover:bg-[hsl(var(--admin-teal-soft))]" onClick={onCancel} aria-label="Cancel image preparation">
+            <X className="h-4 w-4" />
+          </button>
+        </div>
+
+        <div className="mt-6 grid gap-4 sm:grid-cols-2">
+          <div>
+            <div className="mb-2 flex items-center justify-between">
+              <span className="admin-kicker">Original</span>
+              <span className="admin-mono text-xs text-[hsl(var(--admin-muted))]">{formatBytes(preparation.originalSize)}</span>
+            </div>
+            <div className="overflow-hidden rounded-xl border bg-[hsl(var(--admin-input))]">
+              <img src={preparation.originalPreviewUrl} alt="Original campaign image preview" className="aspect-video w-full object-contain" />
+            </div>
+            <p className="mt-2 text-xs text-[hsl(var(--admin-muted))]">
+              {preparation.originalWidth} × {preparation.originalHeight}
+            </p>
+          </div>
+          <div>
+            <div className="mb-2 flex items-center justify-between">
+              <span className="admin-kicker">Optimized</span>
+              <span className="admin-mono text-xs text-[hsl(var(--admin-teal))]">{formatBytes(preparation.optimizedSize)}</span>
+            </div>
+            <div className="overflow-hidden rounded-xl border border-[hsl(var(--admin-teal)/.55)] bg-[hsl(var(--admin-input))]">
+              <img src={preparation.optimizedUrl} alt="Optimized campaign image preview" className="aspect-video w-full object-contain" />
+            </div>
+            <p className="mt-2 text-xs text-[hsl(var(--admin-muted))]">
+              {preparation.optimizedWidth} × {preparation.optimizedHeight} · {preparation.optimizedFormat} · under 1.9 MB
+            </p>
+          </div>
+        </div>
+
+        <div className="mt-5 rounded-xl border border-[hsl(var(--admin-teal)/.35)] bg-[hsl(var(--admin-teal-soft)/.55)] px-4 py-3 text-sm">
+          <span className="font-semibold">Ready to attach:</span>{" "}
+          this version preserves the aspect ratio and is safely below the existing campaign upload limit.
+        </div>
+
+        <div className="mt-6 flex justify-end gap-2 border-t pt-5">
+          <button type="button" className="admin-button admin-button-quiet" onClick={onCancel} data-testid="button-cancel-image-preparation">
+            Cancel
+          </button>
+          <button type="button" className="admin-button admin-button-primary" onClick={onConfirm} data-testid="button-use-optimized-image">
+            <Upload className="h-4 w-4" /> Use Optimized Image
+          </button>
+        </div>
+      </section>
+    </div>
+  );
+}
+
 function ImageInput({ value, onChange, label = "Image" }: { value: string | null; onChange: (value: string | null) => void; label?: string }) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
+  const [preparation, setPreparation] = useState<ImagePreparation | null>(null);
+  useEffect(() => () => {
+    if (preparation) URL.revokeObjectURL(preparation.originalPreviewUrl);
+  }, [preparation]);
+
   async function onFile(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     e.target.value = "";
     if (!file) return;
     setBusy(true);
     setError("");
-    try { onChange(await readMediaFile(file)); }
+    try {
+      setPreparation(await prepareStillImage(file));
+    }
     catch (err) { setError(err instanceof Error ? err.message : "Unable to read this file."); }
     finally { setBusy(false); }
   }
-  return <div><div className="mb-2 flex items-center justify-between"><span className="admin-kicker">{label}</span>{value && <button type="button" className="text-xs text-[hsl(1_80%_76%)]" onClick={() => onChange(null)}>Remove</button>}</div>
-    <div className="flex gap-2">{value ? <div className="relative h-20 w-28 overflow-hidden rounded-lg border bg-[hsl(var(--admin-input))]"><img src={value} alt="" className="h-full w-full object-cover" /><button type="button" className="absolute right-1 top-1 rounded-full bg-[hsl(165_50%_6%/.82)] p-1 text-[hsl(var(--admin-cream))]" onClick={() => onChange(null)}><X className="h-3 w-3" /></button></div> : <div className="flex h-20 w-28 items-center justify-center rounded-lg border border-dashed text-[hsl(var(--admin-muted))]"><FileImage className="h-5 w-5" /></div>}<div className="flex flex-1 flex-col gap-2"><input className="admin-field text-xs" value={value || ""} onChange={(e) => onChange(e.target.value || null)} placeholder="Paste image URL or upload a file" /><label className="admin-button admin-button-quiet w-fit cursor-pointer text-xs"><Upload className="h-3.5 w-3.5" /> {busy ? "Reading file…" : "Choose from Gallery"}<input type="file" accept="image/*" onChange={onFile} className="hidden" /></label>{error && <p className="text-xs text-[hsl(1_80%_76%)]">{error}</p>}</div></div>
-  </div>;
+  return (
+    <>
+      <div>
+        <div className="mb-2 flex items-center justify-between">
+          <span className="admin-kicker">{label}</span>
+          {value && <button type="button" className="text-xs text-[hsl(1_80%_76%)]" onClick={() => onChange(null)}>Remove</button>}
+        </div>
+        <div className="flex gap-2">
+          {value ? (
+            <div className="relative h-20 w-28 overflow-hidden rounded-lg border bg-[hsl(var(--admin-input))]">
+              <img src={campaignMediaUrl(value) || undefined} alt="" className="h-full w-full object-cover" />
+              <button type="button" className="absolute right-1 top-1 rounded-full bg-[hsl(165_50%_6%/.82)] p-1 text-[hsl(var(--admin-cream))]" onClick={() => onChange(null)}>
+                <X className="h-3 w-3" />
+              </button>
+            </div>
+          ) : (
+            <div className="flex h-20 w-28 items-center justify-center rounded-lg border border-dashed text-[hsl(var(--admin-muted))]"><FileImage className="h-5 w-5" /></div>
+          )}
+          <div className="flex flex-1 flex-col gap-2">
+            <input className="admin-field text-xs" value={value || ""} onChange={(e) => onChange(e.target.value || null)} placeholder="Paste image URL or upload a file" />
+            <label className="admin-button admin-button-quiet w-fit cursor-pointer text-xs">
+              <Upload className="h-3.5 w-3.5" /> {busy ? "Preparing image…" : "Choose from Gallery"}
+              <input type="file" accept="image/*" onChange={onFile} className="hidden" />
+            </label>
+            {busy && <p className="text-xs text-[hsl(var(--admin-muted))]" aria-live="polite">Resizing and compressing locally…</p>}
+            {error && <p className="text-xs text-[hsl(1_80%_76%)]">{error}</p>}
+          </div>
+        </div>
+      </div>
+      {preparation && (
+        <ImagePreparationDialog
+          preparation={preparation}
+          onConfirm={() => {
+            onChange(preparation.optimizedUrl);
+            setPreparation(null);
+          }}
+          onCancel={() => setPreparation(null)}
+        />
+      )}
+    </>
+  );
 }
 
 function MediaInput({
@@ -352,7 +493,7 @@ function MediaInput({
       <div className="flex gap-2">
         {value ? (
           <div className="relative h-20 w-28 overflow-hidden rounded-lg border bg-[hsl(var(--admin-input))]">
-            {kind === "video" ? <video src={value} muted playsInline className="h-full w-full object-cover" /> : <img src={value} alt="" className="h-full w-full object-cover" />}
+            {kind === "video" ? <video src={campaignMediaUrl(value) || undefined} muted playsInline className="h-full w-full object-cover" /> : <img src={campaignMediaUrl(value) || undefined} alt="" className="h-full w-full object-cover" />}
             <button type="button" className="absolute right-1 top-1 rounded-full bg-[hsl(165_50%_6%/.82)] p-1 text-[hsl(var(--admin-cream))]" onClick={() => onChange(null)}><X className="h-3 w-3" /></button>
           </div>
         ) : (
@@ -375,18 +516,31 @@ function MediaInput({
 
 function FormField({ label, children }: { label: string; children: ReactNode }) { return <label className="block"><span className="admin-kicker mb-2 block">{label}</span>{children}</label>; }
 
-function CampaignForm({ initial, onSave, onCancel, saving }: { initial: Campaign | null; onSave: (data: Omit<Campaign, "id">) => void; onCancel: () => void; saving: boolean }) {
-  const [form, setForm] = useState<Omit<Campaign, "id">>(initial ? { ...initial } : blankCampaign());
+function CampaignForm({
+  initial,
+  onSave,
+  onCancel,
+  saving,
+}: {
+  initial: Campaign | null;
+  onSave: (id: string | null, data: Omit<Campaign, "id">) => void;
+  onCancel: () => void;
+  saving: boolean;
+}) {
+  const [form, setForm] = useState<Omit<Campaign, "id">>(() => campaignFormValues(initial));
+  useEffect(() => {
+    setForm(campaignFormValues(initial));
+  }, [initial]);
   const set = (key: keyof typeof form, value: unknown) => setForm((old) => ({ ...old, [key]: value }));
   return <div className="admin-panel rounded-2xl p-5 sm:p-6"><div className="mb-6 flex items-start justify-between"><div><div className="admin-kicker mb-1">{initial ? "Edit campaign" : "New campaign"}</div><h3 className="text-xl font-semibold tracking-[-.03em]">{initial ? "Tune the live message" : "Create a welcome message"}</h3></div><button className="rounded-lg p-2 hover:bg-[hsl(var(--admin-teal-soft))]" onClick={onCancel}><X className="h-4 w-4" /></button></div>
      <div className="grid gap-4 sm:grid-cols-2"><FormField label="Title"><input className="admin-field" value={form.title} onChange={(e) => set("title", e.target.value)} required /></FormField><FormField label="Button label"><input className="admin-field" value={form.buttonText || ""} onChange={(e) => set("buttonText", e.target.value || null)} /></FormField><FormField label="Description"><textarea className="admin-field min-h-24 resize-y sm:col-span-2" value={form.description} onChange={(e) => set("description", e.target.value)} /></FormField><FormField label="Destination URL"><input className="admin-field" value={form.url || ""} onChange={(e) => set("url", e.target.value || null)} placeholder="https://" /></FormField><FormField label="Display duration (seconds)"><input className="admin-field" type="number" min="1" max="120" value={form.durationSeconds} onChange={(e) => set("durationSeconds", Number(e.target.value))} /></FormField><div className="sm:col-span-2"><ImageInput label="Still image" value={form.imageUrl} onChange={(value) => set("imageUrl", value)} /></div><MediaInput label="GIF media" value={form.gifUrl} onChange={(value) => set("gifUrl", value)} accept="image/gif,.gif" kind="gif" /><MediaInput label="Video media" value={form.videoUrl} onChange={(value) => set("videoUrl", value)} accept="video/*" kind="video" /></div>
     <label className="mt-5 flex items-center gap-3 text-sm font-medium"><input type="checkbox" checked={form.enabled} onChange={(e) => set("enabled", e.target.checked)} className="h-4 w-4 accent-[hsl(var(--admin-teal))]" /> Make this campaign eligible for the welcome screen</label>
-    <div className="mt-7 flex justify-end gap-2 border-t pt-5"><button className="admin-button admin-button-quiet" onClick={onCancel}>Cancel</button><button className="admin-button admin-button-primary" onClick={() => onSave(form)} disabled={saving || !form.title.trim()}><Save className="h-4 w-4" /> {saving ? "Saving…" : "Save campaign"}</button></div>
+     <div className="mt-7 flex justify-end gap-2 border-t pt-5"><button className="admin-button admin-button-quiet" onClick={onCancel}>Cancel</button><button className="admin-button admin-button-primary" onClick={() => onSave(initial?.id.trim() || null, form)} disabled={saving || !form.title.trim()}><Save className="h-4 w-4" /> {saving ? "Saving…" : "Save campaign"}</button></div>
   </div>;
 }
 
 function ProductForm({ initial, onSave, onCancel, saving }: { initial: Product | null; onSave: (data: Omit<Product, "id" | "createdAt">) => void; onCancel: () => void; saving: boolean }) {
-  const [form, setForm] = useState<Omit<Product, "id" | "createdAt">>(initial ? { ...initial } : blankProduct());
+  const [form, setForm] = useState<Omit<Product, "id" | "createdAt">>(() => productFormValues(initial));
   const set = (key: keyof typeof form, value: unknown) => setForm((old) => ({ ...old, [key]: value }));
   const legacyCategory = !["tasbeeh", "prayer_mat", "books", "attar", "courses", "other"].includes(form.category);
   return <div className="admin-panel rounded-2xl p-5 sm:p-6"><div className="mb-6 flex items-start justify-between"><div><div className="admin-kicker mb-1">{initial ? "Edit product" : "New product"}</div><h3 className="text-xl font-semibold tracking-[-.03em]">{initial ? "Maintain catalog detail" : "Add a catalog product"}</h3></div><button className="rounded-lg p-2 hover:bg-[hsl(var(--admin-teal-soft))]" onClick={onCancel}><X className="h-4 w-4" /></button></div>
@@ -399,25 +553,25 @@ function CampaignsView({ token }: { token: string }) {
   const [items, setItems] = useState<Campaign[]>([]); const [loading, setLoading] = useState(true); const [error, setError] = useState(""); const [editing, setEditing] = useState<Campaign | null | false>(false); const [saving, setSaving] = useState(false);
   const load = useCallback(async () => { setLoading(true); setError(""); try { setItems(((await json(token, "/admin/campaigns")) as { campaigns: Campaign[] }).campaigns); } catch (e) { setError(e instanceof Error ? e.message : "Unable to load campaigns"); } finally { setLoading(false); } }, [token]);
   useEffect(() => { void load(); }, [load]);
-  async function save(data: Omit<Campaign, "id">) { const isEdit = editing !== false && editing !== null; setSaving(true); try { const res = await json(token, isEdit ? `/admin/campaigns/${(editing as Campaign).id}` : "/admin/campaigns", { method: isEdit ? "PATCH" : "POST", body: JSON.stringify(data) }) as { campaign: Campaign }; setItems((old) => isEdit ? old.map((x) => x.id === res.campaign.id ? res.campaign : x) : [res.campaign, ...old]); setEditing(false); } catch (e) { setError(e instanceof Error ? e.message : "Unable to save campaign"); } finally { setSaving(false); } }
-  async function remove(item: Campaign) { if (!window.confirm(`Delete “${item.title}”?`)) return; try { await json(token, `/admin/campaigns/${item.id}`, { method: "DELETE" }); setItems((old) => old.filter((x) => x.id !== item.id)); } catch (e) { setError(e instanceof Error ? e.message : "Unable to delete campaign"); } }
+  async function save(id: string | null, data: Omit<Campaign, "id">) { const campaignId = id?.trim() || null; const isEdit = campaignId !== null; const endpoint = campaignId === null ? "/admin/campaigns" : `/admin/campaigns/${encodeURIComponent(campaignId)}`; setSaving(true); try { const res = await json(token, endpoint, { method: isEdit ? "PATCH" : "POST", body: JSON.stringify(data) }) as { campaign: Campaign }; setItems((old) => isEdit ? old.map((x) => x.id.trim() === res.campaign.id ? res.campaign : x) : [res.campaign, ...old]); setEditing(false); } catch (e) { setError(e instanceof Error ? e.message : "Unable to save campaign"); } finally { setSaving(false); } }
+  async function remove(item: Campaign) { if (!window.confirm(`Delete “${item.title}”?`)) return; const campaignId = item.id.trim(); try { await json(token, `/admin/campaigns/${encodeURIComponent(campaignId)}`, { method: "DELETE" }); setItems((old) => old.filter((x) => x.id.trim() !== campaignId)); } catch (e) { setError(e instanceof Error ? e.message : "Unable to delete campaign"); } }
   if (editing !== false) return <CampaignForm initial={editing} onSave={save} onCancel={() => setEditing(false)} saving={saving} />;
   return <div className="space-y-6"><div className="flex flex-wrap items-end justify-between gap-4"><div><div className="admin-kicker mb-2">Welcome Campaign / live content</div><h2 className="text-2xl font-semibold tracking-[-.04em]">Welcome messages</h2><p className="mt-1 text-sm text-[hsl(var(--admin-muted))]">Control what a returning reader sees at the front door.</p></div><div className="flex gap-2"><button className="admin-button admin-button-quiet" onClick={() => void load()}><RefreshCw className="h-4 w-4" /> Refresh</button><button className="admin-button admin-button-primary" onClick={() => setEditing(null)}><Plus className="h-4 w-4" /> New campaign</button></div></div>
      {error && <div className="flex items-center justify-between rounded-lg border border-[hsl(1_52%_42%)] bg-[hsl(1_45%_20%)] px-3 py-2.5 text-sm text-[hsl(1_80%_76%)]">{error}<button onClick={() => setError("")}><X className="h-4 w-4" /></button></div>}
-     {loading ? <div className="grid gap-4 md:grid-cols-2">{[1, 2].map((i) => <div key={i} className="h-52 animate-pulse rounded-2xl bg-[hsl(var(--admin-line))]" />)}</div> : !items.length ? <EmptyState icon={<Sparkles />} title="No campaigns yet" text="Create the first welcome message for the live campaign surface." action={() => setEditing(null)} /> : <div className="grid gap-4 md:grid-cols-2">{items.map((item, index) => <article key={item.id} className="admin-panel admin-rise rounded-2xl p-5" style={{ animationDelay: `${index * 70}ms` }}><div className="flex gap-4">{item.imageUrl ? <img src={item.imageUrl} alt="" className="h-20 w-24 rounded-xl object-cover" /> : <div className="flex h-20 w-24 items-center justify-center rounded-xl bg-[hsl(var(--admin-teal-soft))] text-[hsl(var(--admin-teal))]"><ImagePlus className="h-5 w-5" /></div>}<div className="min-w-0 flex-1"><div className="mb-1 flex items-center gap-2"><span className={`h-2 w-2 rounded-full ${item.enabled ? "bg-[hsl(151_58%_48%)]" : "bg-[hsl(165_22%_35%)]"}`} /><span className="admin-kicker">{item.enabled ? "Eligible" : "Paused"}</span></div><h3 className="truncate font-semibold">{item.title}</h3><p className="mt-1 line-clamp-2 text-sm text-[hsl(var(--admin-muted))]">{item.description || "No description added."}</p></div></div><div className="mt-5 flex items-center justify-between border-t pt-4"><span className="admin-mono text-xs text-[hsl(var(--admin-muted))]">{item.durationSeconds}s display</span><div className="flex gap-1"><button className="admin-button admin-button-quiet !p-2" onClick={() => setEditing(item)} aria-label="Edit campaign"><Pencil className="h-4 w-4" /></button><button className="admin-button admin-button-danger !p-2" onClick={() => void remove(item)} aria-label="Delete campaign"><Trash2 className="h-4 w-4" /></button></div></div></article>)}</div>}
+      {loading ? <div className="grid gap-4 md:grid-cols-2">{[1, 2].map((i) => <div key={i} className="h-52 animate-pulse rounded-2xl bg-[hsl(var(--admin-line))]" />)}</div> : !items.length ? <EmptyState icon={<Sparkles />} title="No campaigns yet" text="Create the first welcome message for the live campaign surface." action={() => setEditing(null)} /> : <div className="grid gap-4 md:grid-cols-2">{items.map((item, index) => <article key={item.id} className="admin-panel admin-rise rounded-2xl p-5" style={{ animationDelay: `${index * 70}ms` }}><div className="flex gap-4">{item.imageUrl ? <img src={campaignMediaUrl(item.imageUrl) || undefined} alt="" className="h-20 w-24 rounded-xl object-cover" /> : <div className="flex h-20 w-24 items-center justify-center rounded-xl bg-[hsl(var(--admin-teal-soft))] text-[hsl(var(--admin-teal))]"><ImagePlus className="h-5 w-5" /></div>}<div className="min-w-0 flex-1"><div className="mb-1 flex items-center gap-2"><span className={`h-2 w-2 rounded-full ${item.enabled ? "bg-[hsl(151_58%_48%)]" : "bg-[hsl(165_22%_35%)]"}`} /><span className="admin-kicker">{item.enabled ? "Eligible" : "Paused"}</span></div><h3 className="truncate font-semibold">{item.title}</h3><p className="mt-1 line-clamp-2 text-sm text-[hsl(var(--admin-muted))]">{item.description || "No description added."}</p></div></div><div className="mt-5 flex items-center justify-between border-t pt-4"><span className="admin-mono text-xs text-[hsl(var(--admin-muted))]">{item.durationSeconds}s display</span><div className="flex gap-1"><button className="admin-button admin-button-quiet !p-2" onClick={() => setEditing(item)} aria-label="Edit campaign"><Pencil className="h-4 w-4" /></button><button className="admin-button admin-button-danger !p-2" onClick={() => void remove(item)} aria-label="Delete campaign"><Trash2 className="h-4 w-4" /></button></div></div></article>)}</div>}
   </div>;
 }
 
-function ProductsView({ token }: { token: string }) {
+ function ProductsView({ token }: { token: string }) {
   const [items, setItems] = useState<Product[]>([]); const [loading, setLoading] = useState(true); const [error, setError] = useState(""); const [editing, setEditing] = useState<Product | null | false>(false); const [saving, setSaving] = useState(false);
-  const load = useCallback(async () => { setLoading(true); setError(""); try { setItems(((await json(token, "/admin/products")) as { products: Product[] }).products.sort((a, b) => a.displayOrder - b.displayOrder)); } catch (e) { setError(e instanceof Error ? e.message : "Unable to load products"); } finally { setLoading(false); } }, [token]);
+   const load = useCallback(async () => { setLoading(true); setError(""); try { setItems(((await json(token, "/admin/products")) as { products: Product[] }).products.sort((a, b) => (a.displayOrder ?? 0) - (b.displayOrder ?? 0))); } catch (e) { setError(e instanceof Error ? e.message : "Unable to load products"); } finally { setLoading(false); } }, [token]);
   useEffect(() => { void load(); }, [load]);
-  async function save(data: Omit<Product, "id" | "createdAt">) { const isEdit = editing !== false && editing !== null; setSaving(true); try { const res = await json(token, isEdit ? `/admin/products/${(editing as Product).id}` : "/admin/products", { method: isEdit ? "PATCH" : "POST", body: JSON.stringify(data) }) as { product: Product }; setItems((old) => (isEdit ? old.map((x) => x.id === res.product.id ? res.product : x) : [...old, res.product]).sort((a, b) => a.displayOrder - b.displayOrder)); setEditing(false); } catch (e) { setError(e instanceof Error ? e.message : "Unable to save product"); } finally { setSaving(false); } }
-  async function remove(item: Product) { if (!window.confirm(`Delete “${item.title}”?`)) return; try { await json(token, `/admin/products/${item.id}`, { method: "DELETE" }); setItems((old) => old.filter((x) => x.id !== item.id)); } catch (e) { setError(e instanceof Error ? e.message : "Unable to delete product"); } }
+   async function save(data: Omit<Product, "id" | "createdAt">) { const productId = editing && editing !== null ? (editing as Product).id.trim() : null; const isEdit = productId !== null; setSaving(true); try { const res = await json(token, isEdit ? `/admin/products/${encodeURIComponent(productId)}` : "/admin/products", { method: isEdit ? "PATCH" : "POST", body: JSON.stringify(data) }) as { product: Product }; setItems((old) => (isEdit ? old.map((x) => x.id.trim() === res.product.id.trim() ? res.product : x) : [...old, res.product]).sort((a, b) => (a.displayOrder ?? 0) - (b.displayOrder ?? 0))); setEditing(false); } catch (e) { setError(e instanceof Error ? e.message : "Unable to save product"); } finally { setSaving(false); } }
+   async function remove(item: Product) { if (!window.confirm(`Delete “${item.title}”?`)) return; const productId = item.id.trim(); try { await json(token, `/admin/products/${encodeURIComponent(productId)}`, { method: "DELETE" }); setItems((old) => old.filter((x) => x.id.trim() !== productId)); } catch (e) { setError(e instanceof Error ? e.message : "Unable to delete product"); } }
   if (editing !== false) return <ProductForm initial={editing} onSave={save} onCancel={() => setEditing(false)} saving={saving} />;
   return <div className="space-y-6"><div className="flex flex-wrap items-end justify-between gap-4"><div><div className="admin-kicker mb-2">Islamic Products / catalog</div><h2 className="text-2xl font-semibold tracking-[-.04em]">Product catalog</h2><p className="mt-1 text-sm text-[hsl(var(--admin-muted))]">Keep the public marketplace accurate, useful, and in the right order.</p></div><div className="flex gap-2"><button className="admin-button admin-button-quiet" onClick={() => void load()}><RefreshCw className="h-4 w-4" /> Refresh</button><button className="admin-button admin-button-primary" onClick={() => setEditing(null)}><Plus className="h-4 w-4" /> Add product</button></div></div>
      {error && <div className="flex items-center justify-between rounded-lg border border-[hsl(1_52%_42%)] bg-[hsl(1_45%_20%)] px-3 py-2.5 text-sm text-[hsl(1_80%_76%)]">{error}<button onClick={() => setError("")}><X className="h-4 w-4" /></button></div>}
-     {loading ? <div className="h-72 animate-pulse rounded-2xl bg-[hsl(var(--admin-line))]" /> : !items.length ? <EmptyState icon={<Package />} title="The catalog is empty" text="Add a product to begin shaping the public collection." action={() => setEditing(null)} /> : <div className="admin-panel overflow-hidden rounded-2xl"><div className="admin-scrollbar overflow-x-auto"><table className="w-full min-w-[760px] text-left text-sm"><thead className="bg-[hsl(var(--admin-input))] text-xs text-[hsl(var(--admin-muted))]"><tr>{["", "Product", "Category", "Status", "Order", "Added", ""].map((h, i) => <th key={i} className="px-5 py-3 font-medium">{h}</th>)}</tr></thead><tbody>{items.map((item) => <tr key={item.id} className="border-t hover:bg-[hsl(var(--admin-input))]"><td className="w-20 px-5 py-3">{item.imageUrl ? <img src={item.imageUrl} alt="" className="h-11 w-14 rounded-lg object-cover" /> : <div className="flex h-11 w-14 items-center justify-center rounded-lg bg-[hsl(var(--admin-teal-soft))] text-[hsl(var(--admin-teal))]"><Package className="h-4 w-4" /></div>}</td><td className="max-w-[260px] px-5 py-3"><div className="truncate font-medium">{item.title}</div><div className="mt-1 truncate text-xs text-[hsl(var(--admin-muted))]">{item.description || "No description"}</div></td><td className="px-5 py-3 capitalize">{item.category.replace("_", " ")}</td><td className="px-5 py-3"><span className={`rounded-full px-2.5 py-1 text-[11px] font-bold ${item.status === "approved" ? "bg-[hsl(151_47%_31%)] text-[hsl(151_70%_84%)]" : item.status === "rejected" ? "bg-[hsl(1_45%_20%)] text-[hsl(1_80%_76%)]" : "bg-[hsl(39_50%_24%)] text-[hsl(39_82%_80%)]"}`}>{item.status}</span></td><td className="admin-mono px-5 py-3 text-xs">{item.displayOrder}</td><td className="px-5 py-3 text-xs text-[hsl(var(--admin-muted))]">{new Date(item.createdAt).toLocaleDateString()}</td><td className="px-5 py-3"><div className="flex gap-1"><button className="admin-button admin-button-quiet !p-2" onClick={() => setEditing(item)}><Pencil className="h-4 w-4" /></button><button className="admin-button admin-button-danger !p-2" onClick={() => void remove(item)}><Trash2 className="h-4 w-4" /></button></div></td></tr>)}</tbody></table></div></div>}
+     {loading ? <div className="h-72 animate-pulse rounded-2xl bg-[hsl(var(--admin-line))]" /> : !items.length ? <EmptyState icon={<Package />} title="The catalog is empty" text="Add a product to begin shaping the public collection." action={() => setEditing(null)} /> : <div className="admin-panel overflow-hidden rounded-2xl"><div className="admin-scrollbar overflow-x-auto"><table className="w-full min-w-[760px] text-left text-sm"><thead className="bg-[hsl(var(--admin-input))] text-xs text-[hsl(var(--admin-muted))]"><tr>{["", "Product", "Category", "Status", "Order", "Added", ""].map((h, i) => <th key={i} className="px-5 py-3 font-medium">{h}</th>)}</tr></thead><tbody>{items.map((item) => <tr key={item.id} className="border-t hover:bg-[hsl(var(--admin-input))]"><td className="w-20 px-5 py-3">{item.imageUrl ? <img src={campaignMediaUrl(item.imageUrl) || undefined} alt="" className="h-11 w-14 rounded-lg object-cover" /> : <div className="flex h-11 w-14 items-center justify-center rounded-lg bg-[hsl(var(--admin-teal-soft))] text-[hsl(var(--admin-teal))]"><Package className="h-4 w-4" /></div>}</td><td className="max-w-[260px] px-5 py-3"><div className="truncate font-medium">{item.title}</div><div className="mt-1 truncate text-xs text-[hsl(var(--admin-muted))]">{item.description || "No description"}</div></td><td className="px-5 py-3 capitalize">{item.category.replace("_", " ")}</td><td className="px-5 py-3"><span className={`rounded-full px-2.5 py-1 text-[11px] font-bold ${item.status === "approved" ? "bg-[hsl(151_47%_31%)] text-[hsl(151_70%_84%)]" : item.status === "rejected" ? "bg-[hsl(1_45%_20%)] text-[hsl(1_80%_76%)]" : "bg-[hsl(39_50%_24%)] text-[hsl(39_82%_80%)]"}`}>{item.status}</span></td><td className="admin-mono px-5 py-3 text-xs">{item.displayOrder}</td><td className="px-5 py-3 text-xs text-[hsl(var(--admin-muted))]">{new Date(item.createdAt).toLocaleDateString()}</td><td className="px-5 py-3"><div className="flex gap-1"><button className="admin-button admin-button-quiet !p-2" onClick={() => setEditing(item)}><Pencil className="h-4 w-4" /></button><button className="admin-button admin-button-danger !p-2" onClick={() => void remove(item)}><Trash2 className="h-4 w-4" /></button></div></td></tr>)}</tbody></table></div></div>}
   </div>;
 }
 

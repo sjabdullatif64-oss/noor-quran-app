@@ -103,5 +103,16 @@ export async function serveCampaignMedia(id: string, req: Request, res: Response
     res.end();
     return;
   }
-  Readable.fromWeb(upstream.body as ReadableStream<Uint8Array>).pipe(res);
+  const mediaStream = Readable.fromWeb(upstream.body as ReadableStream<Uint8Array>);
+  mediaStream.on("error", (error) => {
+    if (!res.headersSent) {
+      res.status(502).end();
+    } else if (!res.destroyed) {
+      res.destroy(error instanceof Error ? error : undefined);
+    }
+  });
+  res.on("close", () => {
+    if (!mediaStream.destroyed) mediaStream.destroy();
+  });
+  mediaStream.pipe(res);
 }

@@ -1,5 +1,6 @@
 import { Router } from "express";
 import { z } from "zod";
+import { logger } from "../lib/logger";
 import { createAdminSession, isValidAdminToken, requireAdminSession } from "../middlewares/adminSessionGuard";
 import { storeCampaignMedia } from "../lib/campaign-media";
 import {
@@ -48,7 +49,9 @@ const productFields = z.object({
 // product creation strict, but allow that stored legacy value during edits so
 // opening and saving an existing catalog row does not fail validation.
 const productPatchFields = productFields.partial().extend({
-  category: z.union([productFields.shape.category, z.literal("Image")]).optional(),
+  // Product rows contain historical, user-defined categories. Preserve those
+  // values when editing an existing row instead of forcing a category change.
+  category: z.string().trim().min(1).max(100).optional(),
 });
 function cleanNullable(value: string | null | undefined): string | null {
   return value?.trim() ? value.trim() : null;
@@ -229,6 +232,13 @@ router.post("/campaigns", admin, async (req, res) => {
     return;
   }
   const { id, ...fields } = parsed.data;
+  if (id) {
+    const existing = await getAllWelcomeCampaigns();
+    if (existing.some((campaign) => campaign.id.trim() === id)) {
+      res.status(409).json({ error: "Campaign ID already exists" });
+      return;
+    }
+  }
   const normalized = await campaignMediaUpdates(fields);
   const campaign = await createWelcomeCampaign({
     ...(id ? { id } : {}),
@@ -251,13 +261,14 @@ router.patch("/campaigns/:id", admin, async (req, res) => {
     res.status(400).json({ error: "Invalid campaign", details: parsed.error.issues });
     return;
   }
-  const campaignId = String(req.params.id);
-  const campaign = await updateWelcomeCampaign(campaignId, await campaignMediaUpdates(parsed.data));
+  const campaignId = String(req.params.id).trim();
+  const { id: _bodyId, ...fields } = parsed.data;
+  const campaign = await updateWelcomeCampaign(campaignId, await campaignMediaUpdates(fields));
   res.json({ campaign });
 });
 
 router.delete("/campaigns/:id", admin, async (req, res) => {
-  await deleteWelcomeCampaign(String(req.params.id));
+  await deleteWelcomeCampaign(String(req.params.id).trim());
   res.status(204).end();
 });
 
@@ -271,21 +282,32 @@ router.post("/products", admin, async (req, res) => {
     res.status(400).json({ error: "Invalid product", details: parsed.error.issues });
     return;
   }
-  const fields = productUpdates(parsed.data) as Required<Pick<Product, "title" | "description" | "imageUrl" | "contactInfo" | "productLink" | "category" | "status" | "displayOrder">>;
-  const product = await createProduct({
-    userId: "admin",
-    ...fields,
-    contactInfo: fields.contactInfo ?? "",
-    status: fields.status ?? "approved",
-    promotionType: "none",
-    coinsSpent: 0,
-    submittedBy: "admin",
-    approvedAt: fields.status === "approved" ? new Date().toISOString() : null,
-    rejectedAt: fields.status === "rejected" ? new Date().toISOString() : null,
-    rejectionReason: null,
-    promotionExpiry: null,
-  });
-  res.status(201).json({ product });
+  try {
+    const fields = productUpdates(parsed.data);
+    const status = fields.status ?? "approved";
+    const product = await createProduct({
+      userId: "admin",
+      title: fields.title ?? "",
+      description: fields.description ?? "",
+      imageUrl: await storeCampaignMedia(fields.imageUrl ?? null) ?? null,
+      contactInfo: fields.contactInfo ?? "",
+      productLink: fields.productLink ?? null,
+      category: fields.category ?? "other",
+      status,
+      displayOrder: fields.displayOrder ?? 0,
+      promotionType: "none",
+      coinsSpent: 0,
+      submittedBy: "admin",
+      approvedAt: status === "approved" ? new Date().toISOString() : null,
+      rejectedAt: status === "rejected" ? new Date().toISOString() : null,
+      rejectionReason: null,
+      promotionExpiry: null,
+    });
+    res.status(201).json({ product });
+  } catch (error) {
+    logger.error({ err: error, operation: "admin product create" }, "Admin product creation failed");
+    res.status(500).json({ error: "Unable to create product" });
+  }
 });
 
 router.patch("/products/:id", admin, async (req, res) => {
@@ -294,22 +316,42 @@ router.patch("/products/:id", admin, async (req, res) => {
     res.status(400).json({ error: "Invalid product", details: parsed.error.issues });
     return;
   }
-  const updates = productUpdates(parsed.data);
-  if (updates.status === "approved") {
-    updates.approvedAt = new Date().toISOString();
-    updates.rejectedAt = null;
+  const productId = String(req.params.id).trim();
+  try {
+    const current = await getAllProducts().then((products) => products.find((item) => item.id.trim() === productId) ?? null);
+    if (!current) {
+      res.status(404).json({ error: "Product not found" });
+      return;
+    }
+    const updates = productUpdates(parsed.data);
+    if (updates.status === "approved") {
+      updates.approvedAt = new Date().toISOString();
+      updates.rejectedAt = null;
+    }
+    if (updates.status === "rejected") {
+      updates.rejectedAt = new Date().toISOString();
+      updates.approvedAt = null;
+    }
+    if (updates.imageUrl !== undefined && updates.imageUrl !== current.imageUrl) {
+      updates.imageUrl = await storeCampaignMedia(updates.imageUrl);
+    }
+    const product = await updateProduct(productId, updates);
+    res.json({ product });
+  } catch (error) {
+    logger.error({ err: error, operation: "admin product update", productId }, "Admin product update failed");
+    res.status(500).json({ error: "Unable to update product" });
   }
-  if (updates.status === "rejected") {
-    updates.rejectedAt = new Date().toISOString();
-    updates.approvedAt = null;
-  }
-  const product = await updateProduct(String(req.params.id), updates);
-  res.json({ product });
 });
 
 router.delete("/products/:id", admin, async (req, res) => {
-  await deleteProduct(String(req.params.id));
-  res.status(204).end();
+  const productId = String(req.params.id).trim();
+  try {
+    await deleteProduct(productId);
+    res.status(204).end();
+  } catch (error) {
+    logger.error({ err: error, operation: "admin product delete", productId }, "Admin product deletion failed");
+    res.status(500).json({ error: "Unable to delete product" });
+  }
 });
 
 export default router;

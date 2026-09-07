@@ -168,7 +168,12 @@ export function About() {
         <span
           className="mt-1 px-2 py-0.5 rounded-full text-[10px] font-mono text-muted-foreground border border-border bg-card"
         >
-          {t("about_build")} {BUILD_INFO.commitSha}
+          {t("about_build")} {BUILD_INFO.versionCode}
+        </span>
+        <span
+          className="mt-1 text-[10px] font-mono text-muted-foreground"
+        >
+          {BUILD_INFO.commitSha}
         </span>
         <p className="text-muted-foreground text-sm mt-2 font-arabic tracking-wide">
           بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ

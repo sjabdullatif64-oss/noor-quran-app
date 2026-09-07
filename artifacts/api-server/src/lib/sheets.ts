@@ -2,6 +2,7 @@
 // Uses Replit Connectors SDK to proxy all requests through OAuth
 import { ReplitConnectors } from "@replit/connectors-sdk";
 import crypto from "node:crypto";
+import { findRecordIndexById, patchRecordById } from "./campaign-record";
 
 const connectors = new ReplitConnectors();
 const SPREADSHEET_ID = "1sXPeYJ8X671aypFr6P1MjwTsj93-ExMslXvnF2R1cHw";
@@ -815,6 +816,21 @@ function productRowId(r: Record<string, string>): string {
   return r.id.trim() || legacyProductId(r);
 }
 
+function normalizeProductStatus(value: string): Product["status"] {
+  switch (value.trim().toLowerCase()) {
+    case "approved":
+    case "approve":
+      return "approved";
+    case "rejected":
+    case "reject":
+      return "rejected";
+    case "pending":
+      return "pending";
+    default:
+      return "pending";
+  }
+}
+
 function rowToProduct(r: Record<string, string>): Product {
   const displayOrder = Number(r.displayOrder);
   return {
@@ -826,7 +842,7 @@ function rowToProduct(r: Record<string, string>): Product {
     contactInfo:      r.contactInfo,
     productLink:      r.productLink || null,
     category:         r.category,
-    status:           (r.status as Product["status"]) || "pending",
+    status:           normalizeProductStatus(r.status),
     promotionType:    (r.promotionType as Product["promotionType"]) || "none",
     coinsSpent:       Number(r.coinsSpent) || 0,
     submittedBy:      r.submittedBy || null,
@@ -891,7 +907,8 @@ export async function getUserProducts(userId: string): Promise<Product[]> {
 
 export async function getProductById(id: string): Promise<Product | null> {
   const rows = await readAllRows("Products");
-  const r = rows.find((x) => productRowId(x) === id);
+  const normalizedId = id.trim();
+  const r = rows.find((x) => productRowId(x) === normalizedId);
   return r ? rowToProduct(r) : null;
 }
 
@@ -903,8 +920,9 @@ export async function createProduct(data: Omit<Product, "id" | "createdAt">): Pr
 
 export async function updateProduct(id: string, updates: Partial<Omit<Product, "id" | "createdAt">>): Promise<Product> {
   const rows = await readAllRows("Products");
-  const idx = rows.findIndex((x) => productRowId(x) === id);
-  if (idx === -1) throw new Error(`Product ${id} not found`);
+  const normalizedId = id.trim();
+  const idx = rows.findIndex((x) => productRowId(x) === normalizedId);
+  if (idx === -1) throw new Error(`Product ${normalizedId} not found`);
   const updated: Product = { ...rowToProduct(rows[idx]), ...updates };
   await updateRowByDataIndex("Products", idx, productToRow(updated));
   return updated;
@@ -912,8 +930,9 @@ export async function updateProduct(id: string, updates: Partial<Omit<Product, "
 
 export async function deleteProduct(id: string): Promise<void> {
   const rows = await readAllRows("Products");
-  const idx = rows.findIndex((x) => productRowId(x) === id);
-  if (idx === -1) throw new Error(`Product ${id} not found`);
+  const normalizedId = id.trim();
+  const idx = rows.findIndex((x) => productRowId(x) === normalizedId);
+  if (idx === -1) throw new Error(`Product ${normalizedId} not found`);
   await deleteRowByDataIndex("Products", idx);
 }
 
@@ -989,17 +1008,15 @@ export async function updateWelcomeCampaign(
   updates: Partial<Omit<WelcomeCampaign, "id">>,
 ): Promise<WelcomeCampaign> {
   const rows = await readAllRows("WelcomeCampaigns");
-  const idx = rows.findIndex((row) => row.id === id);
-  if (idx === -1) throw new Error(`Campaign ${id} not found`);
-  const updated = { ...rowToWelcomeCampaign(rows[idx]), ...updates, id };
-  await updateRowByDataIndex("WelcomeCampaigns", idx, welcomeCampaignToRow(updated));
-  return updated;
+  const campaigns = rows.map(rowToWelcomeCampaign);
+  const { index, record } = patchRecordById(campaigns, id, updates);
+  await updateRowByDataIndex("WelcomeCampaigns", index, welcomeCampaignToRow(record));
+  return record;
 }
 
 export async function deleteWelcomeCampaign(id: string): Promise<void> {
   const rows = await readAllRows("WelcomeCampaigns");
-  const idx = rows.findIndex((row) => row.id === id);
-  if (idx === -1) throw new Error(`Campaign ${id} not found`);
+  const idx = findRecordIndexById(rows, id);
   await deleteRowByDataIndex("WelcomeCampaigns", idx);
 }
 
