@@ -1,0 +1,158 @@
+جی، اب بات واضح ہے۔ پہلا Level صحیح ہے، لیکن اس کے بعد course میں بہت کم content ہے—مثلاً 3، 4، 5 الفاظ۔ آپ چاہتے ہیں کہ reading practice واقعی کافی ہو، یعنی ہر relevant lesson میں تقریباً 40–50 الفاظ ہوں۔
+
+اور شروع کے اگلے مرحلے میں پہلے زبر، زیر، پیش اور مد اچھی طرح سکھائے جائیں؛ غیر ضروری طور پر جلدی Tanween/Sukoon وغیرہ پر نہ جائیں۔
+
+Agent کو یہ prompt دیں:
+
+> NOOR QURAN — IMPROVE BEGINNER ARABIC READING COURSE CONTENT ONLY
+
+I checked the current “Arabic Reading Basics” course.
+
+The first level, Arabic Letters (Alif, Ba, Ta), is correct. Keep it as it is.
+
+The problem is that the following lessons/levels contain far too little practice content. Some lessons currently have only 3–5 words/items, which is not enough for a real beginner Arabic reading course.
+
+REQUIRED COURSE CONTENT CHANGE
+
+Keep Level 1 — Arabic Letters — unchanged.
+
+Then build the early reading progression properly around:
+
+1. Zabar / Fatha (َ)
+
+
+2. Zer / Kasra (ِ)
+
+
+3. Pesh / Damma (ُ)
+
+
+4. Madd / long vowels
+
+
+
+These should be taught progressively and with substantial practice before moving the learner too quickly into later topics.
+
+IMPORTANT
+
+Do not just rename the existing levels.
+
+The lessons must contain real Arabic reading practice material.
+
+For each applicable lesson/level, provide approximately 40–50 practice words/items, rather than only 3–5.
+
+The learner should get enough examples to genuinely practice the rule being taught.
+
+For example:
+
+Fatha lesson → many beginner-friendly examples using Fatha
+
+Kasra lesson → many beginner-friendly examples using Kasra
+
+Damma lesson → many beginner-friendly examples using Damma
+
+Madd lesson → many beginner-friendly examples demonstrating long vowels
+
+
+Progress from very simple combinations to slightly more difficult reading examples.
+
+CONTENT QUALITY
+
+Do not generate meaningless random letter combinations just to reach 40–50 items.
+
+Use valid, beginner-appropriate Arabic reading material.
+
+Where appropriate, use simple Arabic/Quranic words suitable for a beginner.
+
+Each lesson should clearly teach the target concept and then provide enough examples for:
+
+Learn → Listen → Repeat → Practice → Quick Check → Complete
+
+LATER LEVELS
+
+After the learner has properly mastered the early vowel/madd concepts, continue the existing course progression toward:
+
+Tanween
+
+Sukoon
+
+Shaddah
+
+Madd/long-vowel reinforcement
+
+Simple Reading
+
+Quranic Words
+
+Quran Reading
+
+
+But do not leave later levels with only 3–5 words either. Give each reading/practice lesson a substantial set of approximately 40–50 appropriate examples, unless a specific lesson genuinely requires fewer items.
+
+DO NOT MODIFY
+
+Do NOT change:
+
+Existing Level 1 Arabic Letters content
+
+Existing AI Teacher
+
+AI Teacher's 30-word progression
+
+AI Teacher maximum 5-word system
+
+AI Teacher recording logic
+
+Quran reader
+
+Quran translations
+
+Quran transliteration
+
+Original Arabic Quran text
+
+Translation Language
+
+Prayer features
+
+Favorites
+
+Bookmarks
+
+Admin Panel
+
+Firebase architecture
+
+unrelated features
+
+
+This is only a content/progression improvement to the separate Beginner Arabic Reading Course.
+
+Keep the existing Noor Quran design and course UI.
+
+VERIFICATION
+
+After making the change, inspect the actual course data and verify that the lessons really contain the intended number of practice items.
+
+Do not merely change the displayed lesson counter.
+
+The actual underlying lesson content must contain the additional examples.
+
+Run typecheck/tests and report:
+
+which course files changed;
+
+number of lessons/items added;
+
+how many practice items each relevant level contains;
+
+confirmation that Level 1 was not changed;
+
+confirmation that existing AI Teacher and Quran language systems were not changed.
+
+
+Do not build APK/AAB yet and do not push to GitHub yet. Stop after implementing and validating the course-content changes.
+
+
+
+اس طرح Agent صرف screen پر 40/50 لکھ کر دھوکا نہیں دے سکتا؛ اسے اصل lesson data میں 40–50 practice items ڈالنے ہوں گے۔ اور Level 1 کو ہاتھ نہیں لگانا ہے۔
