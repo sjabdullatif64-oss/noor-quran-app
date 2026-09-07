@@ -1,8 +1,8 @@
 /**
  * BannerAd — Native AdMob adaptive banner for Capacitor Android builds.
  *
- * AdMob App ID  : ca-app-pub-1852283311826362~9656395130  (AndroidManifest.xml)
- * Banner Ad Unit: ca-app-pub-1852283311826362/1463723119
+ * AdMob App ID  : ca-app-pub-9913546614303490~8586508933  (AndroidManifest.xml)
+ * Banner Ad Unit: ca-app-pub-9913546614303490/1013114555
  *
  * Architecture:
  *  - The banner is shown ONCE at app start and NEVER removed during navigation.
@@ -16,7 +16,7 @@
 import { useEffect, useState } from "react";
 import { isNative } from "@/lib/capacitor";
 
-const BANNER_AD_UNIT   = "ca-app-pub-1852283311826362/1463723119";
+const BANNER_AD_UNIT   = "ca-app-pub-9913546614303490/1013114555";
 const BANNER_HEIGHT_PX = 60;
 
 // ── Module-level singleton — survives React unmount/remount ──────────────────

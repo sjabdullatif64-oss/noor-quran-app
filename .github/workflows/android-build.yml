@@ -390,7 +390,7 @@ jobs:
             - Native Capacitor Android shell — no browser UI, no URL bar
             - Dark status bar (`#071a0e`) + full-screen edge-to-edge
             - Native splash screen, hardware back-button support
-            - AdMob native banner ads (`ca-app-pub-5050437827917011`)
+            - AdMob native banner ads (`ca-app-pub-9913546614303490`)
             - Native push notifications (prayer alarms via LocalNotifications)
             - Quran reader · supported translation languages · Al-Afasy audio
             - GPS prayer times · Qibla compass

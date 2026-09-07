@@ -14,7 +14,7 @@ A fully native Android app with:
 - Full-screen edge-to-edge experience with dark status bar (`#071a0e`)
 - Native splash screen (hides after web content loads)
 - Android hardware back-button handling
-- Native AdMob banner ads (`ca-app-pub-5050437827917011`)
+- Native AdMob banner ads (`ca-app-pub-9913546614303490`)
 - Native push notifications (prayer alarms)
 - Native haptic feedback on Tasbeeh counter
 - Offline audio downloads via device Filesystem API
@@ -312,7 +312,7 @@ For manual runs, increment by 1 each time:
 | Orientation     | Portrait only                 |
 | Theme color     | `#1a5c38` (Islamic green)     |
 | Status bar      | `#071a0e` (dark green/black)  |
-| AdMob App ID    | `ca-app-pub-5050437827917011~3831002202` |
-| Banner Unit ID  | `ca-app-pub-5050437827917011/3064265739` |
+| AdMob App ID    | `ca-app-pub-9913546614303490~8586508933` |
+| Banner Unit ID  | `ca-app-pub-9913546614303490/1013114555` |
 | Gradle version  | 8.9                           |
 | Java version    | 17                            |

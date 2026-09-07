@@ -120,7 +120,7 @@
           <!-- ── AdMob App ID ──────────────────────────────────────────────────── -->
           <meta-data
               android:name="com.google.android.gms.ads.APPLICATION_ID"
-              android:value="ca-app-pub-1852283311826362~9656395130" />
+              android:value="ca-app-pub-9913546614303490~8586508933" />
 
           <!-- ── Remove ALL AndroidX Startup auto-initializers ─────────────── -->
           <!-- Removes MobileAdsInitProvider and WorkManagerInitializer.         -->
