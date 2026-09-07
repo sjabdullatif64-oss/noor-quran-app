@@ -42,9 +42,11 @@ env:
   JAVA_VERSION:   '21'          # Java 21 — required by capacitor-android v8
   GRADLE_VERSION: '8.13'
   PNPM_VERSION:   '10.26.1'   # must match "packageManager" in root package.json
-  ANDROID_SDK:    '36'          # compileSdk + targetSdk (both 36 in app/build.gradle)
-  APP_DIR:        artifacts/islamic-app
-  ANDROID_DIR:    artifacts/islamic-app/android
+  ANDROID_SDK:         '36'          # compileSdk + targetSdk (both 36 in app/build.gradle)
+  ANDROID_BUILD_TOOLS: '36.0.0'
+  BUNDLETOOL_VERSION:  '1.18.1'
+  APP_DIR:             artifacts/islamic-app
+  ANDROID_DIR:         artifacts/islamic-app/android
 
 jobs:
   build:
@@ -87,7 +89,7 @@ jobs:
           distribution: temurin
           java-version: ${{ env.JAVA_VERSION }}
 
-      # ── 3. Android SDK 34 ─────────────────────────────────────────────────────
+      # ── 3. Android SDK 36 ─────────────────────────────────────────────────────
       - name: Setup Android SDK
         uses: android-actions/setup-android@v3
 
@@ -95,10 +97,12 @@ jobs:
         run: |
           sdkmanager --install \
             "platforms;android-${{ env.ANDROID_SDK }}" \
-            "build-tools;34.0.0" \
+            "build-tools;${{ env.ANDROID_BUILD_TOOLS }}" \
             "platform-tools" \
             2>&1 | tail -5
           yes | sdkmanager --licenses > /dev/null 2>&1 || true
+          test -x "$ANDROID_HOME/build-tools/${{ env.ANDROID_BUILD_TOOLS }}/aapt2"
+          "$ANDROID_HOME/build-tools/${{ env.ANDROID_BUILD_TOOLS }}/aapt2" version
           # Remove android-34 from ALL known SDK locations: its core-for-system-modules.jar
           # is incompatible with Java 21 jlink.  AGP falls back to android-34 when
           # android-36 has no jar.  Removing it forces AGP to skip JdkImageTransform.
@@ -128,68 +132,9 @@ jobs:
       - name: Install workspace dependencies
         run: pnpm install --frozen-lockfile
 
-      # ── 6. Vite production build ──────────────────────────────────────────────
-      - name: Build web assets (Vite)
-        run: pnpm --filter @workspace/islamic-app run build
-        env:
-          PORT: 3000
-          BASE_PATH: /
-          NODE_ENV: production
-          VITE_COMMIT_SHA: ${{ github.sha }}
-          VITE_BUILD_VERSION: ${{ github.event.inputs.version_name || '1.0.22' }}
-
-      - name: Verify fresh web bundle
-        working-directory: ${{ env.APP_DIR }}
-        run: |
-          test -n "$(find dist/public/assets -type f -name '*.js' -print -quit)"
-          grep -a -R -l "1\\.0\\.22" dist/public/assets dist/public/index.html
-          grep -a -R -l "noor-transliteration-language-changed" dist/public/assets
-          grep -a -R -l "اللہ" dist/public/assets
-          cat > dist/public/build-manifest.json <<EOF
-          {
-            "sourceSha": "${{ github.sha }}",
-            "versionName": "${{ github.event.inputs.version_name || '1.0.22' }}",
-            "versionCode": "${{ github.event.inputs.version_code || '79845459' }}",
-            "quranDisplay": "shared-display-boundary",
-            "transliterationControl": "independent"
-          }
-          EOF
-          echo "✅ Fresh Vite bundle contains Version 22, Allah display, and independent transliteration control"
-
-      # ── 7. Capacitor sync ────────────────────────────────────────────────────
-      - name: Sync Capacitor Android
-        working-directory: ${{ env.APP_DIR }}
-        run: npx cap sync android 2>&1
-        env:
-          ANDROID_SDK_ROOT: ${{ env.ANDROID_HOME }}
-          ANDROID_HOME:     ${{ env.ANDROID_HOME }}
-
-      - name: Verify Capacitor received fresh web bundle
-        working-directory: ${{ env.APP_DIR }}
-        run: |
-          test -f android/app/src/main/assets/public/build-manifest.json
-          diff -u dist/public/build-manifest.json android/app/src/main/assets/public/build-manifest.json
-          test ! -e android/app/src/main/assets/public/assets/index-CioVTHgR.js
-          grep -a -R -l "1\\.0\\.22" android/app/src/main/assets/public/assets android/app/src/main/assets/public/index.html
-          grep -a -R -l "noor-transliteration-language-changed" android/app/src/main/assets/public/assets
-          grep -a -R -l "اللہ" android/app/src/main/assets/public/assets
-          ! grep -a -R -l "1\\.0\\.19" android/app/src/main/assets/public/assets
-          echo "✅ Capacitor assets match checkout ${{ github.sha }}"
-
-      # ── 8. Gradle wrapper ────────────────────────────────────────────────────
-      - name: Generate Gradle wrapper
-        working-directory: ${{ env.ANDROID_DIR }}
-        run: |
-          gradle wrapper \
-            --gradle-version ${{ env.GRADLE_VERSION }} \
-            --distribution-type bin \
-            --no-daemon
-          chmod +x gradlew
-          echo "✅ gradlew generated (Gradle ${{ env.GRADLE_VERSION }})"
-
-      # ── 9. Resolve version name + code ────────────────────────────────────────
-      #    Defaults to the values already in app/build.gradle so that a plain
-      #    push to main does not change the version unless explicitly requested.
+      # ── 6. Resolve version name + code ────────────────────────────────────────
+      #    Resolve before the web build so the embedded manifest and native
+      #    Android metadata always carry the same version values.
       - name: Resolve version
         id: version
         working-directory: ${{ env.ANDROID_DIR }}
@@ -208,15 +153,74 @@ jobs:
           else
             VER_CODE="$EXISTING_CODE"
           fi
-          if [[ ! "$VER_CODE" =~ ^[0-9]+$ ]] || (( VER_CODE <= 79678051 )); then
-            echo "❌ versionCode must be an integer greater than 79678051."
+          if [[ ! "$VER_CODE" =~ ^[0-9]+$ ]] || (( VER_CODE <= 79845459 )); then
+            echo "❌ versionCode must be an integer greater than 79845459."
             exit 1
           fi
-          echo "name=$VER_NAME" >> $GITHUB_OUTPUT
-          echo "code=$VER_CODE" >> $GITHUB_OUTPUT
+          echo "name=$VER_NAME" >> "$GITHUB_OUTPUT"
+          echo "code=$VER_CODE" >> "$GITHUB_OUTPUT"
           echo "✅ Version $VER_NAME ($VER_CODE)"
 
-      # ── 10. Stamp version into build.gradle ───────────────────────────────────
+      # ── 7. Vite production build ──────────────────────────────────────────────
+      - name: Build web assets (Vite)
+        run: pnpm --filter @workspace/islamic-app run build
+        env:
+          PORT: 3000
+          BASE_PATH: /
+          NODE_ENV: production
+          VITE_COMMIT_SHA: ${{ github.sha }}
+          VITE_BUILD_VERSION: ${{ steps.version.outputs.name }}
+
+      - name: Verify fresh web bundle
+        working-directory: ${{ env.APP_DIR }}
+        run: |
+          test -n "$(find dist/public/assets -type f -name '*.js' -print -quit)"
+          grep -a -R -l "${{ steps.version.outputs.name }}" dist/public/assets dist/public/index.html
+          grep -a -R -l "noor-transliteration-language-changed" dist/public/assets
+          grep -a -R -l "اللہ" dist/public/assets
+          cat > dist/public/build-manifest.json <<EOF
+          {
+            "sourceSha": "${{ github.sha }}",
+            "versionName": "${{ steps.version.outputs.name }}",
+            "versionCode": "${{ steps.version.outputs.code }}",
+            "quranDisplay": "shared-display-boundary",
+            "transliterationControl": "independent"
+          }
+          EOF
+          echo "✅ Fresh Vite bundle contains ${{ steps.version.outputs.name }}, Allah display, and independent transliteration control"
+
+      # ── 8. Capacitor sync ────────────────────────────────────────────────────
+      - name: Sync Capacitor Android
+        working-directory: ${{ env.APP_DIR }}
+        run: npx cap sync android 2>&1
+        env:
+          ANDROID_SDK_ROOT: ${{ env.ANDROID_HOME }}
+          ANDROID_HOME:     ${{ env.ANDROID_HOME }}
+
+      - name: Verify Capacitor received fresh web bundle
+        working-directory: ${{ env.APP_DIR }}
+        run: |
+          test -f android/app/src/main/assets/public/build-manifest.json
+          diff -u dist/public/build-manifest.json android/app/src/main/assets/public/build-manifest.json
+          test ! -e android/app/src/main/assets/public/assets/index-CioVTHgR.js
+          grep -a -R -l "${{ steps.version.outputs.name }}" android/app/src/main/assets/public/assets android/app/src/main/assets/public/index.html
+          grep -a -R -l "noor-transliteration-language-changed" android/app/src/main/assets/public/assets
+          grep -a -R -l "اللہ" android/app/src/main/assets/public/assets
+          ! grep -a -R -l "1\\.0\\.19" android/app/src/main/assets/public/assets
+          echo "✅ Capacitor assets match checkout ${{ github.sha }}"
+
+      # ── 9. Gradle wrapper ─────────────────────────────────────────────────────
+      - name: Generate Gradle wrapper
+        working-directory: ${{ env.ANDROID_DIR }}
+        run: |
+          gradle wrapper \
+            --gradle-version ${{ env.GRADLE_VERSION }} \
+            --distribution-type bin \
+            --no-daemon
+          chmod +x gradlew
+          echo "✅ gradlew generated (Gradle ${{ env.GRADLE_VERSION }})"
+
+      # ── 9. Stamp version into build.gradle ───────────────────────────────────
       - name: Stamp version in build.gradle
         working-directory: ${{ env.ANDROID_DIR }}
         run: |
@@ -314,28 +318,64 @@ jobs:
           echo "✅ Outputs renamed to noor-quran-${V}"
 
       - name: Verify generated APK and AAB contents
+        if: ${{ (github.event.inputs.build_type || 'release') == 'release' }}
         working-directory: ${{ env.ANDROID_DIR }}
         run: |
           APK="app/build/outputs/apk/release/noor-quran-${{ steps.version.outputs.name }}.apk"
           AAB="app/build/outputs/bundle/release/noor-quran-${{ steps.version.outputs.name }}.aab"
           test -f "$APK"
           test -f "$AAB"
+
+          # Decode the actual release bundle manifest. Source declarations and
+          # Gradle intermediates are not sufficient proof of what Play receives.
+          BUNDLETOOL="$RUNNER_TEMP/bundletool-all-${{ env.BUNDLETOOL_VERSION }}.jar"
+          curl -fsSL --retry 3 \
+            -o "$BUNDLETOOL" \
+            "https://github.com/google/bundletool/releases/download/${{ env.BUNDLETOOL_VERSION }}/bundletool-all-${{ env.BUNDLETOOL_VERSION }}.jar"
+          echo "675786493983787ffa11550bdb7c0715679a44e1643f3ff980a529e9c822595c  $BUNDLETOOL" | sha256sum --check
+          java -jar "$BUNDLETOOL" dump manifest --bundle="$AAB" > "$RUNNER_TEMP/noor-aab-manifest.xml"
+
+          AAB_MANIFEST="$RUNNER_TEMP/noor-aab-manifest.xml"
+          AAB_PACKAGE=$(grep -oP 'package="\K[^"]+' "$AAB_MANIFEST" | head -1)
+          AAB_TARGET=$(grep -oP 'android:targetSdkVersion="\K[0-9]+' "$AAB_MANIFEST" | head -1)
+          AAB_COMPILE=$(grep -oP 'android:compileSdkVersion="\K[0-9]+' "$AAB_MANIFEST" | head -1)
+          AAB_PLATFORM=$(grep -oP 'platformBuildVersionCode="\K[0-9]+' "$AAB_MANIFEST" | head -1)
+          AAB_NAME=$(grep -oP 'android:versionName="\K[^"]+' "$AAB_MANIFEST" | head -1)
+          AAB_CODE=$(grep -oP 'android:versionCode="\K[0-9]+' "$AAB_MANIFEST" | head -1)
+          [[ "$AAB_PACKAGE" == "com.sj64noorquran" ]]
+          [[ "$AAB_TARGET" =~ ^[0-9]+$ ]] && (( AAB_TARGET >= 36 ))
+          [[ "$AAB_COMPILE" =~ ^[0-9]+$ ]] && (( AAB_COMPILE >= 36 ))
+          [[ "$AAB_PLATFORM" =~ ^[0-9]+$ ]] && (( AAB_PLATFORM >= 36 ))
+          [[ "$AAB_NAME" == "${{ steps.version.outputs.name }}" ]]
+          [[ "$AAB_CODE" == "${{ steps.version.outputs.code }}" ]]
+          grep -q 'ca-app-pub-9913546614303490~8586508933' "$AAB_MANIFEST"
+
+          AAPT2="$ANDROID_HOME/build-tools/${{ env.ANDROID_BUILD_TOOLS }}/aapt2"
+          "$AAPT2" dump badging "$APK" > "$RUNNER_TEMP/noor-apk-badging.txt"
+          grep -q "package: name='com.sj64noorquran'" "$RUNNER_TEMP/noor-apk-badging.txt"
+          grep -q "versionCode='${{ steps.version.outputs.code }}'" "$RUNNER_TEMP/noor-apk-badging.txt"
+          grep -q "versionName='${{ steps.version.outputs.name }}'" "$RUNNER_TEMP/noor-apk-badging.txt"
+          grep -q "targetSdkVersion:'36'" "$RUNNER_TEMP/noor-apk-badging.txt"
+
           for FILE in "$APK" "$AAB"; do
             MANIFEST_ENTRY=$(unzip -Z1 "$FILE" | grep -E '(^|/)assets/public/build-manifest\.json$' | head -1)
             test -n "$MANIFEST_ENTRY"
             unzip -p "$FILE" "$MANIFEST_ENTRY" > /tmp/noor-build-manifest.json
             grep -a -q '"sourceSha": "${{ github.sha }}"' /tmp/noor-build-manifest.json
-            grep -a -q '"versionName": "1.0.22"' /tmp/noor-build-manifest.json
-            grep -a -q '"versionCode": "79845459"' /tmp/noor-build-manifest.json
+            grep -a -q '"versionName": "${{ steps.version.outputs.name }}"' /tmp/noor-build-manifest.json
+            grep -a -q '"versionCode": "${{ steps.version.outputs.code }}"' /tmp/noor-build-manifest.json
             : > /tmp/noor-web-bundle.js
             while IFS= read -r BUNDLE_ENTRY; do
               unzip -p "$FILE" "$BUNDLE_ENTRY" >> /tmp/noor-web-bundle.js
             done < <(unzip -Z1 "$FILE" | grep -E '(^|/)assets/public/assets/[^/]+\.js$')
             grep -a -q 'اللہ' /tmp/noor-web-bundle.js
             grep -a -q 'noor-transliteration-language-changed' /tmp/noor-web-bundle.js
+            grep -a -q 'ca-app-pub-9913546614303490/3609206933' /tmp/noor-web-bundle.js
+            grep -a -q 'ca-app-pub-9913546614303490/1013114555' /tmp/noor-web-bundle.js
+            ! grep -a -q 'ca-app-pub-1852283311826362' /tmp/noor-web-bundle.js
             ! grep -a -q '1\.0\.19' /tmp/noor-web-bundle.js
           done
-          echo "✅ APK/AAB contain exact source SHA, Version 22, Allah display, and Quran controls"
+          echo "✅ APK/AAB prove package, version, target/compile SDK 36+, fresh web assets, and current AdMob IDs"
 
       # ── 14. Upload artifacts ───────────────────────────────────────────────────
       - name: Upload Debug APK
