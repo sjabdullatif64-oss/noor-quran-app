@@ -44,9 +44,9 @@ router.post("/register", async (req, res) => {
     res.status(400).json({ error: "Invalid request" });
     return;
   }
-  const { deviceId, persistentDeviceId } = parsed.data;
+  const { deviceId, persistentDeviceId, countryCode } = parsed.data;
   const seenAt = new Date().toISOString();
-  const detectedCountry = requestCountryCode(req);
+  const detectedCountry = requestCountryCode(req, countryCode);
 
   let existing = await findUserByDeviceId(deviceId);
   if (!existing && persistentDeviceId) {
@@ -101,7 +101,7 @@ router.post("/presence", async (req, res) => {
   }
   const updated = await touchUserActivity(
     parsed.data.deviceId,
-    requestCountryCode(req),
+    requestCountryCode(req, parsed.data.countryCode),
   );
   if (!updated) {
     res.status(404).json({ error: "User not found — register first" });

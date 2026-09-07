@@ -551,7 +551,10 @@ export const usePrayerTimesByCoords = (lat: number | null, lng: number | null, e
  * Reverse geocode GPS coordinates → { city, country } using free Nominatim API.
  * Returns null on failure.
  */
-export async function reverseGeocode(lat: number, lng: number): Promise<{ city: string; country: string } | null> {
+export async function reverseGeocode(
+  lat: number,
+  lng: number,
+): Promise<{ city: string; country: string; countryCode: string } | null> {
   try {
     const res = await fetch(
       `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json&accept-language=en`,
@@ -570,8 +573,12 @@ export async function reverseGeocode(lat: number, lng: number): Promise<{ city: 
       addr.state ||
       "";
     const country = addr.country || "";
-    if (!city && !country) return null;
-    return { city, country };
+    const countryCode =
+      typeof addr.country_code === "string" && /^[a-z]{2}$/i.test(addr.country_code)
+        ? addr.country_code.toUpperCase()
+        : "";
+    if (!city && !country && !countryCode) return null;
+    return { city, country, countryCode };
   } catch {
     return null;
   }

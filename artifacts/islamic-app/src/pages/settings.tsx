@@ -370,7 +370,7 @@ export function Settings() {
         const place = await reverseGeocode(lat, lng);
         const city    = place?.city    ?? "";
         const country = place?.country ?? "";
-        saveGpsCoords(lat, lng, city, country);
+        saveGpsCoords(lat, lng, city, country, place?.countryCode ?? "");
         setGpsCity(city);
         setGpsCountry(country);
         setManualCity("");

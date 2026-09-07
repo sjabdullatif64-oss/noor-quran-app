@@ -32,3 +32,4 @@
 - [Admin theme scope](admin-theme-scope.md) — keep Admin’s dark-green visual palette scoped to `.admin-shell`; never alter global/public app theme tokens
 - [Bookmark record compatibility](bookmark-record-compatibility.md) — keep Ayah and Surah bookmarks in one storage key with a typed Surah discriminator
 - [Native locale country detection](native-locale-country-detection.md) — prefer Capacitor Device language tags before WebView locale fallbacks when selecting the first Quran translation
+- [Country data flow contract](country-data-flow.md) — reverse geocode ISO codes, persist them separately from display names, and send them through registration/presence

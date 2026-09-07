@@ -4,13 +4,16 @@ import { Device } from "@capacitor/device";
 // ── Storage keys ──────────────────────────────────────────────────────────────
 const CITY_KEY    = "noor-city";
 const COUNTRY_KEY = "noor-country";
+const COUNTRY_CODE_KEY = "noor-country-code";
 const LANG_KEY    = "noor-lang";
+const LANG_SOURCE_KEY = "noor-lang-source";
 const TEACHER_LANGUAGE_MODE_KEY = "noor-teacher-language-mode";
 const GPS_LAT_KEY = "noor-gps-lat";
 const GPS_LNG_KEY = "noor-gps-lng";
 const LOC_SRC_KEY = "noor-loc-src"; // "gps" | "manual"
 export const TRANSLATION_LANGUAGE_CHANGED_EVENT = "noor-translation-language-changed";
 export const TRANSLITERATION_LANGUAGE_CHANGED_EVENT = "noor-transliteration-language-changed";
+export const COUNTRY_RESOLVED_EVENT = "noor-country-resolved";
 export const TEACHER_LANGUAGE_MODE_CHANGED_EVENT = "noor-teacher-language-mode-changed";
 export const TEACHER_TRANSLATION_LANGUAGE_CHANGED_EVENT = "noor-teacher-translation-language-changed";
 
@@ -28,6 +31,12 @@ export function getCountry(): string {
   return localStorage.getItem(COUNTRY_KEY) ?? "";
 }
 
+/** Returns the saved ISO-3166-1 alpha-2 country code, or "" if unavailable. */
+export function getCountryCode(): string {
+  const value = localStorage.getItem(COUNTRY_CODE_KEY)?.trim().toUpperCase() ?? "";
+  return /^[A-Z]{2}$/.test(value) ? value : "";
+}
+
 /**
  * Save a manually-searched city+country pair.
  * Always call with both city AND country so we don't store mismatched data.
@@ -35,6 +44,7 @@ export function getCountry(): string {
 export function setCity(city: string, country = ""): void {
   localStorage.setItem(CITY_KEY, city);
   localStorage.setItem(COUNTRY_KEY, country || (CITY_COUNTRY_MAP[city] ?? ""));
+  localStorage.removeItem(COUNTRY_CODE_KEY);
   localStorage.setItem(LOC_SRC_KEY, "manual");
 }
 
@@ -55,17 +65,30 @@ export function getGpsCoords(): GpsCoords | null {
   return { lat: latN, lng: lngN };
 }
 
-export function saveGpsCoords(lat: number, lng: number, city = "", country = ""): void {
+export function saveGpsCoords(
+  lat: number,
+  lng: number,
+  city = "",
+  country = "",
+  countryCode = "",
+): void {
   localStorage.setItem(GPS_LAT_KEY, String(lat));
   localStorage.setItem(GPS_LNG_KEY, String(lng));
   localStorage.setItem(LOC_SRC_KEY, "gps");
   if (city)    localStorage.setItem(CITY_KEY,    city);
   if (country) localStorage.setItem(COUNTRY_KEY, country);
+  const normalizedCountryCode = countryCode.trim().toUpperCase();
+  if (/^[A-Z]{2}$/.test(normalizedCountryCode)) {
+    localStorage.setItem(COUNTRY_CODE_KEY, normalizedCountryCode);
+    applyCountryDefaultTranslation(normalizedCountryCode);
+    window.dispatchEvent(new Event(COUNTRY_RESOLVED_EVENT));
+  }
 }
 
 export function clearGpsCoords(): void {
   localStorage.removeItem(GPS_LAT_KEY);
   localStorage.removeItem(GPS_LNG_KEY);
+  localStorage.removeItem(COUNTRY_CODE_KEY);
 }
 
 // ── Location source / state ───────────────────────────────────────────────────
@@ -385,6 +408,7 @@ export function getLang(): TranslationLanguage {
 
 export function setLang(lang: TranslationLanguage): void {
   localStorage.setItem(LANG_KEY, lang);
+  localStorage.setItem(LANG_SOURCE_KEY, "manual");
   window.dispatchEvent(new Event(TRANSLATION_LANGUAGE_CHANGED_EVENT));
 }
 
@@ -398,6 +422,23 @@ export function getTransliterationLanguage(): TranslationLanguage {
 export function setTransliterationLanguage(language: TranslationLanguage): void {
   localStorage.setItem(TRANSLITERATION_LANG_KEY, language);
   window.dispatchEvent(new Event(TRANSLITERATION_LANGUAGE_CHANGED_EVENT));
+}
+
+function persistAutoDetectedTranslation(language: TranslationLanguage): void {
+  localStorage.setItem(LANG_KEY, language);
+  localStorage.setItem(LANG_SOURCE_KEY, "auto");
+  window.dispatchEvent(new Event(TRANSLATION_LANGUAGE_CHANGED_EVENT));
+}
+
+/**
+ * A resolved GPS country may refine the first-launch locale fallback. A
+ * manually selected translation is marked separately and is never changed.
+ */
+export function applyCountryDefaultTranslation(countryCode: string): void {
+  if (localStorage.getItem(LANG_SOURCE_KEY) !== "auto") return;
+  const normalizedCountryCode = countryCode.trim().toUpperCase();
+  const language = COUNTRY_TO_TRANSLATION[normalizedCountryCode];
+  if (language) persistAutoDetectedTranslation(language);
 }
 
 export function getTeacherLanguageMode(): TeacherLanguageMode {
@@ -443,7 +484,7 @@ export async function initDefaults(): Promise<void> {
     // Re-check after the async native lookup so a manual selection always wins.
     const currentLanguage = localStorage.getItem(LANG_KEY);
     if (!isValidTranslationLanguage(currentLanguage)) {
-      setLang(detectedLanguage);
+      persistAutoDetectedTranslation(detectedLanguage);
     }
   }
 

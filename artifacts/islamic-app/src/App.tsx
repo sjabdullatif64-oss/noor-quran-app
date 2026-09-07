@@ -41,6 +41,7 @@ import { useEffect } from "react";
 import { AI_TEACHER_ENABLED } from "@/lib/teacher-config";
 import { ensureRegistered, reportAyahComplete, reportPresence } from "@/lib/user";
 import { Admin } from "@/pages/admin";
+import { COUNTRY_RESOLVED_EVENT } from "@/lib/settings";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -61,9 +62,18 @@ function NoorInitializer() {
   useEffect(() => {
     // Register device silently on first open — idempotent
     ensureRegistered().catch(() => {});
+    // Reuse the existing one-shot GPS path for country persistence even when
+    // Azan is disabled. Denied/unavailable location keeps the safe fallback.
+    import("@/lib/azan-scheduler")
+      .then(({ refreshGpsLocation }) => refreshGpsLocation())
+      .catch(() => {});
     const presenceTimer = window.setInterval(() => {
       reportPresence().catch(() => {});
     }, 2 * 60 * 1000);
+    const onCountryResolved = () => {
+      reportPresence().catch(() => {});
+    };
+    window.addEventListener(COUNTRY_RESOLVED_EVENT, onCountryResolved);
 
     // Listen for ayah-both-done events dispatched by surah reader
     // Awards 1 coin per unique ayah when BOTH arabic + translation audio complete
@@ -76,6 +86,7 @@ function NoorInitializer() {
     window.addEventListener("noor:ayah-both-done", onAyahDone);
     return () => {
       window.clearInterval(presenceTimer);
+      window.removeEventListener(COUNTRY_RESOLVED_EVENT, onCountryResolved);
       window.removeEventListener("noor:ayah-both-done", onAyahDone);
     };
   }, []);

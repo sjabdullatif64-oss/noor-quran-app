@@ -209,7 +209,7 @@ export function PrayerTimes() {
         const city    = place?.city    ?? "";
         const country = place?.country ?? "";
 
-        saveGpsCoords(lat, lng, city, country);
+        saveGpsCoords(lat, lng, city, country, place?.countryCode ?? "");
         setGpsCity(city);
         setGpsCountry(country);
         setLocState("gps-active");

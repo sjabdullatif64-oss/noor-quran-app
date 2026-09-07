@@ -22,6 +22,7 @@ import {
   azanSavePrayerTimes,
   type PrayerScheduleItem,
 } from "./azan-plugin";
+import { reverseGeocode } from "./api";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -144,8 +145,13 @@ async function fetchTimings(date: Date): Promise<RawTimings | null> {
  * Failures (denied permission, timeout, no GPS) are silently ignored — the
  * scheduler falls back to whatever city/coords are already saved.
  */
-function refreshGpsLocation(): Promise<void> {
-  return new Promise((resolve) => {
+let _locationRefreshPromise: Promise<void> | null = null;
+
+export function refreshGpsLocation(): Promise<void> {
+  if (!isCapacitorApp()) return Promise.resolve();
+  if (_locationRefreshPromise) return _locationRefreshPromise;
+
+  const refresh = new Promise<void>((resolve) => {
     const src = getLocationSource();
     if (src === "manual") { resolve(); return; } // respect explicit user choice
     if (typeof navigator === "undefined" || !navigator.geolocation) { resolve(); return; }
@@ -154,8 +160,20 @@ function refreshGpsLocation(): Promise<void> {
     navigator.geolocation.getCurrentPosition(
       (pos) => {
         clearTimeout(timeout);
-        saveGpsCoords(pos.coords.latitude, pos.coords.longitude);
-        resolve();
+        void reverseGeocode(pos.coords.latitude, pos.coords.longitude)
+          .then((place) => {
+            saveGpsCoords(
+              pos.coords.latitude,
+              pos.coords.longitude,
+              place?.city ?? "",
+              place?.country ?? "",
+              place?.countryCode ?? "",
+            );
+          })
+          .catch(() => {
+            saveGpsCoords(pos.coords.latitude, pos.coords.longitude);
+          })
+          .finally(resolve);
       },
       () => {
         clearTimeout(timeout);
@@ -168,6 +186,11 @@ function refreshGpsLocation(): Promise<void> {
       },
     );
   });
+
+  _locationRefreshPromise = refresh.finally(() => {
+    _locationRefreshPromise = null;
+  });
+  return _locationRefreshPromise;
 }
 
 /** Parse "HH:MM (timezone)" → timestamp for the given calendar date */

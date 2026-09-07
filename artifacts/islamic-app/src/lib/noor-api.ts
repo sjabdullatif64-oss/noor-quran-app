@@ -86,17 +86,18 @@ export const noorApi = {
   async register(
     deviceId: string,
     persistentDeviceId?: string,
+    countryCode?: string,
   ): Promise<{ user: NoorUser; isNew: boolean; teacherAccount: NoorTeacherAccount }> {
     return noorFetch("/users/register", {
       method: "POST",
-      body: JSON.stringify({ deviceId, persistentDeviceId }),
+      body: JSON.stringify({ deviceId, persistentDeviceId, countryCode }),
     });
   },
 
-  async presence(deviceId: string): Promise<void> {
+  async presence(deviceId: string, countryCode?: string): Promise<void> {
     await noorFetch("/users/presence", {
       method: "POST",
-      body: JSON.stringify({ deviceId }),
+      body: JSON.stringify({ deviceId, countryCode }),
     });
   },
 

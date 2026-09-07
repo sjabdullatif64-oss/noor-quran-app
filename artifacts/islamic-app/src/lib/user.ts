@@ -4,6 +4,7 @@ import {
   getPersistentDeviceId,
 } from "./teacher-account";
 import { getDeviceId } from "./device-identity";
+import { getCountryCode } from "./settings";
 
 export { getDeviceId } from "./device-identity";
 
@@ -21,6 +22,7 @@ export async function ensureRegistered(): Promise<NoorUser | null> {
       const { user, teacherAccount } = await noorApi.register(
         deviceId,
         persistentDeviceId,
+        getCountryCode() || undefined,
       );
       applyTeacherAccount(teacherAccount);
       return user;
@@ -39,7 +41,7 @@ export async function ensureRegistered(): Promise<NoorUser | null> {
 export async function reportPresence(): Promise<void> {
   const registered = await ensureRegistered();
   if (!registered) return;
-  await noorApi.presence(getDeviceId());
+  await noorApi.presence(getDeviceId(), getCountryCode() || undefined);
 }
 
 export async function reportAyahComplete(
