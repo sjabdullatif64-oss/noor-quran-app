@@ -8,13 +8,12 @@ import { getQuranAssistantSpeechLanguage } from "@/lib/quran-assistant-speech";
 import { noorApi, NoorApiError, type QuranAssistantAyah, type QuranAssistantUsage } from "@/lib/noor-api";
 import { getBookmarks, removeBookmark, saveBookmark } from "@/lib/bookmarks";
 import { ensureRegistered } from "@/lib/user";
+import { getQuranAssistantConversationContext } from "@/lib/quran-assistant-conversation";
 import {
   clearQuranAssistantContext,
-  getRecentQuranAssistantConversation,
   readQuranAssistantContext,
   setQuranAssistantComposerQuestion,
   type QuranAssistantContext,
-  type QuranAssistantConversationMessage,
 } from "@/lib/quran-assistant-context";
 import {
   beginExplainAyahRequest,
@@ -26,6 +25,7 @@ import {
 import {
   createQuranAssistantChat,
   createQuranAssistantId,
+  createQuranAssistantUserMessage,
   getQuranAssistantChatTitle,
   loadQuranAssistantStorage,
   saveQuranAssistantStorage,
@@ -562,14 +562,8 @@ export function QuranAssistant() {
       return false;
     }
     setError(""); setLoading(true);
-    const messageId = createQuranAssistantId("message");
-    const userMessage: Message = {
-      id: messageId,
-      role: "user",
-      text,
-      createdAt: Date.now(),
-      ...(currentAyahContext ? { ayahContext: currentAyahContext } : {}),
-    };
+    const userMessage = createQuranAssistantUserMessage(text, currentAyahContext);
+    const messageId = userMessage.id;
     const user = registeredDeviceId
       ? { deviceId: registeredDeviceId }
       : await ensureRegistered();
@@ -585,20 +579,7 @@ export function QuranAssistant() {
     questionRef.current = "";
     setMessages((current) => [...current, userMessage]);
     try {
-      const conversationMessages: QuranAssistantConversationMessage[] = messages.flatMap((message): QuranAssistantConversationMessage[] => {
-          if (message.role === "user" && message.text?.trim()) {
-            return [{ role: "user", content: message.text.trim() }];
-          }
-          if (message.role === "assistant" && message.answer) {
-            const content = [
-              message.answer.explanation,
-              message.answer.guidance,
-            ].filter(Boolean).join("\n\n").trim();
-            return content ? [{ role: "assistant", content }] : [];
-          }
-          return [];
-        });
-      const conversation = getRecentQuranAssistantConversation(conversationMessages);
+      const conversation = getQuranAssistantConversationContext(messages);
       const answer = await noorApi.askQuranAssistant({
         question: text,
         deviceId: user.deviceId,

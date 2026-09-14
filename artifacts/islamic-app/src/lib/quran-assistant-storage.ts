@@ -39,6 +39,20 @@ export function createQuranAssistantId(prefix: "chat" | "message"): string {
   return `${prefix}-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
 }
 
+export function createQuranAssistantUserMessage(
+  text: string,
+  ayahContext: QuranAssistantContext | null,
+  createdAt = Date.now(),
+): QuranAssistantMessage {
+  return {
+    id: createQuranAssistantId("message"),
+    role: "user",
+    text: text.trim(),
+    ...(ayahContext ? { ayahContext } : {}),
+    createdAt,
+  };
+}
+
 export function createQuranAssistantChat(now = Date.now()): QuranAssistantChat {
   return {
     id: createQuranAssistantId("chat"),

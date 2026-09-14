@@ -1,0 +1,182 @@
+The problem is now clear. Do NOT treat this as a scope-classifier problem and do NOT compare request semantics again.
+
+The actual problem is MESSAGE/CONTEXT ATTACHMENT.
+
+Current working behavior:
+When I press the English "Explain this Ayah" button, the selected Ayah is correctly posted/attached to the Quran Assistant conversation, and the Assistant answers using that Ayah.
+
+Current broken behavior:
+When I manually type an Urdu question in the Composer and press Send, ONLY the Composer text is posted to the conversation. The selected Ayah is NOT attached/posted with that Composer turn.
+
+This is the bug that must be fixed.
+
+EXACT REQUIRED BEHAVIOR:
+
+Quran Reader:
+Selected Ayah = Surah Al-Anfaal, Ayah 2
+
+Open Quran Assistant.
+
+The selected Ayah is shown in "ABOUT THIS AYAH".
+
+Then the user types in Composer:
+
+"اس کی وضاحت کریں"
+
+When the user presses the Composer Send button:
+
+The resulting conversation turn MUST contain:
+
+USER QUESTION:
+"اس کی وضاحت کریں"
+
+ATTACHED AYAH CONTEXT:
+Surah Al-Anfaal · Ayah 2
++ exact verified Arabic
++ exact verified translation
+
+The Assistant must therefore understand that "اس" refers to the selected Ayah.
+
+IMPORTANT:
+
+The selected Ayah must be attached to the SAME user conversation turn as the Composer question.
+
+It must NOT be:
+- a separate user message;
+- a separate POST;
+- a separate AI request;
+- pasted into the Composer;
+- hidden text inserted into the visible question.
+
+Think of it as:
+
+User turn:
+{
+  question: "اس کی وضاحت کریں",
+  ayahContext: selectedAyah
+}
+
+NOT:
+
+User message 1:
+"Al-Anfaal 2"
+
+User message 2:
+"اس کی وضاحت کریں"
+
+The English "Explain this Ayah" button already demonstrates the correct way the selected Ayah is attached to the conversation. USE THAT WORKING IMPLEMENTATION as the source of truth.
+
+Do NOT create a new parallel implementation.
+
+Instead, inspect exactly what the Explain-this-Ayah button does when it successfully posts/attaches the Ayah.
+
+Then make Composer Send call the SAME underlying attachment/conversation mechanism, while keeping the Composer's actual question as the user text.
+
+The two actions should effectively be:
+
+Explain this Ayah:
+postUserTurn(
+  question = "Explain this Ayah",
+  ayahContext = selectedAyah
+)
+
+Composer Send:
+postUserTurn(
+  question = composerText,
+  ayahContext = selectedAyah
+)
+
+The ONLY difference is the question text.
+
+CRITICAL:
+If the current code already has a working function that creates/stores/posts a user turn with Ayah context for "Explain this Ayah", reuse that function.
+
+Do NOT make another separate Ayah POST.
+
+Do NOT merely pass ayahContext through an API type if the conversation storage/rendering layer does not actually attach it to the user turn.
+
+Trace the complete conversation state:
+
+selected Ayah
+→ pending Ayah context
+→ Composer Send
+→ user message creation
+→ conversation storage
+→ API request
+→ server context
+→ AI prompt
+→ assistant response
+→ stored conversation turn
+
+Find the exact point where Composer Send creates the user message WITHOUT the Ayah context.
+
+Fix that exact point.
+
+IMPORTANT ACCEPTANCE TEST:
+
+Use this exact scenario:
+
+Selected Ayah:
+Surah Al-Anfaal · Ayah 2
+
+Composer:
+"اس کی وضاحت کریں"
+
+Press Send ONCE.
+
+Expected result:
+
+1. ONE visible user message:
+   "اس کی وضاحت کریں"
+
+2. That user turn has the selected Ayah context attached internally.
+
+3. ONE API request.
+
+4. That request contains:
+   question = "اس کی وضاحت کریں"
+   ayahContext = Al-Anfaal 2
+
+5. Server uses that Ayah context.
+
+6. Assistant gives an actual answer about Al-Anfaal 2.
+
+7. No generic:
+   "میں قرآن سے متعلق سوالات میں مدد..."
+   response.
+
+8. No separate Ayah message appears.
+
+9. No second request.
+
+10. No duplicate usage count.
+
+11. After successful response, the pending "ABOUT THIS AYAH" state can clear, but the Ayah remains attached to the completed conversation turn.
+
+Also verify that the following work the same way:
+
+"اس آیت کی وضاحت کریں"
+"اس کا مطلب کیا ہے؟"
+"اس آیت کے بارے میں بتائیں"
+
+WITHOUT hardcoding these sentences.
+
+IMPORTANT:
+The English Explain-this-Ayah button is already working. Do NOT modify or break it.
+
+The fix must make the Composer use the SAME working conversation/attachment mechanism.
+
+Do NOT make unrelated changes.
+
+Before declaring success, add a regression test that proves:
+
+Composer Send + selected Ayah
+= one user turn containing question + ayahContext
+= one API request
+= one usage count.
+
+The test must inspect the actual stored/submitted user turn and actual request body, not just the UI card.
+
+Run typechecks, focused regression tests, and production builds after the fix.
+
+Do NOT build an APK yet.

@@ -3,19 +3,21 @@ import {
   type QuranAssistantContext,
   type QuranAssistantRequest,
 } from "./quran-assistant-context";
+import { createQuranAssistantUserMessage } from "./quran-assistant-storage";
 
 const selectedAyah: QuranAssistantContext = {
-  surahEnglishName: "At-Tawbah",
-  surahName: "التوبة",
-  surahNumber: 9,
-  ayahNumber: 3,
-  arabic: "وَأَذَانٌ مِّنَ اللَّهِ وَرَسُولِهِ",
-  translation: "A declaration from Allah and His Messenger.",
-  audioGlobalNumber: 127,
+  surahEnglishName: "Al-Anfaal",
+  surahName: "الأنفال",
+  surahNumber: 8,
+  ayahNumber: 2,
+  arabic: "إِنَّمَا الْمُؤْمِنُونَ الَّذِينَ إِذَا ذُكِرَ اللَّهُ وَجِلَتْ قُلُوبُهُمْ وَإِذَا تُلِيَتْ عَلَيْهِمْ آيَاتُهُ زَادَتْهُمْ إِيمَانًا وَعَلَىٰ رَبِّهِمْ يَتَوَكَّلُونَ",
+  translation: "The believers are only those who, when Allah is mentioned, their hearts become fearful, and when His verses are recited to them, it increases them in faith; and upon their Lord they rely.",
+  audioGlobalNumber: 208,
 };
 
 type SpiedRequest = {
   path: string;
+  userTurn: ReturnType<typeof createQuranAssistantUserMessage>;
   body: ReturnType<typeof buildQuranAssistantRequestBody>;
 };
 
@@ -25,13 +27,14 @@ function createRequestSpy() {
   let successfulUsageCount = 0;
 
   function sendQuestion(question: string, ayahContext: QuranAssistantContext | null): void {
+    const userTurn = createQuranAssistantUserMessage(question, ayahContext, 1700000000000);
     const request: QuranAssistantRequest = {
-      question,
+      question: userTurn.text ?? "",
       deviceId: "test-device",
-      ayahContext,
+      ayahContext: userTurn.ayahContext ?? null,
     };
     const body = buildQuranAssistantRequestBody(request);
-    requests.push({ path: "/quran-assistant", body });
+    requests.push({ path: "/quran-assistant", userTurn, body });
     console.log("Quran Assistant request payload:", JSON.stringify(body));
     responseCount += 1;
     successfulUsageCount += 1;
@@ -59,8 +62,11 @@ function createRequestSpy() {
   const request = spy.requests[0];
   if (request.path !== "/quran-assistant"
     || request.body.question !== "اس آیت کی وضاحت کریں"
+    || request.userTurn.role !== "user"
+    || request.userTurn.text !== "اس آیت کی وضاحت کریں"
+    || JSON.stringify(request.userTurn.ayahContext) !== JSON.stringify(selectedAyah)
     || JSON.stringify(request.body.ayahContext) !== JSON.stringify(selectedAyah)) {
-    throw new Error("Composer request body must contain the exact question and selected Ayah together");
+    throw new Error("Composer user turn and request body must contain the exact question and selected Ayah together");
   }
 }
 
@@ -70,8 +76,10 @@ function createRequestSpy() {
   spy.sendQuestion("Explain this Ayah", selectedAyah);
   if (spy.requests.length !== 1
     || spy.requests[0].body.question !== "Explain this Ayah"
+    || spy.requests[0].userTurn.text !== "Explain this Ayah"
+    || JSON.stringify(spy.requests[0].userTurn.ayahContext) !== JSON.stringify(selectedAyah)
     || JSON.stringify(spy.requests[0].body.ayahContext) !== JSON.stringify(selectedAyah)) {
-    throw new Error("Explain this Ayah must use one request with the same exact selected Ayah context");
+    throw new Error("Explain this Ayah must use one stored turn and request with the same exact selected Ayah context");
   }
 }
 
@@ -81,8 +89,10 @@ function createRequestSpy() {
   spy.sendQuestion("What does the Quran say about patience?", null);
   if (spy.requests.length !== 1
     || spy.requests[0].body.question !== "What does the Quran say about patience?"
+    || spy.requests[0].userTurn.text !== "What does the Quran say about patience?"
+    || spy.requests[0].userTurn.ayahContext
     || Object.prototype.hasOwnProperty.call(spy.requests[0].body, "ayahContext")) {
-    throw new Error("A normal Composer question must send one question-only request");
+    throw new Error("A normal Composer question must create one question-only turn and request");
   }
 }
 

@@ -82,9 +82,9 @@ export function buildQuranAssistantRequestPayload(
     conversation?: QuranAssistantConversationMessage[];
   } = {
     question: question.trim(),
+    conversation: [...conversation],
   };
   if (context) payload.ayahContext = context;
-  if (conversation.length) payload.conversation = conversation;
   return payload;
 }
 

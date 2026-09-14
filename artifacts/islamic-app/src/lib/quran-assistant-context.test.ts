@@ -50,6 +50,7 @@ if (requestPayload.ayahContext?.surahEnglishName !== "Al-Baqarah"
 }
 if (JSON.stringify(requestPayload) !== JSON.stringify({
   question: "Explain this Ayah",
+  conversation: [],
   ayahContext: context,
 })) {
   throw new Error("The exact composer request must contain question and ayahContext together");

@@ -13,6 +13,7 @@ import { ALL_LANGUAGES } from "@/lib/api";
 const APP_SHARE_URL = "https://play.google.com/store/apps/details?id=com.sj64noorquran";
 const APP_RATE_URL = "https://play.google.com/store/apps/details?id=com.sj64noorquran&reviewId=0";
 const APP_RATE_MARKET_URL = "market://details?id=com.sj64noorquran&reviewId=0";
+const OFFICIAL_CHANNEL_URL = "https://groupora.app/c/mA9iKWd0zpKjAvUecMPI";
 const APP_SHARE_MSG =
   "Download Noor Quran - Quran, Prayer Times, Islamic Features & More.\nA beautiful Islamic app for daily Muslim life.";
 
@@ -353,6 +354,17 @@ export function About() {
             </div>
           </button>
         </div>
+
+        <ActionButton
+          icon={<Globe className="w-5 h-5" />}
+          label="Noor Quran Official Channel"
+          sublabel="Join our official Groupora channel"
+          accent="text-emerald-600"
+          bg="rgba(52,211,153,0.1)"
+          border="border-border"
+          onClick={() => void openUrl(OFFICIAL_CHANNEL_URL)}
+          testId="button-about-official-channel"
+        />
 
         {/* ── Action buttons ── */}
         <div className="space-y-3 pb-4">
