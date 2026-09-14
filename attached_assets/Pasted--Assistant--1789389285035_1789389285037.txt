@@ -1,0 +1,91 @@
+جی، اب مسئلہ واضح ہے۔ Assistant کو صرف یہ نہیں کہنا چاہیے کہ “میں قرآن کے مطابق جواب دے سکتا ہوں”؛ اسے صارف کے سوال کو سمجھ کر عملی، واضح اور قرآن پر مبنی جواب دینا چاہیے۔ خاص طور پر اگر صارف آیت مانگے تو واقعی آیت، ترجمہ اور حوالہ دینا چاہیے۔
+
+Agent کو یہ prompt دیں:
+
+> Please improve the Quran Assistant's answer quality and Islamic behavior.
+
+The current Assistant is too generic. It often says “I can answer according to the Quran” instead of actually answering the user's question. This must be fixed.
+
+Required behavior:
+
+1. Direct Islamic questions
+
+
+
+If the user asks something like “Who created the world?”, answer directly and clearly: Allah created the heavens and the earth and everything in them.
+
+Do not unnecessarily say “According to the Quran…” instead of giving the actual answer.
+
+If a Quran reference is relevant, provide the verified Ayah after the direct answer.
+
+
+2. User asks which Ayah to read
+
+
+
+If the user says “I have no patience, which Ayah should I read?”, the Assistant must provide an actually relevant, verified Quran Ayah.
+
+Show the exact Arabic Quran text, Surah name and Ayah number, and the user's-language translation.
+
+Do not merely say “read an Ayah about patience” without actually providing the Ayah.
+
+The user must be able to use the existing Read in Quran / Listen / Bookmark actions.
+
+
+3. Personal Islamic concerns
+
+
+
+If the user asks something such as “I think my taweez is not correct, what should I do?”, do not ignore the question and do not give a generic “I can answer Quran questions” message.
+
+Give careful, respectful Islamic guidance based on verified Quranic principles.
+
+Do not invent religious rulings, guaranteed spiritual effects, or unsupported claims.
+
+When a matter requires a qualified scholar, clearly recommend consulting a trustworthy qualified Islamic scholar.
+
+
+4. Quran must be the source of truth
+
+
+
+Never invent Quran Arabic, translations, Surah names, Ayah numbers, or references.
+
+When an Ayah is requested, retrieve it from the existing verified Quran data/source.
+
+The AI may explain the Ayah, but it must never generate the Quran text itself.
+
+
+5. Make the Assistant genuinely useful
+
+
+
+Understand the user's actual intention before answering.
+
+Give a concise direct answer first.
+
+Then provide Quran evidence when appropriate.
+
+For requests such as patience, worry, forgiveness, fear, hardship, repentance, gratitude, guidance, etc., provide the relevant verified Ayah/verses rather than generic advice.
+
+Do not force a Quran citation when the user asks a simple factual Islamic question that can be answered directly.
+
+
+Important: The goal is a trustworthy, respectful Quran Assistant that gives the user useful Quran-based guidance, not a generic chatbot that repeatedly says it can answer Quran questions.
+
+Preserve the existing Quran verification system, Ayah actions, Chat History, New Chat, 5-question limit, AI Teacher, Quran Reader, audio, bookmarks, and all unrelated features.
+
+Do not build an APK yet. First test these exact cases and report the results:
+
+“Who created the world?” → direct answer about Allah.
+
+“I have no patience. Which Ayah should I read?” → actual verified Ayah + translation + reference.
+
+“I am worried. Give me an Ayah.” → actual relevant verified Ayah + translation + reference.
+
+“My taweez is not correct. What should I do?” → useful, careful Islamic guidance; do not give a generic refusal.
+
+“How can I earn money online?” → blocked as a non-Islamic question.
+
+
+Do not change unrelated features.

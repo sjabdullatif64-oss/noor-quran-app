@@ -8,7 +8,12 @@ import { getQuranAssistantSpeechLanguage } from "@/lib/quran-assistant-speech";
 import { noorApi, NoorApiError, type QuranAssistantAyah, type QuranAssistantUsage } from "@/lib/noor-api";
 import { getBookmarks, removeBookmark, saveBookmark } from "@/lib/bookmarks";
 import { ensureRegistered } from "@/lib/user";
-import { clearQuranAssistantContext, readQuranAssistantContext, type QuranAssistantContext } from "@/lib/quran-assistant-context";
+import {
+  clearQuranAssistantContext,
+  readQuranAssistantContext,
+  setQuranAssistantComposerQuestion,
+  type QuranAssistantContext,
+} from "@/lib/quran-assistant-context";
 import {
   createQuranAssistantChat,
   createQuranAssistantId,
@@ -632,8 +637,7 @@ export function QuranAssistant() {
         {ayahContext.translation && <p dir="auto" className="mt-2 line-clamp-2 text-sm leading-relaxed text-muted-foreground">{ayahContext.translation}</p>}
         <button type="button" onClick={() => {
           const suggestedQuestion = "Explain this Ayah";
-          questionRef.current = suggestedQuestion;
-          setQuestion(suggestedQuestion);
+          setQuestion(setQuranAssistantComposerQuestion(questionRef, suggestedQuestion));
         }} className="mt-3 rounded-xl border border-primary/25 bg-card px-3 py-2 text-xs font-semibold text-primary transition-colors hover:bg-background" data-testid="button-suggest-explain-ayah">
           Explain this Ayah
         </button>
@@ -644,8 +648,7 @@ export function QuranAssistant() {
           value={question}
           onChange={(event) => {
             const value = event.currentTarget.value;
-            questionRef.current = value;
-            setQuestion(value);
+            setQuestion(setQuranAssistantComposerQuestion(questionRef, value));
           }}
           rows={1}
           maxLength={1200}

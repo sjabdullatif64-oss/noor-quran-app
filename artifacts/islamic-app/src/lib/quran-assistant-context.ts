@@ -33,6 +33,15 @@ export function buildQuranAssistantRequestPayload(
   return payload;
 }
 
+export function setQuranAssistantComposerQuestion(
+  questionRef: { current: string },
+  question: string,
+): string {
+  const text = question.trim();
+  questionRef.current = text;
+  return text;
+}
+
 const CONTEXT_KEY = "noor-quran-assistant-context";
 
 export function saveQuranAssistantContext(context: QuranAssistantContext): void {
