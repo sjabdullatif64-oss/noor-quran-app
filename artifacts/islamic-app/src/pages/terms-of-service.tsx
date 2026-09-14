@@ -226,13 +226,13 @@ export function TermsOfService() {
           <p className="text-muted-foreground text-xs mb-3 font-medium">The Noor Quran Team</p>
           <button
             onClick={() =>
-              openUrl("mailto:easygroupjoin@gmail.com?subject=Noor Quran Terms of Service")
+              openUrl("mailto:support@noorquran.men?subject=Noor Quran Terms of Service")
             }
             className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium text-primary-foreground border border-border bg-primary hover:border-border transition-colors"
             data-testid="button-terms-contact"
           >
             <span>✉</span>
-            easygroupjoin@gmail.com
+            support@noorquran.men
           </button>
         </div>
 

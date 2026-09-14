@@ -384,7 +384,7 @@ export function About() {
             bg="rgba(56,189,248,0.08)"
             border="border-border"
             onClick={() =>
-              openUrl("mailto:easygroupjoin@gmail.com?subject=Noor Quran Feedback")
+              openUrl("mailto:support@noorquran.men?subject=Noor Quran Feedback")
             }
             testId="button-about-contact"
           />

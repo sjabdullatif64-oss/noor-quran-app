@@ -41,6 +41,7 @@ import { useEffect } from "react";
 import { AI_TEACHER_ENABLED } from "@/lib/teacher-config";
 import { ensureRegistered, reportAyahComplete, reportPresence } from "@/lib/user";
 import { Admin } from "@/pages/admin";
+import { QuranAssistant } from "@/pages/quran-assistant";
 import { COUNTRY_RESOLVED_EVENT } from "@/lib/settings";
 
 const queryClient = new QueryClient({
@@ -104,6 +105,7 @@ function Router() {
     <Switch>
       <Route path="/" component={Home} />
       <Route path="/quran" component={Quran} />
+      <Route path="/quran-assistant" component={QuranAssistant} />
       <Route path="/quran/:number" component={SurahReader} />
       <Route path="/prayer-times" component={PrayerTimes} />
       <Route path="/bookmarks" component={Bookmarks} />

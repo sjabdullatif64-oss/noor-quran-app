@@ -39,6 +39,12 @@ const CORS = {
   "Cross-Origin-Resource-Policy": "cross-origin",
 };
 
+const ROOT_STATIC_FILES = new Map([
+  ["/googleedb2f608686b55cf5.html", "googleedb2f608686b55cf5.html"],
+  ["/ads.txt", "ads.txt"],
+  ["/sitemap.xml", "sitemap.xml"],
+]);
+
 function send(res, status, headers, body) {
   res.writeHead(status, { ...CORS, ...headers });
   res.end(body);
@@ -69,7 +75,13 @@ const server = http.createServer((req, res) => {
   }
 
   const urlPath = decodeURIComponent(req.url.split("?")[0]);
-  const filePath = path.join(PUBLIC_DIR, urlPath);
+  const rootStaticFile = ROOT_STATIC_FILES.get(urlPath);
+  if (rootStaticFile) {
+    const filePath = path.join(PUBLIC_DIR, rootStaticFile);
+    if (serveStatic(res, filePath)) return;
+  }
+
+  const filePath = path.join(PUBLIC_DIR, urlPath.replace(/^\/+/, ""));
 
   try {
     const stat = fs.statSync(filePath);

@@ -3,7 +3,7 @@ import { useRef, useState } from "react";
 import {
   Navigation, Heart, Hash, Gift, Settings, Download, Bookmark,
   ChevronRight, Bell, Info, Share2, Sparkles, PenLine, Star,
-  CalendarDays, ShoppingBag, GraduationCap,
+  CalendarDays, ShoppingBag, GraduationCap, Bot,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useI18n } from "@/lib/i18n-context";
@@ -101,6 +101,15 @@ export function More() {
       accent: "text-primary",
       iconBg: "bg-primary/10",
     }] : []),
+    {
+      id: "quran-assistant",
+      label: "Quran Assistant",
+      description: "Ask about the Quran",
+      icon: <Bot className="w-6 h-6" />,
+      href: "/quran-assistant",
+      accent: "text-primary",
+      iconBg: "bg-primary/10",
+    },
     {
       id: "marketplace",
       label: t("more_marketplace"),

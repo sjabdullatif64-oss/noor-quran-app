@@ -88,6 +88,22 @@ export interface NoorWelcomeCampaign {
   enabled: boolean;
 }
 
+export interface QuranAssistantAyah {
+  surahNumber: number;
+  surahName: string;
+  ayahNumber: number;
+  arabic: string;
+  translation: string;
+  audioGlobalNumber: number;
+}
+
+export interface QuranAssistantResponse {
+  language: string;
+  explanation: string;
+  guidance: string;
+  ayahs: QuranAssistantAyah[];
+}
+
 export const noorApi = {
   async register(
     deviceId: string,
@@ -151,6 +167,13 @@ export const noorApi = {
 
   async getWelcomeCampaigns(): Promise<{ campaigns: NoorWelcomeCampaign[] }> {
     return noorFetch("/campaigns/welcome");
+  },
+
+  async askQuranAssistant(question: string, language?: string): Promise<QuranAssistantResponse> {
+    return noorFetch("/quran-assistant", {
+      method: "POST",
+      body: JSON.stringify({ question, language }),
+    });
   },
 
 };

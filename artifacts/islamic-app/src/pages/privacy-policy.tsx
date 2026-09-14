@@ -369,11 +369,11 @@ export function PrivacyPolicy() {
           </p>
           <p className="text-muted-foreground text-xs mb-3 font-medium">The Noor Quran Team</p>
           <button
-            onClick={() => openUrl("mailto:easygroupjoin@gmail.com")}
+            onClick={() => openUrl("mailto:support@noorquran.men")}
             className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium text-primary border border-border bg-muted hover:border-border transition-colors"
           >
             <Mail className="w-4 h-4" />
-            easygroupjoin@gmail.com
+            support@noorquran.men
           </button>
         </div>
 
