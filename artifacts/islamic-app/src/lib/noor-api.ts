@@ -129,6 +129,7 @@ export interface QuranAssistantResponse {
   guidance: string;
   ayahs: QuranAssistantAyah[];
   usage?: QuranAssistantUsage;
+  scopeRejected?: boolean;
 }
 
 export const noorApi = {

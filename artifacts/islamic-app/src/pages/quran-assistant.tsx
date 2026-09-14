@@ -10,6 +10,7 @@ import { getBookmarks, removeBookmark, saveBookmark } from "@/lib/bookmarks";
 import { ensureRegistered } from "@/lib/user";
 import {
   clearQuranAssistantContext,
+  getPendingQuranAssistantContextAfterSend,
   getRecentQuranAssistantConversation,
   readQuranAssistantContext,
   setQuranAssistantComposerQuestion,
@@ -614,6 +615,12 @@ export function QuranAssistant() {
         createdAt: Date.now(),
         ...(requestContext ? { ayahContext: requestContext } : {}),
       }]);
+      if (requestContext && !answer.scopeRejected) {
+        const pendingContext = getPendingQuranAssistantContextAfterSend(requestContext, true);
+        setAyahContext(pendingContext);
+        ayahContextRef.current = pendingContext;
+        clearQuranAssistantContext();
+      }
       return true;
     } catch (e) {
       if (e instanceof NoorApiError && e.status === 429) {

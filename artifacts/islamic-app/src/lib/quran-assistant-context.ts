@@ -89,6 +89,13 @@ export function setQuranAssistantComposerQuestion(
   return text;
 }
 
+export function getPendingQuranAssistantContextAfterSend(
+  context: QuranAssistantContext | null,
+  succeeded: boolean,
+): QuranAssistantContext | null {
+  return succeeded ? null : context;
+}
+
 const CONTEXT_KEY = "noor-quran-assistant-context";
 
 export function saveQuranAssistantContext(context: QuranAssistantContext): void {

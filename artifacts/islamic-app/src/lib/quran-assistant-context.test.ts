@@ -1,6 +1,7 @@
 import {
   buildQuranAssistantRequestPayload,
   buildQuranAssistantRequestText,
+  getPendingQuranAssistantContextAfterSend,
   setQuranAssistantComposerQuestion,
   type QuranAssistantContext,
 } from "./quran-assistant-context";
@@ -104,6 +105,27 @@ function sendOnce(payload: typeof customPayload): void {
 sendOnce(customPayload);
 if (sendCount !== 1 || successfulUsageCount !== 1) {
   throw new Error("One Send action must produce one request and one successful usage count");
+}
+
+let postCount = 0;
+let pendingContext: QuranAssistantContext | null = context;
+function postOnce(payload: typeof customPayload, succeeds: boolean): void {
+  postCount += 1;
+  if (payload.question !== customQuestion || payload.ayahContext !== context) {
+    throw new Error("The single Send POST must contain the Composer question and selected Ayah together");
+  }
+  pendingContext = getPendingQuranAssistantContextAfterSend(pendingContext, succeeds);
+}
+postOnce(customPayload, false);
+if (postCount !== 1 || pendingContext !== context) {
+  throw new Error("A failed request must preserve the pending selected Ayah for retry");
+}
+postOnce(customPayload, true);
+if (postCount !== 2 || pendingContext !== null) {
+  throw new Error("A successful request must clear only the pending Ayah card state");
+}
+if (customPayload.ayahContext !== context || customPayload.question !== customQuestion) {
+  throw new Error("The successful Composer turn must retain its original question and Ayah context");
 }
 
 console.log("Quran Assistant Ayah context request test passed");

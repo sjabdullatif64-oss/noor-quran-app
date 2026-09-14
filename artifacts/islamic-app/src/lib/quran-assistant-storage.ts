@@ -87,6 +87,7 @@ function normalizeAnswer(value: unknown): QuranAssistantResponse | undefined {
     explanation: value.explanation,
     guidance: value.guidance,
     ayahs,
+    scopeRejected: value.scopeRejected === true,
   };
 }
 
