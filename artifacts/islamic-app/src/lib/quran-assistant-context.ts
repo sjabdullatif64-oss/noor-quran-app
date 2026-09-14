@@ -22,6 +22,17 @@ export function buildQuranAssistantRequestText(context: QuranAssistantContext | 
   ].join("\n");
 }
 
+export function buildQuranAssistantRequestPayload(
+  context: QuranAssistantContext | null,
+  question: string,
+): { question: string; ayahContext?: QuranAssistantContext } {
+  const payload: { question: string; ayahContext?: QuranAssistantContext } = {
+    question: question.trim(),
+  };
+  if (context) payload.ayahContext = context;
+  return payload;
+}
+
 const CONTEXT_KEY = "noor-quran-assistant-context";
 
 export function saveQuranAssistantContext(context: QuranAssistantContext): void {
