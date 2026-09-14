@@ -20,6 +20,11 @@ const cases: Array<[string, boolean]> = [
   ["Mujhe Quran ki woh ayat chahiye jo mushkil waqt mein madad kare", true],
   ["माता-पिता के बारे में कुरआन क्या कहता है?", true],
   ["কুরআনে অসুস্থতার সময় কী বলা হয়েছে?", true],
+  ["میں بیماری میں کیا پڑھوں؟", true],
+  ["میں تکلیف میں کس کو یاد کروں؟", true],
+  ["تمام جہانوں کا پروردگار کون ہے؟", true],
+  ["جنت میں کون لوگ جائیں گے؟", true],
+  ["مجھے صبر کے لیے کیا کرنا چاہیے؟", true],
 ];
 
 for (const [question, expected] of cases) {
@@ -32,8 +37,28 @@ for (const [question, expected] of cases) {
 if (!isQuranAssistantFollowUp("اس کے بارے میں مزید بتاؤ", true)) {
   throw new Error("Expected a contextual Urdu follow-up to remain in scope");
 }
+for (const question of [
+  "ان کی وضاحت دیں",
+  "اس آیت کی وضاحت کریں",
+  "اس کا آسان مطلب بتائیں",
+  "اس میں کیا حکم ہے؟",
+]) {
+  if (!isQuranAssistantFollowUp(question, true)) {
+    throw new Error(`Expected selected-Ayah contextual question to remain in scope: ${question}`);
+  }
+}
 if (isQuranAssistantFollowUp("اس کے بارے میں مزید بتاؤ", false)) {
   throw new Error("A follow-up without Quran context must not bypass the scope gate");
+}
+for (const question of [
+  "ان کی وضاحت دیں",
+  "اس آیت کی وضاحت کریں",
+  "اس کا آسان مطلب بتائیں",
+  "اس میں کیا حکم ہے؟",
+]) {
+  if (isQuranAssistantFollowUp(question, false)) {
+    throw new Error(`A contextual question without selected Ayah/conversation must be rejected: ${question}`);
+  }
 }
 
 console.log("Quran Assistant scope cases passed");

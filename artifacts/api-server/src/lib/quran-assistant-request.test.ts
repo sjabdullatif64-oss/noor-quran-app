@@ -52,4 +52,45 @@ for (const expectedPart of [
   }
 }
 
+const selectedMaaida38: QuranAssistantAyahContext = {
+  surahNumber: 5,
+  surahName: "المائدة",
+  surahEnglishName: "Al-Maaida",
+  ayahNumber: 38,
+  arabic: "وَالسَّارِقُ وَالسَّارِقَةُ فَاقْطَعُوا أَيْدِيَهُمَا جَزَاءً بِمَا كَسَبَا نَكَالًا مِنَ اللَّهِ ۗ وَاللَّهُ عَزِيزٌ حَكِيمٌ",
+  translation: "[As for] the thief, the male and the female, amputate their hands in recompense for what they committed as a deterrent from Allah. And Allah is Exalted in Might and Wise.",
+  audioGlobalNumber: 688,
+};
+const contextualQuestion = buildQuranAssistantQuestion("ان کی وضاحت دیں", selectedMaaida38);
+for (const expectedPart of [
+  "Surah: Al-Maaida (5)",
+  "Ayah number: 38",
+  `Verified Arabic text: ${selectedMaaida38.arabic}`,
+  `Displayed translation: ${selectedMaaida38.translation}`,
+  "User's question: ان کی وضاحت دیں",
+]) {
+  if (!contextualQuestion.includes(expectedPart)) {
+    throw new Error(`Selected Al-Maaida 38 context was not sent to the AI prompt: ${expectedPart}`);
+  }
+}
+const contextualPayloadQuestions = [
+  "ان کی وضاحت دیں",
+  "اس آیت کی وضاحت کریں",
+  "اس کا آسان مطلب بتائیں",
+  "اس میں کیا حکم ہے؟",
+];
+for (const currentQuestion of contextualPayloadQuestions) {
+  const payload = {
+    question: currentQuestion,
+    ayahContext: selectedMaaida38,
+  };
+  if (payload.question !== currentQuestion
+    || payload.ayahContext.surahEnglishName !== "Al-Maaida"
+    || payload.ayahContext.ayahNumber !== 38
+    || payload.ayahContext.arabic !== selectedMaaida38.arabic
+    || payload.ayahContext.translation !== selectedMaaida38.translation) {
+    throw new Error(`Contextual request lost Al-Maaida 38 context for: ${currentQuestion}`);
+  }
+}
+
 console.log("Quran Assistant server context-use test passed");

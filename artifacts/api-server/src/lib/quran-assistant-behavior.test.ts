@@ -54,4 +54,17 @@ if (createdHumans !== "Allah created human beings.") {
   throw new Error(`Expected a direct answer about human creation, got: ${createdHumans ?? "empty"}`);
 }
 
+const validIslamicQuestions = [
+  "میں بیماری میں کیا پڑھوں؟",
+  "میں تکلیف میں کس کو یاد کروں؟",
+  "تمام جہانوں کا پروردگار کون ہے؟",
+  "جنت میں کون لوگ جائیں گے؟",
+  "مجھے صبر کے لیے کیا کرنا چاہیے؟",
+];
+for (const question of validIslamicQuestions) {
+  if (/أنا هنا لمساعدتك|براہِ کرم.*سوال پوچھیں/.test(question)) {
+    throw new Error(`Test fixture unexpectedly contains a generic scope refusal: ${question}`);
+  }
+}
+
 console.log("Quran Assistant behavior cases passed");
