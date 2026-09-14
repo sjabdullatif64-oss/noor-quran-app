@@ -2,6 +2,7 @@
 - [Capacitor external URL opening](capacitor-external-links.md) — window.open(_blank) is broken in Capacitor WebView; use openUrl() helper from @/lib/capacitor (wraps @capacitor/browser)
 - [Native API base compatibility](native-api-base-compatibility.md) — normalize configured API domains before appending `/api`, and keep a temporary backend alias for older `/api/api/...` builds
 - [Welcome campaign media storage](welcome-campaign-media-storage.md) — upload campaign media to Object Storage and keep only a short API media path in Google Sheets
+- [Welcome Campaign image upload budget](welcome-campaign-image-prep.md) — keep confirmed still-image data URLs at 1.85M characters or less; leave GIF/video handling unchanged
 - [Google Sheets coin audit](coins-sheets-audit.md) — active coin ledger uses append-only transactions; preserve historical Users columns and join transactions to current users when auditing
 - [AdMob safe init pattern](admob-safe-init.md) — selective MobileAdsInitProvider removal via tools:node="merge" preserves WorkManager; full InitializationProvider removal breaks it
 - [Git push and GitHub Actions in Replit](git-push-actions.md) — git push is blocked in bash; use GitHub REST API (blob→tree→commit→ref PATCH) in code_execution to push; workflow auto-triggers on push to main
@@ -29,8 +30,10 @@
 - [Noor Quran legacy cleanup boundary](noor-quran-legacy-cleanup.md) — Google Sheets and routed Vite pages are active; the old admin, Drizzle DB, Expo scaffold, and unrouted pages are not
 - [Quran reader display controls](quran-reader-display-controls.md) — shared persisted visibility settings and the existing translation registry drive Surah/Juz ayah menus
 - [Admin panel data boundary](admin-panel-data-boundary.md) — keep Teacher analytics minimized/read-only and append Google Sheets schema fields without shifting established columns
+- [Product catalog data boundary](product-catalog-data-boundary.md) — normalize legacy product statuses and store large Admin image data outside Google Sheets
 - [Admin theme scope](admin-theme-scope.md) — keep Admin’s dark-green visual palette scoped to `.admin-shell`; never alter global/public app theme tokens
 - [Bookmark record compatibility](bookmark-record-compatibility.md) — keep Ayah and Surah bookmarks in one storage key with a typed Surah discriminator
 - [Native locale country detection](native-locale-country-detection.md) — prefer Capacitor Device language tags before WebView locale fallbacks when selecting the first Quran translation
 - [Country data flow contract](country-data-flow.md) — reverse geocode ISO codes, persist them separately from display names, and send them through registration/presence
 - [Beginner course content invariant](beginner-course-content.md) — validate actual per-level lesson arrays and preserve the original Level 1 catalog when expanding practice
+- [Native TTS bridge usage](native-tts-bridge.md) — use the registered NativeTTS proxy for Android speech and cancel queued requests when stopping or switching messages

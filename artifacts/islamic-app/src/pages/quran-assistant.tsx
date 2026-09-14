@@ -2,6 +2,8 @@ import { useEffect, useRef, useState } from "react";
 import { ArrowLeft, Bookmark, BookmarkCheck, BookOpen, Bot, Clock3, History, Loader2, MessageCircle, Pause, Play, Plus, Send, Sparkles, Volume2, X } from "lucide-react";
 import { Link, useLocation } from "wouter";
 import { getAudioUrl } from "@/lib/api";
+import { isNative } from "@/lib/capacitor";
+import { NativeTTS } from "@/lib/native-tts";
 import { noorApi, NoorApiError, type QuranAssistantAyah, type QuranAssistantUsage } from "@/lib/noor-api";
 import { getBookmarks, removeBookmark, saveBookmark } from "@/lib/bookmarks";
 import { ensureRegistered } from "@/lib/user";
@@ -24,8 +26,98 @@ type Message = QuranAssistantMessage;
 
 const examples = ["Explain an Ayah", "Verse about patience", "Verse for difficult times", "Quranic guidance about forgiveness"];
 
+type AyahAudioSession = {
+  key: string;
+  audio: HTMLAudioElement;
+  status: "playing" | "paused";
+  generation: number;
+};
+
+let ayahAudioSession: AyahAudioSession | null = null;
+const ayahAudioListeners = new Set<() => void>();
+
+function notifyAyahAudioListeners() {
+  ayahAudioListeners.forEach((listener) => listener());
+}
+
+function releaseAyahAudio(session: AyahAudioSession | null = ayahAudioSession) {
+  if (!session || ayahAudioSession !== session) return;
+  session.generation += 1;
+  session.audio.onended = null;
+  session.audio.onerror = null;
+  session.audio.pause();
+  session.audio.removeAttribute("src");
+  session.audio.load();
+  ayahAudioSession = null;
+  notifyAyahAudioListeners();
+}
+
+export function stopAyahAudio() {
+  releaseAyahAudio();
+}
+
+function toggleAyahAudio(key: string, url: string) {
+  const current = ayahAudioSession;
+
+  if (current?.key === key) {
+    const generation = current.generation;
+    if (current.status === "playing") {
+      current.audio.pause();
+      current.status = "paused";
+      notifyAyahAudioListeners();
+      return;
+    }
+
+    current.status = "playing";
+    notifyAyahAudioListeners();
+    current.audio.play().catch(() => {
+      if (ayahAudioSession === current && current.generation === generation) {
+        releaseAyahAudio(current);
+      }
+    });
+    return;
+  }
+
+  releaseAyahAudio();
+
+  const audio = new Audio(url);
+  audio.preload = "auto";
+  const session: AyahAudioSession = {
+    key,
+    audio,
+    status: "playing",
+    generation: 0,
+  };
+  ayahAudioSession = session;
+  audio.onended = () => releaseAyahAudio(session);
+  audio.onerror = () => releaseAyahAudio(session);
+  notifyAyahAudioListeners();
+
+  audio.play().catch(() => {
+    if (ayahAudioSession === session && session.generation === 0) {
+      releaseAyahAudio(session);
+    }
+  });
+}
+
+function useAyahAudioSession() {
+  const [, refresh] = useState(0);
+
+  useEffect(() => {
+    const listener = () => refresh((value) => value + 1);
+    ayahAudioListeners.add(listener);
+    return () => { ayahAudioListeners.delete(listener); };
+  }, []);
+
+  return ayahAudioSession;
+}
+
 function QuranCard({ ayah }: { ayah: QuranAssistantAyah }) {
   const [bookmarked, setBookmarked] = useState(() => getBookmarks().some((b) => b.type !== "surah" && b.surahNumber === ayah.surahNumber && b.ayahNumber === ayah.ayahNumber));
+  const audioSession = useAyahAudioSession();
+  const audioKey = `${ayah.surahNumber}:${ayah.ayahNumber}`;
+  const isCurrentAudio = audioSession?.key === audioKey;
+  const isPlaying = isCurrentAudio && audioSession.status === "playing";
   const BookmarkIcon = bookmarked ? BookmarkCheck : Bookmark;
   const toggleBookmark = () => {
     if (bookmarked) removeBookmark(ayah.surahNumber, ayah.ayahNumber);
@@ -45,7 +137,16 @@ function QuranCard({ ayah }: { ayah: QuranAssistantAyah }) {
       <div><p className="text-xs uppercase tracking-wide text-muted-foreground mb-1">Translation</p><p className="text-sm leading-relaxed text-foreground">{ayah.translation}</p></div>
       <div className="flex flex-wrap gap-2 pt-1">
         <Link href={`/quran/${ayah.surahNumber}?ayah=${ayah.ayahNumber}`} className="inline-flex items-center gap-1.5 rounded-xl border border-border px-3 py-2 text-xs font-medium text-foreground hover:bg-muted"><BookOpen className="h-4 w-4" /> Read in Quran</Link>
-        <button type="button" onClick={() => new Audio(getAudioUrl(ayah.audioGlobalNumber)).play().catch(() => {})} className="inline-flex items-center gap-1.5 rounded-xl border border-border px-3 py-2 text-xs font-medium text-foreground hover:bg-muted"><Volume2 className="h-4 w-4" /> Listen</button>
+        <button
+          type="button"
+          onClick={() => toggleAyahAudio(audioKey, getAudioUrl(ayah.audioGlobalNumber))}
+          aria-label={isPlaying ? "Pause Ayah audio" : isCurrentAudio ? "Resume Ayah audio" : "Play Ayah audio"}
+          aria-pressed={isPlaying}
+          className="inline-flex items-center gap-1.5 rounded-xl border border-border px-3 py-2 text-xs font-medium text-foreground hover:bg-muted"
+        >
+          {isPlaying ? <Pause className="h-4 w-4" aria-hidden="true" /> : isCurrentAudio ? <Play className="h-4 w-4" aria-hidden="true" /> : <Volume2 className="h-4 w-4" aria-hidden="true" />}
+          {isPlaying ? "Pause" : isCurrentAudio ? "Resume" : "Listen"}
+        </button>
         <button type="button" onClick={toggleBookmark} className="inline-flex items-center gap-1.5 rounded-xl border border-border px-3 py-2 text-xs font-medium text-foreground hover:bg-muted"><BookmarkIcon className="h-4 w-4" /> {bookmarked ? "Bookmarked" : "Bookmark"}</button>
       </div>
     </article>
@@ -60,6 +161,46 @@ function getSpeechText(answer: Message["answer"]) {
     answer.explanation ? `Explanation. ${answer.explanation}` : "",
     answer.guidance ? `General guidance. ${answer.guidance}` : "",
   ].filter(Boolean).join("\n\n");
+}
+
+function getNativeSpeechLanguage(language?: string): string {
+  const normalized = (language || "english").trim().toLowerCase();
+  if (normalized.includes("urdu") || normalized === "ur" || normalized.startsWith("ur-")) return "ur-PK";
+  if (normalized.includes("arab") || normalized === "ar" || normalized.startsWith("ar-")) return "ar-SA";
+  if (normalized.includes("hindi") || normalized === "hi" || normalized.startsWith("hi-")) return "hi-IN";
+  if (normalized.includes("bengali") || normalized === "bn" || normalized.startsWith("bn-")) return "bn-IN";
+  if (normalized.includes("turkish") || normalized === "tr" || normalized.startsWith("tr-")) return "tr-TR";
+  if (normalized.includes("indones") || normalized === "id" || normalized.startsWith("id-")) return "id-ID";
+  if (normalized.includes("malay") || normalized === "ms" || normalized.startsWith("ms-")) return "ms-MY";
+  if (normalized.includes("french") || normalized === "fr" || normalized.startsWith("fr-")) return "fr-FR";
+  if (normalized.includes("spanish") || normalized === "es" || normalized.startsWith("es-")) return "es-ES";
+  return "en-US";
+}
+
+function splitNativeSpeech(text: string): string[] {
+  const sentences = text.match(/[^.!?…。！？]+[.!?…。！？]+|[^.!?…。！？]+$/g) ?? [text];
+  const chunks: string[] = [];
+  for (const sentence of sentences) {
+    const trimmed = sentence.trim();
+    if (!trimmed) continue;
+    if (trimmed.length <= 260) {
+      chunks.push(trimmed);
+      continue;
+    }
+    const words = trimmed.split(/\s+/);
+    let current = "";
+    for (const word of words) {
+      const candidate = current ? `${current} ${word}` : word;
+      if (current && candidate.length > 260) {
+        chunks.push(current);
+        current = word;
+      } else {
+        current = candidate;
+      }
+    }
+    if (current) chunks.push(current);
+  }
+  return chunks.length ? chunks : [text.trim()];
 }
 
 export function QuranAssistant() {
@@ -86,6 +227,15 @@ export function QuranAssistant() {
   const endRef = useRef<HTMLDivElement>(null);
   const mountedRef = useRef(true);
   const speechRef = useRef<{ id: string; utterance: SpeechSynthesisUtterance } | null>(null);
+  const nativeSpeechRef = useRef<{
+    id: string;
+    chunks: string[];
+    chunkIndex: number;
+    language: string;
+    paused: boolean;
+    generation: number;
+  } | null>(null);
+  const nativeSpeechGenerationRef = useRef(0);
 
   useEffect(() => {
     endRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
@@ -103,6 +253,13 @@ export function QuranAssistant() {
         window.speechSynthesis?.cancel();
         speechRef.current = null;
       }
+      const activeNativeSpeech = nativeSpeechRef.current;
+      if (activeNativeSpeech) {
+        nativeSpeechGenerationRef.current += 1;
+        nativeSpeechRef.current = null;
+        void NativeTTS.stop().catch(() => {});
+      }
+      stopAyahAudio();
     };
   }, []);
 
@@ -158,6 +315,7 @@ export function QuranAssistant() {
 
   function resetSpeechState() {
     speechRef.current = null;
+    nativeSpeechRef.current = null;
     if (mountedRef.current) {
       setSpeakingMessageId(null);
       setSpeechStatus("idle");
@@ -166,18 +324,94 @@ export function QuranAssistant() {
 
   function stopSpeech() {
     const activeSpeech = speechRef.current;
-    if (!activeSpeech) return;
-    activeSpeech.utterance.onend = null;
-    activeSpeech.utterance.onerror = null;
-    activeSpeech.utterance.onpause = null;
-    activeSpeech.utterance.onresume = null;
-    window.speechSynthesis?.cancel();
+    const activeNativeSpeech = nativeSpeechRef.current;
+    if (activeSpeech) {
+      activeSpeech.utterance.onend = null;
+      activeSpeech.utterance.onerror = null;
+      activeSpeech.utterance.onpause = null;
+      activeSpeech.utterance.onresume = null;
+      window.speechSynthesis?.cancel();
+    }
+    if (activeNativeSpeech) {
+      nativeSpeechGenerationRef.current += 1;
+      nativeSpeechRef.current = null;
+      void NativeTTS.stop().catch(() => {});
+    }
+    if (!activeSpeech && !activeNativeSpeech) return;
     resetSpeechState();
   }
 
-  function toggleSpeech(id: string, text: string) {
+  async function speakNativeChunk(session: NonNullable<typeof nativeSpeechRef.current>) {
+    const current = nativeSpeechRef.current;
+    if (!current || current !== session || current.paused || current.generation !== nativeSpeechGenerationRef.current) return;
+
+    try {
+      await NativeTTS.speak({
+        text: current.chunks[current.chunkIndex],
+        lang: current.language,
+        rate: 0.95,
+        pitch: 1,
+      });
+    } catch {
+      if (nativeSpeechRef.current === session && session.generation === nativeSpeechGenerationRef.current) {
+        nativeSpeechRef.current = null;
+        resetSpeechState();
+        setError("Unable to play the AI explanation right now.");
+      }
+      return;
+    }
+
+    const finishedSession = nativeSpeechRef.current;
+    if (!finishedSession || finishedSession !== session || finishedSession.paused || finishedSession.generation !== nativeSpeechGenerationRef.current) return;
+    if (finishedSession.chunkIndex < finishedSession.chunks.length - 1) {
+      finishedSession.chunkIndex += 1;
+      void speakNativeChunk(finishedSession);
+    } else {
+      nativeSpeechRef.current = null;
+      resetSpeechState();
+    }
+  }
+
+  function startNativeSpeech(id: string, text: string, language?: string): boolean {
+    if (!isNative() || !text) return false;
+    stopSpeech();
+    const session = {
+      id,
+      chunks: splitNativeSpeech(text),
+      chunkIndex: 0,
+      language: getNativeSpeechLanguage(language),
+      paused: false,
+      generation: nativeSpeechGenerationRef.current,
+    };
+    nativeSpeechRef.current = session;
+    setSpeakingMessageId(id);
+    setSpeechStatus("playing");
+    void speakNativeChunk(session);
+    return true;
+  }
+
+  function toggleSpeech(id: string, text: string, language?: string) {
+    if (!text) return;
+
+    const nativeSpeech = nativeSpeechRef.current;
+    if (isNative()) {
+      if (nativeSpeech?.id === id) {
+        if (speechStatus === "playing") {
+          nativeSpeech.paused = true;
+          setSpeechStatus("paused");
+          void NativeTTS.stop().catch(() => {});
+        } else if (speechStatus === "paused") {
+          nativeSpeech.paused = false;
+          setSpeechStatus("playing");
+          void speakNativeChunk(nativeSpeech);
+        }
+        return;
+      }
+      if (startNativeSpeech(id, text, language)) return;
+    }
+
     const synthesis = window.speechSynthesis;
-    if (!synthesis || !text) {
+    if (!synthesis) {
       setError("Audio playback is not available on this device.");
       return;
     }
@@ -226,6 +460,7 @@ export function QuranAssistant() {
 
   function openChat(chat: QuranAssistantChat) {
     stopSpeech();
+    stopAyahAudio();
     setActiveChatId(chat.id);
     setMessages(chat.messages);
     setQuestion(chat.draft);
@@ -236,6 +471,7 @@ export function QuranAssistant() {
 
   function startNewChat() {
     stopSpeech();
+    stopAyahAudio();
     clearQuranAssistantContext();
     navigate("/quran-assistant");
     const chat = createQuranAssistantChat();
@@ -338,7 +574,7 @@ export function QuranAssistant() {
   }
 
   return (
-    <div className="flex min-h-0 flex-1 flex-col">
+    <div className="flex h-full min-h-0 flex-1 flex-col">
       <header className="mb-5 flex shrink-0 items-center gap-3">
         <Link href={ayahContext ? `/quran/${ayahContext.surahNumber}?ayah=${ayahContext.ayahNumber}` : "/more"} className="rounded-xl p-2 text-muted-foreground hover:bg-muted" aria-label="Back"><ArrowLeft className="h-5 w-5" /></Link>
         <div className="min-w-0 flex-1"><h1 className="flex items-center gap-2 text-2xl font-serif font-bold text-primary"><Bot className="h-7 w-7 shrink-0" /> <span className="truncate">Quran Assistant</span></h1><p className="text-sm text-muted-foreground">Ask about the Quran</p><p className="text-xs text-muted-foreground" data-testid="quran-assistant-usage">{usage ? `Questions remaining: ${usage.remaining}/${usage.limit}` : "Checking question limit…"}</p>{usage?.remaining === 0 && <p className="text-xs font-medium text-amber-700 dark:text-amber-300">Daily limit reached · {formatUsageReset(usage.resetAt)}</p>}</div>
@@ -351,9 +587,9 @@ export function QuranAssistant() {
           </button>
         </div>
       </header>
-      <div className="min-h-0 flex-1 space-y-4 overflow-y-auto overscroll-contain pr-1">
+      <div className="min-h-0 flex-1 space-y-4 overflow-y-auto overscroll-contain overscroll-x-none px-0.5 pb-2 pr-1">
         {messages.length === 0 && <section className="rounded-3xl border border-border bg-card p-6 text-center shadow-sm"><MessageCircle className="mx-auto mb-3 h-10 w-10 text-primary" /><h2 className="text-xl font-semibold text-foreground">Ask about the Quran</h2><p className="mx-auto mt-2 max-w-md text-sm leading-relaxed text-muted-foreground">Understand verses, explore Quranic guidance, and learn more.</p><div className="mt-5 flex flex-wrap justify-center gap-2">{examples.map((item) => <button key={item} type="button" onClick={() => void ask(item)} className="rounded-full border border-border px-3 py-2 text-xs text-foreground hover:bg-muted">{item}</button>)}</div></section>}
-        {messages.map((message) => message.role === "user" ? <div key={message.id} className="ml-auto max-w-[90%] rounded-2xl rounded-br-md bg-primary px-4 py-3 text-sm text-primary-foreground">{message.text}</div> : <div key={message.id} className="space-y-3"><div className="rounded-2xl rounded-bl-md border border-border bg-muted p-4"><div className="flex items-center justify-between gap-3"><p className="text-xs font-semibold uppercase tracking-wide text-primary">Explanation</p>{getSpeechText(message.answer) && <button type="button" onClick={() => toggleSpeech(message.id, getSpeechText(message.answer))} aria-label={speakingMessageId === message.id && speechStatus === "playing" ? "Pause AI explanation audio" : speakingMessageId === message.id && speechStatus === "paused" ? "Resume AI explanation audio" : "Play AI explanation audio"} aria-pressed={speakingMessageId === message.id && speechStatus === "playing"} className="inline-flex shrink-0 items-center gap-1.5 rounded-xl border border-border bg-card px-3 py-2 text-xs font-medium text-foreground transition-colors hover:bg-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40">{speakingMessageId === message.id && speechStatus === "playing" ? <Pause className="h-4 w-4" aria-hidden="true" /> : speakingMessageId === message.id && speechStatus === "paused" ? <Play className="h-4 w-4" aria-hidden="true" /> : <Volume2 className="h-4 w-4" aria-hidden="true" />}{speakingMessageId === message.id && speechStatus === "playing" ? "Pause" : speakingMessageId === message.id && speechStatus === "paused" ? "Resume" : "Audio"}</button>}</div><p className="mt-2 whitespace-pre-wrap text-sm leading-relaxed text-foreground">{message.answer?.explanation || "No explanation was returned."}</p>{message.answer?.guidance && <><p className="mt-4 text-xs font-semibold uppercase tracking-wide text-primary">General Guidance</p><p className="mt-2 whitespace-pre-wrap text-sm leading-relaxed text-foreground">{message.answer.guidance}</p></>}</div>{message.answer?.ayahs.map((ayah) => <QuranCard key={`${ayah.surahNumber}:${ayah.ayahNumber}`} ayah={ayah} />)}</div>)}
+        {messages.map((message) => message.role === "user" ? <div key={message.id} className="ml-auto max-w-[90%] rounded-2xl rounded-br-md bg-primary px-4 py-3 text-sm text-primary-foreground">{message.text}</div> : <div key={message.id} className="space-y-3"><div className="rounded-2xl rounded-bl-md border border-border bg-muted p-4"><div className="flex items-center justify-between gap-3"><p className="text-xs font-semibold uppercase tracking-wide text-primary">Explanation</p>{getSpeechText(message.answer) && <button type="button" onClick={() => toggleSpeech(message.id, getSpeechText(message.answer), message.answer?.language)} aria-label={speakingMessageId === message.id && speechStatus === "playing" ? "Pause AI explanation audio" : speakingMessageId === message.id && speechStatus === "paused" ? "Resume AI explanation audio" : "Play AI explanation audio"} aria-pressed={speakingMessageId === message.id && speechStatus === "playing"} className="inline-flex shrink-0 items-center gap-1.5 rounded-xl border border-border bg-card px-3 py-2 text-xs font-medium text-foreground transition-colors hover:bg-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40">{speakingMessageId === message.id && speechStatus === "playing" ? <Pause className="h-4 w-4" aria-hidden="true" /> : speakingMessageId === message.id && speechStatus === "paused" ? <Play className="h-4 w-4" aria-hidden="true" /> : <Volume2 className="h-4 w-4" aria-hidden="true" />}{speakingMessageId === message.id && speechStatus === "playing" ? "Pause" : speakingMessageId === message.id && speechStatus === "paused" ? "Resume" : "Audio"}</button>}</div><p className="mt-2 whitespace-pre-wrap text-sm leading-relaxed text-foreground">{message.answer?.explanation || "No explanation was returned."}</p>{message.answer?.guidance && <><p className="mt-4 text-xs font-semibold uppercase tracking-wide text-primary">General Guidance</p><p className="mt-2 whitespace-pre-wrap text-sm leading-relaxed text-foreground">{message.answer.guidance}</p></>}</div>{message.answer?.ayahs.map((ayah) => <QuranCard key={`${ayah.surahNumber}:${ayah.ayahNumber}`} ayah={ayah} />)}</div>)}
         {usage?.remaining === 0 && <div role="status" className="rounded-2xl border border-amber-300/60 bg-amber-50 p-4 text-sm text-amber-950 dark:border-amber-700/50 dark:bg-amber-950/30 dark:text-amber-100" data-testid="quran-assistant-daily-limit">
           <p className="font-semibold">Daily limit reached</p>
           <p className="mt-1 leading-relaxed">You’ve used your {usage.limit} Quran Assistant questions for this 24-hour period. You can ask more questions when your limit resets.</p>
@@ -382,8 +618,24 @@ export function QuranAssistant() {
           Explain this Ayah
         </button>
       </section>}
-      <form onSubmit={(event) => { event.preventDefault(); void ask(); }} className="mt-4 flex shrink-0 items-end gap-2 border-t border-border bg-background/95 px-1 pt-3 pb-[calc(0.75rem+env(safe-area-inset-bottom,0px))] backdrop-blur">
-        <textarea value={question} onChange={(event) => setQuestion(event.target.value)} rows={2} maxLength={1200} placeholder="Ask a question about the Quran…" aria-label="Question for Quran Assistant" enterKeyHint="send" autoComplete="off" spellCheck="true" className="min-h-12 max-h-36 min-w-0 flex-1 resize-none rounded-2xl border border-border bg-card px-4 py-3 text-sm text-foreground outline-none placeholder:text-muted-foreground focus:ring-2 focus:ring-primary/30" dir="auto" data-testid="input-quran-assistant-question" />
+      <form onSubmit={(event) => { event.preventDefault(); void ask(); }} className="relative z-10 mt-4 flex shrink-0 items-end gap-2 border-t border-border bg-background/95 px-1 pt-3 pb-[calc(0.75rem+env(safe-area-inset-bottom,0px))] backdrop-blur">
+        <textarea
+          value={question}
+          onChange={(event) => setQuestion(event.currentTarget.value)}
+          rows={2}
+          maxLength={1200}
+          placeholder="Ask a question about the Quran…"
+          aria-label="Question for Quran Assistant"
+          enterKeyHint="send"
+          inputMode="text"
+          autoComplete="on"
+          autoCorrect="on"
+          autoCapitalize="sentences"
+          spellCheck={true}
+          className="min-h-12 max-h-36 min-w-0 flex-1 resize-none rounded-2xl border border-border bg-card px-4 py-3 text-sm text-foreground outline-none placeholder:text-muted-foreground focus:ring-2 focus:ring-primary/30"
+          dir="auto"
+          data-testid="input-quran-assistant-question"
+        />
         <button type="submit" disabled={loading || !question.trim()} aria-label="Send question" className="rounded-2xl bg-primary p-3 text-primary-foreground disabled:opacity-50"><Send className="h-5 w-5" /></button>
       </form>
 

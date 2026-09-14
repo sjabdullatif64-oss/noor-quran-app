@@ -37,6 +37,22 @@ export interface AyahReward {
   createdAt: string;
 }
 
+export interface QuranAssistantUsage {
+  userId: string;
+  windowStartedAt: string;
+  questionsUsed: number;
+  reservations: Array<{ id: string; createdAt: string }>;
+  updatedAt: string;
+}
+
+export interface QuranAssistantUsageSnapshot {
+  limit: number;
+  questionsUsed: number;
+  remaining: number;
+  windowStartedAt: string;
+  resetAt: string;
+}
+
 export interface Product {
   id: string;
   userId: string;
@@ -105,6 +121,7 @@ const SHEETS = {
   CoinTransactions: ["id","userId","amount","reason","eventKey","createdAt"],
   DailyCheckins:    ["id","userId","date","createdAt"],
   AyahRewards:      ["id","userId","surahNumber","ayahNumber","date","createdAt"],
+  QuranAssistantUsage: ["userId","windowStartedAt","questionsUsed","reservations","updatedAt"],
   Products:         ["id","userId","title","description","imageUrl","contactInfo","productLink","category","status","promotionType","coinsSpent","submittedBy","approvedAt","rejectedAt","rejectionReason","promotionExpiry","createdAt","displayOrder"],
   WelcomeCampaigns: ["id","imageUrl","gifUrl","videoUrl","title","description","buttonText","url","durationSeconds","enabled"],
 } as const;
@@ -779,6 +796,235 @@ export async function countTodayAyahRewards(userId: string, date: string): Promi
 
 export async function addAyahReward(userId: string, surah: number, ayah: number, date: string): Promise<void> {
   await appendRow("AyahRewards", [crypto.randomUUID(), userId, String(surah), String(ayah), date, new Date().toISOString()]);
+}
+
+// Quran Assistant usage
+
+export const QURAN_ASSISTANT_DAILY_LIMIT = 5;
+const QURAN_ASSISTANT_WINDOW_MS = 24 * 60 * 60 * 1000;
+const QURAN_ASSISTANT_RESERVATION_TTL_MS = 15 * 60 * 1000;
+
+function parseUsageReservations(value: string): QuranAssistantUsage["reservations"] {
+  try {
+    const parsed = JSON.parse(value || "[]");
+    return Array.isArray(parsed)
+      ? parsed.filter((item): item is { id: string; createdAt: string } => (
+          typeof item?.id === "string"
+          && typeof item?.createdAt === "string"
+          && item.id.length > 0
+          && Number.isFinite(Date.parse(item.createdAt))
+        ))
+      : [];
+  } catch {
+    return [];
+  }
+}
+
+function rowToQuranAssistantUsage(row: Record<string, string>, nowMs: number): QuranAssistantUsage {
+  const parsedStart = Date.parse(row.windowStartedAt);
+  const windowStartedAt = Number.isFinite(parsedStart) ? row.windowStartedAt : "";
+  const questionsUsed = Math.max(0, Math.min(
+    QURAN_ASSISTANT_DAILY_LIMIT,
+    Number.parseInt(row.questionsUsed, 10) || 0,
+  ));
+  const reservations = parseUsageReservations(row.reservations).filter(
+    (reservation) => nowMs - Date.parse(reservation.createdAt) < QURAN_ASSISTANT_RESERVATION_TTL_MS,
+  );
+  return {
+    userId: row.userId,
+    windowStartedAt,
+    questionsUsed,
+    reservations,
+    updatedAt: row.updatedAt || new Date(nowMs).toISOString(),
+  };
+}
+
+function usageToRow(usage: QuranAssistantUsage): string[] {
+  return [
+    usage.userId,
+    usage.windowStartedAt,
+    String(usage.questionsUsed),
+    JSON.stringify(usage.reservations),
+    usage.updatedAt,
+  ];
+}
+
+function usageSnapshot(usage: QuranAssistantUsage, nowMs: number): QuranAssistantUsageSnapshot {
+  const windowStartMs = Date.parse(usage.windowStartedAt);
+  if (!Number.isFinite(windowStartMs)) {
+    return {
+      limit: QURAN_ASSISTANT_DAILY_LIMIT,
+      questionsUsed: 0,
+      remaining: Math.max(0, QURAN_ASSISTANT_DAILY_LIMIT - usage.reservations.length),
+      windowStartedAt: "",
+      resetAt: "",
+    };
+  }
+  const resetMs = Number.isFinite(windowStartMs)
+    ? windowStartMs + QURAN_ASSISTANT_WINDOW_MS
+    : nowMs + QURAN_ASSISTANT_WINDOW_MS;
+  const activeWindow = nowMs < resetMs;
+  const questionsUsed = activeWindow ? usage.questionsUsed : 0;
+  const reserved = activeWindow ? usage.reservations.length : 0;
+  return {
+    limit: QURAN_ASSISTANT_DAILY_LIMIT,
+    questionsUsed,
+    remaining: Math.max(0, QURAN_ASSISTANT_DAILY_LIMIT - questionsUsed - reserved),
+    windowStartedAt: activeWindow ? usage.windowStartedAt : new Date(nowMs).toISOString(),
+    resetAt: new Date(activeWindow ? resetMs : nowMs + QURAN_ASSISTANT_WINDOW_MS).toISOString(),
+  };
+}
+
+function resetExpiredUsage(usage: QuranAssistantUsage, nowMs: number): QuranAssistantUsage {
+  const startedAt = Date.parse(usage.windowStartedAt);
+  if (!Number.isFinite(startedAt)) {
+    return { ...usage, windowStartedAt: "", questionsUsed: 0 };
+  }
+  if (nowMs >= startedAt + QURAN_ASSISTANT_WINDOW_MS) {
+    const now = new Date(nowMs).toISOString();
+    return { ...usage, windowStartedAt: "", questionsUsed: 0, reservations: [], updatedAt: now };
+  }
+  return usage;
+}
+
+async function readQuranAssistantUsageRow(
+  userId: string,
+  nowMs: number,
+): Promise<{ usage: QuranAssistantUsage; index: number } | null> {
+  const rows = await readAllRows("QuranAssistantUsage");
+  const index = rows.findIndex((row) => row.userId === userId);
+  if (index === -1) return null;
+  return { usage: rowToQuranAssistantUsage(rows[index], nowMs), index };
+}
+
+async function persistQuranAssistantUsage(
+  usage: QuranAssistantUsage,
+  rowIndex: number | null,
+): Promise<void> {
+  if (rowIndex === null) await appendRow("QuranAssistantUsage", usageToRow(usage));
+  else await updateRowByDataIndex("QuranAssistantUsage", rowIndex, usageToRow(usage));
+}
+
+const quranAssistantUsageLocks = new Map<string, Promise<void>>();
+
+async function withQuranAssistantUsageLock<T>(
+  userId: string,
+  operation: () => Promise<T>,
+): Promise<T> {
+  const previous = quranAssistantUsageLocks.get(userId) ?? Promise.resolve();
+  let release!: () => void;
+  const next = new Promise<void>((resolve) => { release = resolve; });
+  const chain = previous.then(() => next);
+  quranAssistantUsageLocks.set(userId, chain);
+  await previous;
+  try {
+    return await operation();
+  } finally {
+    release();
+    if (quranAssistantUsageLocks.get(userId) === chain) quranAssistantUsageLocks.delete(userId);
+  }
+}
+
+export async function getQuranAssistantUsage(
+  userId: string,
+  now = new Date(),
+): Promise<QuranAssistantUsageSnapshot> {
+  return withQuranAssistantUsageLock(userId, async () => {
+    const nowMs = now.getTime();
+    const found = await readQuranAssistantUsageRow(userId, nowMs);
+    if (!found) {
+      const createdAt = now.toISOString();
+      const usage: QuranAssistantUsage = {
+        userId,
+        windowStartedAt: "",
+        questionsUsed: 0,
+        reservations: [],
+        updatedAt: createdAt,
+      };
+      await persistQuranAssistantUsage(usage, null);
+      return usageSnapshot(usage, nowMs);
+    }
+    const usage = resetExpiredUsage(found.usage, nowMs);
+    if (usage.updatedAt !== found.usage.updatedAt || usage.reservations.length !== found.usage.reservations.length) {
+      await persistQuranAssistantUsage(usage, found.index);
+    }
+    return usageSnapshot(usage, nowMs);
+  });
+}
+
+export async function reserveQuranAssistantQuestion(
+  userId: string,
+  now = new Date(),
+): Promise<{ allowed: boolean; reservationId: string | null; usage: QuranAssistantUsageSnapshot }> {
+  return withQuranAssistantUsageLock(userId, async () => {
+    const nowMs = now.getTime();
+    const found = await readQuranAssistantUsageRow(userId, nowMs);
+    const base = found?.usage ?? {
+      userId,
+      windowStartedAt: "",
+      questionsUsed: 0,
+      reservations: [],
+      updatedAt: now.toISOString(),
+    };
+    const usage = resetExpiredUsage(base, nowMs);
+    const currentSnapshot = usageSnapshot(usage, nowMs);
+    if (currentSnapshot.remaining <= 0) {
+      if (found && usage.updatedAt !== found.usage.updatedAt) await persistQuranAssistantUsage(usage, found.index);
+      return { allowed: false, reservationId: null, usage: currentSnapshot };
+    }
+
+    const reservationId = crypto.randomUUID();
+    const reservedUsage: QuranAssistantUsage = {
+      ...usage,
+      reservations: [...usage.reservations, { id: reservationId, createdAt: now.toISOString() }],
+      updatedAt: now.toISOString(),
+    };
+    await persistQuranAssistantUsage(reservedUsage, found?.index ?? null);
+    return {
+      allowed: true,
+      reservationId,
+      usage: usageSnapshot(reservedUsage, nowMs),
+    };
+  });
+}
+
+export async function finishQuranAssistantQuestion(
+  userId: string,
+  reservationId: string,
+  succeeded: boolean,
+  now = new Date(),
+): Promise<QuranAssistantUsageSnapshot> {
+  return withQuranAssistantUsageLock(userId, async () => {
+    const nowMs = now.getTime();
+    const found = await readQuranAssistantUsageRow(userId, nowMs);
+    if (!found) {
+      const createdAt = now.toISOString();
+      const usage: QuranAssistantUsage = {
+        userId,
+        windowStartedAt: "",
+        questionsUsed: 0,
+        reservations: [],
+        updatedAt: createdAt,
+      };
+      await persistQuranAssistantUsage(usage, null);
+      return usageSnapshot(usage, nowMs);
+    }
+    const usage = resetExpiredUsage(found.usage, nowMs);
+    if (!usage.reservations.some((item) => item.id === reservationId)) {
+      return usageSnapshot(usage, nowMs);
+    }
+    const finished: QuranAssistantUsage = {
+      ...usage,
+      windowStartedAt: succeeded && !Number.isFinite(Date.parse(usage.windowStartedAt))
+        ? now.toISOString()
+        : usage.windowStartedAt,
+      reservations: usage.reservations.filter((item) => item.id !== reservationId),
+      questionsUsed: succeeded ? Math.min(QURAN_ASSISTANT_DAILY_LIMIT, usage.questionsUsed + 1) : usage.questionsUsed,
+      updatedAt: now.toISOString(),
+    };
+    await persistQuranAssistantUsage(finished, found.index);
+    return usageSnapshot(finished, nowMs);
+  });
 }
 
 // ─── Products ─────────────────────────────────────────────────────────────────

@@ -1,11 +1,22 @@
 import { Router } from "express";
 import { z } from "zod";
+import {
+  findUserByDeviceId,
+  finishQuranAssistantQuestion,
+  getQuranAssistantUsage,
+  reserveQuranAssistantQuestion,
+} from "../lib/sheets";
 
 const router = Router();
 
 const requestSchema = z.object({
   question: z.string().trim().min(2).max(1200),
   language: z.string().trim().min(2).max(40).optional(),
+  deviceId: z.string().min(1).max(200),
+});
+
+const usageQuerySchema = z.object({
+  deviceId: z.string().min(1).max(200),
 });
 
 const EDITIONS: Record<string, string> = {
@@ -112,10 +123,44 @@ async function verifiedAyah(surahNumber: number, ayahNumber: number, language: s
   };
 }
 
+router.get("/usage", async (req, res) => {
+  const parsed = usageQuerySchema.safeParse(req.query);
+  if (!parsed.success) {
+    res.status(400).json({ error: "Registration is required." });
+    return;
+  }
+  const user = await findUserByDeviceId(parsed.data.deviceId);
+  if (!user) {
+    res.status(401).json({ error: "Registration is required." });
+    return;
+  }
+  try {
+    const usage = await getQuranAssistantUsage(user.id);
+    res.setHeader("Cache-Control", "no-store");
+    res.json({ usage });
+  } catch (error) {
+    res.status(503).json({ error: error instanceof Error ? error.message : "Usage is temporarily unavailable." });
+  }
+});
+
 router.post("/", async (req, res) => {
   const parsed = requestSchema.safeParse(req.body);
   if (!parsed.success) {
     res.status(400).json({ error: "Please enter a question." });
+    return;
+  }
+  const user = await findUserByDeviceId(parsed.data.deviceId);
+  if (!user) {
+    res.status(401).json({ error: "Registration is required before using Quran Assistant." });
+    return;
+  }
+  const reservation = await reserveQuranAssistantQuestion(user.id);
+  if (!reservation.allowed || !reservation.reservationId) {
+    res.setHeader("Cache-Control", "no-store");
+    res.status(429).json({
+      error: "Daily limit reached",
+      usage: reservation.usage,
+    });
     return;
   }
   try {
@@ -124,9 +169,11 @@ router.post("/", async (req, res) => {
     const verified = (await Promise.all(answer.refs.map((ref) => verifiedAyah(ref.surahNumber, ref.ayahNumber, language)))).filter(
       (ayah): ayah is VerifiedAyah => ayah !== null,
     );
+    const usage = await finishQuranAssistantQuestion(user.id, reservation.reservationId, true);
     res.setHeader("Cache-Control", "no-store");
-    res.json({ language, explanation: answer.explanation, guidance: answer.guidance, ayahs: verified });
+    res.json({ language, explanation: answer.explanation, guidance: answer.guidance, ayahs: verified, usage });
   } catch (error) {
+    await finishQuranAssistantQuestion(user.id, reservation.reservationId, false).catch(() => {});
     res.status(502).json({ error: error instanceof Error ? error.message : "Unable to answer right now." });
   }
 });

@@ -464,3 +464,31 @@ mtime_ms = 1788724780020
 storage_uri = "gcs://replit-rams-assets-pike/rams/assets/repl:bd238ef0-1b86-4eea-96d7-950cea5f63f3/51473e87-35e5-4c1d-9a6f-b462e0f6eaca/0293e0a7-a3d7-4603-8f5c-37df96c121dd"
 storage_version_token = "1788724788504603"
 content_type = "application/octet-stream"
+
+[[outputs]]
+id = "XqMjEmLE7TapMk3AEoE2D"
+uri = "file://release-artifacts/noor-quran-1.0.23.apk"
+type = "unspecified"
+title = "Noor Quran 1.0.23 APK"
+description = "Fresh signed release APK from canonical GitHub Actions run 355, commit 1ff050ed9b01abb16e6eca074197228884cb8925."
+logical_id = "19a21a32-a5b7-4315-84cb-643ebbd90e64"
+content_hash = "sha256:dd9f9441c76e1cb75b902da2fd64e8f1c048ce7c54db04dab66887a5814700e8"
+size = 17315436
+mtime_ms = 1788768993301
+storage_uri = "gcs://replit-rams-assets-pike/rams/assets/repl:bd238ef0-1b86-4eea-96d7-950cea5f63f3/19a21a32-a5b7-4315-84cb-643ebbd90e64/06164bcf-481d-438b-bd96-a34eab54392c"
+storage_version_token = "1788769305371759"
+content_type = "application/octet-stream"
+
+[[outputs]]
+id = "RHrVE4yINiZNqc7X2rJyu"
+uri = "file://release-artifacts/noor-quran-1.0.23.aab"
+type = "unspecified"
+title = "Noor Quran 1.0.23 AAB"
+description = "Fresh signed release AAB from canonical GitHub Actions run 355, commit 1ff050ed9b01abb16e6eca074197228884cb8925."
+logical_id = "a83e5b62-7de2-44b8-a94a-884d66f40fd5"
+content_hash = "sha256:d6925084485e7a38cb6532c6c4c031a245672c64e8f5ddb8143916da14ea983d"
+size = 16571644
+mtime_ms = 1788768993337
+storage_uri = "gcs://replit-rams-assets-pike/rams/assets/repl:bd238ef0-1b86-4eea-96d7-950cea5f63f3/a83e5b62-7de2-44b8-a94a-884d66f40fd5/446a3730-e639-4a40-8e62-1e154281c801"
+storage_version_token = "1788769306903488"
+content_type = "application/octet-stream"

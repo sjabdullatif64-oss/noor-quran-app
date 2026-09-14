@@ -10,6 +10,7 @@ import com.getcapacitor.Plugin
 import com.getcapacitor.PluginCall
 import com.getcapacitor.PluginMethod
 import com.getcapacitor.annotation.CapacitorPlugin
+import java.util.ArrayDeque
 import java.util.Locale
 import java.util.concurrent.ConcurrentHashMap
 
@@ -30,6 +31,8 @@ class NativeTTSPlugin : Plugin() {
 
     private var tts: TextToSpeech? = null
     private var isReady = false
+    private var initializationFailed = false
+    private val queuedSpeaks = ArrayDeque<PluginCall>()
 
     // Maps utterance IDs → pending PluginCall so we can resolve on completion
     private val pending = ConcurrentHashMap<String, PluginCall>()
@@ -39,7 +42,13 @@ class NativeTTSPlugin : Plugin() {
     override fun load() {
         tts = TextToSpeech(context) { status ->
             isReady = (status == TextToSpeech.SUCCESS)
-            if (isReady) attachProgressListener()
+            initializationFailed = !isReady
+            if (isReady) {
+                attachProgressListener()
+                while (queuedSpeaks.isNotEmpty()) speakReady(queuedSpeaks.removeFirst())
+            } else {
+                while (queuedSpeaks.isNotEmpty()) queuedSpeaks.removeFirst().reject("TTS_INIT_FAILED")
+            }
         }
     }
 
@@ -68,6 +77,8 @@ class NativeTTSPlugin : Plugin() {
         tts?.stop()
         tts?.shutdown()
         tts = null
+        queuedSpeaks.forEach { it.resolve() }
+        queuedSpeaks.clear()
         pending.values.forEach { it.resolve() }
         pending.clear()
         super.handleOnDestroy()
@@ -85,10 +96,14 @@ class NativeTTSPlugin : Plugin() {
     @PluginMethod
     fun speak(call: PluginCall) {
         if (!isReady) {
-            call.reject("TTS_NOT_READY")
+            if (initializationFailed) call.reject("TTS_INIT_FAILED")
+            else queuedSpeaks.addLast(call)
             return
         }
+        speakReady(call)
+    }
 
+    private fun speakReady(call: PluginCall) {
         val text  = call.getString("text") ?: run { call.reject("NO_TEXT"); return }
         val lang  = call.getString("lang") ?: "en-US"
         val rate  = call.getFloat("rate")  ?: 0.85f
@@ -139,6 +154,7 @@ class NativeTTSPlugin : Plugin() {
     @PluginMethod
     fun stop(call: PluginCall) {
         tts?.stop()
+        while (queuedSpeaks.isNotEmpty()) queuedSpeaks.removeFirst().resolve()
         val snapshot = pending.toMap()
         pending.clear()
         snapshot.values.forEach { it.resolve() }
