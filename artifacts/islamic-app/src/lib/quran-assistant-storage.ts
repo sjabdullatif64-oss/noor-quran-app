@@ -104,7 +104,10 @@ function normalizeMessage(value: unknown, index: number): QuranAssistantMessage 
       : null;
   }
   const answer = normalizeAnswer(value.answer);
-  return answer ? { id, role: "assistant", answer, createdAt } : null;
+  const ayahContext = normalizeContext(value.ayahContext);
+  return answer
+    ? { id, role: "assistant", answer, ...(ayahContext ? { ayahContext } : {}), createdAt }
+    : null;
 }
 
 function normalizeContext(value: unknown): QuranAssistantContext | null {

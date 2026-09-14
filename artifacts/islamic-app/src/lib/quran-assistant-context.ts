@@ -14,6 +14,14 @@ export interface QuranAssistantConversationMessage {
   content: string;
 }
 
+export interface QuranAssistantRequest {
+  question: string;
+  deviceId: string;
+  language?: string;
+  ayahContext?: QuranAssistantContext | null;
+  conversation?: QuranAssistantConversationMessage[];
+}
+
 export const QURAN_ASSISTANT_RECENT_TURN_LIMIT = 5;
 
 /**
@@ -78,6 +86,26 @@ export function buildQuranAssistantRequestPayload(
   if (context) payload.ayahContext = context;
   if (conversation.length) payload.conversation = conversation;
   return payload;
+}
+
+export function buildQuranAssistantRequestBody(
+  request: QuranAssistantRequest,
+): {
+  question: string;
+  deviceId: string;
+  language?: string;
+  ayahContext?: QuranAssistantContext;
+  conversation?: QuranAssistantConversationMessage[];
+} {
+  return {
+    ...buildQuranAssistantRequestPayload(
+      request.ayahContext ?? null,
+      request.question,
+      request.conversation,
+    ),
+    language: request.language,
+    deviceId: request.deviceId,
+  };
 }
 
 export function setQuranAssistantComposerQuestion(

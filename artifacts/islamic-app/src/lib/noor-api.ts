@@ -1,8 +1,9 @@
 import { Capacitor } from "@capacitor/core";
 import {
-  buildQuranAssistantRequestPayload,
+  buildQuranAssistantRequestBody,
   type QuranAssistantContext,
   type QuranAssistantConversationMessage,
+  type QuranAssistantRequest,
 } from "@/lib/quran-assistant-context";
 
 const configuredApiDomain = (
@@ -201,20 +202,10 @@ export const noorApi = {
     return noorFetch(`/quran-assistant/usage?deviceId=${encodeURIComponent(deviceId)}`);
   },
 
-  async askQuranAssistant(
-    question: string,
-    language?: string,
-    deviceId?: string,
-    ayahContext?: QuranAssistantContext | null,
-    conversation?: QuranAssistantConversationMessage[],
-  ): Promise<QuranAssistantResponse> {
+  async askQuranAssistant(request: QuranAssistantRequest): Promise<QuranAssistantResponse> {
     return noorFetch("/quran-assistant", {
       method: "POST",
-      body: JSON.stringify({
-        ...buildQuranAssistantRequestPayload(ayahContext ?? null, question, conversation),
-        language,
-        deviceId,
-      }),
+      body: JSON.stringify(buildQuranAssistantRequestBody(request)),
     });
   },
 
