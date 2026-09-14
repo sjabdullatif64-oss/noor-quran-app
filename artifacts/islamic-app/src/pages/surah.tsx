@@ -4,7 +4,7 @@ import {
   useSurah, MAIN_LANGUAGES, TRANSLATION_LABELS, TRANSLATION_ENGLISH_NAMES,
   TTS_LANG_CODES, RTL_LANGUAGES, TranslationLanguage,
 } from "@/lib/api";
-import { useParams, Link } from "wouter";
+import { useParams, Link, useLocation } from "wouter";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   ArrowLeft, Bookmark, BookmarkCheck, ChevronLeft, ChevronRight,
@@ -33,6 +33,7 @@ import {
 import { usePinchZoom } from "@/hooks/use-pinch-zoom";
 import { useNetworkStatus } from "@/hooks/use-network";
 import { MoreLanguagesDialog } from "@/components/translation-language-picker";
+import { saveQuranAssistantContext } from "@/lib/quran-assistant-context";
 
 // ── Types ──────────────────────────────────────────────────────────────────────
 type AudioMode  = "arabic" | "translation" | "both";
@@ -97,6 +98,7 @@ function preloadAudioUrl(url: string) {
 // ── SurahReader ────────────────────────────────────────────────────────────────
 export function SurahReader() {
   const params = useParams();
+  const [, navigate] = useLocation();
   const number = Number(params.number);
 
   // Parse optional ?ayah=N query param — used by "Ayah of the Day" Read button.
@@ -860,6 +862,19 @@ export function SurahReader() {
                         }}
                         pinchZoomEnabled={pinchZoomEnabled}
                         onTogglePinchZoom={() => setPinchZoomEnabled((v) => !v)}
+                       onAskAssistant={() => {
+                         saveQuranAssistantContext({
+                           surahNumber: number,
+                           surahName: surah?.name ?? "",
+                           surahEnglishName: surah?.englishName ?? "",
+                           ayahNumber: ayah.numberInSurah,
+                           arabic: ayah.textAr,
+                           translation: applyTranslationDisplay(language, ayah.textTranslation, ayah.textAr),
+                           transliteration: ayah.textTranslit,
+                           audioGlobalNumber: ayah.globalNumber,
+                         });
+                         navigate("/quran-assistant?context=ayah");
+                       }}
                         triggerClassName="w-8 h-8 rounded-full flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors"
                         testId={`button-more-ayah-${ayah.numberInSurah}`}
                       />

@@ -1,6 +1,6 @@
 import { useState } from "react";
 import {
-  MoreVertical, Share2, Copy, ZoomIn, Eye, EyeOff, Languages,
+  MoreVertical, Share2, Copy, ZoomIn, Eye, EyeOff, Languages, Sparkles,
 } from "lucide-react";
 import {
   DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem,
@@ -37,6 +37,7 @@ interface AyahActionsMenuProps {
   pinchZoomEnabled: boolean;
   /** Toggles pinch-to-zoom on/off. Lifted up to the reader page since zoom applies to the whole ayah list, not a single card. */
   onTogglePinchZoom: () => void;
+  onAskAssistant?: () => void;
   triggerClassName?: string;
   testId?: string;
 }
@@ -121,6 +122,16 @@ export function AyahActionsMenu(props: AyahActionsMenuProps) {
           <Copy className="w-4 h-4 mr-2" />
           Copy Ayah
         </DropdownMenuItem>
+
+        {props.onAskAssistant && (
+          <>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem onClick={props.onAskAssistant} data-testid="menu-ask-quran-assistant">
+              <Sparkles className="w-4 h-4 mr-2 text-primary" />
+              Ask Quran Assistant
+            </DropdownMenuItem>
+          </>
+        )}
 
         <DropdownMenuSeparator />
 

@@ -24,6 +24,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
   const [location] = useLocation();
   const { theme, setTheme } = useTheme();
   const { t } = useI18n();
+  const isQuranAssistant = location === "/quran-assistant";
 
   const isDarkPage = [
     "/qibla", "/more", "/favorites", "/tasbeeh", "/settings", "/islamic-gifts",
@@ -116,8 +117,10 @@ export function Layout({ children }: { children: React.ReactNode }) {
       </div>
 
       {/* Main content + centralized banner spacer */}
-      <main className="flex-1 flex flex-col min-h-0 overflow-y-auto">
-        <div className={isDarkPage ? "w-full" : "flex-1 w-full max-w-5xl mx-auto p-4 md:p-8"}>
+      <main className={`flex-1 flex flex-col min-h-0 ${isQuranAssistant ? "overflow-hidden" : "overflow-y-auto"}`}>
+        <div className={isDarkPage
+          ? "w-full"
+          : `flex-1 w-full max-w-5xl mx-auto p-4 md:p-8 ${isQuranAssistant ? "min-h-0 flex flex-col" : ""}`}>
           {children}
         </div>
 

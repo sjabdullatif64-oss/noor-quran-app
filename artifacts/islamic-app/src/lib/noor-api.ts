@@ -13,6 +13,18 @@ export const API_BASE = Capacitor.isNativePlatform()
   ? `${REPLIT_DOMAIN}/api`
   : "/api";
 
+export class NoorApiError extends Error {
+  status: number;
+  data: unknown;
+
+  constructor(message: string, status: number, data: unknown) {
+    super(message);
+    this.name = "NoorApiError";
+    this.status = status;
+    this.data = data;
+  }
+}
+
 export function resolveNoorMediaUrl(value: string | null): string | null {
   if (!value) return null;
   if (value.startsWith("data:") || value.startsWith("blob:") || /^https?:\/\//i.test(value)) return value;
@@ -29,7 +41,7 @@ async function noorFetch<T>(path: string, opts: RequestInit = {}): Promise<T> {
   });
   if (!res.ok) {
     const err = await res.json().catch(() => ({ error: "Network error" }));
-    throw new Error((err as { error?: string }).error ?? `HTTP ${res.status}`);
+    throw new NoorApiError((err as { error?: string }).error ?? `HTTP ${res.status}`, res.status, err);
   }
   if (res.status === 204) return undefined as T;
   return res.json() as Promise<T>;
@@ -97,11 +109,20 @@ export interface QuranAssistantAyah {
   audioGlobalNumber: number;
 }
 
+export interface QuranAssistantUsage {
+  limit: number;
+  questionsUsed: number;
+  remaining: number;
+  windowStartedAt: string;
+  resetAt: string;
+}
+
 export interface QuranAssistantResponse {
   language: string;
   explanation: string;
   guidance: string;
   ayahs: QuranAssistantAyah[];
+  usage?: QuranAssistantUsage;
 }
 
 export const noorApi = {
@@ -169,10 +190,14 @@ export const noorApi = {
     return noorFetch("/campaigns/welcome");
   },
 
-  async askQuranAssistant(question: string, language?: string): Promise<QuranAssistantResponse> {
+  async getQuranAssistantUsage(deviceId: string): Promise<{ usage: QuranAssistantUsage }> {
+    return noorFetch(`/quran-assistant/usage?deviceId=${encodeURIComponent(deviceId)}`);
+  },
+
+  async askQuranAssistant(question: string, language?: string, deviceId?: string): Promise<QuranAssistantResponse> {
     return noorFetch("/quran-assistant", {
       method: "POST",
-      body: JSON.stringify({ question, language }),
+      body: JSON.stringify({ question, language, deviceId }),
     });
   },
 
