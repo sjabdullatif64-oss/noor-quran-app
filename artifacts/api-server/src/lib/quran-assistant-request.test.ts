@@ -21,7 +21,7 @@ for (const expectedPart of [
   "Ayah number: 255",
   "Verified Arabic text: اللَّهُ لَا إِلَٰهَ إِلَّا هُوَ",
   "Displayed translation: Allah—there is no deity except Him.",
-  "User's question: Explain this Ayah",
+  "CURRENT USER QUESTION: Explain this Ayah",
 ]) {
   if (!question.includes(expectedPart)) {
     throw new Error(`Server prompt omitted selected Ayah context: ${expectedPart}`);
@@ -42,10 +42,10 @@ const followUp = buildQuranAssistantQuestion(
   ],
 );
 for (const expectedPart of [
-  "Previous conversation messages",
+  "CONVERSATION CONTEXT",
   "User: مجھے اس آیت کا مطلب سمجھائیں",
   "Assistant: یہ آیت اللہ کی توحید بیان کرتی ہے۔",
-  "User's question: اس کے بارے میں مزید بتاؤ",
+  "CURRENT USER QUESTION: اس کے بارے میں مزید بتاؤ",
 ]) {
   if (!followUp.includes(expectedPart)) {
     throw new Error(`Server prompt omitted conversation context: ${expectedPart}`);
@@ -67,7 +67,7 @@ for (const expectedPart of [
   "Ayah number: 38",
   `Verified Arabic text: ${selectedMaaida38.arabic}`,
   `Displayed translation: ${selectedMaaida38.translation}`,
-  "User's question: ان کی وضاحت دیں",
+  "CURRENT USER QUESTION: ان کی وضاحت دیں",
 ]) {
   if (!contextualQuestion.includes(expectedPart)) {
     throw new Error(`Selected Al-Maaida 38 context was not sent to the AI prompt: ${expectedPart}`);

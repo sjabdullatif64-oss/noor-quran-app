@@ -28,33 +28,12 @@ import {
 import {
   buildQuranAssistantQuestion,
   getSelectedAyahReference,
+  quranAssistantRequestSchema,
   type QuranAssistantConversationMessage,
   type QuranAssistantAyahContext,
 } from "../lib/quran-assistant-request";
 
 const router = Router();
-
-const ayahContextSchema = z.object({
-  surahNumber: z.number().int().min(1).max(114),
-  surahName: z.string().min(1).max(200),
-  surahEnglishName: z.string().min(1).max(200),
-  ayahNumber: z.number().int().min(1).max(286),
-  arabic: z.string().min(1).max(12000),
-  translation: z.string().max(12000),
-  transliteration: z.string().max(12000).optional(),
-  audioGlobalNumber: z.number().int().min(1).max(7000),
-});
-
-const requestSchema = z.object({
-  question: z.string().trim().min(2).max(1200),
-  language: z.string().trim().min(2).max(40).optional(),
-  deviceId: z.string().min(1).max(200),
-  ayahContext: ayahContextSchema.optional(),
-  conversation: z.array(z.object({
-    role: z.enum(["user", "assistant"]),
-    content: z.string().trim().min(1).max(2400),
-  })).max(10).optional(),
-});
 
 const usageQuerySchema = z.object({
   deviceId: z.string().min(1).max(200),
@@ -222,7 +201,7 @@ router.get("/usage", async (req, res) => {
 });
 
 router.post("/", async (req, res) => {
-  const parsed = requestSchema.safeParse(req.body);
+  const parsed = quranAssistantRequestSchema.safeParse(req.body);
   if (!parsed.success) {
     res.status(400).json({ error: "Please enter a question." });
     return;
@@ -244,7 +223,11 @@ router.post("/", async (req, res) => {
     });
     return;
   }
-  const assistantQuestion = buildQuranAssistantQuestion(parsed.data.question, parsed.data.ayahContext);
+  const assistantQuestion = buildQuranAssistantQuestion(
+    parsed.data.question,
+    parsed.data.ayahContext,
+    parsed.data.conversation,
+  );
   const selectedAyahReference = getSelectedAyahReference(parsed.data.ayahContext);
   const user = await findUserByDeviceId(parsed.data.deviceId);
   if (!user) {
@@ -261,7 +244,7 @@ router.post("/", async (req, res) => {
     return;
   }
   try {
-    const answer = await aiRequest(assistantQuestion, language, parsed.data.conversation);
+    const answer = await aiRequest(assistantQuestion, language);
     const suggestedReferences = getSuggestedQuranReferences(parsed.data.question);
     const referenceCandidates = uniqueReferences([...selectedAyahReference, ...suggestedReferences, ...answer.refs]);
     const verified = (await Promise.all(referenceCandidates.map((ref) => verifiedAyah(ref.surahNumber, ref.ayahNumber, language)))).filter(
