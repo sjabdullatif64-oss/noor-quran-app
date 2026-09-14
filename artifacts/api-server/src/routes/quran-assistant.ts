@@ -20,6 +20,11 @@ import {
   isGenericAssistantText,
   type QuranAssistantReference,
 } from "../lib/quran-assistant-behavior";
+import {
+  buildQuranAssistantQuestion,
+  getSelectedAyahReference,
+  type QuranAssistantAyahContext,
+} from "../lib/quran-assistant-request";
 
 const router = Router();
 
@@ -33,8 +38,6 @@ const ayahContextSchema = z.object({
   transliteration: z.string().max(12000).optional(),
   audioGlobalNumber: z.number().int().min(1).max(7000),
 });
-
-type QuranAssistantAyahContext = z.infer<typeof ayahContextSchema>;
 
 const requestSchema = z.object({
   question: z.string().trim().min(2).max(1200),
@@ -67,22 +70,6 @@ const referenceSchema = z.object({
   surahNumber: z.number().int().min(1).max(114),
   ayahNumber: z.number().int().min(1).max(286),
 });
-
-function buildQuranAssistantQuestion(question: string, context?: QuranAssistantAyahContext): string {
-  const text = question.trim();
-  if (!context) return text;
-  return [
-    "The user selected this verified Quran Ayah from the Quran Reader:",
-    `Surah: ${context.surahEnglishName} (${context.surahNumber})`,
-    `Surah name: ${context.surahName}`,
-    `Ayah number: ${context.ayahNumber}`,
-    `Verified Arabic text: ${context.arabic}`,
-    context.translation ? `Displayed translation: ${context.translation}` : "",
-    context.transliteration ? `Displayed transliteration: ${context.transliteration}` : "",
-    "",
-    `User's question: ${text}`,
-  ].filter(Boolean).join("\n");
-}
 
 type VerifiedAyah = {
   surahNumber: number;
@@ -234,9 +221,7 @@ router.post("/", async (req, res) => {
     return;
   }
   const assistantQuestion = buildQuranAssistantQuestion(parsed.data.question, parsed.data.ayahContext);
-  const selectedAyahReference = parsed.data.ayahContext
-    ? [{ surahNumber: parsed.data.ayahContext.surahNumber, ayahNumber: parsed.data.ayahContext.ayahNumber }]
-    : [];
+  const selectedAyahReference = getSelectedAyahReference(parsed.data.ayahContext);
   const user = await findUserByDeviceId(parsed.data.deviceId);
   if (!user) {
     res.status(401).json({ error: "Registration is required before using Quran Assistant." });

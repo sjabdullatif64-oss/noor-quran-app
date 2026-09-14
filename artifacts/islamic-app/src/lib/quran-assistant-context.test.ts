@@ -1,6 +1,7 @@
 import {
   buildQuranAssistantRequestPayload,
   buildQuranAssistantRequestText,
+  setQuranAssistantComposerQuestion,
   type QuranAssistantContext,
 } from "./quran-assistant-context";
 
@@ -14,8 +15,13 @@ const context: QuranAssistantContext = {
   audioGlobalNumber: 262,
 };
 
-const requestText = buildQuranAssistantRequestText(context, "Explain this Ayah");
-const requestPayload = buildQuranAssistantRequestPayload(context, "Explain this Ayah");
+const questionRef = { current: "" };
+const composerQuestion = setQuranAssistantComposerQuestion(questionRef, "Explain this Ayah");
+if (questionRef.current !== "Explain this Ayah" || composerQuestion !== questionRef.current) {
+  throw new Error("The Explain this Ayah action must update the value used by the Send handler");
+}
+const requestText = buildQuranAssistantRequestText(context, composerQuestion);
+const requestPayload = buildQuranAssistantRequestPayload(context, composerQuestion);
 
 for (const expectedPart of [
   "Surah: Al-Baqarah (2)",
@@ -40,6 +46,12 @@ if (requestPayload.ayahContext?.surahEnglishName !== "Al-Baqarah"
   || requestPayload.ayahContext.ayahNumber !== 255
   || requestPayload.ayahContext.arabic !== context.arabic) {
   throw new Error("The network payload must contain the exact selected Ayah context");
+}
+if (JSON.stringify(requestPayload) !== JSON.stringify({
+  question: "Explain this Ayah",
+  ayahContext: context,
+})) {
+  throw new Error("The exact composer request must contain question and ayahContext together");
 }
 
 const secondContext: QuranAssistantContext = {
