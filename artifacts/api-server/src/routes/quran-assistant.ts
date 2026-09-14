@@ -15,10 +15,24 @@ import {
 
 const router = Router();
 
+const ayahContextSchema = z.object({
+  surahNumber: z.number().int().min(1).max(114),
+  surahName: z.string().min(1).max(200),
+  surahEnglishName: z.string().min(1).max(200),
+  ayahNumber: z.number().int().min(1).max(286),
+  arabic: z.string().min(1).max(12000),
+  translation: z.string().max(12000),
+  transliteration: z.string().max(12000).optional(),
+  audioGlobalNumber: z.number().int().min(1).max(7000),
+});
+
+type QuranAssistantAyahContext = z.infer<typeof ayahContextSchema>;
+
 const requestSchema = z.object({
   question: z.string().trim().min(2).max(1200),
   language: z.string().trim().min(2).max(40).optional(),
   deviceId: z.string().min(1).max(200),
+  ayahContext: ayahContextSchema.optional(),
 });
 
 const usageQuerySchema = z.object({
@@ -45,6 +59,22 @@ const referenceSchema = z.object({
   surahNumber: z.number().int().min(1).max(114),
   ayahNumber: z.number().int().min(1).max(286),
 });
+
+function buildQuranAssistantQuestion(question: string, context?: QuranAssistantAyahContext): string {
+  const text = question.trim();
+  if (!context) return text;
+  return [
+    "The user selected this verified Quran Ayah from the Quran Reader:",
+    `Surah: ${context.surahEnglishName} (${context.surahNumber})`,
+    `Surah name: ${context.surahName}`,
+    `Ayah number: ${context.ayahNumber}`,
+    `Verified Arabic text: ${context.arabic}`,
+    context.translation ? `Displayed translation: ${context.translation}` : "",
+    context.transliteration ? `Displayed transliteration: ${context.transliteration}` : "",
+    "",
+    `User's question: ${text}`,
+  ].filter(Boolean).join("\n");
+}
 
 type VerifiedAyah = {
   surahNumber: number;
@@ -171,6 +201,8 @@ router.post("/", async (req, res) => {
     return;
   }
   const language = detectLanguage(parsed.data.question, parsed.data.language);
+  // Scope-check the user's actual question, not selected Ayah text. Quran
+  // context must never make an unrelated question appear in-scope.
   if (!isQuranAssistantQuestion(parsed.data.question)) {
     res.setHeader("Cache-Control", "no-store");
     res.json({
@@ -182,6 +214,7 @@ router.post("/", async (req, res) => {
     });
     return;
   }
+  const assistantQuestion = buildQuranAssistantQuestion(parsed.data.question, parsed.data.ayahContext);
   const user = await findUserByDeviceId(parsed.data.deviceId);
   if (!user) {
     res.status(401).json({ error: "Registration is required before using Quran Assistant." });
@@ -197,7 +230,7 @@ router.post("/", async (req, res) => {
     return;
   }
   try {
-    const answer = await aiRequest(parsed.data.question, language);
+    const answer = await aiRequest(assistantQuestion, language);
     const verified = (await Promise.all(answer.refs.map((ref) => verifiedAyah(ref.surahNumber, ref.ayahNumber, language)))).filter(
       (ayah): ayah is VerifiedAyah => ayah !== null,
     );

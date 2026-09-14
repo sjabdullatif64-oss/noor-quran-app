@@ -8,7 +8,7 @@ import { getQuranAssistantSpeechLanguage } from "@/lib/quran-assistant-speech";
 import { noorApi, NoorApiError, type QuranAssistantAyah, type QuranAssistantUsage } from "@/lib/noor-api";
 import { getBookmarks, removeBookmark, saveBookmark } from "@/lib/bookmarks";
 import { ensureRegistered } from "@/lib/user";
-import { buildQuranAssistantRequestText, clearQuranAssistantContext, readQuranAssistantContext, type QuranAssistantContext } from "@/lib/quran-assistant-context";
+import { clearQuranAssistantContext, readQuranAssistantContext, type QuranAssistantContext } from "@/lib/quran-assistant-context";
 import {
   createQuranAssistantChat,
   createQuranAssistantId,
@@ -541,7 +541,7 @@ export function QuranAssistant() {
       askInFlightRef.current = false;
       return;
     }
-    const requestText = buildQuranAssistantRequestText(ayahContextRef.current, text);
+    const requestContext = ayahContextRef.current;
     setError(""); setLoading(true);
     const messageId = createQuranAssistantId("message");
     const userMessage: Message = {
@@ -565,7 +565,7 @@ export function QuranAssistant() {
     questionRef.current = "";
     setMessages((current) => [...current, userMessage]);
     try {
-      const answer = await noorApi.askQuranAssistant(requestText, undefined, user.deviceId);
+      const answer = await noorApi.askQuranAssistant(text, undefined, user.deviceId, requestContext);
       if (answer.usage) setUsage(answer.usage);
       setMessages((current) => [...current, {
         id: createQuranAssistantId("message"),

@@ -7,6 +7,7 @@ const QURAN_SCOPE_TERMS = [
   "guidance", "sin", "halal", "haram", "charity", "heaven", "paradise", "hell",
   "marriage", "divorce", "inheritance", "modesty", "backbiting", "repentance",
   "shirk", "tawheed", "prophet", "messenger", "jannah", "jahannam",
+  "worship", "creator", "creation", "hereafter", "afterlife", "fiqh", "hadith",
 ];
 
 const QURAN_SCOPE_TERMS_ARABIC = [
@@ -16,13 +17,35 @@ const QURAN_SCOPE_TERMS_ARABIC = [
   "الرسول", "النبي",
 ];
 
+const QURAN_SCOPE_TERMS_URDU = [
+  "قرآن", "قرآنی", "اللہ", "اسلام", "اسلامی", "مسلمان", "نبی", "رسول", "دعا",
+  "نماز", "زکوٰۃ", "زکوۃ", "روزہ", "رمضان", "ہدایت", "صبر", "مغفرت", "حلال",
+  "حرام", "جنت", "جہنم", "توبہ", "قیامت",
+];
+
 const CLEARLY_UNRELATED_PATTERNS = [
   /\b(make|making|earn|earning|赚钱)\b.*\b(money|income|online|cash)\b/i,
+  /\b(upwork|fiverr|freelanc(?:e|ing|er)|gig work)\b/i,
   /\b(programm?ing|javascript|typescript|python|coding|code|software|debug|api)\b/i,
-  /\b(image|images|photo|photos|picture|pictures|logo|design|draw|video)\b/i,
-  /\b(business|startup|marketing|sales|technology|tech|computer)\b/i,
-  /\b(stock|crypto|bitcoin|investment|investing|trading)\b/i,
-  /\b(relationship|dating|boyfriend|girlfriend)\b/i,
+  /\b(build|create|make|develop|design)\b.*\b(app|application|website|web site|software|program)\b/i,
+  /\b(create|generate|make|draw)\b.*\b(image|images|photo|photos|picture|pictures|logo)\b/i,
+  /\b(make friends?|friend with a girl|friend with a boy|dating|boyfriend|girlfriend)\b/i,
+];
+
+const CLEARLY_UNRELATED_URDU_PATTERNS = [
+  /آن\s*لائن.*(?:ارننگ|کمائی|کمانا|پیسے|آمدن)/i,
+  /(?:ارننگ|کمائی|کمانا|پیسے|آمدن).*(?:آن\s*لائن|ویب\s*سائٹ|ایپ)/i,
+  /(?:اپ\s*ورک|فائیور|فری\s*لانس|لنکڈ\s*اِن|لنکڈاِن)/i,
+  /(?:پروگرامنگ|کوڈنگ|ایپ\s*بنانا|ویب\s*سائٹ\s*بنانا|سافٹ\s*ویئر)/i,
+  /(?:تصویر|امیج).*(?:بنانا|بنائیں|تخلیق)/i,
+];
+
+const DIRECT_THEOLOGICAL_PATTERNS = [
+  /\bwho\s+(created|made)\s+(the\s+)?(world|universe)\b/i,
+  /\bwho\s+(created|made)\s+(the\s+)?heavens?\s+and\s+(the\s+)?earth\b/i,
+  /\bwho\s+is\s+(our\s+)?creator\b/i,
+  /\bwhat\s+is\s+the\s+purpose\s+of\s+(life|our\s+life|human\s+life)\b/i,
+  /دنیا\s+کس\s+نے\s+(بنائی|پیدا\s+کی)/i,
 ];
 
 export function detectQuranAssistantLanguage(question: string, requested?: string): QuranAssistantLanguage {
@@ -39,9 +62,11 @@ export function detectQuranAssistantLanguage(question: string, requested?: strin
 }
 
 export function isQuranAssistantQuestion(question: string): boolean {
-  const normalized = question.toLocaleLowerCase();
-  if (CLEARLY_UNRELATED_PATTERNS.some((pattern) => pattern.test(question))) return false;
-  return [...QURAN_SCOPE_TERMS, ...QURAN_SCOPE_TERMS_ARABIC]
+  const normalized = question.normalize("NFKC").toLocaleLowerCase().trim();
+  if (CLEARLY_UNRELATED_PATTERNS.some((pattern) => pattern.test(normalized))) return false;
+  if (CLEARLY_UNRELATED_URDU_PATTERNS.some((pattern) => pattern.test(normalized))) return false;
+  if (DIRECT_THEOLOGICAL_PATTERNS.some((pattern) => pattern.test(normalized))) return true;
+  return [...QURAN_SCOPE_TERMS, ...QURAN_SCOPE_TERMS_ARABIC, ...QURAN_SCOPE_TERMS_URDU]
     .some((term) => normalized.includes(term.toLocaleLowerCase()));
 }
 
