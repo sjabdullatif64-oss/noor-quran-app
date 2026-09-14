@@ -630,7 +630,11 @@ export function QuranAssistant() {
           {ayahContext.arabic}
         </p>
         {ayahContext.translation && <p dir="auto" className="mt-2 line-clamp-2 text-sm leading-relaxed text-muted-foreground">{ayahContext.translation}</p>}
-        <button type="button" onClick={() => setQuestion("Explain this Ayah")} className="mt-3 rounded-xl border border-primary/25 bg-card px-3 py-2 text-xs font-semibold text-primary transition-colors hover:bg-background" data-testid="button-suggest-explain-ayah">
+        <button type="button" onClick={() => {
+          const suggestedQuestion = "Explain this Ayah";
+          questionRef.current = suggestedQuestion;
+          setQuestion(suggestedQuestion);
+        }} className="mt-3 rounded-xl border border-primary/25 bg-card px-3 py-2 text-xs font-semibold text-primary transition-colors hover:bg-background" data-testid="button-suggest-explain-ayah">
           Explain this Ayah
         </button>
       </section>}
