@@ -6,6 +6,12 @@ import {
   getQuranAssistantUsage,
   reserveQuranAssistantQuestion,
 } from "../lib/sheets";
+import {
+  detectQuranAssistantLanguage,
+  isQuranAssistantQuestion,
+  quranAssistantScopeRefusal,
+  type QuranAssistantLanguage,
+} from "../lib/quran-assistant-scope";
 
 const router = Router();
 
@@ -49,14 +55,21 @@ type VerifiedAyah = {
   audioGlobalNumber: number;
 };
 
-function detectLanguage(question: string, requested?: string): string {
-  if (/[\u0600-\u06ff]/.test(question)) return /[\u0679\u0686\u0688\u06be\u06d2]/.test(question) ? "urdu" : "arabic";
-  if (/[\u0900-\u097f]/.test(question)) return "hindi";
-  if (/[\u0980-\u09ff]/.test(question)) return "bengali";
-  return requested?.toLowerCase() || "english";
+function detectLanguage(question: string, requested?: string): QuranAssistantLanguage {
+  return detectQuranAssistantLanguage(question, requested);
 }
 
-async function aiRequest(question: string, language: string): Promise<{ refs: z.infer<typeof referenceSchema>[]; explanation: string; guidance: string }> {
+function questionRequestsQuranReferences(question: string): boolean {
+  return /\b(reference|references|evidence|proof|source|sources|ayah|ayat|verse|verses|surah|sura|tafsir|explain|explanation|guidance|what does the quran say|according to the quran)\b/i.test(question)
+    || /آية|آيات|سورة|دليل|مرجع|مراجع|تفسير|اشرح|شرح|هداية|القرآن يقول|القرآن عن/.test(question);
+}
+
+async function aiRequest(question: string, language: string): Promise<{
+  refs: z.infer<typeof referenceSchema>[];
+  explanation: string;
+  guidance: string;
+  includeReferences: boolean;
+}> {
   const base = process.env.AI_INTEGRATIONS_OPENAI_BASE_URL;
   const key = process.env.AI_INTEGRATIONS_OPENAI_API_KEY;
   if (!base || !key) throw new Error("Quran Assistant is not configured");
@@ -74,9 +87,12 @@ async function aiRequest(question: string, language: string): Promise<{ refs: z.
           content: [
             "You are Quran Assistant, a careful Quran study helper.",
             "Reply in the user's language. Never invent Quran text, translations, references, hadith, or religious claims.",
-            "Return JSON only with keys references (array of up to 3 objects with surahNumber and ayahNumber), explanation, and guidance.",
-            "Select references conservatively. If you cannot identify a reliable relevant Quran passage, return an empty references array.",
+            "Return JSON only with keys references (array of up to 3 objects with surahNumber and ayahNumber), explanation, guidance, and includeReferences (boolean).",
+            "For a simple, direct, well-established Quran-related fact or basic Islamic question, answer briefly and naturally and set includeReferences to false with an empty references array.",
+            "Set includeReferences to true when the user asks for evidence, a source, an Ayah, a verse, a Surah, an explanation of an Ayah, or Quranic guidance on a topic.",
+            "Select references conservatively. If you cannot identify a reliable relevant Quran passage, return includeReferences false and an empty references array.",
             "Do not put Arabic Quran text, translations, surah names, or verse references inside explanation or guidance; those belong only in the verified result cards.",
+             "Never invent Quran verses, translations, references, or religious claims. If the Quran does not clearly establish the answer, say that clearly instead of presenting an unsupported claim as Quranic.",
             "Do not issue fatwas or claim guaranteed medical, supernatural, or religious cures. For illness, worry, or protection, provide general guidance and recommend qualified professionals where appropriate.",
             `The user's language is ${language}.`,
           ].join(" "),
@@ -91,13 +107,18 @@ async function aiRequest(question: string, language: string): Promise<{ refs: z.
   if (!content) throw new Error("The Quran Assistant returned an empty response");
   let parsed: unknown;
   try { parsed = JSON.parse(content); } catch { throw new Error("The Quran Assistant returned an invalid response"); }
-  const obj = parsed as { references?: unknown; explanation?: unknown; guidance?: unknown };
+  const obj = parsed as { references?: unknown; explanation?: unknown; guidance?: unknown; includeReferences?: unknown };
   const refs = z.array(referenceSchema).max(3).safeParse(obj.references ?? []);
-  if (!refs.success) return { refs: [], explanation: "I could not verify a Quran reference for this question.", guidance: "" };
+  if (!refs.success) {
+    return { refs: [], explanation: "I could not verify a Quran reference for this question.", guidance: "", includeReferences: false };
+  }
+  const requestedReferences = questionRequestsQuranReferences(question);
+  const includeReferences = requestedReferences && (obj.includeReferences === true || refs.data.length > 0);
   return {
-    refs: refs.data,
+    refs: includeReferences ? refs.data : [],
     explanation: typeof obj.explanation === "string" ? obj.explanation : "",
     guidance: typeof obj.guidance === "string" ? obj.guidance : "",
+    includeReferences,
   };
 }
 
@@ -149,6 +170,18 @@ router.post("/", async (req, res) => {
     res.status(400).json({ error: "Please enter a question." });
     return;
   }
+  const language = detectLanguage(parsed.data.question, parsed.data.language);
+  if (!isQuranAssistantQuestion(parsed.data.question)) {
+    res.setHeader("Cache-Control", "no-store");
+    res.json({
+      language,
+      explanation: quranAssistantScopeRefusal(language),
+      guidance: "",
+      ayahs: [],
+      scopeRejected: true,
+    });
+    return;
+  }
   const user = await findUserByDeviceId(parsed.data.deviceId);
   if (!user) {
     res.status(401).json({ error: "Registration is required before using Quran Assistant." });
@@ -164,7 +197,6 @@ router.post("/", async (req, res) => {
     return;
   }
   try {
-    const language = detectLanguage(parsed.data.question, parsed.data.language);
     const answer = await aiRequest(parsed.data.question, language);
     const verified = (await Promise.all(answer.refs.map((ref) => verifiedAyah(ref.surahNumber, ref.ayahNumber, language)))).filter(
       (ayah): ayah is VerifiedAyah => ayah !== null,
