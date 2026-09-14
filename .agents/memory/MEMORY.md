@@ -38,3 +38,4 @@
 - [Country data flow contract](country-data-flow.md) — reverse geocode ISO codes, persist them separately from display names, and send them through registration/presence
 - [Beginner course content invariant](beginner-course-content.md) — validate actual per-level lesson arrays and preserve the original Level 1 catalog when expanding practice
 - [Native TTS bridge usage](native-tts-bridge.md) — use the registered NativeTTS proxy for Android speech and cancel queued requests when stopping or switching messages
+- [Quran Assistant Explain action](quran-assistant-explain-action.md) — selected-Ayah explanations are one guarded request; hide the repeat action after the matching response and keep Audio TTS-only
