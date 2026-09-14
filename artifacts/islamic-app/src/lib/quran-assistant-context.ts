@@ -9,6 +9,19 @@ export interface QuranAssistantContext {
   audioGlobalNumber: number;
 }
 
+export function buildQuranAssistantRequestText(context: QuranAssistantContext | null, question: string): string {
+  const text = question.trim();
+  if (!context) return text;
+  return [
+    "The user selected this verified Quran Ayah from the Quran Reader:",
+    `Surah: ${context.surahEnglishName} (${context.surahNumber})`,
+    `Ayah number: ${context.ayahNumber}`,
+    `Verified Arabic text: ${context.arabic}`,
+    "",
+    `User's question: ${text}`,
+  ].join("\n");
+}
+
 const CONTEXT_KEY = "noor-quran-assistant-context";
 
 export function saveQuranAssistantContext(context: QuranAssistantContext): void {

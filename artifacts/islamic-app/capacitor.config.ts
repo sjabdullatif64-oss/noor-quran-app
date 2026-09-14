@@ -42,7 +42,9 @@ const config: CapacitorConfig = {
     },
     backgroundColor: "#071a0e",
     allowMixedContent: false,
-    captureInput: true,
+    // Let Android's native WebView InputConnection handle IME composition,
+    // suggestions, clipboard paste, and keyboard voice insertion normally.
+    captureInput: false,
     webContentsDebuggingEnabled: false,
   },
   plugins: {
