@@ -33,4 +33,23 @@ if (reference.length !== 1 || reference[0].surahNumber !== 2 || reference[0].aya
   throw new Error(`Server did not preserve the selected Ayah reference: ${JSON.stringify(reference)}`);
 }
 
+const followUp = buildQuranAssistantQuestion(
+  "اس کے بارے میں مزید بتاؤ",
+  context,
+  [
+    { role: "user", content: "مجھے اس آیت کا مطلب سمجھائیں" },
+    { role: "assistant", content: "یہ آیت اللہ کی توحید بیان کرتی ہے۔" },
+  ],
+);
+for (const expectedPart of [
+  "Previous conversation messages",
+  "User: مجھے اس آیت کا مطلب سمجھائیں",
+  "Assistant: یہ آیت اللہ کی توحید بیان کرتی ہے۔",
+  "User's question: اس کے بارے میں مزید بتاؤ",
+]) {
+  if (!followUp.includes(expectedPart)) {
+    throw new Error(`Server prompt omitted conversation context: ${expectedPart}`);
+  }
+}
+
 console.log("Quran Assistant server context-use test passed");

@@ -54,6 +54,65 @@ const TOPIC_REFERENCES: Array<{
   },
   {
     patterns: [
+      /\b(illness|sick|pain|healing|heal|cure|medicine)\b/i,
+      /بیماری|درد|شفا|علاج/i,
+      /مرض|شفاء|ألم/i,
+      /बीमारी|दर्द|शिफा|इलाज/i,
+      /অসুস্থ|ব্যথা|শিফা|চিকিৎসা/i,
+    ],
+    references: [
+      { surahNumber: 26, ayahNumber: 80 },
+      { surahNumber: 21, ayahNumber: 83 },
+    ],
+  },
+  {
+    patterns: [
+      /\b(protection|protect|evil eye|nazar|safety)\b/i,
+      /حفاظت|نظر|بچاؤ|پناہ/i,
+      /حماية|العين|أعوذ/i,
+      /सुरक्षा|बुरी नजर|नज़र|बचाव/i,
+      /সুরক্ষা|কুনজর|নজর|রক্ষা/i,
+    ],
+    references: [
+      { surahNumber: 113, ayahNumber: 1 },
+      { surahNumber: 114, ayahNumber: 1 },
+    ],
+  },
+  {
+    patterns: [
+      /\b(sadness|sad|distress|distressed|grief|anguish)\b/i,
+      /غم|اداسی|پریشانی|تکلیف/i,
+      /حزن|كرب|ضيق/i,
+      /उदासी|दुख|परेशानी|तकलीफ़/i,
+      /দুঃখ|মন খারাপ|কষ্ট|দুশ্চিন্তা/i,
+    ],
+    references: [{ surahNumber: 21, ayahNumber: 87 }],
+  },
+  {
+    patterns: [
+      /\b(parents|mother|father)\b/i,
+      /والدین|ماں|باپ/i,
+      /الوالدين|الأم|الأب/i,
+      /माता-पिता|माँ|पिता/i,
+      /মা-বাবা|মাতা-পিতা|মা|বাবা/i,
+    ],
+    references: [{ surahNumber: 17, ayahNumber: 23 }],
+  },
+  {
+    patterns: [
+      /\b(paradise|heaven|jannah|who goes to heaven)\b/i,
+      /جنت|جنت میں/i,
+      /الجنة/i,
+      /स्वर्ग|जन्नत/i,
+      /জান্নাত|বেহেশত/i,
+    ],
+    references: [
+      { surahNumber: 2, ayahNumber: 82 },
+      { surahNumber: 4, ayahNumber: 124 },
+    ],
+  },
+  {
+    patterns: [
       /\b(repent|repentance|return to Allah)\b/i,
       /توبہ|اللہ کی طرف رجوع/i,
       /توبة|استغفار/i,
@@ -121,7 +180,9 @@ export function getDirectIslamicAnswer(question: string, language: QuranAssistan
   const normalized = question.normalize("NFKC").trim();
   const creationQuestion = /\bwho\s+(created|made)\s+(the\s+)?(world|universe)\b/i.test(normalized)
     || /\bwho\s+(created|made)\s+(the\s+)?heavens?\s+and\s+(the\s+)?earth\b/i.test(normalized)
-    || /دنیا\s+کس\s+نے\s+(بنائی|پیدا\s+کی)/i.test(normalized);
+    || /\bwho\s+(created|made)\s+(human\s+beings|humans|people)\b/i.test(normalized)
+    || /دنیا\s+کس\s+نے\s+(بنائی|پیدا\s+کی)/i.test(normalized)
+    || /انسانوں?\s+کو\s+کس\s+نے\s+(بنایا|پیدا\s+کیا)/i.test(normalized);
   if (!creationQuestion) return null;
   switch (language) {
     case "arabic":
@@ -133,7 +194,9 @@ export function getDirectIslamicAnswer(question: string, language: QuranAssistan
     case "bengali":
       return "আল্লাহ আকাশমণ্ডলী, পৃথিবী এবং তাদের মধ্যে যা কিছু আছে সব সৃষ্টি করেছেন।";
     default:
-      return "Allah created the heavens and the earth and everything in them.";
+      return /human|people/i.test(normalized)
+        ? "Allah created human beings."
+        : "Allah created the heavens and the earth and everything in them.";
   }
 }
 

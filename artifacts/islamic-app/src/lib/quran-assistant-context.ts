@@ -9,6 +9,43 @@ export interface QuranAssistantContext {
   audioGlobalNumber: number;
 }
 
+export interface QuranAssistantConversationMessage {
+  role: "user" | "assistant";
+  content: string;
+}
+
+export const QURAN_ASSISTANT_RECENT_TURN_LIMIT = 5;
+
+/**
+ * Builds the bounded AI context from completed user/assistant turns.
+ * The visible chat can be longer; this is intentionally limited to the
+ * newest complete turns before the current question.
+ */
+export function getRecentQuranAssistantConversation(
+  messages: QuranAssistantConversationMessage[],
+  maxTurns = QURAN_ASSISTANT_RECENT_TURN_LIMIT,
+): QuranAssistantConversationMessage[] {
+  const turns: QuranAssistantConversationMessage[][] = [];
+  let pendingUser: QuranAssistantConversationMessage | null = null;
+
+  for (const message of messages) {
+    if (message.role === "user") {
+      if (pendingUser) {
+        pendingUser = message;
+      } else {
+        pendingUser = message;
+      }
+      continue;
+    }
+    if (!pendingUser) continue;
+    turns.push([pendingUser, message]);
+    pendingUser = null;
+  }
+
+  return turns
+    .slice(-Math.max(0, maxTurns))
+    .flat();
+}
 export function buildQuranAssistantRequestText(context: QuranAssistantContext | null, question: string): string {
   const text = question.trim();
   if (!context) return text;
@@ -25,11 +62,21 @@ export function buildQuranAssistantRequestText(context: QuranAssistantContext | 
 export function buildQuranAssistantRequestPayload(
   context: QuranAssistantContext | null,
   question: string,
-): { question: string; ayahContext?: QuranAssistantContext } {
-  const payload: { question: string; ayahContext?: QuranAssistantContext } = {
+  conversation: QuranAssistantConversationMessage[] = [],
+): {
+  question: string;
+  ayahContext?: QuranAssistantContext;
+  conversation?: QuranAssistantConversationMessage[];
+} {
+  const payload: {
+    question: string;
+    ayahContext?: QuranAssistantContext;
+    conversation?: QuranAssistantConversationMessage[];
+  } = {
     question: question.trim(),
   };
   if (context) payload.ayahContext = context;
+  if (conversation.length) payload.conversation = conversation;
   return payload;
 }
 

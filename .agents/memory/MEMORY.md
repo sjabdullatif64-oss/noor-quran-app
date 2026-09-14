@@ -39,3 +39,4 @@
 - [Beginner course content invariant](beginner-course-content.md) — validate actual per-level lesson arrays and preserve the original Level 1 catalog when expanding practice
 - [Native TTS bridge usage](native-tts-bridge.md) — use the registered NativeTTS proxy for Android speech and cancel queued requests when stopping or switching messages
 - [Quran Assistant Explain action](quran-assistant-explain-action.md) — selected-Ayah explanations are one guarded request; hide the repeat action after the matching response and keep Audio TTS-only
+- [Quran Assistant instruction contract](quran-assistant-instruction-contract.md) — scope, verified references, multilingual follow-ups, and response/audio identity must remain server-authoritative and isolated

@@ -80,6 +80,9 @@ function normalizeAnswer(value: unknown): QuranAssistantResponse | undefined {
     return undefined;
   }
   return {
+    responseId: typeof value.responseId === "string" && value.responseId
+      ? value.responseId
+      : undefined,
     language: value.language,
     explanation: value.explanation,
     guidance: value.guidance,

@@ -34,4 +34,24 @@ if (!taweezGuidance || !/qualified Islamic scholar/i.test(taweezGuidance)) {
   throw new Error("Expected careful taweez guidance with qualified-scholar recommendation");
 }
 
+const healing = getSuggestedQuranReferences("I am sick. Which Ayah should I read?");
+if (!healing.some((reference) => reference.surahNumber === 26 && reference.ayahNumber === 80)) {
+  throw new Error(`Expected healing reference 26:80, got: ${JSON.stringify(healing)}`);
+}
+
+const protection = getSuggestedQuranReferences("Which Ayahs should I read for protection from the evil eye?");
+if (protection.length !== 2 || protection[0].surahNumber !== 113 || protection[1].surahNumber !== 114) {
+  throw new Error(`Expected protection references 113:1 and 114:1, got: ${JSON.stringify(protection)}`);
+}
+
+const paradise = getSuggestedQuranReferences("Which Quran verses explain who enters Paradise?");
+if (paradise.length !== 2 || paradise[0].surahNumber !== 2 || paradise[1].surahNumber !== 4) {
+  throw new Error(`Expected Paradise references 2:82 and 4:124, got: ${JSON.stringify(paradise)}`);
+}
+
+const createdHumans = getDirectIslamicAnswer("Who created human beings?", "english");
+if (createdHumans !== "Allah created human beings.") {
+  throw new Error(`Expected a direct answer about human creation, got: ${createdHumans ?? "empty"}`);
+}
+
 console.log("Quran Assistant behavior cases passed");

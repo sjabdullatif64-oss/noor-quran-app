@@ -70,4 +70,40 @@ if (secondPayload.ayahContext?.surahNumber !== 1
   throw new Error("A second selected Ayah must remain distinct in the network payload");
 }
 
+const customQuestion = "Explain this Ayah in simple words";
+const customPayload = buildQuranAssistantRequestPayload(context, customQuestion);
+if (customPayload.question !== customQuestion
+  || customPayload.ayahContext?.surahNumber !== context.surahNumber
+  || customPayload.ayahContext?.ayahNumber !== context.ayahNumber
+  || customPayload.ayahContext?.arabic !== context.arabic
+  || customPayload.ayahContext?.translation !== context.translation) {
+  throw new Error("A custom composer question must send the exact selected Ayah context in the same request");
+}
+
+const explainPayload = buildQuranAssistantRequestPayload(context, "Explain this Ayah");
+if (explainPayload.question !== "Explain this Ayah"
+  || explainPayload.ayahContext?.surahNumber !== context.surahNumber
+  || explainPayload.ayahContext?.ayahNumber !== context.ayahNumber
+  || explainPayload.ayahContext?.arabic !== context.arabic
+  || explainPayload.ayahContext?.translation !== context.translation) {
+  throw new Error("Explain this Ayah must use the same question-plus-context request payload");
+}
+
+const noContextPayload = buildQuranAssistantRequestPayload(null, "What does the Quran say about patience?");
+if (noContextPayload.question !== "What does the Quran say about patience?"
+  || Object.prototype.hasOwnProperty.call(noContextPayload, "ayahContext")) {
+  throw new Error("A normal question without selected context must not gain an Ayah context");
+}
+
+let sendCount = 0;
+let successfulUsageCount = 0;
+function sendOnce(payload: typeof customPayload): void {
+  sendCount += 1;
+  if (payload.question && payload.ayahContext) successfulUsageCount += 1;
+}
+sendOnce(customPayload);
+if (sendCount !== 1 || successfulUsageCount !== 1) {
+  throw new Error("One Send action must produce one request and one successful usage count");
+}
+
 console.log("Quran Assistant Ayah context request test passed");

@@ -1,4 +1,5 @@
 import { Router } from "express";
+import { randomUUID } from "node:crypto";
 import { z } from "zod";
 import {
   findUserByDeviceId,
@@ -9,6 +10,10 @@ import {
 import {
   detectQuranAssistantLanguage,
   isQuranAssistantQuestion,
+  isQuranAssistantFollowUp,
+  quranAssistantErrorMessage,
+  quranAssistantLimitMessage,
+  quranAssistantRegistrationMessage,
   quranAssistantScopeRefusal,
   type QuranAssistantLanguage,
 } from "../lib/quran-assistant-scope";
@@ -23,6 +28,7 @@ import {
 import {
   buildQuranAssistantQuestion,
   getSelectedAyahReference,
+  type QuranAssistantConversationMessage,
   type QuranAssistantAyahContext,
 } from "../lib/quran-assistant-request";
 
@@ -44,6 +50,10 @@ const requestSchema = z.object({
   language: z.string().trim().min(2).max(40).optional(),
   deviceId: z.string().min(1).max(200),
   ayahContext: ayahContextSchema.optional(),
+  conversation: z.array(z.object({
+    role: z.enum(["user", "assistant"]),
+    content: z.string().trim().min(1).max(2400),
+  })).max(10).optional(),
 });
 
 const usageQuerySchema = z.object({
@@ -87,10 +97,16 @@ function detectLanguage(question: string, requested?: string): QuranAssistantLan
 function questionRequestsQuranReferences(question: string): boolean {
   return /\b(reference|references|evidence|proof|source|sources|ayah|ayat|verse|verses|surah|sura|tafsir|explain|explanation|guidance|what does the quran say|according to the quran)\b/i.test(question)
     || /آية|آيات|سورة|دليل|مرجع|مراجع|تفسير|اشرح|شرح|هداية|القرآن يقول|القرآن عن|پڑھوں|پڑھنے|بتائیں|دیں/.test(question)
+    || /आयत|आयात|सूरह|कुरआन|क़ुरआन|बताइए|पढ़ूं|मार्गदर्शन|समझाएं/.test(question)
+    || /আয়াত|আয়াতগুলো|সূরা|কুরআন|বলুন|পড়ব|নির্দেশনা|ব্যাখ্যা/.test(question)
     || /\b(which|what|give me|show me|read|recite|recommend)\b.{0,80}\b(ayah|ayat|verse|surah|quran)\b/i.test(question);
 }
 
-async function aiRequest(question: string, language: string): Promise<{
+async function aiRequest(
+  question: string,
+  language: string,
+  conversation: QuranAssistantConversationMessage[] = [],
+): Promise<{
   refs: z.infer<typeof referenceSchema>[];
   explanation: string;
   guidance: string;
@@ -117,16 +133,21 @@ async function aiRequest(question: string, language: string): Promise<{
             "Understand the user's actual intention and answer the question directly. Do not begin with a generic capability statement such as 'I can answer according to the Quran' or 'I can help with Quran questions'.",
             "For a simple, direct, well-established Islamic question, give the direct answer first in natural language. Do not replace the answer with the phrase 'According to the Quran'.",
             "Set includeReferences to true and return the most relevant reference coordinates when the user asks for an Ayah, verse, Surah, Quran evidence, or Quranic guidance.",
-            "For requests such as patience, worry, forgiveness, fear, hardship, repentance, gratitude, or guidance, select a directly relevant Quran passage rather than a generic topic mention.",
+            "For requests such as patience, worry, forgiveness, fear, hardship, repentance, gratitude, guidance, illness, pain, protection, evil eye, distress, sadness, parents, or Paradise, select a directly relevant Quran passage rather than a generic topic mention.",
             "If the user asks which Ayah to read or asks to be given an Ayah, you must return at least one relevant reference coordinate when you can identify one.",
             "Select references conservatively. If you cannot identify a reliable relevant Quran passage, return includeReferences false and an empty references array.",
             "Do not put Arabic Quran text, translations, surah names, or verse references inside explanation or guidance; those belong only in the verified result cards.",
+            "For illness, pain, or healing, do not promise a cure or replace medical care. Clearly distinguish Quranic guidance from Hadith-based duas or practices.",
             "Never invent Quran verses, translations, references, or religious claims. If the Quran does not clearly establish the answer, say that clearly instead of presenting an unsupported claim as Quranic.",
             "Do not issue fatwas or claim guaranteed medical, supernatural, or religious cures. For personal concerns such as taweez, protection, worry, or fear, address the concern respectfully, avoid unsupported claims, and recommend a trustworthy qualified Islamic scholar when a specific ruling is needed.",
             "When an Ayah is requested, return only reference coordinates; the server will retrieve the exact verified Arabic text and user's-language translation.",
             `The user's language is ${language}.`,
           ].join(" "),
         },
+        ...conversation.map((message) => ({
+          role: message.role as "user" | "assistant",
+          content: message.content,
+        })),
         { role: "user", content: question },
       ],
     }),
@@ -209,9 +230,12 @@ router.post("/", async (req, res) => {
   const language = detectLanguage(parsed.data.question, parsed.data.language);
   // Scope-check the user's actual question, not selected Ayah text. Quran
   // context must never make an unrelated question appear in-scope.
-  if (!isQuranAssistantQuestion(parsed.data.question)) {
+  const hasConversationContext = Boolean(parsed.data.ayahContext || parsed.data.conversation?.length);
+  if (!isQuranAssistantQuestion(parsed.data.question)
+    && !isQuranAssistantFollowUp(parsed.data.question, hasConversationContext)) {
     res.setHeader("Cache-Control", "no-store");
     res.json({
+      responseId: randomUUID(),
       language,
       explanation: quranAssistantScopeRefusal(language),
       guidance: "",
@@ -224,20 +248,20 @@ router.post("/", async (req, res) => {
   const selectedAyahReference = getSelectedAyahReference(parsed.data.ayahContext);
   const user = await findUserByDeviceId(parsed.data.deviceId);
   if (!user) {
-    res.status(401).json({ error: "Registration is required before using Quran Assistant." });
+    res.status(401).json({ error: quranAssistantRegistrationMessage(language) });
     return;
   }
   const reservation = await reserveQuranAssistantQuestion(user.id);
   if (!reservation.allowed || !reservation.reservationId) {
     res.setHeader("Cache-Control", "no-store");
     res.status(429).json({
-      error: "Daily limit reached",
+      error: quranAssistantLimitMessage(language),
       usage: reservation.usage,
     });
     return;
   }
   try {
-    const answer = await aiRequest(assistantQuestion, language);
+    const answer = await aiRequest(assistantQuestion, language, parsed.data.conversation);
     const suggestedReferences = getSuggestedQuranReferences(parsed.data.question);
     const referenceCandidates = uniqueReferences([...selectedAyahReference, ...suggestedReferences, ...answer.refs]);
     const verified = (await Promise.all(referenceCandidates.map((ref) => verifiedAyah(ref.surahNumber, ref.ayahNumber, language)))).filter(
@@ -254,10 +278,10 @@ router.post("/", async (req, res) => {
       || "";
     const usage = await finishQuranAssistantQuestion(user.id, reservation.reservationId, true);
     res.setHeader("Cache-Control", "no-store");
-    res.json({ language, explanation, guidance, ayahs: verified, usage });
+    res.json({ responseId: randomUUID(), language, explanation, guidance, ayahs: verified, usage });
   } catch (error) {
     await finishQuranAssistantQuestion(user.id, reservation.reservationId, false).catch(() => {});
-    res.status(502).json({ error: error instanceof Error ? error.message : "Unable to answer right now." });
+    res.status(502).json({ error: quranAssistantErrorMessage(language) });
   }
 });
 

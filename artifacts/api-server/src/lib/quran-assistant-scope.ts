@@ -9,7 +9,9 @@ const QURAN_SCOPE_TERMS = [
   "shirk", "tawheed", "prophet", "messenger", "jannah", "jahannam",
   "worship", "creator", "creation", "hereafter", "afterlife", "fiqh", "hadith",
   "worry", "worried", "anxiety", "anxious", "stress", "fear", "hardship",
-  "difficulty", "taweez", "tawiz", "amulet", "talisman", "ruqyah",
+  "difficulty", "illness", "sick", "pain", "healing", "protection", "evil eye",
+  "sadness", "distress", "parents", "animals", "taweez", "tawiz", "amulet", "talisman", "ruqyah",
+  "bimari", "dard", "shifa", "hifazat", "nazar", "pareshan", "mushkil", "walidain", "jannat",
 ];
 
 const QURAN_SCOPE_TERMS_ARABIC = [
@@ -24,7 +26,20 @@ const QURAN_SCOPE_TERMS_URDU = [
   "قرآن", "قرآنی", "اللہ", "اسلام", "اسلامی", "مسلمان", "نبی", "رسول", "دعا",
   "نماز", "زکوٰۃ", "زکوۃ", "روزہ", "رمضان", "ہدایت", "صبر", "مغفرت", "حلال",
   "حرام", "جنت", "جہنم", "توبہ", "قیامت",
-  "فکر", "پریشانی", "خوف", "مشکل", "سختی", "تعویذ", "تعویز", "رقیہ",
+  "فکر", "پریشانی", "خوف", "مشکل", "سختی", "بیماری", "درد", "شفا", "حفاظت",
+  "نظر", "غم", "والدین", "جانور", "تعویذ", "تعویز", "رقیہ",
+];
+
+const QURAN_SCOPE_TERMS_HINDI = [
+  "कुरआन", "क़ुरआन", "अल्लाह", "इस्लाम", "मुसलमान", "दुआ", "नमाज़",
+  "रोज़ा", "रमज़ान", "सब्र", "माफी", "हिदायत", "जन्नत", "जहन्नम",
+  "बीमारी", "दर्द", "शिफा", "हिफाज़त", "माता-पिता",
+];
+
+const QURAN_SCOPE_TERMS_BENGALI = [
+  "কুরআন", "আল্লাহ", "ইসলাম", "মুসলিম", "দোয়া", "নামাজ", "রোজা",
+  "রমজান", "সবর", "ক্ষমা", "হেদায়েত", "জান্নাত", "জাহান্নাম",
+  "অসুস্থ", "ব্যথা", "শিফা", "হেদায়েত",
 ];
 
 const CLEARLY_UNRELATED_PATTERNS = [
@@ -49,7 +64,16 @@ const DIRECT_THEOLOGICAL_PATTERNS = [
   /\bwho\s+(created|made)\s+(the\s+)?heavens?\s+and\s+(the\s+)?earth\b/i,
   /\bwho\s+is\s+(our\s+)?creator\b/i,
   /\bwhat\s+is\s+the\s+purpose\s+of\s+(life|our\s+life|human\s+life)\b/i,
+  /\bwho\s+(created|made)\s+(human\s+beings|humans|people)\b/i,
   /دنیا\s+کس\s+نے\s+(بنائی|پیدا\s+کی)/i,
+  /انسانوں?\s+کو\s+کس\s+نے\s+(بنایا|پیدا\s+کیا)/i,
+];
+
+const FOLLOW_UP_PATTERNS = [
+  /^(what about this|what about that|tell me more|explain more|more about this|and this|this ayah|that ayah)\b/i,
+  /اس کے بارے میں|اس آیت کے بارے میں|مزید بتاؤ|مزید بتائیں|یہ آیت|اس کا مطلب/i,
+  /इसके बारे में|इस आयत के बारे में|और बताइए/i,
+  /এটি সম্পর্কে|এই আয়াত সম্পর্কে|আরও বলুন/i,
 ];
 
 export function detectQuranAssistantLanguage(question: string, requested?: string): QuranAssistantLanguage {
@@ -62,6 +86,9 @@ export function detectQuranAssistantLanguage(question: string, requested?: strin
   if (normalized === "arabic" || normalized === "urdu" || normalized === "hindi" || normalized === "bengali") {
     return normalized;
   }
+  if (/\b(ass?alam|mujhe|meri|mere|kaise|kya|kis|hain|hai|mein|ke|ko|sabr|shifa|bimari|pareshan|mushkil|jannat|namaz|roza)\b/i.test(question)) {
+    return "urdu";
+  }
   return "english";
 }
 
@@ -70,8 +97,66 @@ export function isQuranAssistantQuestion(question: string): boolean {
   if (CLEARLY_UNRELATED_PATTERNS.some((pattern) => pattern.test(normalized))) return false;
   if (CLEARLY_UNRELATED_URDU_PATTERNS.some((pattern) => pattern.test(normalized))) return false;
   if (DIRECT_THEOLOGICAL_PATTERNS.some((pattern) => pattern.test(normalized))) return true;
-  return [...QURAN_SCOPE_TERMS, ...QURAN_SCOPE_TERMS_ARABIC, ...QURAN_SCOPE_TERMS_URDU]
+  return [
+    ...QURAN_SCOPE_TERMS,
+    ...QURAN_SCOPE_TERMS_ARABIC,
+    ...QURAN_SCOPE_TERMS_URDU,
+    ...QURAN_SCOPE_TERMS_HINDI,
+    ...QURAN_SCOPE_TERMS_BENGALI,
+  ]
     .some((term) => normalized.includes(term.toLocaleLowerCase()));
+}
+
+export function isQuranAssistantFollowUp(
+  question: string,
+  hasConversationContext: boolean,
+): boolean {
+  return hasConversationContext && FOLLOW_UP_PATTERNS.some((pattern) => pattern.test(question.trim()));
+}
+
+export function quranAssistantErrorMessage(language: QuranAssistantLanguage): string {
+  switch (language) {
+    case "arabic":
+      return "حدثت مشكلة أثناء الحصول على الإجابة. يرجى المحاولة مرة أخرى.";
+    case "urdu":
+      return "جواب حاصل کرنے میں مسئلہ پیش آیا۔ براہ کرم دوبارہ کوشش کریں۔";
+    case "hindi":
+      return "उत्तर प्राप्त करने में समस्या हुई। कृपया फिर कोशिश करें।";
+    case "bengali":
+      return "উত্তর পেতে সমস্যা হয়েছে। অনুগ্রহ করে আবার চেষ্টা করুন।";
+    default:
+      return "There was a problem getting the answer. Please try again.";
+  }
+}
+
+export function quranAssistantRegistrationMessage(language: QuranAssistantLanguage): string {
+  switch (language) {
+    case "arabic":
+      return "يلزم التسجيل قبل استخدام مساعد القرآن.";
+    case "urdu":
+      return "قرآن اسسٹنٹ استعمال کرنے سے پہلے رجسٹریشن ضروری ہے۔";
+    case "hindi":
+      return "कुरआन असिस्टेंट इस्तेमाल करने से पहले पंजीकरण आवश्यक है।";
+    case "bengali":
+      return "কুরআন অ্যাসিস্ট্যান্ট ব্যবহার করার আগে নিবন্ধন প্রয়োজন।";
+    default:
+      return "Registration is required before using Quran Assistant.";
+  }
+}
+
+export function quranAssistantLimitMessage(language: QuranAssistantLanguage): string {
+  switch (language) {
+    case "arabic":
+      return "تم بلوغت الحد اليومي لأسئلة مساعد القرآن.";
+    case "urdu":
+      return "قرآن اسسٹنٹ کے روزانہ سوالات کی حد مکمل ہو گئی ہے۔";
+    case "hindi":
+      return "कुरआन असिस्टेंट के दैनिक प्रश्नों की सीमा पूरी हो गई है।";
+    case "bengali":
+      return "কুরআন অ্যাসিস্ট্যান্টের দৈনিক প্রশ্নের সীমা পূর্ণ হয়েছে।";
+    default:
+      return "The daily Quran Assistant question limit has been reached.";
+  }
 }
 
 export function quranAssistantScopeRefusal(language: QuranAssistantLanguage): string {

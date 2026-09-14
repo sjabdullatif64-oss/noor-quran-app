@@ -1,5 +1,9 @@
 import { Capacitor } from "@capacitor/core";
-import { buildQuranAssistantRequestPayload, type QuranAssistantContext } from "@/lib/quran-assistant-context";
+import {
+  buildQuranAssistantRequestPayload,
+  type QuranAssistantContext,
+  type QuranAssistantConversationMessage,
+} from "@/lib/quran-assistant-context";
 
 const configuredApiDomain = (
   import.meta.env.VITE_API_DOMAIN ||
@@ -119,6 +123,7 @@ export interface QuranAssistantUsage {
 }
 
 export interface QuranAssistantResponse {
+  responseId?: string;
   language: string;
   explanation: string;
   guidance: string;
@@ -200,11 +205,12 @@ export const noorApi = {
     language?: string,
     deviceId?: string,
     ayahContext?: QuranAssistantContext | null,
+    conversation?: QuranAssistantConversationMessage[],
   ): Promise<QuranAssistantResponse> {
     return noorFetch("/quran-assistant", {
       method: "POST",
       body: JSON.stringify({
-        ...buildQuranAssistantRequestPayload(ayahContext ?? null, question),
+        ...buildQuranAssistantRequestPayload(ayahContext ?? null, question, conversation),
         language,
         deviceId,
       }),
