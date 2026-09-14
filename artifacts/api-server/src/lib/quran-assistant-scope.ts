@@ -8,6 +8,8 @@ const QURAN_SCOPE_TERMS = [
   "marriage", "divorce", "inheritance", "modesty", "backbiting", "repentance",
   "shirk", "tawheed", "prophet", "messenger", "jannah", "jahannam",
   "worship", "creator", "creation", "hereafter", "afterlife", "fiqh", "hadith",
+  "worry", "worried", "anxiety", "anxious", "stress", "fear", "hardship",
+  "difficulty", "taweez", "tawiz", "amulet", "talisman", "ruqyah",
 ];
 
 const QURAN_SCOPE_TERMS_ARABIC = [
@@ -15,12 +17,14 @@ const QURAN_SCOPE_TERMS_ARABIC = [
   "إسلام", "مسلم", "دعاء", "الصلاة", "الزكاة", "الصيام", "رمضان", "الهداية",
   "الصبر", "المغفرة", "الحلال", "الحرام", "الجنة", "النار", "التوبة",
   "الرسول", "النبي",
+  "فکر", "پریشان", "پریشانی", "خوف", "مشکل", "سختی", "تعویذ", "تعویز", "رقیہ",
 ];
 
 const QURAN_SCOPE_TERMS_URDU = [
   "قرآن", "قرآنی", "اللہ", "اسلام", "اسلامی", "مسلمان", "نبی", "رسول", "دعا",
   "نماز", "زکوٰۃ", "زکوۃ", "روزہ", "رمضان", "ہدایت", "صبر", "مغفرت", "حلال",
   "حرام", "جنت", "جہنم", "توبہ", "قیامت",
+  "فکر", "پریشانی", "خوف", "مشکل", "سختی", "تعویذ", "تعویز", "رقیہ",
 ];
 
 const CLEARLY_UNRELATED_PATTERNS = [
