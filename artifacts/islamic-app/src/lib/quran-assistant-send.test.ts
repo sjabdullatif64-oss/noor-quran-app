@@ -3,7 +3,7 @@ import {
   type QuranAssistantContext,
   type QuranAssistantRequest,
 } from "./quran-assistant-context";
-import { createQuranAssistantUserMessage } from "./quran-assistant-storage";
+import { createQuranAssistantUserTurnSubmission } from "./quran-assistant-storage";
 
 const selectedAyah: QuranAssistantContext = {
   surahEnglishName: "Al-Anfaal",
@@ -17,7 +17,7 @@ const selectedAyah: QuranAssistantContext = {
 
 type SpiedRequest = {
   path: string;
-  userTurn: ReturnType<typeof createQuranAssistantUserMessage>;
+  userTurn: ReturnType<typeof createQuranAssistantUserTurnSubmission>["userMessage"];
   body: ReturnType<typeof buildQuranAssistantRequestBody>;
 };
 
@@ -27,11 +27,12 @@ function createRequestSpy() {
   let successfulUsageCount = 0;
 
   function sendQuestion(question: string, ayahContext: QuranAssistantContext | null): void {
-    const userTurn = createQuranAssistantUserMessage(question, ayahContext, 1700000000000);
+    const submission = createQuranAssistantUserTurnSubmission(question, ayahContext, 1700000000000);
+    const userTurn = submission.userMessage;
     const request: QuranAssistantRequest = {
-      question: userTurn.text ?? "",
+      question: submission.question,
       deviceId: "test-device",
-      ayahContext: userTurn.ayahContext ?? null,
+      ayahContext: submission.ayahContext,
     };
     const body = buildQuranAssistantRequestBody(request);
     requests.push({ path: "/quran-assistant", userTurn, body });
@@ -64,9 +65,10 @@ function createRequestSpy() {
     || request.body.question !== "اس آیت کی وضاحت کریں"
     || request.userTurn.role !== "user"
     || request.userTurn.text !== "اس آیت کی وضاحت کریں"
+    || request.userTurn.content !== "اس آیت کی وضاحت کریں"
     || JSON.stringify(request.userTurn.ayahContext) !== JSON.stringify(selectedAyah)
     || JSON.stringify(request.body.ayahContext) !== JSON.stringify(selectedAyah)) {
-    throw new Error("Composer user turn and request body must contain the exact question and selected Ayah together");
+    throw new Error("Composer user message content and request body must contain the exact question and selected Ayah together");
   }
 }
 
@@ -77,6 +79,7 @@ function createRequestSpy() {
   if (spy.requests.length !== 1
     || spy.requests[0].body.question !== "Explain this Ayah"
     || spy.requests[0].userTurn.text !== "Explain this Ayah"
+    || spy.requests[0].userTurn.content !== "Explain this Ayah"
     || JSON.stringify(spy.requests[0].userTurn.ayahContext) !== JSON.stringify(selectedAyah)
     || JSON.stringify(spy.requests[0].body.ayahContext) !== JSON.stringify(selectedAyah)) {
     throw new Error("Explain this Ayah must use one stored turn and request with the same exact selected Ayah context");
@@ -90,9 +93,27 @@ function createRequestSpy() {
   if (spy.requests.length !== 1
     || spy.requests[0].body.question !== "What does the Quran say about patience?"
     || spy.requests[0].userTurn.text !== "What does the Quran say about patience?"
+    || spy.requests[0].userTurn.content !== "What does the Quran say about patience?"
     || spy.requests[0].userTurn.ayahContext
     || Object.prototype.hasOwnProperty.call(spy.requests[0].body, "ayahContext")) {
     throw new Error("A normal Composer question must create one question-only turn and request");
+  }
+}
+
+// Composer variants all use the same one-turn creation path.
+for (const question of [
+  "اس آیت کا مطلب کیا ہے؟",
+  "اس میں کیا حکم ہے؟",
+  "اس کے بارے میں مزید بتائیں",
+]) {
+  const spy = createRequestSpy();
+  spy.sendQuestion(question, selectedAyah);
+  if (spy.requests.length !== 1
+    || spy.requests[0].userTurn.content !== question
+    || spy.requests[0].body.question !== question
+    || JSON.stringify(spy.requests[0].userTurn.ayahContext) !== JSON.stringify(selectedAyah)
+    || JSON.stringify(spy.requests[0].body.ayahContext) !== JSON.stringify(selectedAyah)) {
+    throw new Error(`Composer variant lost the selected Ayah context: ${question}`);
   }
 }
 

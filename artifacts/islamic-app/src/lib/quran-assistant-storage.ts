@@ -5,6 +5,7 @@ export type QuranAssistantMessage = {
   id: string;
   role: "user" | "assistant";
   text?: string;
+  content?: string;
   answer?: QuranAssistantResponse;
   ayahContext?: QuranAssistantContext;
   createdAt: number;
@@ -44,12 +45,31 @@ export function createQuranAssistantUserMessage(
   ayahContext: QuranAssistantContext | null,
   createdAt = Date.now(),
 ): QuranAssistantMessage {
+  const content = text.trim();
   return {
     id: createQuranAssistantId("message"),
     role: "user",
-    text: text.trim(),
+    text: content,
+    content,
     ...(ayahContext ? { ayahContext } : {}),
     createdAt,
+  };
+}
+
+export function createQuranAssistantUserTurnSubmission(
+  content: string,
+  ayahContext: QuranAssistantContext | null,
+  createdAt = Date.now(),
+): {
+  userMessage: QuranAssistantMessage;
+  question: string;
+  ayahContext: QuranAssistantContext | null;
+} {
+  const userMessage = createQuranAssistantUserMessage(content, ayahContext, createdAt);
+  return {
+    userMessage,
+    question: userMessage.content ?? userMessage.text ?? "",
+    ayahContext: userMessage.ayahContext ?? null,
   };
 }
 
@@ -113,8 +133,10 @@ function normalizeMessage(value: unknown, index: number): QuranAssistantMessage 
   const id = typeof value.id === "string" && value.id ? value.id : `message-restored-${createdAt}-${index}`;
   if (value.role === "user") {
     const ayahContext = normalizeContext(value.ayahContext);
-    return typeof value.text === "string"
-      ? { id, role: "user", text: value.text, ...(ayahContext ? { ayahContext } : {}), createdAt }
+    const legacyText = typeof value.text === "string" ? value.text : null;
+    const content = typeof value.content === "string" ? value.content : legacyText;
+    return legacyText !== null
+      ? { id, role: "user", text: legacyText, content: content ?? legacyText, ...(ayahContext ? { ayahContext } : {}), createdAt }
       : null;
   }
   const answer = normalizeAnswer(value.answer);
