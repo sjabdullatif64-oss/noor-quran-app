@@ -7,6 +7,7 @@ const QURAN_SCOPE_TERMS = [
   "guidance", "sin", "halal", "haram", "charity", "heaven", "paradise", "hell",
   "marriage", "divorce", "inheritance", "modesty", "backbiting", "repentance",
   "shirk", "tawheed", "prophet", "messenger", "jannah", "jahannam",
+  "worship", "creator", "creation", "hereafter", "afterlife", "fiqh", "hadith",
 ];
 
 const QURAN_SCOPE_TERMS_ARABIC = [
@@ -18,11 +19,18 @@ const QURAN_SCOPE_TERMS_ARABIC = [
 
 const CLEARLY_UNRELATED_PATTERNS = [
   /\b(make|making|earn|earning|赚钱)\b.*\b(money|income|online|cash)\b/i,
+  /\b(upwork|fiverr|freelanc(?:e|ing|er)|gig work)\b/i,
   /\b(programm?ing|javascript|typescript|python|coding|code|software|debug|api)\b/i,
-  /\b(image|images|photo|photos|picture|pictures|logo|design|draw|video)\b/i,
-  /\b(business|startup|marketing|sales|technology|tech|computer)\b/i,
-  /\b(stock|crypto|bitcoin|investment|investing|trading)\b/i,
-  /\b(relationship|dating|boyfriend|girlfriend)\b/i,
+  /\b(build|create|make|develop|design)\b.*\b(app|application|website|web site|software|program)\b/i,
+  /\b(create|generate|make|draw)\b.*\b(image|images|photo|photos|picture|pictures|logo)\b/i,
+  /\b(make friends?|friend with a girl|friend with a boy|dating|boyfriend|girlfriend)\b/i,
+];
+
+const DIRECT_THEOLOGICAL_PATTERNS = [
+  /\bwho\s+(created|made)\s+(the\s+)?(world|universe)\b/i,
+  /\bwho\s+(created|made)\s+(the\s+)?heavens?\s+and\s+(the\s+)?earth\b/i,
+  /\bwho\s+is\s+(our\s+)?creator\b/i,
+  /\bwhat\s+is\s+the\s+purpose\s+of\s+(life|our\s+life|human\s+life)\b/i,
 ];
 
 export function detectQuranAssistantLanguage(question: string, requested?: string): QuranAssistantLanguage {
@@ -39,8 +47,9 @@ export function detectQuranAssistantLanguage(question: string, requested?: strin
 }
 
 export function isQuranAssistantQuestion(question: string): boolean {
-  const normalized = question.toLocaleLowerCase();
+  const normalized = question.normalize("NFKC").toLocaleLowerCase().trim();
   if (CLEARLY_UNRELATED_PATTERNS.some((pattern) => pattern.test(question))) return false;
+  if (DIRECT_THEOLOGICAL_PATTERNS.some((pattern) => pattern.test(normalized))) return true;
   return [...QURAN_SCOPE_TERMS, ...QURAN_SCOPE_TERMS_ARABIC]
     .some((term) => normalized.includes(term.toLocaleLowerCase()));
 }
