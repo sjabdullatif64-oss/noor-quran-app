@@ -6,6 +6,7 @@ export type QuranAssistantMessage = {
   role: "user" | "assistant";
   text?: string;
   answer?: QuranAssistantResponse;
+  ayahContext?: QuranAssistantContext;
   createdAt: number;
 };
 
@@ -93,8 +94,9 @@ function normalizeMessage(value: unknown, index: number): QuranAssistantMessage 
     : Date.now();
   const id = typeof value.id === "string" && value.id ? value.id : `message-restored-${createdAt}-${index}`;
   if (value.role === "user") {
+    const ayahContext = normalizeContext(value.ayahContext);
     return typeof value.text === "string"
-      ? { id, role: "user", text: value.text, createdAt }
+      ? { id, role: "user", text: value.text, ...(ayahContext ? { ayahContext } : {}), createdAt }
       : null;
   }
   const answer = normalizeAnswer(value.answer);

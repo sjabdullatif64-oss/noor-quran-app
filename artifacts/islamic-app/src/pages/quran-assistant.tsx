@@ -15,6 +15,13 @@ import {
   type QuranAssistantContext,
 } from "@/lib/quran-assistant-context";
 import {
+  beginExplainAyahRequest,
+  createExplainAyahRequestState,
+  EXPLAIN_THIS_AYAH_QUESTION,
+  finishExplainAyahRequest,
+  hasCompletedExplainAyahResponse,
+} from "@/lib/quran-assistant-explain";
+import {
   createQuranAssistantChat,
   createQuranAssistantId,
   getQuranAssistantChatTitle,
@@ -229,6 +236,7 @@ export function QuranAssistant() {
   const endRef = useRef<HTMLDivElement>(null);
   const mountedRef = useRef(true);
   const askInFlightRef = useRef(false);
+  const explainAyahRequestStateRef = useRef(createExplainAyahRequestState());
   const speechRef = useRef<{ id: string; utterance: SpeechSynthesisUtterance } | null>(null);
   const nativeSpeechRef = useRef<{
     id: string;
@@ -481,6 +489,7 @@ export function QuranAssistant() {
     questionRef.current = chat.draft;
     setAyahContext(chat.ayahContext);
     ayahContextRef.current = chat.ayahContext;
+    explainAyahRequestStateRef.current = createExplainAyahRequestState();
     setError("");
     setHistoryOpen(false);
   }
@@ -498,6 +507,7 @@ export function QuranAssistant() {
     questionRef.current = "";
     setAyahContext(null);
     ayahContextRef.current = null;
+    explainAyahRequestStateRef.current = createExplainAyahRequestState();
     setError("");
     setNewChatPromptOpen(false);
     setHistoryOpen(false);
@@ -536,17 +546,20 @@ export function QuranAssistant() {
     return `Resets in about ${hours}h${minutes ? ` ${minutes}m` : ""}`;
   }
 
-  async function ask(value = questionRef.current) {
+  async function ask(
+    value = questionRef.current,
+    contextOverride?: QuranAssistantContext | null,
+  ): Promise<boolean> {
     const text = value.trim();
-    if (!text || loading || askInFlightRef.current) return;
+    if (!text || loading || askInFlightRef.current) return false;
     askInFlightRef.current = true;
     const usageResetMs = usage?.resetAt ? Date.parse(usage.resetAt) : NaN;
     if (usage?.remaining === 0 && (!Number.isFinite(usageResetMs) || Date.now() < usageResetMs)) {
       setError("");
       askInFlightRef.current = false;
-      return;
+      return false;
     }
-    const requestContext = ayahContextRef.current;
+    const requestContext = contextOverride === undefined ? ayahContextRef.current : contextOverride;
     setError(""); setLoading(true);
     const messageId = createQuranAssistantId("message");
     const userMessage: Message = {
@@ -563,7 +576,7 @@ export function QuranAssistant() {
       setLoading(false);
       setError("Registration is required before using Quran Assistant.");
       askInFlightRef.current = false;
-      return;
+      return false;
     }
     setRegisteredDeviceId(user.deviceId);
     setQuestion("");
@@ -577,7 +590,9 @@ export function QuranAssistant() {
         role: "assistant",
         answer,
         createdAt: Date.now(),
+        ...(requestContext ? { ayahContext: requestContext } : {}),
       }]);
+      return true;
     } catch (e) {
       if (e instanceof NoorApiError && e.status === 429) {
         const serverUsage = (e.data as { usage?: QuranAssistantUsage } | null)?.usage;
@@ -588,10 +603,34 @@ export function QuranAssistant() {
       } else {
         setError(e instanceof Error ? e.message : "Unable to answer right now.");
       }
+      return false;
     } finally {
       setLoading(false);
       askInFlightRef.current = false;
     }
+  }
+
+  function explainSelectedAyah() {
+    const context = ayahContextRef.current;
+    if (!context) return;
+    const transition = beginExplainAyahRequest(explainAyahRequestStateRef.current, context);
+    explainAyahRequestStateRef.current = transition.state;
+    if (!transition.shouldSend) return;
+    void ask(EXPLAIN_THIS_AYAH_QUESTION, context)
+      .then((succeeded) => {
+        explainAyahRequestStateRef.current = finishExplainAyahRequest(
+          explainAyahRequestStateRef.current,
+          context,
+          succeeded,
+        );
+      })
+      .catch(() => {
+        explainAyahRequestStateRef.current = finishExplainAyahRequest(
+          explainAyahRequestStateRef.current,
+          context,
+          false,
+        );
+      });
   }
 
   return (
@@ -635,12 +674,17 @@ export function QuranAssistant() {
           {ayahContext.arabic}
         </p>
         {ayahContext.translation && <p dir="auto" className="mt-2 line-clamp-2 text-sm leading-relaxed text-muted-foreground">{ayahContext.translation}</p>}
-        <button type="button" onClick={() => {
-          const suggestedQuestion = "Explain this Ayah";
-          setQuestion(setQuranAssistantComposerQuestion(questionRef, suggestedQuestion));
-        }} className="mt-3 rounded-xl border border-primary/25 bg-card px-3 py-2 text-xs font-semibold text-primary transition-colors hover:bg-background" data-testid="button-suggest-explain-ayah">
-          Explain this Ayah
-        </button>
+        {!hasCompletedExplainAyahResponse(messages, ayahContext) && (
+          <button
+            type="button"
+            onClick={explainSelectedAyah}
+            disabled={loading}
+            className="mt-3 rounded-xl border border-primary/25 bg-card px-3 py-2 text-xs font-semibold text-primary transition-colors hover:bg-background disabled:cursor-not-allowed disabled:opacity-60"
+            data-testid="button-suggest-explain-ayah"
+          >
+            Explain this Ayah
+          </button>
+        )}
       </section>}
       <form onSubmit={(event) => { event.preventDefault(); void ask(questionRef.current); }} className="relative z-10 mt-4 flex shrink-0 items-end gap-2 border-t border-border bg-background/95 px-1 pt-3 pb-2 backdrop-blur">
         <textarea
