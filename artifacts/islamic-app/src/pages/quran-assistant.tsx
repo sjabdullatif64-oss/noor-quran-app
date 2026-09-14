@@ -26,6 +26,7 @@ import {
 type Message = QuranAssistantMessage;
 
 const examples = ["Explain an Ayah", "Verse about patience", "Verse for difficult times", "Quranic guidance about forgiveness"];
+const MAX_COMPOSER_HEIGHT = 200;
 
 type AyahAudioSession = {
   key: string;
@@ -215,6 +216,11 @@ export function QuranAssistant() {
   const [usage, setUsage] = useState<QuranAssistantUsage | null>(null);
   const [usageNow, setUsageNow] = useState(() => Date.now());
   const [registeredDeviceId, setRegisteredDeviceId] = useState<string | null>(null);
+  const questionRef = useRef(initialChat.draft);
+  const ayahContextRef = useRef<QuranAssistantContext | null>(
+    hasAyahContext ? readQuranAssistantContext() : initialChat.ayahContext,
+  );
+  const questionInputRef = useRef<HTMLTextAreaElement>(null);
   const endRef = useRef<HTMLDivElement>(null);
   const mountedRef = useRef(true);
   const askInFlightRef = useRef(false);
@@ -228,6 +234,15 @@ export function QuranAssistant() {
     generation: number;
   } | null>(null);
   const nativeSpeechGenerationRef = useRef(0);
+
+  useEffect(() => {
+    const input = questionInputRef.current;
+    if (!input) return;
+    input.style.height = "auto";
+    const nextHeight = Math.min(input.scrollHeight, MAX_COMPOSER_HEIGHT);
+    input.style.height = `${nextHeight}px`;
+    input.style.overflowY = input.scrollHeight > MAX_COMPOSER_HEIGHT ? "auto" : "hidden";
+  }, [question]);
 
   useEffect(() => {
     endRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
@@ -458,7 +473,9 @@ export function QuranAssistant() {
     setActiveChatId(chat.id);
     setMessages(chat.messages);
     setQuestion(chat.draft);
+    questionRef.current = chat.draft;
     setAyahContext(chat.ayahContext);
+    ayahContextRef.current = chat.ayahContext;
     setError("");
     setHistoryOpen(false);
   }
@@ -473,7 +490,9 @@ export function QuranAssistant() {
     setActiveChatId(chat.id);
     setMessages([]);
     setQuestion("");
+    questionRef.current = "";
     setAyahContext(null);
+    ayahContextRef.current = null;
     setError("");
     setNewChatPromptOpen(false);
     setHistoryOpen(false);
@@ -512,7 +531,7 @@ export function QuranAssistant() {
     return `Resets in about ${hours}h${minutes ? ` ${minutes}m` : ""}`;
   }
 
-  async function ask(value = question) {
+  async function ask(value = questionRef.current) {
     const text = value.trim();
     if (!text || loading || askInFlightRef.current) return;
     askInFlightRef.current = true;
@@ -522,8 +541,8 @@ export function QuranAssistant() {
       askInFlightRef.current = false;
       return;
     }
-    const requestText = buildQuranAssistantRequestText(ayahContext, text);
-    setQuestion(""); setError(""); setLoading(true);
+    const requestText = buildQuranAssistantRequestText(ayahContextRef.current, text);
+    setError(""); setLoading(true);
     const messageId = createQuranAssistantId("message");
     const userMessage: Message = {
       id: messageId,
@@ -542,6 +561,8 @@ export function QuranAssistant() {
       return;
     }
     setRegisteredDeviceId(user.deviceId);
+    setQuestion("");
+    questionRef.current = "";
     setMessages((current) => [...current, userMessage]);
     try {
       const answer = await noorApi.askQuranAssistant(requestText, undefined, user.deviceId);
@@ -613,11 +634,16 @@ export function QuranAssistant() {
           Explain this Ayah
         </button>
       </section>}
-      <form onSubmit={(event) => { event.preventDefault(); void ask(); }} className="relative z-10 mt-4 flex shrink-0 items-end gap-2 border-t border-border bg-background/95 px-1 pt-3 pb-2 backdrop-blur">
+      <form onSubmit={(event) => { event.preventDefault(); void ask(questionRef.current); }} className="relative z-10 mt-4 flex shrink-0 items-end gap-2 border-t border-border bg-background/95 px-1 pt-3 pb-2 backdrop-blur">
         <textarea
+          ref={questionInputRef}
           value={question}
-          onChange={(event) => setQuestion(event.currentTarget.value)}
-          rows={2}
+          onChange={(event) => {
+            const value = event.currentTarget.value;
+            questionRef.current = value;
+            setQuestion(value);
+          }}
+          rows={1}
           maxLength={1200}
           placeholder="Ask a question about the Quran…"
           aria-label="Question for Quran Assistant"
@@ -627,7 +653,7 @@ export function QuranAssistant() {
           autoCorrect="on"
           autoCapitalize="sentences"
           spellCheck={true}
-          className="min-h-12 max-h-36 min-w-0 flex-1 resize-none rounded-2xl border border-border bg-card px-4 py-3 text-sm text-foreground outline-none placeholder:text-muted-foreground focus:ring-2 focus:ring-primary/30"
+          className="min-h-12 min-w-0 flex-1 resize-none overflow-hidden rounded-2xl border border-border bg-card px-4 py-2 text-sm leading-5 text-foreground outline-none placeholder:text-muted-foreground focus:ring-2 focus:ring-primary/30"
           dir="auto"
           data-testid="input-quran-assistant-question"
         />
