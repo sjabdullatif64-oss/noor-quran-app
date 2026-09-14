@@ -11,6 +11,8 @@ const cases: Array<[string, boolean]> = [
   ["Create an image for me.", false],
   ["How can I make a website?", false],
   ["How can I make friends with a girl?", false],
+  ["مجھے آن لائن ارننگ کرنی ہے کس طرح میں کر سکتا ہوں کوئی ویب سائٹ یا ایپ بتائیں", false],
+  ["دنیا کس نے بنائی؟", true],
 ];
 
 for (const [question, expected] of cases) {
