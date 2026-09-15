@@ -1,0 +1,74 @@
+Important: Do not assume the remaining bug is only Ayah-context attachment.
+
+I noticed an important runtime difference:
+
+In the previous APK, typing the English text "Explain this Ayah" manually into the Composer and pressing Send worked correctly. However, when typing an Urdu question such as "اس کی وضاحت کریں" or "اس کی وضاحت", the selected Ayah was not correctly carried into the submitted conversation turn.
+
+Please investigate the Composer INPUT/SUBMIT path specifically for multilingual text.
+
+Do NOT change:
+- scope classification
+- server AI prompt logic
+- generic response logic
+- daily quota
+- Quran data
+- Explain-this-Ayah button behavior
+
+Use the working English manual Composer submission as the baseline.
+
+Trace the exact runtime sequence for BOTH:
+
+A) Composer text:
+"Explain this Ayah"
+
+B) Composer text:
+"اس کی وضاحت کریں"
+
+For each one, inspect the exact value immediately at:
+1. native input/onChange/input event
+2. composer state/ref
+3. form submit handler
+4. createAndSendUserTurn(...)
+5. createQuranAssistantUserTurnSubmission(...)
+6. created user message object
+7. API request body
+
+The important question is:
+
+Does the Urdu text reach createAndSendUserTurn together with the CURRENT ayahContext at the exact moment Send is pressed?
+
+Also verify that RTL/Urdu input, IME composition, paste, native Android keyboard input, and Unicode characters do not cause the submit handler to read an outdated/empty value or a different state snapshot.
+
+Add a focused runtime regression that uses the EXACT Composer handler, not a reconstructed test helper, with:
+
+selected Ayah = Al-Anfaal 2
+Composer = "اس کی وضاحت کریں"
+
+Assert before the API call:
+
+userMessage.content === "اس کی وضاحت کریں"
+userMessage.text === "اس کی وضاحت کریں"
+userMessage.ayahContext === selectedAyah
+request.question === "اس کی وضاحت کریں"
+request.ayahContext === selectedAyah
+
+Then run the same exact handler with:
+
+"Explain this Ayah"
+
+and compare the resulting user-message objects.
+
+If both source-level paths are identical, prove that with the actual runtime values/logging rather than assuming it.
+
+Also inspect whether the displayed "ABOUT THIS AYAH" card is merely visual state while the actual pending context ref is stale or cleared before Composer submit.
+
+Do not make another APK yet.
+
+First report:
+- exact difference, if any, between English and Urdu Composer submission
+- exact source line/function where the value or Ayah context is lost
+- actual userMessage object immediately before the API call
+- actual request body immediately before the API call
+- whether the Urdu characters survive unchanged
+
+Only after this root cause is proven should the implementation be changed.

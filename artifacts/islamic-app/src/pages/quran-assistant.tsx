@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState } from "react";
 import { ArrowLeft, Bookmark, BookmarkCheck, BookOpen, Bot, Clock3, History, Loader2, MessageCircle, Pause, Play, Plus, Send, Sparkles, Volume2, X } from "lucide-react";
 import { Link, useLocation } from "wouter";
-import { getAudioUrl } from "@/lib/api";
+import { getAudioUrl, type TranslationLanguage } from "@/lib/api";
+import { getLang, TRANSLATION_LANGUAGE_CHANGED_EVENT } from "@/lib/settings";
 import { isNative } from "@/lib/capacitor";
 import { NativeTTS } from "@/lib/native-tts";
 import { getQuranAssistantSpeechLanguage } from "@/lib/quran-assistant-speech";
@@ -20,6 +21,7 @@ import {
   createExplainAyahRequestState,
   EXPLAIN_THIS_AYAH_QUESTION,
   finishExplainAyahRequest,
+  getExplainThisAyahLabel,
   hasCompletedExplainAyahResponse,
 } from "@/lib/quran-assistant-explain";
 import {
@@ -231,6 +233,7 @@ export function QuranAssistant() {
   const [usage, setUsage] = useState<QuranAssistantUsage | null>(null);
   const [usageNow, setUsageNow] = useState(() => Date.now());
   const [registeredDeviceId, setRegisteredDeviceId] = useState<string | null>(null);
+  const [translationLanguage, setTranslationLanguage] = useState<TranslationLanguage>(() => getLang());
   const questionRef = useRef(initialChat.draft);
   const ayahContextRef = useRef<QuranAssistantContext | null>(
     hasAyahContext ? readQuranAssistantContext() : initialChat.ayahContext,
@@ -259,6 +262,12 @@ export function QuranAssistant() {
     input.style.height = `${nextHeight}px`;
     input.style.overflowY = input.scrollHeight > MAX_COMPOSER_HEIGHT ? "auto" : "hidden";
   }, [question]);
+
+  useEffect(() => {
+    const refreshTranslationLanguage = () => setTranslationLanguage(getLang());
+    window.addEventListener(TRANSLATION_LANGUAGE_CHANGED_EVENT, refreshTranslationLanguage);
+    return () => window.removeEventListener(TRANSLATION_LANGUAGE_CHANGED_EVENT, refreshTranslationLanguage);
+  }, []);
 
   useEffect(() => {
     endRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
@@ -555,14 +564,8 @@ export function QuranAssistant() {
     content: string;
     ayahContext: QuranAssistantContext | null;
   }): Promise<boolean> {
-    console.warn("[QURAN_ASSISTANT_ANDROID_DIAGNOSTIC] before createAndSendUserTurn", {
-      composerText: turn.content,
-      ayahContext: ayahContextRef.current,
-      submittedAyahContext: turn.ayahContext,
-    });
     const submission = createQuranAssistantUserTurnSubmission(turn.content, turn.ayahContext);
     const { userMessage } = submission;
-    console.warn("[QURAN_ASSISTANT_ANDROID_DIAGNOSTIC] created userMessage", userMessage);
     const text = submission.question;
     if (!text || loading || askInFlightRef.current) return false;
     askInFlightRef.current = true;
@@ -709,10 +712,11 @@ export function QuranAssistant() {
             type="button"
             onClick={explainSelectedAyah}
             disabled={loading}
+            dir="auto"
             className="mt-3 rounded-xl border border-primary/25 bg-card px-3 py-2 text-xs font-semibold text-primary transition-colors hover:bg-background disabled:cursor-not-allowed disabled:opacity-60"
             data-testid="button-suggest-explain-ayah"
           >
-            Explain this Ayah
+             {getExplainThisAyahLabel(translationLanguage)}
           </button>
         )}
       </section>}

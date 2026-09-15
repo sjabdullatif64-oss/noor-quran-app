@@ -3,6 +3,7 @@ import {
   createExplainAyahRequestState,
   EXPLAIN_THIS_AYAH_QUESTION,
   finishExplainAyahRequest,
+  getExplainThisAyahLabel,
   hasCompletedExplainAyahResponse,
 } from "./quran-assistant-explain";
 import type { QuranAssistantContext } from "./quran-assistant-context";
@@ -17,6 +18,27 @@ const context: QuranAssistantContext = {
   translation: "[It is] bounty from Allah and favor. And Allah is Knowing and Wise.",
   audioGlobalNumber: 5169,
 };
+
+if (getExplainThisAyahLabel("english") !== "Explain this Ayah") {
+  throw new Error("English Explain-this-Ayah label must remain unchanged");
+}
+if (getExplainThisAyahLabel("urdu") !== "اس آیت کی وضاحت کریں") {
+  throw new Error("Urdu Explain-this-Ayah label must use the established Urdu copy");
+}
+if (EXPLAIN_THIS_AYAH_QUESTION !== "Explain this Ayah") {
+  throw new Error("Localized button labels must not change the stable Explain request");
+}
+for (const language of ["english", "urdu"] as const) {
+  const label = getExplainThisAyahLabel(language);
+  const explainRequest = {
+    question: EXPLAIN_THIS_AYAH_QUESTION,
+    ayahContext: context,
+  };
+  if (!label || explainRequest.question !== EXPLAIN_THIS_AYAH_QUESTION
+    || explainRequest.ayahContext !== context) {
+    throw new Error(`${language} Explain button must keep the existing action and selected Ayah context`);
+  }
+}
 
 let requestCount = 0;
 let successfulUsageCount = 0;

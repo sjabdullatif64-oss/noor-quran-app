@@ -204,7 +204,6 @@ export const noorApi = {
 
   async askQuranAssistant(request: QuranAssistantRequest): Promise<QuranAssistantResponse> {
     const requestBody = buildQuranAssistantRequestBody(request);
-    console.warn("[QURAN_ASSISTANT_ANDROID_DIAGNOSTIC] final request body", requestBody);
     return noorFetch("/quran-assistant", {
       method: "POST",
       body: JSON.stringify(requestBody),
