@@ -10,6 +10,7 @@ import {
   deleteWelcomeCampaign,
   getAllProducts,
   getAllWelcomeCampaigns,
+  getWelcomeCampaignStats,
   getTeacherAccountSnapshots,
   getAudienceAnalytics,
   updateProduct,
@@ -222,7 +223,13 @@ router.get("/audience", admin, async (_req, res) => {
 });
 
 router.get("/campaigns", admin, async (_req, res) => {
-  res.json({ campaigns: await getAllWelcomeCampaigns() });
+  const [campaigns, stats] = await Promise.all([getAllWelcomeCampaigns(), getWelcomeCampaignStats()]);
+  res.json({
+    campaigns: campaigns.map((campaign) => ({
+      ...campaign,
+      stats: stats[campaign.id] ?? { totalViews: 0, totalButtonClicks: 0 },
+    })),
+  });
 });
 
 router.post("/campaigns", admin, async (req, res) => {
