@@ -24,7 +24,6 @@ export function Layout({ children }: { children: React.ReactNode }) {
   const [location] = useLocation();
   const { theme, setTheme } = useTheme();
   const { t } = useI18n();
-  const isQuranAssistant = location === "/quran-assistant";
 
   const isDarkPage = [
     "/qibla", "/more", "/favorites", "/tasbeeh", "/settings", "/islamic-gifts",
@@ -55,27 +54,8 @@ export function Layout({ children }: { children: React.ReactNode }) {
       .catch(() => { /* non-critical */ });
   }, []);
 
-  // Android's IME can resize the visual viewport without changing the
-  // layout viewport immediately. Keep only the Assistant shell tied to the
-  // live visual height so the native keyboard never covers its composer.
-  useEffect(() => {
-    if (!isQuranAssistant || !window.visualViewport) return;
-    const root = document.documentElement;
-    const updateViewportHeight = () => {
-      root.style.setProperty("--quran-assistant-viewport-height", `${window.visualViewport?.height ?? window.innerHeight}px`);
-    };
-    updateViewportHeight();
-    window.visualViewport.addEventListener("resize", updateViewportHeight);
-    window.visualViewport.addEventListener("scroll", updateViewportHeight);
-    return () => {
-      window.visualViewport?.removeEventListener("resize", updateViewportHeight);
-      window.visualViewport?.removeEventListener("scroll", updateViewportHeight);
-      root.style.removeProperty("--quran-assistant-viewport-height");
-    };
-  }, [isQuranAssistant]);
-
   return (
-    <div className={`${isQuranAssistant ? "h-[var(--quran-assistant-viewport-height,100dvh)] overflow-hidden" : "min-h-[100dvh]"} flex flex-col md:flex-row bg-background`}>
+    <div className="min-h-[100dvh] flex flex-col md:flex-row bg-background">
       {/* Mobile top bar — hidden on dark-themed pages */}
       {!isDarkPage && (
         <div className="md:hidden flex items-center justify-between px-5 py-3 border-b border-border bg-card">
@@ -136,10 +116,10 @@ export function Layout({ children }: { children: React.ReactNode }) {
       </div>
 
       {/* Main content + centralized banner spacer */}
-      <main className={`flex-1 flex flex-col min-h-0 ${isQuranAssistant ? "overflow-hidden" : "overflow-y-auto"}`}>
+      <main className="flex-1 flex flex-col min-h-0 overflow-y-auto">
         <div className={isDarkPage
           ? "w-full"
-          : `flex-1 w-full max-w-5xl mx-auto p-4 md:p-8 ${isQuranAssistant ? "min-h-0 flex h-full flex-col" : ""}`}>
+          : "flex-1 w-full max-w-5xl mx-auto p-4 md:p-8"}>
           {children}
         </div>
 
