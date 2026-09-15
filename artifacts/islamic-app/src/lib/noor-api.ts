@@ -1,10 +1,4 @@
 import { Capacitor } from "@capacitor/core";
-import {
-  buildQuranAssistantRequestBody,
-  type QuranAssistantContext,
-  type QuranAssistantConversationMessage,
-  type QuranAssistantRequest,
-} from "@/lib/quran-assistant-context";
 
 const configuredApiDomain = (
   import.meta.env.VITE_API_DOMAIN ||
@@ -106,31 +100,9 @@ export interface NoorWelcomeCampaign {
   enabled: boolean;
 }
 
-export interface QuranAssistantAyah {
-  surahNumber: number;
-  surahName: string;
-  ayahNumber: number;
-  arabic: string;
-  translation: string;
-  audioGlobalNumber: number;
-}
-
-export interface QuranAssistantUsage {
-  limit: number;
-  questionsUsed: number;
-  remaining: number;
-  windowStartedAt: string;
-  resetAt: string;
-}
-
-export interface QuranAssistantResponse {
-  responseId?: string;
-  language: string;
-  explanation: string;
-  guidance: string;
-  ayahs: QuranAssistantAyah[];
-  usage?: QuranAssistantUsage;
-  scopeRejected?: boolean;
+export interface NoorWelcomeCampaignStats {
+  totalViews: number;
+  totalButtonClicks: number;
 }
 
 export const noorApi = {
@@ -198,15 +170,14 @@ export const noorApi = {
     return noorFetch("/campaigns/welcome");
   },
 
-  async getQuranAssistantUsage(deviceId: string): Promise<{ usage: QuranAssistantUsage }> {
-    return noorFetch(`/quran-assistant/usage?deviceId=${encodeURIComponent(deviceId)}`);
-  },
-
-  async askQuranAssistant(request: QuranAssistantRequest): Promise<QuranAssistantResponse> {
-    const requestBody = buildQuranAssistantRequestBody(request);
-    return noorFetch("/quran-assistant", {
+  async recordWelcomeCampaignEvent(
+    campaignId: string,
+    eventId: string,
+    eventType: "view" | "click",
+  ): Promise<void> {
+    await noorFetch(`/campaigns/welcome/${encodeURIComponent(campaignId)}/events`, {
       method: "POST",
-      body: JSON.stringify(requestBody),
+      body: JSON.stringify({ eventId, eventType }),
     });
   },
 
