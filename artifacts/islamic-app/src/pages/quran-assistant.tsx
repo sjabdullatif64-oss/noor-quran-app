@@ -555,8 +555,14 @@ export function QuranAssistant() {
     content: string;
     ayahContext: QuranAssistantContext | null;
   }): Promise<boolean> {
+    console.warn("[QURAN_ASSISTANT_ANDROID_DIAGNOSTIC] before createAndSendUserTurn", {
+      composerText: turn.content,
+      ayahContext: ayahContextRef.current,
+      submittedAyahContext: turn.ayahContext,
+    });
     const submission = createQuranAssistantUserTurnSubmission(turn.content, turn.ayahContext);
     const { userMessage } = submission;
+    console.warn("[QURAN_ASSISTANT_ANDROID_DIAGNOSTIC] created userMessage", userMessage);
     const text = submission.question;
     if (!text || loading || askInFlightRef.current) return false;
     askInFlightRef.current = true;
