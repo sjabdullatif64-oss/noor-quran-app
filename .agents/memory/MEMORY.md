@@ -25,7 +25,6 @@
 - [Divine Name translation display](translation-language-registry.md) — normalize only explicit Allah-name spellings; preserve semantic words like God, Lord, and خدا
 - [Translation proper-name boundary](translation-proper-name-boundary.md) — source-backed Allah normalization must handle attached Arabic forms like `لِلَّهِ` without rewriting semantic terms
 - [AI Teacher full-Quran curriculum](teacher-full-quran-curriculum.md) — preserve legacy lesson IDs; append deterministic bundled-Quran passages with capped word progression
-- [Quran Assistant scope gate](quran-assistant-scope-gate.md) — reject unrelated intents before lookup, reservation, or AI generation; allow direct Islamic creation questions without Quran keywords
 - [AI Teacher microphone lifecycle](teacher-microphone-lifecycle.md) — recognition attempts need one cancellable session, abortable retry, and stale-callback guards
 - [AI Teacher language preference](teacher-language-preference.md) — Teacher can follow the app’s selected translation language or use English-only copy without changing Quran language settings
 - [Noor Quran legacy cleanup boundary](noor-quran-legacy-cleanup.md) — Google Sheets and routed Vite pages are active; the old admin, Drizzle DB, Expo scaffold, and unrouted pages are not
@@ -38,5 +37,4 @@
 - [Country data flow contract](country-data-flow.md) — reverse geocode ISO codes, persist them separately from display names, and send them through registration/presence
 - [Beginner course content invariant](beginner-course-content.md) — validate actual per-level lesson arrays and preserve the original Level 1 catalog when expanding practice
 - [Native TTS bridge usage](native-tts-bridge.md) — use the registered NativeTTS proxy for Android speech and cancel queued requests when stopping or switching messages
-- [Quran Assistant Explain action](quran-assistant-explain-action.md) — selected-Ayah explanations are one guarded request; hide the repeat action after the matching response and keep Audio TTS-only
-- [Quran Assistant instruction contract](quran-assistant-instruction-contract.md) — scope, verified references, multilingual follow-ups, and response/audio identity must remain server-authoritative and isolated
+- [Android Actions setup forensics](android-actions-setup-forensics.md) — identical setup-android YAML can fail on different ubuntu-latest runners; Jobs API may omit image/arch and logs may be inaccessible
