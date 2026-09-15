@@ -11,6 +11,7 @@ import {
 } from "@/lib/welcome-campaign";
 import { cn } from "@/lib/utils";
 import { WelcomeCampaignMedia } from "@/components/welcome-campaign-media";
+import { noorApi } from "@/lib/noor-api";
 
 const MEDIA_PREPARATION_TIMEOUT_MS = 1500;
 
@@ -39,11 +40,17 @@ export function WelcomeCampaignScreen({
   const [mediaError, setMediaError] = useState(false);
   const [elapsedMs, setElapsedMs] = useState(0);
   const finishedRef = useRef(false);
+  const displayIdRef = useRef(crypto.randomUUID());
   const skipRef = useRef(onSkip);
   const openUrlRef = useRef(onOpenUrl);
 
   skipRef.current = onSkip;
   openUrlRef.current = onOpenUrl;
+
+  useEffect(() => {
+    displayIdRef.current = crypto.randomUUID();
+    void noorApi.recordWelcomeCampaignEvent(campaign.id, `${displayIdRef.current}:view`, "view").catch(() => {});
+  }, [campaign.id]);
 
   useEffect(() => {
     setMediaReady(mediaKind === "none");
@@ -95,9 +102,11 @@ export function WelcomeCampaignScreen({
     const url = campaignUrl;
     if (!url) return;
 
+    const displayId = displayIdRef.current;
+    void noorApi.recordWelcomeCampaignEvent(campaign.id, `${displayId}:click`, "click").catch(() => {});
     void openUrl(url);
     openUrlRef.current(url);
-  }, [campaign.url]);
+  }, [campaign.id, campaign.url]);
 
   return (
     <section
