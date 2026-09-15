@@ -90,16 +90,31 @@ jobs:
           java-version: ${{ env.JAVA_VERSION }}
 
       # ── 3. Android SDK 36 ─────────────────────────────────────────────────────
-      - name: Setup Android SDK
-        uses: android-actions/setup-android@9fc6c4e9069bf8d3d10b2204b1fb8f6ef7065407
+      - name: Configure runner Android SDK
+        shell: bash
+        run: |
+          set -euo pipefail
+          SDK_ROOT="${ANDROID_HOME:-${ANDROID_SDK_ROOT:-/usr/local/lib/android/sdk}}"
+          test -d "$SDK_ROOT"
+          test -x "$SDK_ROOT/cmdline-tools/latest/bin/sdkmanager" || \
+            test -x "$SDK_ROOT/tools/bin/sdkmanager" || \
+            command -v sdkmanager >/dev/null
+          echo "ANDROID_HOME=$SDK_ROOT" >> "$GITHUB_ENV"
+          echo "ANDROID_SDK_ROOT=$SDK_ROOT" >> "$GITHUB_ENV"
+          echo "$SDK_ROOT/cmdline-tools/latest/bin" >> "$GITHUB_PATH"
+          echo "$SDK_ROOT/platform-tools" >> "$GITHUB_PATH"
+          echo "$SDK_ROOT/emulator" >> "$GITHUB_PATH"
+          echo "Using runner Android SDK at $SDK_ROOT"
 
       - name: Install Android SDK platform + build-tools
         run: |
-          sdkmanager --install \
+          set -euo pipefail
+          SDKMANAGER="$(command -v sdkmanager)"
+          "$SDKMANAGER" --version
+          "$SDKMANAGER" --install \
             "platforms;android-${{ env.ANDROID_SDK }}" \
             "build-tools;${{ env.ANDROID_BUILD_TOOLS }}" \
-            "platform-tools" \
-            2>&1 | tail -5
+            "platform-tools"
           yes | sdkmanager --licenses > /dev/null 2>&1 || true
           test -x "$ANDROID_HOME/build-tools/${{ env.ANDROID_BUILD_TOOLS }}/aapt2"
           "$ANDROID_HOME/build-tools/${{ env.ANDROID_BUILD_TOOLS }}/aapt2" version
